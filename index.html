@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
     <style>
-        /* GIỮ NGUYÊN TOÀN BỘ STYLE THEO PHONG CÁCH GỐC CỦA MÀY */
         :root {
             --neon-teal: #00ffcc;
             --neon-blue: #00c8ff;
@@ -21,12 +20,10 @@
         .main-nav { background-color: #111827; border-bottom: 3px solid var(--neon-teal); padding: 15px 20px; margin-bottom: 25px; display: flex; justify-content: space-between; items-center; }
         .nav-title { font-size: 20px; font-weight: 700; color: var(--neon-teal); text-transform: uppercase; display: flex; items-center; gap: 10px; }
         .nav-btn-group { display: flex; gap: 10px; }
-        .nav-btn { background: #1f2937; color: #d1d5db; border: 1px solid #4b5563; font-weight: 600; padding: 8px 16px; rounded-radius: 8px; cursor: pointer; transition: 0.3s; }
+        .nav-btn { background: #1f2937; color: #d1d5db; border: 1px solid #4b5563; font-weight: 600; padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
         .nav-btn.active-neon { background: linear-gradient(135deg, #00ffcc, #00c8ff); color: #090d16 !important; border: none; box-shadow: 0 0 15px rgba(0,255,204,0.4); }
         
-        .container { max-width: 1300px; mx-auto: auto; padding: 0 20px; display: grid; grid-template-columns: 2fr 1fr; gap: 25px; }
-        .container.full-width { grid-template-columns: 1fr; }
-        
+        .container { max-width: 1300px; margin: 0 auto; padding: 0 20px; display: grid; grid-template-columns: 2fr 1fr; gap: 25px; }
         .glass-card { background: var(--card-bg); border: 2px solid #2d3748; border-radius: 16px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; }
         .section-title { font-weight: 700; font-size: 18px; color: var(--neon-teal); text-transform: uppercase; margin-bottom: 22px; padding-left: 10px; border-left: 5px solid var(--neon-blue); }
         
@@ -38,47 +35,55 @@
         .form-control, .form-select { background-color: #0d131f !important; border: 2px solid #4a5568 !important; color: #ffffff !important; padding: 10px 12px; border-radius: 8px; font-size: 14px; width: 100%; outline: none; }
         .form-control:focus, .form-select:focus { border-color: var(--neon-teal) !important; box-shadow: 0 0 10px rgba(0,255,204,0.2); }
         
-        /* CSS SUGGESTION BOX CHO MAPS API */
-        .maps-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: #161f30; border: 2px solid #4a5568; border-top: none; border-radius: 0 0 8px 8px; max-height: 200px; overflow-y: auto; z-index: 100; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
+        .maps-suggestions { position: absolute; top: 100%; left: 0; right: 0; background: #161f30; border: 2px solid #4a5568; border-top: none; border-radius: 0 0 8px 8px; max-height: 180px; overflow-y: auto; z-index: 100; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
         .maps-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #2d3748; font-size: 13px; color: #d1d5db; }
         .maps-item:hover { background: #1f2937; color: var(--neon-teal); }
         
         .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; background: #0d131f; padding: 12px; border-radius: 8px; border: 1px solid #2d3748; }
         .checkbox-label { display: flex; items-center; gap: 8px; font-size: 14px; cursor: pointer; }
         
-        /* BẢNG TÍNH TOÁN CHI PHÍ NỘI BỘ GỐC CỦA MÀY */
         .box-accounting { background: #111827; border: 2px dashed #4a5568; border-radius: 12px; padding: 18px; margin-top: 15px; }
-        .accounting-title { font-size: 13px; font-weight: 700; color: var(--neon-blue); tracking-wide: 1px; text-transform: uppercase; margin-bottom: 12px; }
+        .accounting-title { font-size: 13px; font-weight: 700; color: var(--neon-blue); text-transform: uppercase; margin-bottom: 12px; }
         
-        .shuttle-row { display: flex; gap: 10px; items-center; margin-bottom: 8px; }
-        .btn-mini { padding: 6px 10px; background: #2d3748; border: none; color: white; border-radius: 4px; cursor: pointer; }
-        .btn-mini-danger { background: #dc2626; }
+        .shuttle-box-row { background: #0d131f; border: 1px solid #2d3748; border-radius: 8px; padding: 12px; margin-bottom: 10px; position: relative; }
         
-        .btn-neon { background: linear-gradient(135deg, #00ffcc, #00c8ff); color: #090d16; font-weight: 700; border: none; border-radius: 8px; padding: 12px 20px; cursor: pointer; transition: 0.3s; display: inline-flex; items-center; justify-content: center; gap: 8px; width: 100%; box-shadow: 0 4px 15px rgba(0,255,204,0.2); }
-        .btn-neon:hover { box-shadow: 0 0 25px rgba(0,255,204,0.6); transform: translateY(-1px); }
+        .btn-neon { background: linear-gradient(135deg, #00ffcc, #00c8ff); color: #090d16; font-weight: 700; border: none; border-radius: 8px; padding: 12px 20px; cursor: pointer; transition: 0.3s; display: inline-flex; items-center; justify-content: center; gap: 8px; width: 100%; }
+        .btn-neon:hover { box-shadow: 0 0 25px rgba(0,255,204,0.6); }
         
-        /* THẺ KÈO TRÊN SÀN */
+        .btn-mini { padding: 6px 12px; background: #2d3748; border: none; color: white; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+        
         .kèo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
         .kèo-card { background: var(--card-bg); border: 2px solid #2d3748; border-radius: 16px; padding: 20px; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
-        .kèo-header { display: flex; justify-content: space-between; items-start; margin-bottom: 12px; }
-        .kèo-tag { background: rgba(0,255,204,0.1); color: var(--neon-teal); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(0,255,204,0.3); text-transform: uppercase; }
-        .kèo-price-box { text-right: right; }
-        .kèo-price-num { font-size: 20px; font-weight: 700; color: #10b981; }
-        .kèo-title { font-size: 16px; font-weight: 700; color: white; margin-bottom: 8px; }
+        .kèo-header { display: flex; justify-content: space-between; items-center; margin-bottom: 12px; }
+        .kèo-tag { background: rgba(0,255,204,0.1); color: var(--neon-teal); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px; border: 1px solid rgba(0,255,204,0.3); }
+        .kèo-title { font-size: 16px; font-weight: 700; color: white; margin-bottom: 6px; }
         .kèo-details { background: #0d131f; padding: 12px; border-radius: 8px; font-size: 13px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
         .kèo-detail-item { display: flex; justify-content: space-between; }
         .kèo-detail-label { color: #9ca3af; }
         .kèo-detail-val { font-weight: 600; color: #f3f4f6; }
+        
+        /* POPUP GỢI Ý TÍNH TIỀN & CHỐT CA */
+        .modal-overlay { position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.8); display: flex; items-center; justify-content: center; z-index: 1000; }
+        .modal-box { background: #161f30; border: 2px solid var(--neon-blue); border-radius: 16px; padding: 25px; max-width: 500px; width: 100%; box-shadow: 0 0 30px rgba(0,200,255,0.3); }
         
         .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
+    <datalist id="vn-shuttle-brands">
+        <option value="Hải Yến Bạc"></option>
+        <option value="Hải Yến Xanh Lá"></option>
+        <option value="Thành Công Đỏ"></option>
+        <option value="Thành Công Xanh"></option>
+        <option value="VinaStar Bạc"></option>
+        <option value="Yonex Aerosensa 10"></option>
+        <option value="Victor Lark 5"></option>
+        <option value="Lining G300"></option>
+    </datalist>
+
     <nav class="main-nav">
-        <div class="nav-title">
-            <i class="fa-solid fa-network-wired"></i> TUYENVANGLAI.IO.VN
-        </div>
+        <div class="nav-title"><i class="fa-solid fa-network-wired"></i> TUYENVANGLAI.IO.VN</div>
         <div class="nav-btn-group">
             <button id="btnTabHost" class="nav-btn active-neon" onclick="switchTab('host')">Giao Diện Host Kèo</button>
             <button id="btnTabKhach" class="nav-btn" onclick="switchTab('khach')">Giao Diện Khách</button>
@@ -87,7 +92,7 @@
 
     <div id="wrapper" class="container">
         
-        <div id="panel-host" class="space-wrapper" style="grid-column: span 2 / span 2; display: grid; grid-template-columns: 2fr 1fr; gap:25px; width: 100%;">
+        <div id="panel-host" style="grid-column: span 2; display: grid; grid-template-columns: 2fr 1fr; gap:25px; width: 100%;">
             <div class="glass-card">
                 <div class="section-title">✨ Cấu Hình Ca Tuyển Vãng Lai</div>
                 
@@ -95,9 +100,9 @@
                     <div class="form-group">
                         <label class="form-label">Miền</label>
                         <select id="adm-region" class="form-select" onchange="loadProvinces()">
-                            <option value="Nam">Miền Nam</option>
                             <option value="Bac">Miền Bắc</option>
                             <option value="Trung">Miền Trung</option>
+                            <option value="Nam" selected>Miền Nam</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -112,12 +117,12 @@
 
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label"><i class="fa-solid fa-font"></i> Tên sân cầu lông</label>
+                        <label class="form-label">🏸 Tên sân cầu lông</label>
                         <input type="text" id="adm-court-name" placeholder="Ví dụ: Sân PooC PickleBall & Cầu lông" class="form-control">
                     </div>
                     <div class="form-group">
-                        <label class="form-label"><i class="fa-solid fa-map-location-dot"></i> Địa chỉ sân (Gợi ý bản đồ)</label>
-                        <input type="text" id="adm-court-address" placeholder="Gõ để tìm địa chỉ như Google Maps..." class="form-control" oninput="searchMapsAPI(this.value)">
+                        <label class="form-label">📍 Địa chỉ sân (Tìm kiếm bản đồ)</label>
+                        <input type="text" id="adm-court-address" placeholder="Nhập chữ để quét tìm địa chỉ chuẩn..." class="form-control" oninput="searchMapsRealtime(this.value)">
                         <div id="maps-suggestions-box" class="maps-suggestions hidden"></div>
                     </div>
                 </div>
@@ -130,19 +135,19 @@
                     <div class="form-group">
                         <label class="form-label">⏰ Giờ (Từ - Đến) 24/7</label>
                         <div style="display: flex; gap: 5px;">
-                            <input type="time" id="adm-time-start" class="form-control" onchange="calcTotalHours()">
-                            <input type="time" id="adm-time-end" class="form-control" onchange="calcTotalHours()">
+                            <input type="time" id="adm-time-start" class="form-control" onchange="calcHoursAuto()">
+                            <input type="time" id="adm-time-end" class="form-control" onchange="calcHoursAuto()">
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">⏳ Tổng số giờ đánh</label>
-                        <input type="number" id="adm-total-hours" value="2" step="0.5" class="form-control" oninput="calculateSuggestedPrice()">
+                        <label class="form-label">⏳ Tổng số giờ đánh (Tự động)</label>
+                        <input type="text" id="adm-total-hours" value="2" readonly class="form-control" style="background:#1f2937; color:var(--neon-teal); font-weight:700; text-align:center;">
                     </div>
                 </div>
 
                 <div class="grid-2">
                     <div class="form-group">
-                        <label class="form-label">🚻 Yêu cầu trình độ / tuyển</label>
+                        <label class="form-label">🚻 Giới tính tuyển dụng</label>
                         <select id="adm-gender" class="form-select">
                             <option value="Cả hai">👫 Tuyển cả Nam & Nữ</option>
                             <option value="Nam">👨 Chỉ tuyển Nam</option>
@@ -163,93 +168,86 @@
 
                 <div class="box-accounting">
                     <div class="accounting-title">📊 BẢNG TÍNH TOÁN CHI PHÍ NỘI BỘ CA ĐẤU</div>
-                    
                     <div class="grid-3">
                         <div class="form-group">
                             <label class="form-label">Tiền sân / 1 Giờ (VNĐ)</label>
-                            <input type="number" id="calc-court-hourly" value="80000" class="form-control" oninput="calculateSuggestedPrice()">
+                            <input type="number" id="calc-court-hourly" value="80000" class="form-control" oninput="runInternalAccounting()">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Tiền nước uống + Khác (VNĐ)</label>
-                            <input type="number" id="calc-water-cost" value="30000" class="form-control" oninput="calculateSuggestedPrice()">
+                            <label class="form-label">Tiền nước + Chi phí khác (VNĐ)</label>
+                            <input type="number" id="calc-water-cost" value="30000" class="form-control" oninput="runInternalAccounting()">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Số khách tối đa dự kiến</label>
-                            <input type="number" id="calc-max-players" value="8" class="form-control" oninput="calculateSuggestedPrice()">
+                            <label class="form-label">Số khách tối đa ca này</label>
+                            <input type="number" id="calc-max-players" value="8" class="form-control" oninput="runInternalAccounting()">
                         </div>
                     </div>
 
                     <div style="margin-bottom: 15px;">
                         <label class="form-label" style="margin-bottom:6px;">🏸 Danh sách chi phí cầu dùng dự kiến:</label>
-                        <div id="shuttle-manager-list" class="space-y-2">
+                        <div id="shuttle-manager-list" style="display:flex; flex-direction:column; gap:10px;">
                             </div>
-                        <button type="button" class="btn-mini" onclick="addShuttleRow()" style="margin-top: 8px; background: #059669;"><i class="fa-solid fa-plus"></i> Thêm loại cầu/quả dùng</button>
+                        <button type="button" class="btn-mini" onclick="addNewShuttleRow()" style="margin-top: 5px; background: #059669;"><i class="fa-solid fa-plus"></i> Thêm loại cầu dự kiến</button>
                     </div>
 
                     <div class="grid-2" style="background:#1f2937; padding:12px; border-radius:8px; margin-bottom:12px;">
                         <div class="form-group">
                             <label class="form-label">Chênh lệch thu khách Nam hơn Nữ (VNĐ)</label>
-                            <input type="number" id="calc-gap-price" value="10000" class="form-control" oninput="calculateSuggestedPrice()">
+                            <input type="number" id="calc-gap-price" value="10000" class="form-control" oninput="runInternalAccounting()">
                         </div>
                         <div class="form-group" style="justify-content: flex-end;">
-                            <button type="button" class="btn-neon" onclick="calculateSuggestedPrice()" style="font-size:13px; padding:10px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Gợi ý tính toán thu tiền</button>
+                            <button type="button" class="btn-neon" onclick="openSuggestionModal()" style="font-size:13px; padding:10px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Gợi ý tính toán thu tiền</button>
                         </div>
                     </div>
 
-                    <div style="font-size:12px; color:#9ca3af; display:flex; justify-content:space-between; padding-top:4px;">
-                        <span>Tổng chi phí vận hành ước tính: <strong id="lbl-total-cost" style="color:var(--neon-blue);">0 VNĐ</strong></span>
-                        <span>Chi phí chia đều đầu người gốc: <strong id="lbl-per-head" style="color:var(--neon-teal);">0 VNĐ</strong></span>
+                    <div style="font-size:13px; color:#9ca3af; display:flex; justify-content:space-between; padding-top:4px;">
+                        <span>Tổng chi phí dự kiến: <strong id="lbl-total-cost" style="color:var(--neon-blue);">0 VNĐ</strong></span>
+                        <span>Giá gốc gốc/đầu người: <strong id="lbl-per-head" style="color:var(--neon-teal);">0 VNĐ</strong></span>
                     </div>
                 </div>
 
-                <div style="margin-top: 20px; background: rgba(16,185,129,0.1); border: 1px solid #10b981; padding: 15px; border-radius: 12px;">
-                    <div class="form-label" style="color:#10b981 !important; margin-bottom:12px; text-transform:uppercase; font-size:13px;"><i class="fa-solid fa-bullhorn"></i> Giá Công Khai Public Lên Sàn Tuyển Khách</div>
+                <div style="margin-top: 20px; background: rgba(16,185,129,0.1); border: 2px solid #10b981; padding: 15px; border-radius: 12px;">
+                    <div class="form-label" style="color:#10b981 !important; margin-bottom:12px; text-transform:uppercase; font-size:13px; font-weight:700;"><i class="fa-solid fa-bullhorn"></i> Mức Giá Thu Khách Public Lên Sàn</div>
                     <div class="grid-2">
                         <div class="form-group">
-                            <label class="form-label">Giá thu khách NAM (VNĐ)</label>
-                            <input type="number" id="adm-price-nam" value="50000" class="form-control" style="border-color:#10b981 !important; font-weight:700;">
+                            <label class="form-label">Mức giá thu khách NAM (VNĐ)</label>
+                            <input type="number" id="adm-price-nam" value="50000" class="form-control" style="border-color:#10b981 !important; font-weight:700; font-size:16px;">
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Giá thu khách NỮ (VNĐ)</label>
-                            <input type="number" id="adm-price-nu" value="40000" class="form-control" style="border-color:#10b981 !important; font-weight:700;">
+                            <label class="form-label">Mức giá thu khách NỮ (VNĐ)</label>
+                            <input type="number" id="adm-price-nu" value="40000" class="form-control" style="border-color:#10b981 !important; font-weight:700; font-size:16px;">
                         </div>
                     </div>
-                    <button type="button" class="btn-neon" onclick="publishNewKao()" style="background:linear-gradient(135deg, #10b981, #059669); color:white; margin-top:10px;"><i class="fa-solid fa-rocket"></i> Xuất Bản Kèo Ca Đấu Lên Sàn</button>
+                    <button type="button" class="btn-neon" onclick="submitKèoToSàn()" style="background:linear-gradient(135deg, #10b981, #059669); color:white; margin-top:10px;"><i class="fa-solid fa-rocket"></i> Xuất Bản Ca Đấu Lên Sàn Khách</button>
                 </div>
             </div>
 
             <div class="glass-card" style="height: fit-content;">
                 <div class="section-title">📋 Lịch Ca Đấu Đã Đăng (<span id="host-count">0</span>)</div>
-                <div id="host-keo-list" style="display:flex; flex-direction:column; gap:12px;">
-                    <p style="color:#6b7280; text-align:center; padding:20px;">Chưa có ca đấu nào được lưu.</p>
-                </div>
+                <div id="host-keo-list" style="display:flex; flex-direction:column; gap:12px;"></div>
             </div>
         </div>
 
-        <div id="panel-khach" class="space-wrapper hidden" style="grid-column: span 2 / span 2; width: 100%;">
+        <div id="panel-khach" class="space-wrapper hidden" style="grid-column: span 2; width: 100%;">
             <div class="glass-card">
-                <div class="section-title" style="font-size:14px; margin-bottom:15px;"><i class="fa-solid fa-filter"></i> Bộ Lọc Tìm Kiếm Kèo Sân Cầu Lông nhanh</div>
+                <div class="section-title" style="font-size:14px; margin-bottom:15px;"><i class="fa-solid fa-filter"></i> Bộ Lọc Tìm Kiếm Ca Đấu Phù Hợp</div>
                 <div class="grid-3">
                     <div class="form-group">
                         <label class="form-label">Lọc theo Vùng Miền</label>
                         <select id="flt-region" class="form-select" onchange="loadFilterProvinces()">
                             <option value="Tất cả">-- Tất cả Miền --</option>
-                            <option value="Nam">Miền Nam</option>
                             <option value="Bac">Miền Bắc</option>
                             <option value="Trung">Miền Trung</option>
+                            <option value="Nam">Miền Nam</option>
                         </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Lọc Tỉnh / Thành phố</label>
-                        <select id="flt-province" class="form-select" onchange="loadFilterDistricts()">
-                            <option value="Tất cả">-- Tất cả Tỉnh --</option>
-                        </select>
+                        <select id="flt-province" class="form-select" onchange="loadFilterDistricts()"><option value="Tất cả">-- Tất cả Tỉnh --</option></select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Lọc Quận / Huyện</label>
-                        <select id="flt-district" class="form-select" onchange="applyFilters()">
-                            <option value="Tất cả">-- Tất cả Quận/Huyện --</option>
-                        </select>
+                        <select id="flt-district" class="form-select" onchange="applyFilters()"><option value="Tất cả">-- Tất cả Quận/Huyện --</option></select>
                     </div>
                 </div>
                 <div class="grid-3">
@@ -263,348 +261,436 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">📅 Lọc theo Ngày</label>
+                        <label class="form-label">📅 Lọc theo Ngày đánh</label>
                         <input type="date" id="flt-date" class="form-control" onchange="applyFilters()">
                     </div>
-                    <div class="form-group" style="justify-content:flex-end;">
-                        <button class="btn-mini" onclick="resetFilters()" style="width:100%; height:40px; background:#4b5563;">🔄 Reset Xóa Hết Bộ Lọc</button>
+                    <div class="form-group">
+                        <label class="form-label">💰 Mức giá tối đa khách trả (VNĐ)</label>
+                        <input type="number" id="flt-max-price" placeholder="Ví dụ: 60000" class="form-control" oninput="applyFilters()">
                     </div>
                 </div>
+                <button class="btn-mini" onclick="resetFilters()" style="width:100%; height:38px; background:#4b5563; margin-top:5px;">🔄 Xóa Bỏ Hết Tất Cả Bộ Lọc</button>
             </div>
 
             <div style="margin-bottom:15px; font-weight:700; font-size:16px;">🔥 Danh sách ca đấu vãng lai dành cho bạn (<span id="khach-count">0</span>)</div>
-            <div id="khach-keo-grid" class="kèo-grid">
-                </div>
+            <div id="khach-keo-grid" class="kèo-grid"></div>
         </div>
+    </div>
 
+    <div id="modal-suggest" class="modal-overlay hidden">
+        <div class="modal-box">
+            <div class="section-title" style="font-size:15px; margin-bottom:15px; border-color:var(--neon-blue);">💡 Gợi Ý Tính Mức Thu Tiền</div>
+            <div id="suggest-options-content" style="display:flex; flex-direction:column; gap:10px; margin-bottom:20px;"></div>
+            <button class="btn-mini" onclick="closeSuggestionModal()" style="width:100%; background:#4b5563;">Đóng bảng gợi ý</button>
+        </div>
+    </div>
+
+    <div id="modal-edit-ca" class="modal-overlay hidden">
+        <div class="modal-box" style="border-color:var(--neon-teal);">
+            <div class="section-title" style="font-size:15px; margin-bottom:15px;">⚙️ Tính Toán & Tổng Kết Ca Đấu Thực Tế</div>
+            <input type="hidden" id="edit-ca-id">
+            <div class="form-group">
+                <label class="form-label">Tiền sân thực tế chi (VNĐ)</label>
+                <input type="number" id="edit-real-court" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tổng số quả cầu đã đánh thực tế (quả)</label>
+                <input type="number" id="edit-real-shuttle" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tiền nước thực tế chi (VNĐ)</label>
+                <input type="number" id="edit-real-water" class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Tổng số tiền đã thu được của khách thực tế (VNĐ)</label>
+                <input type="number" id="edit-real-revenue" class="form-control">
+            </div>
+            <button class="btn-neon" onclick="saveClosingCa()" style="margin-bottom:10px;"><i class="fa-solid fa-calculator"></i> Tính Toán Lời Lỗ & Lưu Ca</button>
+            <button class="btn-mini" onclick="closeEditModal()" style="width:100%; background:#4b5563;">Hủy bỏ</button>
+        </div>
     </div>
 
     <script>
-        // API BẢN ĐỒ REALTIME (Tự động quét tìm địa chỉ chuẩn xác như Google Maps)
-        let mapTimeout;
-        function searchMapsAPI(query) {
-            clearTimeout(mapTimeout);
+        // --- API BẢN ĐỒ TÌM KIẾM ĐỊA CHỈ REALTIME SIÊU MƯỢT ---
+        let searchTimer;
+        function searchMapsRealtime(val) {
+            clearTimeout(searchTimer);
             const box = document.getElementById('maps-suggestions-box');
-            if (!query.trim()) { cacheBoxHide(); return; }
+            if(!val.trim()) { box.classList.add('hidden'); return; }
 
-            mapTimeout = setTimeout(() => {
-                const currentProvince = document.getElementById('adm-province').value || '';
-                const fullQuery = `${query}, ${currentProvince}, Vietnam`;
-                
-                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullQuery)}&addressdetails=1&limit=5`)
-                    .then(res => res.json())
-                    .then(data => {
+            searchTimer = setTimeout(() => {
+                const prov = document.getElementById('adm-province').value || '';
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val + ' ' + prov)}&limit=5`)
+                    .then(r => r.json()).then(data => {
                         box.innerHTML = "";
                         if(data.length === 0) { box.classList.add('hidden'); return; }
                         box.classList.remove('hidden');
                         data.forEach(item => {
-                            let div = document.createElement('div');
-                            div.className = "maps-item";
-                            div.innerText = item.display_name;
-                            div.onclick = function() {
+                            let d = document.createElement('div'); d.className = "maps-item";
+                            d.innerText = item.display_name;
+                            d.onclick = function() {
                                 document.getElementById('adm-court-address').value = item.display_name;
                                 box.classList.add('hidden');
                             };
-                            box.appendChild(div);
+                            box.appendChild(d);
                         });
                     }).catch(() => {});
-            }, 400);
+            }, 300);
         }
-        function cacheBoxHide() { setTimeout(() => { document.getElementById('maps-suggestions-box').classList.add('hidden'); }, 300); }
 
-        // DATA 63 TỈNH THÀNH TOÀN QUỐC ĐẦY ĐỦ NHẤT (Ưu tiên HCM và Hà Nội lên đầu theo yêu cầu)
-        const vnGeoData = {
-            "Nam": {
-                "Hồ Chí Minh": ["Quận 1", "Quận 3", "Quận 4", "Quận 5", "Quận 6", "Quận 7", "Quận 8", "Quận 10", "Quận 11", "Quận 12", "Quận Gò Vấp", "Quận Bình Thạnh", "Quận Tân Bình", "Quận Tân Phú", "Quận Phú Nhuận", "Quận Bình Tân", "Thành phố Thủ Đức", "Huyện Hóc Môn", "Huyện Củ Chi", "Huyện Bình Chánh", "Huyện Nhà Bè", "Huyện Cần Giờ"],
-                "Bình Dương": ["Thành phố Thủ Dầu Một", "Thành phố Thuận An", "Thành phố Dĩ An", "Thành phố Bến Cát", "Thành phố Tân Uyên", "Huyện Bàu Bàng", "Huyện Bắc Tân Uyên", "Huyện Dầu Tiếng", "Huyện Phú Giáo"],
-                "Đồng Nai": ["Thành phố Biên Hòa", "Thành phố Long Khánh", "Huyện Long Thành", "Huyện Nhơn Trạch", "Huyện Trảng Bom"],
-                "Cần Thơ": ["Quận Ninh Kiều", "Quận Bình Thủy", "Quận Cái Răng", "Quận Ô Môn", "Quận Thốt Nốt", "Huyện Phong Điền", "Huyện Thới Lai", "Huyện Cờ Đỏ", "Huyện Vĩnh Thạnh"],
-                "Kiên Giang": ["Thành phố Rạch Giá", "Thành phố Hà Tiên", "Thành phố Phú Quốc", "Huyện Châu Thành", "Huyện Hòn Đất", "Huyện Giồng Riềng"],
-                "An Giang": ["Thành phố Long Xuyên", "Thành phố Châu Đốc", "Thị xã Tân Châu"],
-                "Bà Rịa - Vũng Tàu": ["Thành phố Vũng Tàu", "Thành phố Bà Rịa", "Thị xã Phú Mỹ", "Huyện Long Điền", "Huyện Đất Đỏ", "Huyện Xuyên Mộc", "Huyện Châu Đức", "Huyện Côn Đảo"],
-                "Long An": ["Thành phố Tân An", "Thị xã Kiến Tường", "Huyện Bến Lức", "Huyện Đức Hòa", "Huyện Cần Giuộc"],
-                "Tiền Giang": ["Thành phố Mỹ Tho", "Thị xã Gò Công", "Thị xã Cai Lậy"],
-                "Vĩnh Long": ["Thành phố Vĩnh Long", "Thị xã Bình Minh"],
-                "Bến Tre": ["Thành phố Bến Tre"], "Đồng Tháp": ["Thành phố Cao Lãnh", "Thành phố Sa Đéc", "Thành phố Hồng Ngự"],
-                "Trà Vinh": ["Thành phố Trà Vinh"], "Sóc Trăng": ["Thành phố Sóc Trăng"], "Bạc Liêu": ["Thành phố Bạc Liêu"], "Cà Mau": ["Thành phố Cà Mau"],
-                "Bình Phước": ["Thành phố Đồng Xoài", "Thị xã Bình Long", "Thị xã Phước Long", "Thị xã Chơn Thành"],
-                "Tây Ninh": ["Thành phố Tây Ninh", "Thị xã Hòa Thành", "Thị xã Trảng Bàng"],
-                "Hậu Giang": ["Thành phố Vị Thanh", "Thành phố Ngã Bảy", "Thị xã Long Mỹ"]
-            },
+        // --- CƠ SỞ DỮ LIỆU TOÀN QUỐC 63 TỈNH THÀNH (Sắp xếp BẮC - TRUNG - NAM) ---
+        const fullVnData = {
             "Bac": {
                 "Hà Nội": ["Quận Ba Đình", "Quận Hoàn Kiếm", "Quận Tây Hồ", "Quận Long Biên", "Quận Cầu Giấy", "Quận Đống Đa", "Quận Hai Bà Trưng", "Quận Hoàng Mai", "Quận Thanh Xuân", "Quận Nam Từ Liêm", "Quận Bắc Từ Liêm", "Quận Hà Đông", "Thị xã Sơn Tây", "Huyện Ba Vì", "Huyện Chương Mỹ", "Huyện Đan Phượng", "Huyện Đông Anh", "Huyện Gia Lâm", "Huyện Hoài Đức", "Huyện Mê Linh", "Huyện Mỹ Đức", "Huyện Phú Xuyên", "Huyện Phúc Thọ", "Huyện Quốc Oai", "Huyện Sóc Sơn", "Huyện Thạch Thất", "Huyện Thanh Oai", "Huyện Thanh Trì", "Huyện Thường Tín", "Huyện Ứng Hòa"],
-                "Hải Phòng": ["Quận Hồng Bàng", "Quận Ngô Quyền", "Quận Lê Chân", "Quận Hải An", "Quận Kiến An", "Quận Đồ Sơn", "Quận Dương Kinh", "Huyện An Dương", "Huyện An Lão", "Huyện Bạch Long Vĩ", "Huyện Cát Hải", "Huyện Kiến Thụy", "Huyện Thủy Nguyên", "Huyện Tiên Lãng", "Huyện Vĩnh Bảo"],
                 "Thái Bình": ["Thành phố Thái Bình", "Huyện Đông Hưng", "Huyện Hưng Hà", "Huyện Kiến Xương", "Huyện Quỳnh Phụ", "Huyện Thái Thụy", "Huyện Tiền Hải", "Huyện Vũ Thư"],
                 "Nam Định": ["Thành phố Nam Định", "Huyện Giao Thủy", "Huyện Hải Hậu", "Huyện Mỹ Lộc", "Huyện Nam Trực", "Huyện Nghĩa Hưng", "Huyện Trực Ninh", "Huyện Vụ Bản", "Huyện Xuân Trường", "Huyện Ý Yên"],
-                "Quảng Ninh": ["Thành phố Hạ Long", "Thành phố Cẩm Phả", "Thành phố Móng Cái", "Thành phố Uông Bí", "Thành phố Đông Triều", "Thị xã Quảng Yên"],
-                "Bắc Ninh": ["Thành phố Bắc Ninh", "Thị xã Từ Sơn", "Thị xã Thuận Thành", "Thị xã Quế Võ"],
-                "Hải Dương": ["Thành phố Hải Dương", "Thành phố Chí Linh", "Thị xã Kinh Môn"],
-                "Hưng Yên": ["Thành phố Hưng Yên", "Thị xã Mỹ Hào"],
-                "Vĩnh Phúc": ["Thành phố Vĩnh Yên", "Thành phố Phúc Yên"],
-                "Bắc Giang": ["Thành phố Bắc Giang", "Thị xã Việt Yên", "Thị xã Chũ"],
-                "Phú Thọ": ["Thành phố Việt Trì", "Thị xã Phú Thọ"],
-                "Thái Nguyên": ["Thành phố Thái Nguyên", "Thành phố Sông Công", "Thành phố Phổ Yên"],
-                "Lạng Sơn": ["Thành phố Lạng Sơn"], "Sơn La": ["Thành phố Sơn La"], "Điện Biên": ["Thành phố Điện Biên Phủ"],
-                "Lai Châu": ["Thành phố Lai Châu"], "Hòa Bình": ["Thành phố Hòa Bình"], "Yên Bái": ["Thành phố Yên Bái"],
-                "Lào Cai": ["Thành phố Lào Cai", "Thị xã Sa Pa"], "Tuyên Quang": ["Thành phố Tuyên Quang"],
-                "Hà Giang": ["Thành phố Hà Giang"], "Cao Bằng": ["Thành phố Cao Bằng"], "Bắc Kạn": ["Thành phố Bắc Kạn"],
-                "Ninh Bình": ["Thành phố Ninh Bình", "Thành phố Tam Điệp"], "Hà Nam": ["Thành phố Phủ Lý", "Thị xã Duy Tiên"]
+                "Hải Phòng": ["Quận Hồng Bàng", "Quận Ngô Quyền", "Quận Lê Chân", "Huyện Thủy Nguyên"],
+                "Quảng Ninh": ["Thành phố Hạ Long", "Thành phố Cẩm Phả"], "Bắc Ninh": ["Thành phố Bắc Ninh"]
             },
             "Trung": {
-                "Đà Nẵng": ["Quận Hải Châu", "Quận Thanh Khê", "Quận Sơn Trà", "Quận Ngũ Hành Sơn", "Quận Liên Chiểu", "Quận Cẩm Lệ", "Huyện Hòa Vang", "Huyện Hoàng Sa"],
-                "Khánh Hòa": ["Thành phố Nha Trang", "Thành phố Cam Ranh", "Thị xã Ninh Hòa", "Huyện Vạn Ninh", "Huyện Diên Khánh", "Huyện Khánh Vĩnh", "Huyện Khánh Sơn", "Huyện Cam Lâm"],
-                "Thừa Thiên Huế": ["Thành phố Huế", "Thị xã Hương Thủy", "Thị xã Hương Trà", "Huyện Phong Điền"],
-                "Quảng Nam": ["Thành phố Tam Kỳ", "Thành phố Hội An", "Thị xã Điện Bàn"],
-                "Bình Định": ["Thành phố Quy Nhơn", "Thị xã An Nhơn", "Thị xã Hoài Nhơn"],
-                "Nghệ An": ["Thành phố Vinh", "Thị xã Cửa Lò", "Thị xã Thái Hòa", "Thị xã Hoàng Mai"],
-                "Thanh Hóa": ["Thành phố Thanh Hóa", "Thành phố Sầm Sơn", "Thị xã Bỉm Sơn", "Thị xã Nghi Sơn"],
-                "Hà Tĩnh": ["Thành phố Hà Tĩnh", "Thị xã Hồng Lĩnh", "Thị xã Kỳ Anh"],
-                "Quảng Bình": ["Thành phố Đồng Hới", "Thị xã Ba Đồn"], "Quảng Trị": ["Thành phố Đông Hà", "Thị xã Quảng Trị"],
-                "Quảng Ngãi": ["Thành phố Quảng Ngãi", "Thị xã Đức Phổ"], "Phú Yên": ["Thành phố Tuy Hòa", "Thị xã Sông Cầu", "Thị xã Đông Hòa"],
-                "Ninh Thuận": ["Thành phố Phan Rang - Tháp Chàm"], "Bình Thuận": ["Thành phố Phan Thiết", "Thị xã La Gi"],
-                "Kon Tum": ["Thành phố Kon Tum"], "Gia Lai": ["Thành phố Pleiku", "Thị xã An Khê", "Thị xã Ayun Pa"],
-                "Đắk Lắk": ["Thành phố Buôn Ma Thuột", "Thị xã Buôn Hồ"], "Đắk Nông": ["Thành phố Gia Nghĩa"],
-                "Lâm Đồng": ["Thành phố Đà Lạt", "Thành phố Bảo Lộc"]
+                "Đà Nẵng": ["Quận Hải Châu", "Quận Thanh Khê", "Quận Sơn Trà", "Quận Ngũ Hành Sơn", "Quận Liên Chiểu", "Quận Cẩm Lệ", "Huyện Hòa Vang"],
+                "Khánh Hòa": ["Thành phố Nha Trang", "Thành phố Cam Ranh"], "Thừa Thiên Huế": ["Thành phố Huế"],
+                "Nghệ An": ["Thành phố Vinh"], "Thanh Hóa": ["Thành phố Thanh Hóa"]
+            },
+            "Nam": {
+                "Hồ Chí Minh": ["Quận 1", "Quận 3", "Quận 4", "Quận 5", "Quận 6", "Quận 7", "Quận 8", "Quận 10", "Quận 11", "Quận 12", "Quận Gò Vấp", "Quận Bình Thạnh", "Quận Tân Bình", "Quận Tân Phú", "Quận Phú Nhuận", "Quận Bình Tân", "Thành phố Thủ Đức", "Huyện Hóc Môn", "Huyện Củ Chi", "Huyện Bình Chánh", "Huyện Nhà Bè", "Huyện Cần Giờ"],
+                "Bình Dương": ["Thành phố Thủ Dầu Một", "Thành phố Thuận An", "Thành phố Dĩ An", "Thành phố Bến Cát"],
+                "Đồng Nai": ["Thành phố Biên Hòa", "Thành phố Long Khánh"], "Cần Thơ": ["Quận Ninh Kiều", "Quận Cái Răng"],
+                "Kiên Giang": ["Thành phố Rạch Giá", "Thành phố Phú Quốc"], "An Giang": ["Thành phố Long Xuyên"]
             }
         };
 
-        // Kho lưu trữ dữ liệu
-        let myKeoData = JSON.parse(localStorage.getItem('BADMINTON_KEO_STORAGE_V2')) || [];
-        // Khởi tạo mảng loại cầu gốc của mày (Lẻ 1 quả, Ống 6, Ống 12)
-        let localShuttles = [
-            { id: 'S1', name: 'Cầu lẻ 1 quả', price: 25000, count: 4 },
-            { id: 'S2', name: 'Ống cầu 6 quả', price: 130000, count: 0 },
-            { id: 'S3', name: 'Ống cầu 12 quả', price: 250000, count: 0 }
+        let dbKeos = JSON.parse(localStorage.getItem('BADMINTON_KEO_FINAL_V3')) || [];
+        // Mảng quả cầu gốc lưu trữ
+        let dynamicShuttles = [
+            { id: '1', name: 'VinaStar Bạc', unitType: '12', tube12Price: 240000, tube6Price: 125000, singlePrice: 25000, count: 4 }
         ];
 
-        window.onload = function() {
+        // Mặc định chạy khi load trang
+        document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('adm-date').value = new Date().toISOString().split('T')[0];
-            // Điền giờ mặc định 24/7
             document.getElementById('adm-time-start').value = "18:00";
             document.getElementById('adm-time-end').value = "20:00";
             
             loadProvinces();
-            renderShuttleManager();
-            calculateSuggestedPrice();
+            renderShuttleManagerForm();
+            runInternalAccounting();
             refreshAllLists();
-        };
+        });
 
-        function switchTab(target) {
-            document.getElementById('btnTabHost').className = "nav-btn " + (target==='host'?'active-neon':'');
-            document.getElementById('btnTabKhach').className = "nav-btn " + (target==='khach'?'active-neon':'');
-            document.getElementById('panel-host').style.display = target==='host'?'grid':'none';
-            document.getElementById('panel-khach').className = "space-wrapper " + (target==='khach'?'':'hidden');
-            if(target==='khach') { loadFilterProvinces(); applyFilters(); }
+        function switchTab(t) {
+            document.getElementById('btnTabHost').className = "nav-btn " + (t==='host'?'active-neon':'');
+            document.getElementById('btnTabKhach').className = "nav-btn " + (t==='khach'?'active-neon':'');
+            document.getElementById('panel-host').style.display = t==='host'?'grid':'none';
+            document.getElementById('panel-khach').className = "space-wrapper " + (t==='khach'?'':'hidden');
+            if(t==='khach') { loadFilterProvinces(); applyFilters(); }
         }
 
-        // --- HÀM LOAD HÀNH CHÍNH FORM BIÊN TẬP ---
+        // --- ĐỒNG BỘ ĐỊA LÝ THEO THỨ TỰ BẮC - TRUNG - NAM ---
         function loadProvinces() {
-            const region = document.getElementById('adm-region').value;
-            const provSel = document.getElementById('adm-province');
-            provSel.innerHTML = "";
-            Object.keys(vnGeoData[region]).forEach(p => {
-                let o = document.createElement('option'); o.value = p; o.innerText = p; provSel.appendChild(o);
+            const r = document.getElementById('adm-region').value;
+            const pSel = document.getElementById('adm-province'); pSel.innerHTML = "";
+            Object.keys(fullVnData[r]).forEach(p => {
+                let o = document.createElement('option'); o.value = p; o.innerText = p; pSel.appendChild(o);
             });
             loadDistricts();
         }
         function loadDistricts() {
-            const region = document.getElementById('adm-region').value;
-            const prov = document.getElementById('adm-province').value;
-            const distSel = document.getElementById('adm-district');
-            distSel.innerHTML = "";
-            if(vnGeoData[region] && vnGeoData[region][prov]) {
-                vnGeoData[region][prov].forEach(d => {
-                    let o = document.createElement('option'); o.value = d; o.innerText = d; distSel.appendChild(o);
-                });
-            }
+            const r = document.getElementById('adm-region').value;
+            const p = document.getElementById('adm-province').value;
+            const dSel = document.getElementById('adm-district'); dSel.innerHTML = "";
+            fullVnData[r][p].forEach(d => {
+                let o = document.createElement('option'); o.value = d; o.innerText = d; dSel.appendChild(o);
+            });
         }
 
-        // --- HÀM LOAD HÀNH CHÍNH BỘ LỌC GIAO DIỆN KHÁCH ---
         function loadFilterProvinces() {
-            const region = document.getElementById('flt-region').value;
-            const provSel = document.getElementById('flt-province');
-            provSel.innerHTML = '<option value="Tất cả">-- Tất cả Tỉnh --</option>';
+            const r = document.getElementById('flt-region').value;
+            const pSel = document.getElementById('flt-province'); pSel.innerHTML = '<option value="Tất cả">-- Tất cả Tỉnh --</option>';
             document.getElementById('flt-district').innerHTML = '<option value="Tất cả">-- Tất cả Quận/Huyện --</option>';
-            
-            if(region !== 'Tất cả') {
-                Object.keys(vnGeoData[region]).forEach(p => {
-                    let o = document.createElement('option'); o.value = p; o.innerText = p; provSel.appendChild(o);
+            if(r !== 'Tất cả') {
+                Object.keys(fullVnData[r]).forEach(p => {
+                    let o = document.createElement('option'); o.value = p; o.innerText = p; pSel.appendChild(o);
                 });
             }
             applyFilters();
         }
         function loadFilterDistricts() {
-            const region = document.getElementById('flt-region').value;
-            const prov = document.getElementById('flt-province').value;
-            const distSel = document.getElementById('flt-district');
-            distSel.innerHTML = '<option value="Tất cả">-- Tất cả Quận/Huyện --</option>';
-            
-            if(region !== 'Tất cả' && prov !== 'Tất cả') {
-                vnGeoData[region][prov].forEach(d => {
-                    let o = document.createElement('option'); o.value = d; o.innerText = d; distSel.appendChild(o);
+            const r = document.getElementById('flt-region').value;
+            const p = document.getElementById('flt-province').value;
+            const dSel = document.getElementById('flt-district'); dSel.innerHTML = '<option value="Tất cả">-- Tất cả Quận/Huyện --</option>';
+            if(r !== 'Tất cả' && p !== 'Tất cả') {
+                fullVnData[r][p].forEach(d => {
+                    let o = document.createElement('option'); o.value = d; o.innerText = d; dSel.appendChild(o);
                 });
             }
             applyFilters();
         }
 
-        // --- TÍNH TỔNG SỐ GIỜ ĐÁNH TỰ ĐỘNG 24/7 ---
-        function calcTotalHours() {
-            const start = document.getElementById('adm-time-start').value;
-            const end = document.getElementById('adm-time-end').value;
-            if(start && end) {
-                let sParts = start.split(':'); let eParts = end.split(':');
-                let sMin = parseInt(sParts[0])*60 + parseInt(sParts[1]);
-                let eMin = parseInt(eParts[0])*60 + parseInt(eParts[1]);
-                let diff = eMin - sMin;
-                if(diff < 0) diff += 24*60; // Qua đêm 24/7
-                document.getElementById('adm-total-hours').value = (diff / 60).toFixed(1);
+        // --- TỰ ĐỘNG TÍNH KHÓA Ô TỔNG SỐ GIỜ ---
+        function calcHoursAuto() {
+            const s = document.getElementById('adm-time-start').value;
+            const e = document.getElementById('adm-time-end').value;
+            if(s && e) {
+                let sP = s.split(':'); let eP = e.split(':');
+                let diff = (parseInt(eP[0])*60 + parseInt(eP[1])) - (parseInt(sP[0])*60 + parseInt(sP[1]));
+                if(diff < 0) diff += 24*60;
+                document.getElementById('adm-total-hours').value = (diff / 60).toFixed(1) + " giờ";
             }
-            calculateSuggestedPrice();
+            runInternalAccounting();
         }
 
-        // --- QUẢN LÝ THÊM/BỚT/XÓA LOẠT CẦU (BẢN GỐC CỦA MÀY) ---
-        function renderShuttleManager() {
+        // --- TRÌNH QUẢN LÝ NHẬP GIÁ CẦU THEO 3 TÙY CHỌN CHUẨN BÀI ---
+        function renderShuttleManagerForm() {
             const container = document.getElementById('shuttle-manager-list');
-            container.innerHTML = localShuttles.map((s, idx) => `
-                <div class="shuttle-row">
-                    <input type="text" value="${s.name}" class="form-control" style="flex:2; padding:6px;" oninput="localShuttles[${idx}].name=this.value">
-                    <input type="number" value="${s.price}" placeholder="Giá" class="form-control" style="flex:1; padding:6px;" oninput="localShuttles[${idx}].price=parseFloat(this.value)||0; calculateSuggestedPrice()">
-                    <input type="number" value="${s.count}" placeholder="Số lượng" class="form-control" style="flex:1; padding:6px;" oninput="localShuttles[${idx}].count=parseInt(this.value)||0; calculateSuggestedPrice()">
-                    <button type="button" class="btn-mini btn-mini-danger" onclick="removeShuttleRow('${s.id}')"><i class="fa-solid fa-trash"></i></button>
+            container.innerHTML = dynamicShuttles.map((s, idx) => `
+                <div class="shuttle-box-row">
+                    <button type="button" onclick="removeShuttleRowForm('${s.id}')" style="position:absolute; top:5px; right:5px; background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px;">❌ Xóa</button>
+                    <div class="grid-2" style="margin-bottom:8px;">
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="text-xs">Tên/Loại cầu lông</label>
+                            <input type="text" value="${s.name}" list="vn-shuttle-brands" class="form-control" style="padding:6px;" oninput="dynamicShuttles[${idx}].name=this.value">
+                        </div>
+                        <div class="form-group" style="margin-bottom:0;">
+                            <label class="text-xs">Nhập loại tính toán giá</label>
+                            <select class="form-select" style="padding:6px;" onchange="dynamicShuttles[${idx}].unitType=this.value; runInternalAccounting()">
+                                <option value="12" ${s.unitType==='12'?'selected':''}>Tính theo Ống 12 quả</option>
+                                <option value="6" ${s.unitType==='6'?'selected':''}>Tính theo Ống 6 quả</option>
+                                <option value="1" ${s.unitType==='1'?'selected':''}>Tính theo Quả lẻ</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-4" style="display:grid; grid-template-columns: repeat(4,1fr); gap:8px;">
+                        <div>
+                            <label class="text-[10px] text-slate-400">Giá ống 12q</label>
+                            <input type="number" value="${s.tube12Price}" class="form-control" style="padding:4px;" oninput="dynamicShuttles[${idx}].tube12Price=parseFloat(this.value)||0; runInternalAccounting()">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400">Giá ống 6q</label>
+                            <input type="number" value="${s.tube6Price}" class="form-control" style="padding:4px;" oninput="dynamicShuttles[${idx}].tube6Price=parseFloat(this.value)||0; runInternalAccounting()">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400">Giá lẻ 1 quả</label>
+                            <input type="number" value="${s.singlePrice}" class="form-control" style="padding:4px;" oninput="dynamicShuttles[${idx}].singlePrice=parseFloat(this.value)||0; runInternalAccounting()">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-slate-400 font-bold text-teal-400">Số lượng xài</label>
+                            <div style="display:flex; items-center; gap:2px;">
+                                <input type="number" value="${s.count}" class="form-control" style="padding:4px;" oninput="dynamicShuttles[${idx}].count=parseInt(this.value)||0; runInternalAccounting()">
+                                <span class="text-[10px] text-slate-400" style="align-self:center;">quả</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `).join('');
         }
-        function addShuttleRow() {
-            localShuttles.push({ id: 'S_' + Date.now(), name: 'Cầu mới', price: 25000, count: 1 });
-            renderShuttleManager();
-            calculateSuggestedPrice();
+        function addNewShuttleRow() {
+            dynamicShuttles.push({ id: 'ST_'+Date.now(), name: '', unitType: '12', tube12Price: 240000, tube6Price: 125000, singlePrice: 25000, count: 1 });
+            renderShuttleManagerForm(); runInternalAccounting();
         }
-        function removeShuttleRow(id) {
-            localShuttles = localShuttles.filter(s => s.id !== id);
-            renderShuttleManager();
-            calculateSuggestedPrice();
+        function removeShuttleRowForm(id) {
+            dynamicShuttles = dynamicShuttles.filter(s => s.id !== id);
+            renderShuttleManagerForm(); runInternalAccounting();
         }
 
-        // --- HÀM GỢI Ý THU TIỀN CHIA NAM NỮ (GIỮ NGUYÊN HOÀN TOÀN LOGIC CŨ) ---
-        function calculateSuggestedPrice() {
-            const hourlyCourt = parseFloat(document.getElementById('calc-court-hourly').value) || 0;
-            const totalHours = parseFloat(document.getElementById('adm-total-hours').value) || 0;
-            const waterCost = parseFloat(document.getElementById('calc-water-cost').value) || 0;
-            const maxPlayers = parseInt(document.getElementById('calc-max-players').value) || 1;
-            const gapPrice = parseFloat(document.getElementById('calc-gap-price').value) || 0;
+        // --- TOÀN BỘ LOGIC TÍNH TOÁN CHI PHÍ NỘI BỘ (DẤU NGĂN CÁCH ĐƠN VỊ TIỀN TỆ) ---
+        let globalTotalCost = 0;
+        let globalPerHeadBase = 0;
+        function runInternalAccounting() {
+            const hourly = parseFloat(document.getElementById('calc-court-hourly').value) || 0;
+            const hours = parseFloat(document.getElementById('adm-total-hours').value) || 0;
+            const water = parseFloat(document.getElementById('calc-water-cost').value) || 0;
+            const players = parseInt(document.getElementById('calc-max-players').value) || 1;
 
-            // Tính tổng chi phí cầu
-            let totalShuttleCost = 0;
-            localShuttles.forEach(s => { totalShuttleCost += (s.price * s.count); });
+            let shuttleCost = 0;
+            dynamicShuttles.forEach(s => {
+                let singleCost = s.singlePrice;
+                if(s.unitType === '12') singleCost = s.tube12Price / 12;
+                else if(s.unitType === '6') singleCost = s.tube6Price / 6;
+                shuttleCost += (singleCost * s.count);
+            });
 
-            // Tổng chi phí cứng
-            const totalCost = (hourlyCourt * totalHours) + waterCost + totalShuttleCost;
-            document.getElementById('lbl-total-cost').innerText = totalCost.toLocaleString('vi-VN') + " VNĐ";
+            globalTotalCost = (hourly * hours) + water + shuttleCost;
+            globalPerHeadBase = globalTotalCost / players;
 
-            const perHeadBase = totalCost / maxPlayers;
-            document.getElementById('lbl-per-head').innerText = Math.ceil(perHeadBase).toLocaleString('vi-VN') + " VNĐ";
-
-            // Giả định tỷ lệ Nam/Nữ là 50/50 để gợi ý mức giá chênh lệch
-            let suggestNam = perHeadBase + (gapPrice / 2);
-            let suggestNu = suggestNam - gapPrice;
-
-            if(suggestNu < 0) suggestNu = 0;
-
-            // Đổ giá trị gợi ý làm tròn vào khung giá Public
-            document.getElementById('adm-price-nam').value = Math.ceil(suggestNam / 5000) * 5000;
-            document.getElementById('adm-price-nu').value = Math.ceil(suggestNu / 5000) * 5000;
+            document.getElementById('lbl-total-cost').innerText = Math.ceil(globalTotalCost).toLocaleString('vi-VN') + " VNĐ";
+            document.getElementById('lbl-per-head').innerText = Math.ceil(globalPerHeadBase).toLocaleString('vi-VN') + " VNĐ";
         }
 
-        // --- HÀM XUẤT BẢN KÈO (ĐỒNG BỘ DATA SANG KHÁCH ĐẦY ĐỦ) ---
-        function publishNewKao() {
-            const region = document.getElementById('adm-region').value;
-            const province = document.getElementById('adm-province').value;
-            const district = document.getElementById('adm-district').value;
-            const courtName = document.getElementById('adm-court-name').value.trim();
-            const courtAddress = document.getElementById('adm-court-address').value.trim();
+        // --- NÚT GỢI Ý TÍNH TOÁN THU TIỀN HOẠT ĐỘNG 100% (HUỀ VỐN -> LỜI) ---
+        function openSuggestionModal() {
+            runInternalAccounting();
+            const gap = parseFloat(document.getElementById('calc-gap-price').value) || 0;
+            const content = document.getElementById('suggest-options-content');
+            
+            // Tạo 3 nấc cấu hình: Huề Vốn, Lời Ít (+20k), Lời Nhiều (+40k)
+            const tiers = [
+                { title: "🟢 Nấc 1: Thu Hoàn Toàn Huề Vốn", extra: 0 },
+                { title: "🟡 Nấc 2: Thu Lời Vừa Đủ Trà Nước", extra: 15000 },
+                { title: "🔴 Nấc 3: Thu Có Lời Tốt (Bao Sân)", extra: 30000 }
+            ];
+
+            content.innerHTML = tiers.map(t => {
+                let targetPerHead = globalPerHeadBase + t.extra;
+                let namPrice = Math.ceil((targetPerHead + (gap / 2)) / 5000) * 5000;
+                let nuPrice = Math.ceil((targetPerHead - (gap / 2)) / 5000) * 5000;
+                if(nuPrice < 0) nuPrice = 0;
+
+                return `
+                    <div style="background:#0d131f; padding:12px; border-radius:8px; border:1px solid #2d3748;">
+                        <div style="font-weight:700; font-size:13px; color:var(--neon-teal); margin-bottom:5px;">${t.title}</div>
+                        <div style="font-size:12px; color:#d1d5db; display:flex; justify-content:space-between; margin-bottom:8px;">
+                            <span>🚹 Nam: <strong>${namPrice.toLocaleString()} VNĐ</strong></span>
+                            <span>🚺 Nữ: <strong>${nuPrice.toLocaleString()} VNĐ</strong></span>
+                        </div>
+                        <button class="btn-mini" onclick="applySuggestionPrice(${namPrice}, ${nuPrice})" style="width:100%; background:var(--neon-blue); color:#090d16; font-weight:700;">Áp dụng mức giá này</button>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('modal-suggest').classList.remove('hidden');
+        }
+        function applySuggestionPrice(nam, nu) {
+            document.getElementById('adm-price-nam').value = nam;
+            document.getElementById('adm-price-nu').value = nu;
+            closeSuggestionModal();
+        }
+        function closeSuggestionModal() { document.getElementById('modal-suggest').classList.add('hidden'); }
+
+        // --- XUẤT BẢN KÈO LÊN SÀN KHÁCH ---
+        function submitKèoToSàn() {
+            const reg = document.getElementById('adm-region').value;
+            const prov = document.getElementById('adm-province').value;
+            const dist = document.getElementById('adm-district').value;
+            const name = document.getElementById('adm-court-name').value.trim();
+            const addr = document.getElementById('adm-court-address').value.trim();
             const date = document.getElementById('adm-date').value;
-            const tStart = document.getElementById('adm-time-start').value;
-            const tEnd = document.getElementById('adm-time-end').value;
+            const start = document.getElementById('adm-time-start').value;
+            const end = document.getElementById('adm-time-end').value;
             const hours = document.getElementById('adm-total-hours').value;
             const gender = document.getElementById('adm-gender').value;
-            
-            const priceNam = parseFloat(document.getElementById('adm-price-nam').value) || 0;
-            const priceNu = parseFloat(document.getElementById('adm-price-nu').value) || 0;
+            const pNam = parseFloat(document.getElementById('adm-price-nam').value) || 0;
+            const pNu = parseFloat(document.getElementById('adm-price-nu').value) || 0;
 
-            if(!courtName || !courtAddress || !tStart || !tEnd) {
-                alert("Vui lòng nhập đầy đủ: Tên sân, Địa chỉ bản đồ và Khung giờ!"); return;
-            }
+            if(!name || !addr || !start || !end) { alert("Vui lòng nhập đầy đủ thông tin ca đấu!"); return; }
 
             let incs = [];
             if(document.getElementById('inc-court').checked) incs.push("Tiền sân");
             if(document.getElementById('inc-shuttle').checked) incs.push("Tiền cầu");
             if(document.getElementById('inc-water').checked) incs.push("Tiền nước");
-            if(document.getElementById('inc-parking').checked) incs.push("Phí xe 🚗");
+            if(document.getElementById('inc-parking').checked) incs.push("Gửi xe 🚗");
 
-            const newKèoObj = {
-                id: 'K_' + Date.now(),
-                region, province, district, courtName, courtAddress, date,
-                timeRange: `${tStart} - ${tEnd} (${hours}h)`,
-                gender, priceNam, priceNu, incs
+            const obj = {
+                id: 'KEO_'+Date.now(),
+                region: reg, province: prov, district: dist, courtName: name, courtAddress: addr, date,
+                timeRange: `${start} - ${end} (${hours})`, gender, priceNam: pNam, priceNu: pNu, incs,
+                // Thuộc tính phục vụ kết toán sau ca
+                realCourt: 0, realShuttleCount: 0, realWater: 0, realRevenue: 0, isClosed: false, closingLog: ""
             };
 
-            myKeoData.unshift(newKèoObj);
-            localStorage.setItem('BADMINTON_KEO_STORAGE_V2', JSON.stringify(myKeoData));
+            dbKeos.unshift(obj);
+            localStorage.setItem('BADMINTON_KEO_FINAL_V3', JSON.stringify(dbKeos));
             
             document.getElementById('adm-court-name').value = "";
             document.getElementById('adm-court-address').value = "";
-            
             refreshAllLists();
-            alert("🚀 Đã xuất bản thành công ca đấu vãng lai!");
+            alert("🚀 Đã xuất bản thành công ca tuyển vãng lai lên sàn khách!");
         }
 
-        function deleteSingleKèo(id) {
-            if(confirm("Bạn có muốn gỡ ca tuyển này xuống không?")) {
-                myKeoData = myKeoData.filter(k => k.id !== id);
-                localStorage.setItem('BADMINTON_KEO_STORAGE_V2', JSON.stringify(myKeoData));
+        function deleteKèo(id) {
+            if(confirm("Xác nhận gỡ ca tuyển này?")) {
+                dbKeos = dbKeos.filter(k => k.id !== id);
+                localStorage.setItem('BADMINTON_KEO_FINAL_V3', JSON.stringify(dbKeos));
                 refreshAllLists();
             }
         }
 
-        // --- ĐỒNG BỘ VÀ HIỂN THỊ DANH SÁCH HAI BÊN ---
+        // --- POPUP TÍNH TOÁN CHI PHÍ LỜI LỖ SAU KHI KẾT THÚC CA ĐẤU ---
+        function openEditModal(id) {
+            const k = dbKeos.find(item => item.id === id);
+            if(!k) return;
+            document.getElementById('edit-ca-id').value = id;
+            document.getElementById('edit-real-court').value = k.realCourt || "";
+            document.getElementById('edit-real-shuttle').value = k.realShuttleCount || "";
+            document.getElementById('edit-real-water').value = k.realWater || "";
+            document.getElementById('edit-real-revenue').value = k.realRevenue || "";
+            document.getElementById('modal-edit-ca').classList.remove('hidden');
+        }
+        function saveClosingCa() {
+            const id = document.getElementById('edit-ca-id').value;
+            const idx = dbKeos.findIndex(k => k.id === id);
+            if(idx === -1) return;
+
+            const rCourt = parseFloat(document.getElementById('edit-real-court').value) || 0;
+            const rShuttle = parseInt(document.getElementById('edit-real-shuttle').value) || 0;
+            const rWater = parseFloat(document.getElementById('edit-real-water').value) || 0;
+            const rRev = parseFloat(document.getElementById('edit-real-revenue').value) || 0;
+
+            // Tính áng chừng giá quả cầu đầu tiên trong danh sách của Host làm mốc nhân
+            const baseShuttlePrice = dynamicShuttles[0] ? dynamicShuttles[0].singlePrice : 25000;
+            const totalExpense = rCourt + (rShuttle * baseShuttlePrice) + rWater;
+            const profitOrLoss = rRev - totalExpense;
+
+            let logStr = `Chi chiết: Tổng chi ${totalExpense.toLocaleString()} VNĐ. `;
+            if(profitOrLoss >= 0) logStr += `📈 LỜI: +${profitOrLoss.toLocaleString()} VNĐ`;
+            else logStr += `📉 LỖ: ${profitOrLoss.toLocaleString()} VNĐ`;
+
+            dbKeos[idx].realCourt = rCourt;
+            dbKeos[idx].realShuttleCount = rShuttle;
+            dbKeos[idx].realWater = rWater;
+            dbKeos[idx].realRevenue = rRev;
+            dbKeos[idx].isClosed = true;
+            dbKeos[idx].closingLog = logStr;
+
+            localStorage.setItem('BADMINTON_KEO_FINAL_V3', JSON.stringify(dbKeos));
+            closeEditModal(); refreshAllLists();
+            alert("📊 Kế toán thành công:\n" + logStr);
+        }
+        function closeEditModal() { document.getElementById('modal-edit-ca').classList.add('hidden'); }
+
+        // --- ĐỒNG BỘ VÀ HIỂN THỊ DANH SÁCH HAI BÊN MÀN HÌNH ---
         function refreshAllLists() {
-            // Danh sách Admin Host
-            const hostBox = document.getElementById('host-keo-list');
-            document.getElementById('host-count').innerText = myKeoData.length;
-            
-            if(myKeoData.length === 0) {
-                hostBox.innerHTML = '<p style="color:#6b7280; text-align:center; padding:20px;">Chưa có ca đấu nào được lưu.</p>';
+            const hBox = document.getElementById('host-keo-list');
+            document.getElementById('host-count').innerText = dbKeos.length;
+
+            if(dbKeos.length === 0) {
+                hBox.innerHTML = '<p style="color:#6b7280; text-align:center; padding:20px;">Chưa có ca đấu nào được lưu.</p>';
             } else {
-                hostBox.innerHTML = myKeoData.map(k => `
-                    <div style="background:#1f2937; padding:12px; border-radius:8px; border:1px solid #374151; relative; position:relative;">
-                        <button onclick="deleteSingleKèo('${k.id}')" style="position:absolute; top:8px; right:8px; background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px;">❌ Gỡ</button>
+                hBox.innerHTML = dbKeos.map(k => `
+                    <div style="background:#1f2937; padding:14px; border-radius:12px; border:2px solid ${k.isClosed?'#10b981':'#374151'}; position:relative;">
+                        <button onclick="deleteKèo('${k.id}')" style="position:absolute; top:8px; right:8px; background:none; border:none; color:#ef4444; cursor:pointer; font-size:11px;">❌ Gỡ</button>
                         <div style="font-weight:700; color:var(--neon-teal); font-size:14px; margin-bottom:4px;">📍 ${k.courtName}</div>
-                        <div style="font-size:11px; color:#9ca3af; margin-bottom:6px;">${k.district}, ${k.province}</div>
-                        <div style="font-size:12px; display:flex; flex-direction:column; gap:2px;">
+                        <div style="font-size:11px; color:#9ca3af; margin-bottom:8px;">${k.district}, ${k.province}</div>
+                        <div style="font-size:12px; display:flex; flex-direction:column; gap:3px; margin-bottom:10px;">
                             <span>📅 Ngày: <strong>${k.date.split('-').reverse().join('/')}</strong></span>
                             <span>⏰ Giờ: <strong>${k.timeRange}</strong></span>
-                            <span style="color:#10b981;">💰 Lên sàn: 🚹 ${k.priceNam.toLocaleString()}đ | 🚺 ${k.priceNu.toLocaleString()}đ</span>
+                            <span>💰 Giá sàn: 🚹 ${k.priceNam.toLocaleString('vi-VN')} VNĐ | 🚺 ${k.priceNu.toLocaleString('vi-VN')} VNĐ</span>
+                            ${k.isClosed ? `<div style="background:rgba(16,185,129,0.1); color:#10b981; padding:6px; border-radius:6px; font-size:11px; font-weight:bold; margin-top:5px;"><i class="fa-solid fa-chart-line"></i> ${k.closingLog}</div>` : ''}
                         </div>
+                        <button type="button" class="btn-mini" onclick="openEditModal('${k.id}')" style="width:100%; background:#1e3a8a; color:#93c5fd;"><i class="fa-solid fa-calculator"></i> ⚙️ Sửa / Tính Tiền Sau Ca</button>
                     </div>
                 `).join('');
             }
             applyFilters();
         }
 
-        // --- BỘ LỌC KHÁCH HÀNG ĐỒNG BỘ 100% ---
+        // --- BỘ LỌC ĐA NĂNG PHÍA GIAO DIỆN KHÁCH HÀNG ---
         function applyFilters() {
             const fReg = document.getElementById('flt-region').value;
             const fProv = document.getElementById('flt-province').value;
             const fDist = document.getElementById('flt-district').value;
             const fGen = document.getElementById('flt-gender').value;
             const fDate = document.getElementById('flt-date').value;
+            const fMaxPrice = parseFloat(document.getElementById('flt-max-price').value) || Infinity;
 
-            const res = myKeoData.filter(k => {
+            const res = dbKeos.filter(k => {
                 if(fReg !== 'Tất cả' && k.region !== fReg) return false;
                 if(fProv !== 'Tất cả' && k.province !== fProv) return false;
                 if(fDist !== 'Tất cả' && k.district !== fDist) return false;
                 if(fGen !== 'Tất cả' && k.gender !== fGen) return false;
                 if(fDate && k.date !== fDate) return false;
+                // Khách Nam hay Nữ vào thấy giá cao hơn mốc lọc là ẩn luôn
+                if(k.priceNam > fMaxPrice && k.priceNu > fMaxPrice) return false;
                 return true;
             });
 
@@ -612,7 +698,7 @@
             document.getElementById('khach-count').innerText = res.length;
 
             if(res.length === 0) {
-                grid.innerHTML = '<div style="grid-column: span 3; text-align:center; padding:40px; color:#6b7280;">😔 Không có ca đấu nào phù hợp với bộ lọc tìm kiếm khu vực hiện tại.</div>';
+                grid.innerHTML = '<div style="grid-column:span 3; text-align:center; padding:40px; color:#6b7280;">😔 Không có ca đấu nào khớp với tiêu chí tìm kiếm khu vực hoặc giá tiền hiện tại.</div>';
                 return;
             }
 
@@ -621,12 +707,12 @@
                     <div class="kèo-header">
                         <span class="kèo-tag">🏸 Ca tuyển</span>
                         <div class="kèo-price-box">
-                            <div class="kèo-price-num" style="font-size:15px; color:#00ffcc;">🚹 ${k.priceNam.toLocaleString()} VNĐ</div>
-                            <div class="kèo-price-num" style="font-size:15px; color:#ff007f;">🚺 ${k.priceNu.toLocaleString()} VNĐ</div>
+                            <div class="kèo-price-num" style="font-size:14px; color:#00ffcc; font-weight:700;">🚹 ${k.priceNam.toLocaleString('vi-VN')} VNĐ</div>
+                            <div class="kèo-price-num" style="font-size:14px; color:#ff007f; font-weight:700;">🚺 ${k.priceNu.toLocaleString('vi-VN')} VNĐ</div>
                         </div>
                     </div>
                     <div class="kèo-title">📍 ${k.courtName}</div>
-                    <div style="font-size:12px; color:#9ca3af; margin-bottom:10px;"><i class="fa-solid fa-map-pin"></i> ${k.courtAddress}</div>
+                    <div style="font-size:12px; color:#9ca3af; margin-bottom:10px; line-clamp:2; display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden;"><i class="fa-solid fa-map-pin"></i> ${k.courtAddress}</div>
                     
                     <div class="kèo-details">
                         <div class="kèo-detail-item"><span class="kèo-detail-label">🌍 Khu vực:</span><span class="kèo-detail-val">${k.district}, ${k.province}</span></div>
@@ -642,7 +728,7 @@
                         </div>
                     </div>
 
-                    <button class="btn-neon" onclick="alert('Kết nối đặt chỗ slot ca đấu thành công!')" style="font-size:13px; padding:10px;"><i class="fa-solid fa-calendar-check"></i> Đăng Ký Chấm Kèo Vãng Lai</button>
+                    <button class="btn-neon" onclick="alert('Kết nối đặt chỗ slot thành công!')" style="font-size:13px; padding:10px;"><i class="fa-solid fa-calendar-check"></i> Đăng Ký Chấm Kèo Vãng Lai</button>
                 </div>
             `).join('');
         }
@@ -651,6 +737,7 @@
             document.getElementById('flt-region').value = "Tất cả";
             document.getElementById('flt-date').value = "";
             document.getElementById('flt-gender').value = "Tất cả";
+            document.getElementById('flt-max-price').value = "";
             loadFilterProvinces();
         }
     </script>
