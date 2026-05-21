@@ -20,7 +20,7 @@
         .header { background: var(--card-bg); padding: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--neon-cyan); box-shadow: 0 0 15px rgba(0,243,255,0.2); }
         .logo { color: var(--neon-cyan); font-weight: bold; font-size: 20px; text-shadow: 0 0 10px var(--neon-cyan); text-transform: uppercase; }
         
-        .btn { padding: 10px 18px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; display: inline-flex; items-center; gap: 8px; font-size: 14px; }
+        .btn { padding: 10px 18px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; transition: 0.2s; display: inline-flex; items-center; justify-content: center; gap: 8px; font-size: 14px; }
         .btn-neon { background: transparent; border: 2px solid var(--neon-pink); color: var(--neon-pink); text-shadow: 0 0 5px var(--neon-pink); box-shadow: 0 0 5px var(--neon-pink); }
         .btn-neon:hover { background: var(--neon-pink); color: white; transform: translateY(-1px); }
         .btn-cyan { background: linear-gradient(45deg, var(--neon-cyan), #00a8ff); color: black; }
@@ -28,7 +28,7 @@
         
         .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
         
-        /* GIAO DIỆN CÁC POPUP MODAL VĨNH VIỄN */
+        /* POPUP MODAL VĨNH VIỄN */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 9999; justify-content: center; align-items: center; }
         .modal-content { background: var(--card-bg); padding: 25px; border-radius: 12px; width: 90%; max-width: 450px; border: 2px solid var(--neon-cyan); text-align: center; box-shadow: 0 0 25px var(--neon-cyan); }
         
@@ -40,7 +40,7 @@
         input, select { padding: 12px; background: #1a1d2e; border: 1px solid var(--border-color); color: white; border-radius: 6px; font-size: 14px; width: 100%; outline: none; }
         input:focus, select:focus { border-color: var(--neon-cyan); }
         
-        /* DANH SÁCH THẺ KÈO */
+        /* CARD THẺ KÈO */
         .card-keo { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 18px; margin-bottom: 15px; border-left: 5px solid var(--neon-cyan); transition: 0.2s; }
         .card-keo:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         
@@ -62,7 +62,7 @@
     </div>
 
     <div id="popupLoginUser" class="modal">
-        <div class="modal-content" style="border-color: var(--neon-cyan); box-shadow: 0 0 20px var(--neon-cyan);">
+        <div class="modal-content">
             <h3 style="color:var(--neon-cyan); margin-bottom:15px;"><i class="fa-solid fa-user-astronaut"></i> Thông Tin Ra Sân Vãng Lai</h3>
             <div class="form-group-host">
                 <label>Tên / Biệt danh của bạn</label>
@@ -80,7 +80,7 @@
         <div class="modal-content" style="border-color: var(--neon-pink); box-shadow: 0 0 20px var(--neon-pink);">
             <h3 style="color:var(--neon-pink); margin-bottom:10px;"><i class="fa-solid fa-lock"></i> Yêu Cầu Mã Quyền Hạn Host</h3>
             <p style="font-size:13px; color:#cbd5e1; margin-bottom:15px; text-align:left; line-height:1.5;">
-                Khu vực dành riêng cho Chủ sân/Group trưởng. Muốn thuê Key tạo lịch ca đấu xả láng và quản lý tiền bạc, vui lòng liên hệ <b>Zalo/Tele: Admin Phạm Minh Quốc</b> để nhận mã kích hoạt.
+                Khu vực dành riêng cho Chủ sân/Group trưởng. Muốn thuê Key tạo lịch ca đấu xả láng và quản lý tiền bạc, vui lòng liên hệ <b>Zalo/Tele: Admin Phạm Minh Quốc</b> để lấy mã kích hoạt.
             </p>
             <div class="form-group-host">
                 <label>Nhập Mã KEY Thuê Được Cấp</label>
@@ -103,6 +103,7 @@
         <div id="vungTrangChuKhach">
             <div class="filter-box">
                 <div class="form-title" style="font-size:14px; font-weight:bold; color:var(--neon-cyan); margin-bottom:5px;"><i class="fa-solid fa-filter"></i> Bộ Lọc Tìm Kiếm Kèo Sân Khẩn Cấp</div>
+                
                 <div class="filter-row">
                     <div class="form-group-host">
                         <label>Chọn Miền</label>
@@ -120,13 +121,47 @@
                         </select>
                     </div>
                 </div>
-                <div class="form-group-host">
-                    <label>Quận / Huyện Cụ Thể</label>
-                    <select id="fQuan">
-                        <option value="">-- Chọn Quận Huyện --</option>
-                    </select>
+                
+                <div class="filter-row">
+                    <div class="form-group-host">
+                        <label>Quận / Huyện</label>
+                        <select id="fQuan"><option value="">-- Chọn Quận Huyện --</option></select>
+                    </div>
+                    <div class="form-group-host">
+                        <label>Đối Tượng Tuyển</label>
+                        <select id="fDoiTuong">
+                            <option value="">-- Tất cả --</option>
+                            <option value="Cả Nam và Nữ">Cả Nam và Nữ</option>
+                            <option value="Chỉ tuyển Nam">Chỉ tuyển Nam</option>
+                            <option value="Chỉ tuyển Nữ">Chỉ tuyển Nữ</option>
+                        </select>
+                    </div>
                 </div>
-                <button class="btn btn-cyan" onclick="taiKeoKhaDung()" style="width:100%; font-weight:bold;"><i class="fa-solid fa-magnifying-glass"></i> TIẾN HÀNH QUÉT KÈO THƠM</button>
+
+                <div class="filter-row">
+                    <div class="form-group-host">
+                        <label>Yêu cầu Trình Độ</label>
+                        <select id="fTrinhDo">
+                            <option value="">-- Tất cả trình độ --</option>
+                            <option value="Yếu">Yếu - Mới tập chơi</option>
+                            <option value="Trung Bình Yếu">Trung Bình Yếu</option>
+                            <option value="Trung Bình">Trung Bình</option>
+                            <option value="Trung Bình Khá">Trung Bình Khá</option>
+                            <option value="Khá">Khá - Phủi cứng</option>
+                        </select>
+                    </div>
+                    <div class="form-group-host">
+                        <label>Giá tối đa (/Slot)</label>
+                        <select id="fGiaMax">
+                            <option value="">-- Tất cả giá --</option>
+                            <option value="50000">Dưới 50k</option>
+                            <option value="65000">Dưới 65k</option>
+                            <option value="80000">Dưới 80k</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn btn-cyan" onclick="taiKeoKhaDung()" style="width:100%; font-weight:bold; margin-top:5px;"><i class="fa-solid fa-magnifying-glass"></i> TIẾN HÀNH QUÉT KÈO THƠM</button>
             </div>
             
             <h2 style="font-size:15px; margin-bottom:15px; color:var(--neon-cyan); text-transform:uppercase; letter-spacing:0.5px;"><i class="fa-solid fa-fire"></i> Các ca đấu đang mở tuyển vãng lai</h2>
@@ -145,24 +180,67 @@
                 <label>📅 Chọn ngày đánh ca (Khóa tự động theo hạn Key)</label>
                 <input type="date" id="txtNgayDanh">
             </div>
+            
             <div class="grid-3">
-                <div class="form-group-host"><label>Miền</label><input type="text" id="txtMien" value="Nam" readonly style="color:#6b7280;"></div>
-                <div class="form-group-host"><label>Tỉnh thành</label><input type="text" id="txtTinh" value="Hồ Chí Minh" readonly style="color:#6b7280;"></div>
-                <div class="form-group-host"><label>Quận huyện</label><input type="text" id="txtQuan" placeholder="Ví dụ: Gò Vấp"></div>
+                <div class="form-group-host">
+                    <label>Chọn Miền Sân</label>
+                    <select id="txtMien" onchange="xuLyDoiMienHost()"></select>
+                </div>
+                <div class="form-group-host">
+                    <label>Tỉnh Thành</label>
+                    <select id="txtTinh" onchange="xuLyDoiTinhHost()"></select>
+                </div>
+                <div class="form-group-host">
+                    <label>Quận Huyện</label>
+                    <select id="txtQuan"></select>
+                </div>
             </div>
+
             <div class="form-group-host"><label>Tên cụm sân cầu lông</label><input type="text" id="txtTenSan" placeholder="Ví dụ: Sân Cầu Lông PooC District 12"></div>
+            
             <div class="grid-3">
                 <div class="form-group-host"><label>Số sân bao</label><input type="number" id="txtSoLuongSan" value="1"></div>
                 <div class="form-group-host"><label>Sân số mấy cụ thể</label><input type="text" id="txtSanCuThe" placeholder="Ví dụ: Số 1 và 2"></div>
                 <div class="form-group-host"><label>Khung giờ đánh</label><input type="text" id="txtKhungGio" placeholder="Ví dụ: 18h - 20h"></div>
             </div>
+
+            <div class="grid-3">
+                <div class="form-group-host">
+                    <label>Đối Tượng Tuyển</label>
+                    <select id="txtDoiTuong">
+                        <option value="Cả Nam và Nữ">Cả Nam và Nữ</option>
+                        <option value="Chỉ tuyển Nam">Chỉ tuyển Nam</option>
+                        <option value="Chỉ tuyển Nữ">Chỉ tuyển Nữ</option>
+                    </select>
+                </div>
+                <div class="form-group-host">
+                    <label>Trình độ Nam</label>
+                    <select id="txtTrinhNam">
+                        <option value="Trung Bình">Trung Bình</option>
+                        <option value="Yếu">Yếu</option>
+                        <option value="Trung Bình Yếu">Trung Bình Yếu</option>
+                        <option value="Trung Bình Khá">Trung Bình Khá</option>
+                        <option value="Khá">Khá</option>
+                    </select>
+                </div>
+                <div class="form-group-host">
+                    <label>Trình độ Nữ</label>
+                    <select id="txtTrinhNu">
+                        <option value="Trung Bình Yếu">Trung Bình Yếu</option>
+                        <option value="Yếu">Yếu</option>
+                        <option value="Trung Bình">Trung Bình</option>
+                        <option value="Trung Bình Khá">Trung Bình Khá</option>
+                        <option value="Khá">Khá</option>
+                    </select>
+                </div>
+            </div>
             
             <div style="background:#181a26; padding:15px; border-radius:8px; margin:15px 0; border:1px solid var(--border-color);">
                 <label style="font-weight:bold; color:var(--neon-cyan); font-size:13px; display:flex; items-center; gap:6px;"><i class="fa-solid fa-calculator"></i> Khóa giá ống cầu 1 trong 3 (Quốc Zoe Logic):</label>
                 <div class="grid-3" style="margin-top:10px;">
-                    <div class="form-group-host"><label>Ống 12 quả</label><input type="number" id="cauOng12" oninput="logicKhoaGiaCau('12')" placeholder="0"></div>
-                    <div class="form-group-host"><label>Ống 6 quả</label><input type="number" id="cauOng6" oninput="logicKhoaGiaCau('6')" placeholder="0"></div>
-                    <div class="form-group-host"><label>Giá lẻ 1 quả</label><input type="number" id="cauLe1" oninput="logicKhoaGiaCau('1')" placeholder="0"></div>
+                    <div class="form-group-host"><label>Ống 12 quả</label><input type="number" id="cauOng12" oninput="logicGiaCau('12')" placeholder="0"></div>
+                    <div class="form-group-host"><label>Ống 6 quả</label><input type="number" id="cauOng6" oninput="logicGiaCau('6')" placeholder="0"></div>
+                    <div class="form-group-host"><label>Giá lẻ 1 quả</label><input type="number" id="cauLe1" oninput="logicGiaCau('1')" placeholder="0"></div>
                 </div>
             </div>
             
@@ -176,10 +254,10 @@
     </div>
 
 <script>
-    // DỮ LIỆU ĐỊA PHƯƠNG KHÔNG LO LỖI TRỐNG BOX
-    const DATA_DIA_LY = {
+    // KHO DỮ LIỆU ĐỊA PHƯƠNG KHÔNG THỂ LỆCH CHỮ
+    const KHO_DATA_DIA_LY = {
         "Nam": {
-            "Hồ Chí Minh": ["Quận 12", "Gò Vấp", "Tân Bình", "Bình Thạnh", "Thủ Đức", "Hóc Môn", "Củ Chi", "Quận 10", "Quận 11"],
+            "Hồ Chí Minh": ["Gò Vấp", "Quận 12", "Tân Bình", "Bình Thạnh", "Thủ Đức", "Hóc Môn", "Quận 10", "Quận 11"],
             "Kiên Giang": ["Rạch Giá", "Phú Quốc", "Hà Tiên", "Châu Thành"],
             "Cần Thơ": ["Ninh Kiều", "Cái Răng", "Bình Thủy"]
         },
@@ -188,7 +266,7 @@
             "Khánh Hòa": ["Nha Trang", "Cam Ranh", "Ninh Hòa"]
         },
         "Bac": {
-            "Hà Nội": ["Cầu Giấy", "Đống Đa", "Ba Đình", "Hai Bà Trưng", "Thanh Xuân"],
+            "Hà Nội": ["Cầu Giấy", "Đống Đa", "Ba Đình", "Thanh Xuân"],
             "Thái Bình": ["Thành phố Thái Bình", "Đông Hưng", "Tiền Hải"],
             "Nam Định": ["Thành phố Nam Định", "Giao Thủy", "Hải Hậu"]
         }
@@ -196,121 +274,119 @@
 
     let userSdt = ""; let userTen = ""; let cacheKeyObj = null;
 
-    // BƯỚC 1: ĐẬP POPUP THÔNG BÁO KHI VỪA VÀO WEB
     window.onload = async function() {
+        // Đổ data mồi cho bộ lọc ngoài trang chủ trước
+        xuLyDoiMienBoLoc();
+        // Đọc thông báo popup từ mây về
         const res = await window.khoDuLieuVinhVien.docData('cau_hinh_he_thong', 'id=eq.popup_chinh');
-        if(res && res.length > 0) {
-            document.getElementById('lblNoiDungThongBao').innerText = res[0].noi_dung_thong_bao;
-        } else {
-            document.getElementById('lblNoiDungThongBao').innerText = "Chào mừng anh em đã đến với Chợ Kèo Vãng Lai! Chúc anh em hốt được nhiều kèo thơm.";
-        }
+        if(res && res.length > 0) document.getElementById('lblNoiDungThongBao').innerText = res[0].noi_dung_thong_bao;
     };
 
     function dongPopupThongBao() {
         document.getElementById('popupThongBaoHeThong').style.display = 'none';
         userSdt = localStorage.getItem('userSdt'); userTen = localStorage.getItem('userTen');
-        if(!userSdt) {
-            document.getElementById('popupLoginUser').style.display = 'flex';
-        } else {
-            kichHoatWebKhachChuanChi();
-        }
+        if(!userSdt) { document.getElementById('popupLoginUser').style.display = 'flex'; } else { chạyHeThongTrangChu(); }
     }
 
     function xuLyLoginUser() {
-        const t = document.getElementById('loginTen').value.trim();
-        const s = document.getElementById('loginSdt').value.trim();
-        if(!t || !s) return alert('❌ Hãy điền Tên và SĐT để hệ thống lưu hồ sơ tín dụng vãng lai!');
+        const t = document.getElementById('loginTen').value.trim(); const s = document.getElementById('loginSdt').value.trim();
+        if(!t || !s) return alert('Hãy điền Tên và SĐT ra sân!');
         localStorage.setItem('userSdt', s); localStorage.setItem('userTen', t);
-        userSdt = s; userTen = t;
-        document.getElementById('popupLoginUser').style.display = 'none';
-        kichHoatWebKhachChuanChi();
+        userSdt = s; userTen = t; document.getElementById('popupLoginUser').style.display = 'none';
+        chạyHeThongTrangChu();
     }
 
-    function kichHoatWebKhachChuanChi() {
+    function chạyHeThongTrangChu() {
         document.getElementById('lblUserHienTai').innerText = `👤 ${userTen} (${userSdt})`;
-        taiKeoKhaDung();
-        checkTuDongBungFormHostNeuCoKeySan();
+        taiKeoKhaDung(); checkKeySanTrongMay();
     }
 
-    // XỬ LÝ ĐỔ DATA CHO BỘ LỌC TỈNH THÀNH QUẬN HUYỆN KHÔNG BỊ TRỐNG
+    // LOGIC ĐỔ DATA ĐỊA LÝ MƯỢT MÀ CHO BỘ LỌC KHÁCH
     function xuLyDoiMienBoLoc() {
-        const mien = document.getElementById('fMien').value;
-        const boxTinh = document.getElementById('fTinh');
-        const boxQuan = document.getElementById('fQuan');
-        boxTinh.innerHTML = '<option value="">-- Chọn Tỉnh --</option>';
-        boxQuan.innerHTML = '<option value="">-- Chọn Quận Huyện --</option>';
-        if(!mien || !DATA_DIA_LY[mien]) return;
-        Object.keys(DATA_DIA_LY[mien]).forEach(t => {
-            boxTinh.innerHTML += `<option value="${t}">${t}</option>`;
-        });
+        const mien = document.getElementById('fMien').value; const bTinh = document.getElementById('fTinh'); const bQuan = document.getElementById('fQuan');
+        bTinh.innerHTML = '<option value="">-- Chọn Tỉnh --</option>'; bQuan.innerHTML = '<option value="">-- Chọn Quận Huyện --</option>';
+        if(!mien || !KHO_DATA_DIA_LY[mien]) return;
+        Object.keys(KHO_DATA_DIA_LY[mien]).forEach(t => { bTinh.innerHTML += `<option value="${t}">${t}</option>`; });
     }
-
     function xuLyDoiTinhBoLoc() {
-        const mien = document.getElementById('fMien').value;
-        const tinh = document.getElementById('fTinh').value;
-        const boxQuan = document.getElementById('fQuan');
-        boxQuan.innerHTML = '<option value="">-- Chọn Quận Huyện --</option>';
-        if(!mien || !tinh || !DATA_DIA_LY[mien][tinh]) return;
-        DATA_DIA_LY[mien][tinh].forEach(q => {
-            boxQuan.innerHTML += `<option value="${q}">${q}</option>`;
-        });
+        const mien = document.getElementById('fMien').value; const tinh = document.getElementById('fTinh').value; const bQuan = document.getElementById('fQuan');
+        bQuan.innerHTML = '<option value="">-- Chọn Quận Huyện --</option>';
+        if(!mien || !tinh || !KHO_DATA_DIA_LY[mien][tinh]) return;
+        KHO_DATA_DIA_LY[mien][tinh].forEach(q => { bQuan.innerHTML += `<option value="${q}">${q}</option>`; });
     }
 
-    // TẢI THẺ KÈO TRÊN CLOUD XUỐNG
-    async function taiKeoKhaDung() {
-        const fM = document.getElementById('fMien').value;
-        const fT = document.getElementById('fTinh').value;
-        const fQ = document.getElementById('fQuan').value;
-        
-        let cauLenhFilter = "da_ket_toan=eq.false";
-        if(fM) cauLenhFilter += `&mien=eq.${fM}`;
-        if(fT) cauLenhFilter += `&tinh_thanh=eq.${fT}`;
-        if(fQ) cauLenhFilter += `&quan_huyen=eq.${fQ}`;
-        cauLenhFilter += "&order=ngay_danh.asc";
+    // LOGIC ĐỔ DATA ĐỊA LÝ CHO PANEL CỦA HOST
+    function buildDiaLyFormHost() {
+        const bMien = document.getElementById('txtMien'); bMien.innerHTML = '';
+        Object.keys(KHO_DATA_DIA_LY).forEach(m => { bMien.innerHTML += `<option value="${m}">Miền ${m}</option>`; });
+        xuLyDoiMienHost();
+    }
+    function xuLyDoiMienHost() {
+        const mien = document.getElementById('txtMien').value; const bTinh = document.getElementById('txtTinh');
+        bTinh.innerHTML = '';
+        if(!KHO_DATA_DIA_LY[mien]) return;
+        Object.keys(KHO_DATA_DIA_LY[mien]).forEach(t => { bTinh.innerHTML += `<option value="${t}">${t}</option>`; });
+        xuLyDoiTinhHost();
+    }
+    function xuLyDoiTinhHost() {
+        const mien = document.getElementById('txtMien').value; const tinh = document.getElementById('txtTinh').value; const bQuan = document.getElementById('txtQuan');
+        bQuan.innerHTML = '';
+        if(!KHO_DATA_DIA_LY[mien] || !KHO_DATA_DIA_LY[mien][tinh]) return;
+        KHO_DATA_DIA_LY[mien][tinh].forEach(q => { bQuan.innerHTML += `<option value="${q}">${q}</option>`; });
+    }
 
-        const data = await window.khoDuLieuVinhVien.docData('ca_dau', cauLenhFilter);
+    // TẢI KÈO VỀ GIAO DIỆN (LỌC THEO TẤT CẢ THÔNG SỐ KHÁCH CHỌN)
+    async function taiKeoKhaDung() {
+        const fM = document.getElementById('fMien').value; const fT = document.getElementById('fTinh').value; const fQ = document.getElementById('fQuan').value;
+        const fD = document.getElementById('fDoiTuong').value; const fTD = document.getElementById('fTrinhDo').value; const fG = document.getElementById('fGiaMax').value;
+        
+        let loc = "da_ket_toan=eq.false";
+        if(fM) loc += `&mien=eq.${fM}`; if(fT) loc += `&tinh_thanh=eq.${fT}`; if(fQ) loc += `&quan_huyen=eq.${fQ}`;
+        if(fD) loc += `&doi_tuong_tuyen=eq.${fD}`;
+        if(fTD) loc += `&or=(trinh_do_nam.eq.${fTD},trinh_do_nu.eq.${fTD})`;
+        if(fG) loc += `&and=(gia_nam.lte.${fG},gia_nu.lte.${fG})`;
+        loc += "&order=ngay_danh.asc";
+
+        const data = await window.khoDuLieuVinhVien.docData('ca_dau', loc);
         const box = document.getElementById('vungChứaThẻKeo'); box.innerHTML = '';
-        if(data.length===0) { box.innerHTML='<p style="text-align:center; color:#6b7280; padding:20px;">Không tìm thấy ca đấu nào khớp bộ lọc khu vực này.</p>'; return; }
+        if(data.length===0) { box.innerHTML='<p style="text-align:center; color:#6b7280; padding:20px;">Không tìm thấy ca đấu nào phù hợp bộ lọc.</p>'; return; }
         
         data.forEach(c => {
             box.innerHTML += `<div class="card-keo">
-                <h3 style="color:var(--neon-cyan); margin-bottom:5px;"><i class="fa-solid fa-location-crosshairs"></i> ${c.ten_san} ${c.so_san_cu_the ? `(Sân: ${c.so_san_cu_the})` : ''}</h3>
-                <p style="font-size:12px; color:#cbd5e1; margin-bottom:10px;"><i class="fa-solid fa-map-location-dot"></i> Khu vực: ${c.quan_huyen} - ${c.tinh_thanh} (${c.mien} Nam)</p>
-                <p style="font-size:14px;"><i class="fa-solid fa-calendar-day"></i> Lịch đánh: <b style="color:var(--neon-cyan);">${new Date(c.ngay_danh).toLocaleDateString('vi-VN')}</b> | Giờ: <b style="color:var(--neon-cyan);">${c.khung_gio}</b></p>
+                <h3 style="color:var(--neon-cyan); margin-bottom:5px;"><i class="fa-solid fa-location-dot"></i> ${c.ten_san} ${c.so_san_cu_the ? `(Sân: ${c.so_san_cu_the})` : ''}</h3>
+                <p style="font-size:12px; color:#cbd5e1; margin-bottom:8px;">Khu vực: ${c.quan_huyen} - ${c.tinh_thanh} (Miền ${c.mien})</p>
+                <p style="font-size:13px; color:#a0aec0; margin-bottom:8px;"><i class="fa-solid fa-user-group"></i> Tuyển: <b>${c.doi_tuong_tuyen || 'Cả Nam và Nữ'}</b><br>⚡ Trình: Nam (${c.trinh_do_nam || 'Trung Bình'}) | Nữ (${c.trinh_do_nu || 'Trung Bình Yếu'})</p>
+                <p style="font-size:14px;"><i class="fa-solid fa-calendar-clock"></i> Khung giờ: <b style="color:var(--neon-cyan);">${c.khung_gio}</b> ngày <b style="color:var(--neon-cyan);">${new Date(c.ngay_danh).toLocaleDateString('vi-VN')}</b></p>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; background:#090a10; padding:10px; border-radius:6px; border:1px solid var(--border-color);">
-                    <span style="font-size:13px; font-weight:bold;">Vãng lai: Nam <span style="color:var(--neon-pink);">${parseInt(c.gia_nam).toLocaleString()}đ</span> | Nữ <span style="color:var(--neon-pink);">${parseInt(c.gia_nu).toLocaleString()}đ</span></span>
-                    <button class="btn btn-cyan" onclick="clickDatSlotKhach('${c.id}')" style="padding:6px 12px; font-size:12px; font-weight:bold;">ĐẶT SLOT</button>
+                    <span style="font-size:13px; font-weight:bold;">Giá slot: Nam <span style="color:var(--neon-pink);">${parseInt(c.gia_nam).toLocaleString()}đ</span> | Nữ <span style="color:var(--neon-pink);">${parseInt(c.gia_nu).toLocaleString()}đ</span></span>
+                    <button class="btn btn-cyan" onclick="clickDatSlotKhach('${c.id}')" style="padding:6px 12px; font-size:12px;">ĐẶT SLOT</button>
                 </div>
             </div>`;
         });
     }
 
-    // LOGIC NHẬP KEY GIAO DIỆN CHẶN CỦA QUỐC (FIX CHUẨN THÔNG BÁO ĐÚNG/SAI)
+    // KIỂM TRA CHECK KEY CỦA HOST CHUẨN CHỈ
     function nutDangBaiTuyenClick() {
         const savedKey = localStorage.getItem('hostKeyThue');
-        if(!savedKey) {
-            document.getElementById('popupDoiKeyHost').style.display = 'flex';
-        } else {
-            moKhoaFormHostLamViec(savedKey);
-        }
+        if(!savedKey) { document.getElementById('popupDoiKeyHost').style.display = 'flex'; } else { bungLuaGiaoDienHost(savedKey); }
     }
 
     async function xuLyKichHoatKeyHost() {
         const keyInput = document.getElementById('inputKeyThue').value.trim().toUpperCase();
-        if(!keyInput) { alert('❌ Mày chưa gõ mã Key vào ô mà kích hoạt cái gì!'); return; }
+        if(!keyInput) return alert('Vui lòng gõ mã Key thuê vào ô!');
         
-        // Gọi lệnh quét thẳng database xem có Key này không
-        const res = await window.khoDuLieuVinhVien.docData('quan_ly_key', `ma_key=eq.${keyInput}`);
+        // Quét dữ liệu trên mây kiểm tra Key
+        const responseData = await window.khoDuLieuVinhVien.docData('quan_ly_key', `ma_key=eq.${keyInput}`);
         
-        // NẾU KHÔNG CÓ KẾT QUẢ -> BÁO SAI NGAY LẬP TỨC
-        if(!res || res.length === 0) {
-            alert('❌ MÃ KEY THUÊ NÀY SAI HOẶC KHÔNG TỒN TẠI!\nVui lòng kiểm tra lại từng chữ hoặc liên hệ Admin Quốc để thuê Key mới.');
+        // NẾU TRẢ VỀ RỖNG -> BÁO LỖI LUÔN
+        if(!responseData || responseData.length === 0) {
+            alert('❌ LỖI XÁC MINH: Mã Key thuê này không tồn tại hoặc đã nhập sai chữ!\nVui lòng liên hệ Admin Quốc để kiểm tra.');
             return;
         }
 
-        const k = res[0];
+        const k = responseData[0];
         if(k.trang_thai === 'Bị khóa') {
-            alert('❌ KEY NÀY ĐÃ BỊ ADMIN QUỐC KHÓA!\nLý do: Hết hạn sử dụng hoặc bùng tiền phế. Vui lòng nộp phế để mở khóa.');
+            alert('❌ KEY BỊ KHÓA: Mã Key này đã bị Admin Quốc khóa vì lý do hết tiền thuê hoặc bùng tiền phế!');
             return;
         }
 
@@ -318,11 +394,10 @@
         localStorage.setItem('idThietBiMay', fingerprint);
 
         if(k.id_thiet_bi && k.id_thiet_bi !== fingerprint) {
-            alert('❌ LỖI CHỐNG BÚ BẬT: Key này đã được đăng nhập kích hoạt cố định trên điện thoại khác rồi! Nhờ Admin Quốc reset máy mới vào được.');
+            alert('❌ CHỐNG BÚ BẬT: Key này đã được kích hoạt cố định trên điện thoại khác! Nhờ Admin Quốc bấm Reset trắng máy mới đổi máy được.');
             return;
         }
 
-        // Nếu chuẩn chỉ hết và là lần đầu tiên kích hoạt từ kho lưu trữ
         if(k.trang_thai === 'Chưa kích hoạt') {
             let hanMoi = new Date(); hanMoi.setDate(hanMoi.getDate() + (k.so_ngay_duoc_xai || 30));
             await fetch(`https://kyidswbpfafsoqsdhfpu.supabase.co/rest/v1/quan_ly_key?ma_key=eq.${keyInput}`, {
@@ -331,24 +406,24 @@
             });
         }
 
-        // CHỐT HẠ THÀNH CÔNG VANG DỘI
         localStorage.setItem('hostKeyThue', keyInput);
         document.getElementById('popupDoiKeyHost').style.display = 'none';
-        alert(`🎉 XÁC THỰC THÀNH CÔNG!\nChào mừng Host chính chủ vào hệ thống.`);
-        moKhoaFormHostLamViec(keyInput);
+        alert('🎉 KÍCH HOẠT THÀNH CÔNG VANG DỘI! Mở bàn làm việc.');
+        bungLuaGiaoDienHost(keyInput);
     }
 
-    async function moKhoaFormHostLamViec(key) {
+    async function bungLuaGiaoDienHost(key) {
         const res = await window.khoDuLieuVinhVien.docData('quan_ly_key', `ma_key=eq.${key}`);
         if(!res || res.length === 0 || res[0].trang_thai === 'Bị khóa') { xuLyDangXuatHost(); return; }
         cacheKeyObj = res[0];
         
         document.getElementById('lblTenHostGiaoDien').innerText = `🚀 HOST: ${cacheKeyObj.ten_host.toUpperCase()} (${cacheKeyObj.cap_do.toUpperCase()})`;
         
-        // KHÓA LỊCH KHÔNG CHO ĐĂNG VƯỢT QUÁ HẠN KEY THEO Ý QUỐC ZOED
+        // Khóa lịch chọn ngày đăng kèo vĩnh viễn theo hạn của Key
         let maxDate = new Date(cacheKeyObj.ngay_het_han).toISOString().split('T')[0];
         document.getElementById('txtNgayDanh').max = maxDate;
         
+        buildDiaLyFormHost(); // Xây dựng đống select địa phương cho Host gõ kèo
         document.getElementById('vungTrangHost').style.display = 'block';
         window.scrollTo({ top: document.getElementById('vungTrangHost').offsetTop, behavior: 'smooth' });
     }
@@ -363,15 +438,14 @@
         }
         localStorage.removeItem('hostKeyThue');
         document.getElementById('vungTrangHost').style.display = 'none';
-        alert('🔓 Đã đăng xuất! Giải phóng thiết bị thành công.');
+        alert('🔓 Đã nhả Key và giải phóng thiết bị thành công!');
     }
 
-    function checkTuDongBungFormHostNeuCoKeySan() {
-        const savedKey = localStorage.getItem('hostKeyThue');
-        if(savedKey) moKhoaFormHostLamViec(savedKey);
+    function checkKeySanTrongMay() {
+        const savedKey = localStorage.getItem('hostKeyThue'); if(savedKey) bungLuaGiaoDienHost(savedKey);
     }
 
-    function logicKhoaGiaCau(loai) {
+    function logicGiaCau(loai) {
         if(loai==='12') {
             let v = parseFloat(document.getElementById('cauOng12').value)||0;
             document.getElementById('cauOng6').value = Math.round(v / 2); document.getElementById('cauLe1').value = Math.round(v / 12);
@@ -385,33 +459,29 @@
     }
 
     async function xuLyHostDangKeoLenCloud() {
-        const ngay = document.getElementById('txtNgayDanh').value;
-        const quan = document.getElementById('txtQuan').value.trim();
-        const san = document.getElementById('txtTenSan').value.trim();
-        const sl = parseInt(document.getElementById('txtSoLuongSan').value)||1;
-        const sct = document.getElementById('txtSanCuThe').value.trim();
-        const kg = document.getElementById('txtKhungGio').value.trim();
-        const n = parseFloat(document.getElementById('giaNam').value)||0;
+        const ngay = document.getElementById('txtNgayDanh').value; const mien = document.getElementById('txtMien').value;
+        const tinh = document.getElementById('txtTinh').value; const quan = document.getElementById('txtQuan').value;
+        const san = document.getElementById('txtTenSan').value.trim(); const sl = parseInt(document.getElementById('txtSoLuongSan').value)||1;
+        const sct = document.getElementById('txtSanCuThe').value.trim(); const kg = document.getElementById('txtKhungGio').value.trim();
+        const dt = document.getElementById('txtDoiTuong').value; const tNam = document.getElementById('txtTrinhNam').value;
+        const tNu = document.getElementById('txtTrinhNu').value; const n = parseFloat(document.getElementById('giaNam').value)||0;
         const nu = parseFloat(document.getElementById('giaNu').value)||0;
         
-        if(!ngay || !quan || !san || !kg) return alert('❌ Thiếu thông tin lịch ca đấu rồi Host ơi!');
+        if(!ngay || !san || !kg) return alert('Hãy điền đủ Lịch, Tên sân và Khung giờ đấu!');
         
         const idKeo = 'KEO-' + Math.random().toString(36).substring(2, 7).toUpperCase();
-        const objKeo = { id: idKeo, mien: 'Nam', tinh_thanh: 'Hồ Chí Minh', quan_huyen: quan, ten_san: san, so_luong_san: sl, so_san_cu_the: sct, ngay_danh: ngay, khung_gio: kg, gia_nam: n, gia_nu: nu, da_ket_toan: false };
+        const objKeo = { id: idKeo, mien: mien, tinh_thanh: tinh, quan_huyen: quan, ten_san: san, so_luong_san: sl, so_san_cu_the: sct, ngay_danh: ngay, khung_gio: kg, doi_tuong_tuyen: dt, trinh_do_nam: tNam, trinh_do_nu: tNu, gia_nam: n, gia_nu: nu, da_ket_toan: false };
         
-        const saved = await window.khoDuLieuVinhVien.ghiData('ca_dau', objKeo);
-        if(saved) {
-            alert('🎉 Phát hành kèo thành công vĩnh viễn lên mây!');
-            taiKeoKhaDung();
-        }
+        const saved = await window.khoDu LieuVinhVien.ghiData('ca_dau', objKeo);
+        if(saved) { alert('🎉 Kèo đấu đã được phát hành toàn diện lên hệ thống đám mây!'); taiKeoKhaDung(); }
     }
 
     async function clickDatSlotKhach(idCaDau) {
-        if(confirm(`Xác nhận đăng ký slot ca đấu này cho ${userTen} (${userSdt})?`)) {
+        if(confirm(`Xác nhận đặt slot ca đấu này cho ${userTen} (${userSdt})?`)) {
             const idSlot = 'SLOT-' + Math.random().toString(36).substring(2, 7).toUpperCase();
             const objSlot = { id: idSlot, id_ca_dau: idCaDau, sdt_khach: userSdt, ten_khach_hien_thi: userTen, trang_thai_diem_danh: 'Chưa đến', trang_thai_dong_tien: 'Chưa đóng' };
             const ok = await window.khoDuLieuVinhVien.ghiData('dat_slot', objSlot);
-            if(ok) alert('🎉 Chấm kèo đặt chỗ thành công! Chuẩn bị vợt ra sân nha.');
+            if(ok) alert('🎉 Chấm kèo đặt slot thành công vĩnh viễn!');
         }
     }
 </script>
