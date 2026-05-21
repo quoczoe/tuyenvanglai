@@ -1,36 +1,42 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-
 :root {
-    --bg: #0a0a0c;
-    --card: #15171e;
+    --bg-main: #0a0a0c;
+    --card-bg: #131520;
     --primary: #00f3ff;
-    --accent: #ff007f;
+    --text-main: #ffffff;
 }
 
-body { background: var(--bg); color: #fff; font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+body {
+    background: #050505;
+    background: linear-gradient(135deg, #0a0a0c 0%, #1a1a2e 100%);
+    font-family: 'Inter', sans-serif;
+    display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0;
+}
 
 .main-box {
-    width: 90%; max-width: 400px;
-    background: var(--card); padding: 40px; border-radius: 24px;
-    border: 1px solid #2d3748; box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    width: 90%; max-width: 420px;
+    background: rgba(25, 27, 38, 0.7);
+    backdrop-filter: blur(20px);
+    padding: 50px 30px; border-radius: 32px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6);
     text-align: center;
 }
 
-h1 { font-size: 24px; letter-spacing: -0.5px; margin-bottom: 30px; color: #f7fafc; }
+h1 { font-size: 20px; color: var(--text-main); margin-bottom: 40px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.8; }
 
 .btn-action {
-    display: block; width: 100%; padding: 18px; margin: 15px 0;
-    background: #1a1d28; border: 1px solid #333;
-    color: white; border-radius: 12px; font-weight: 600;
-    text-decoration: none; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative; overflow: hidden;
+    display: block; width: 100%; padding: 20px; margin: 15px 0;
+    background: linear-gradient(90deg, #1e2536, #161b28);
+    border: 1px solid #333; color: white; border-radius: 16px;
+    font-weight: 600; text-decoration: none; font-size: 16px;
+    transition: all 0.3s ease; cursor: pointer;
 }
 
 .btn-action:hover {
+    background: #252a3a;
     border-color: var(--primary);
-    box-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
-    transform: translateY(-2px);
+    box-shadow: 0 0 20px rgba(0, 243, 255, 0.15);
+    transform: translateY(-4px);
 }
 
-.btn-primary { border: 1px solid var(--primary); color: var(--primary); }
-.btn-accent { border: 1px solid var(--accent); color: var(--accent); }
+.admin-link { color: #3d4a65; font-size: 10px; margin-top: 40px; text-decoration: none; text-transform: uppercase; }
