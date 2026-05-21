@@ -2,35 +2,27 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sân Cầu Lông - Hệ Thống Đăng & Tìm Kèo</title>
+    <title>Chợ Kèo Vãng Lai</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
-    <header class="header">
-        <div class="logo">QUOCZOE - CẦU LÔNG GIAO LƯU</div>
-    </header>
-
-    <div class="container" style="text-align: center; margin-top: 50px;">
-        <h2 style="margin-bottom: 30px; color: var(--neon-cyan);">Chào mừng đến với hệ thống!</h2>
-        
+    <div class="header" style="margin-top: 50px;">
+        <div class="logo">CHỢ KÈO VÃNG LAI</div>
+    </div>
+    
+    <div class="container" style="max-width: 600px;">
         <div class="grid-2">
-            <button class="btn btn-cyan" onclick="window.location.href='khach.html'" style="padding: 30px; font-size: 18px;">
-                🔍 TÔI LÀ KHÁCH<br><span style="font-size: 12px; font-weight: normal;">Tìm sân, xem kèo</span>
-            </button>
-
-            <button class="btn btn-neon" onclick="window.location.href='host.html'" style="padding: 30px; font-size: 18px;">
-                🏸 TÔI LÀ HOST<br><span style="font-size: 12px; font-weight: normal;">Đăng ca, quản lý</span>
-            </button>
+            <div class="btn-card" onclick="location.href='khach.html'">
+                <h3>🔍 KHÁCH TÌM SÂN</h3>
+            </div>
+            <div class="btn-card" onclick="location.href='host.html'">
+                <h3>🏸 HOST ĐĂNG CA</h3>
+            </div>
         </div>
-
-        <div style="margin-top: 40px;">
-            <button class="btn btn-red" onclick="window.location.href='admin-toi-cao.html'">
-                🔒 Admin Tối Cao
-            </button>
+        
+        <div style="margin-top: 100px; opacity: 0.1; text-align: center;">
+            <a href="/admin/" style="color: white; font-size: 10px;">Admin Access</a>
         </div>
     </div>
-
 </body>
 </html>
