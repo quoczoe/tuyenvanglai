@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TUYENVANGLAI.IO.VN | SÀN THỂ THAO ĐA NĂNG</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <script>
+    const supabase = {
+      createClient: function(url, key) {
+        return {
+          from: function(table) {
+            return {
+              select: function() {
+                return {
+                  then: function(callback) {
+                    fetch(url + '/rest/v1/' + table + '?select=*&_t=' + Date.now(), {
+                      method: 'GET',
+                      headers: { 'apikey': key, 'Authorization': 'Bearer ' + key }
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                      if (Array.isArray(data)) callback({ data: data, error: null });
+                      else callback({ data: [], error: data });
+                    })
+                    .catch(err => callback({ data: [], error: err }));
+                  }
+                };
+              },
+              insert: function(rows) {
+                return {
+                  then: function(callback) {
+                    fetch(url + '/rest/v1/' + table, {
+                      method: 'POST',
+                      headers: {
+                        'apikey': key,
+                        'Authorization': 'Bearer ' + key,
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                      },
+                      body: JSON.stringify(rows)
+                    })
+                    .then(r => r.json())
+                    .then(data => callback({ data: data, error: null }))
+                    .catch(err => callback({ data: null, error: err }));
+                  }
+                };
+              }
+            };
+          }
+        };
+      }
+    };
+  </script>
+  
+  <style>
+    :root { --neon-teal: #00ffcc; --neon-blue: #00c8ff; --dark-bg: #0b111e; --card-bg: #161f30; }
+    body { font-family: 'Lexend', sans-serif; background-color: var(--dark-bg); color: #f3f4f6; padding-bottom: 50px; }
+    .main-nav { background: #111827; border-bottom: 3px solid var(--neon-teal); padding: 15px 0; margin-bottom: 25px; box-shadow: 0 4px 20px rgba(0,255,204,0.15); }
+    .nav-btn { background: #1f2937; color: #d1d5db; border: 1px solid #4b5563; font-weight: 600; padding: 12px 20px; border-radius: 8px; cursor: pointer; transition: 0.3s; }
+    .nav-btn:hover, .nav-btn.active-neon { background: linear-gradient(135deg, #00ffcc, #00c8ff); color: #090d16 !important; font-weight: 700; box-shadow: 0 0 18px rgba(0,255,204,0.5); border-color: transparent; }
+    .glass-card { background: var(--card-bg); border: 2px solid #2d3748; border-radius: 16px; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); margin-bottom: 20px; }
+    .section-title { font-weight: 700; font-size: 17px; color: var(--neon-teal); text-transform: uppercase; margin-bottom: 22px; border-left: 5px solid var(--neon-teal); padding-left: 12px; letter-spacing: 0.5px; }
+    .form-label { color: #ffffff !important; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+    .form-control, .form-select { background-color: #0d131f !important; border: 2px solid #4a5568 !important; color: #ffffff !important; border-radius: 8px; padding: 14px; font-size: 15px; font-weight: 500; }
+    .form-control:focus, .form-select:focus { border-color: var(--neon-teal) !important; box-shadow: 0 0 12px rgba(0,255,204,0.3) !important; }
+    .btn-neon { background: linear-gradient(135deg, #00ffcc, #00c8ff); color: #090d16; font-weight: 700; border: none; border-radius: 8px; padding: 16px 20px; transition: 0.3s; width: 100%; text-transform: uppercase; cursor: pointer; font-size: 15px; }
+    .btn-neon:hover { box-shadow: 0 0 25px rgba(0,255,204,0.6); }
+    .tag-check { background: #0d131f; border: 2px solid #4a5568; color: #ffffff; padding: 10px 14px; border-radius: 8px; display: inline-block; cursor: pointer; font-size: 13px; font-weight: 600; margin: 3px; }
+    .tag-check.active { border-color: var(--neon-teal); color: var(--neon-teal); background: rgba(0,255,204,0.1); }
+    .box-accounting { background: #0d131f; border: 2px dashed #4a5568; border-radius: 12px; padding: 18px; margin-top: 15px; }
+    
+    /* FIX LỊCH CHUẨN ĐẸP KHÔNG LỖI ĐÈ ICON */
+    input[type="date"] { color-scheme: dark; font-size: 16px; font-weight: 600; cursor: pointer; padding-right: 15px !important; background: #0d131f !important; border: 2px solid #4a5568 !important; }
+    
+    /* LÀM SÁNG CHỮ BẢNG KẾ TOÁN */
+    .text-light-clear { color: #ffffff !important; font-weight: 600; font-size: 14px; }
+    .row-cau-item { background: #111827; padding: 14px; border-radius: 10px; margin-bottom: 12px; border: 2px solid #4a5568; color: #ffffff !important; }
+    .row-cau-item label { color: #00ffcc !important; font-weight: 600; }
+    .img-preview-cau { width: 50px; height: 50px; object-fit: contain; background: #fff; border-radius: 6px; padding: 2px; }
+  </style>
+</head>
+<body>
+
+  <datalist id="vnbShuttlecocks">
+    <option value="VinaStar Bạc"></option><option value="Thành Công Đỏ"></option>
+    <option value="Yonex Aerosensa 10"></option><option value="Hải Yến Xanh Lá"></option>
+    <option value="Victor Lark 5"></option>
+  </datalist>
+
+  <div class="main-nav">
+    <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2 px-3">
+      <div class="fw-bold text-info" style="font-size:20px;"><i class="fa-solid fa-network-wired me-1"></i> TUYENVANGLAI.IO.VN</div>
+      <div class="d-flex gap-2">
+        <button id="btnTabKhach" class="nav-btn active-neon" onclick="chuyenTabHeThong(1)">Giao Diện Khách</button>
+        <button id="btnTabHost" class="nav-btn" onclick="chuyenTabHeThong(2)">Giao Diện Host Kế Toán</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container px-3" style="max-width: 600px;">
+    
+    <div id="tabKhach" class="tab-zone">
+      <div class="glass-card">
+        <div class="section-title">Chợ Kèo Vãng Lai Cầu Lông</div>
+        <div class="mb-4">
+          <label class="form-label text-uppercase small fw-bold">Chọn ca đấu muốn tham gia</label>
+          <select id="selectCaSàn" class="form-select" onchange="loadChiTietCaChoKhach()"></select>
+        </div>
+        
+        <div id="khoiChiTietKèo" class="d-none p-3 rounded-3 mb-4" style="background:#0d131f; border: 2px solid #2d3748;">
+          <h5 class="text-info fw-bold mb-3" id="lblTenCa">Ca đấu</h5>
+          <div class="d-flex justify-content-between border-bottom border-secondary py-2"><span>📍 Khu vực:</span><span id="lblKhuVucKhach" class="fw-bold text-warning"></span></div>
+          <div class="d-flex justify-content-between border-bottom border-secondary py-2"><span>🏟️ Tên cụm sân:</span><span id="lblSan" class="fw-bold text-white"></span></div>
+          <div class="d-flex justify-content-between border-bottom border-secondary py-2"><span>🗺️ Bản đồ đường đi:</span><span id="lblDiaChi" class="text-info text-end text-break" style="max-width:65%;"></span></div>
+          <div class="d-flex justify-content-between border-bottom border-secondary py-2"><span>🔢 Quy mô hoạt động:</span><span id="lblQuyMo" class="text-white fw-bold"></span></div>
+          <div class="d-flex justify-content-between border-bottom border-secondary py-2"><span>⚡ Thời gian đánh:</span><span id="lblGio" class="text-warning fw-bold"></span></div>
+          <div class="d-flex justify-content-between border-bottom border-secondary py-2"><span>🏸 Loại cầu sử dụng:</span><span id="lblLoaiCau" class="text-info fw-bold"></span></div>
+          <div class="d-flex justify-content-between border-bottom border-secondary py-2"><span>⚥ Giới tính tuyển:</span><span id="lblGioiTinhKhach" class="text-light fw-bold"></span></div>
+          <div class="d-flex justify-content-between border-bottom border-secondary py-2"><span>💪 Trình độ yêu cầu (Nam):</span><span id="lblTrinhNam" class="text-danger fw-bold"></span></div>
+          <div class="d-flex justify-content-between border-bottom border-secondary py-2"><span>💪 Trình độ yêu cầu (Nữ):</span><span id="lblTrinhNu" class="text-danger fw-bold"></span></div>
+          
+          <div class="p-2 rounded mt-2" style="background: rgba(0,255,204,0.05); border: 1px solid var(--neon-teal);">
+            <div class="d-flex justify-content-between py-1"><span class="text-white fw-bold">💰 GIÁ SLOT NAM:</span><span id="lblGiaNam" class="text-success fw-bold fs-5"></span></div>
+            <div class="d-flex justify-content-between py-1"><span class="text-white fw-bold">💰 GIÁ SLOT NỮ:</span><span id="lblGiaNu" class="text-success fw-bold fs-5"></span></div>
+          </div>
+          
+          <div class="d-flex justify-content-between border-bottom border-secondary py-2 mt-2"><span>🎁 Quyền lợi bao gồm:</span><span id="lblBaoGom" class="text-light fw-bold"></span></div>
+          <div class="d-flex justify-content-between py-2"><span>🛡️ Quy định đặt cọc:</span><span id="lblCoc" class="text-info fw-bold"></span></div>
+          <div id="lblGhiChuHost" class="mt-3 p-2 rounded text-warning bg-dark small" style="border-left: 4px solid #ffc107; background: #1a202c !important;"></div>
+        </div>
+
+        <div id="formDangKySlot" class="d-none">
+          <div class="section-title mt-4">Thông tin người chơi đăng ký</div>
+          <div class="mb-3"><label class="form-label">Họ và Tên người chơi</label><input type="text" id="txtTen" class="form-control" placeholder="Ví dụ: Nguyễn Văn A"></div>
+          <div class="mb-3"><label class="form-label">Số điện thoại (Zalo liên hệ)</label><input type="text" id="txtSdt" class="form-control" placeholder="Ví dụ: 0908123456"></div>
+          <button class="btn-neon mt-2" onclick="khachBamDangKySlot()"><i class="fa-solid fa-check-double me-1"></i> XÁC NHẬN GIỮ SLOT NGAY</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="tabHost" class="tab-zone d-none">
+      <div class="glass-card">
+        <div class="section-title">Thông Tin Tuyển Dụng công khai</div>
+        <form id="formHostTao" onsubmit="hostDangBaiLenSan(event)">
+          
+          <div class="row mb-3">
+            <div class="col-6">
+              <label class="form-label fw-bold">Tỉnh / Thành phố</label>
+              <select id="hostTinhThanh" class="form-select" onchange="updateQuonHuyenDropdown()">
+                <option value="Hồ Chí Minh">Hồ Chí Minh</option>
+                <option value="Hà Nội">Hà Nội</option>
+                <option value="Bình Dương">Bình Dương</option>
+                <option value="Đồng Nai">Đồng Nai</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label fw-bold">Quận / Huyện</label>
+              <select id="hostQuanHuyen" class="form-select"></select>
+            </div>
+          </div>
+          
+          <div class="mb-3"><label class="form-label fw-bold">Ngày giao lưu</label><input type="date" id="hostNgay" class="form-control" required></div>
+          <div class="mb-3"><label class="form-label fw-bold">Tên ca / Tên kèo phân biệt</label><input type="text" id="hostTenCa" class="form-control" placeholder="Ví dụ: Kèo vãng lai giao lưu tối thứ 7" required></div>
+          <div class="mb-3"><label class="form-label fw-bold">Tên cụm sân (Bắt buộc)</label><input type="text" id="hostTenSan" class="form-control" placeholder="Ví dụ: Sân cầu lông PooC" required></div>
+          <div class="mb-3"><label class="form-label fw-bold">Địa chỉ chi tiết sân (Nhập chữ tự động sinh link Maps)</label><input type="text" id="hostDiaChi" class="form-control" placeholder="Ví dụ: 123 Phan Văn Hớn, Q12..."></div>
+          
+          <div class="row mb-3">
+            <div class="col-6">
+              <label class="form-label fw-bold">Số lượng sân mở</label>
+              <select id="hostSoLuongSan" class="form-select" onchange="tinhToanBoGoiYThuTien()">
+                <option value="1">1 sân</option><option value="2" selected>2 sân</option><option value="3">3 sân</option>
+                <option value="4">4 sân</option><option value="5">5 sân</option><option value="6">6 sân</option>
+                <option value="7">7 sân</option><option value="8">8 sân</option>
+              </select>
+            </div>
+            <div class="col-6"><label class="form-label fw-bold">Sân số mấy</label><input type="text" id="hostSanSo" class="form-control" placeholder="Ví dụ: 1,2 hoặc 3" oninput="formatSanSoInput(this)"></div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-5"><label class="form-label fw-bold">Từ lúc</label><input type="time" id="hostGioBatDau" class="form-control" value="18:00" onchange="tinhTongThoiGianDanh()"></div>
+            <div class="col-5"><label class="form-label fw-bold">Đến lúc</label><input type="time" id="hostGioKetThuc" class="form-control" value="20:00" onchange="tinhTongThoiGianDanh()"></div>
+            <div class="col-2 text-center px-0"><label class="form-label fw-bold">Tổng</label><div id="lblTongTieng" class="fw-bold text-warning pt-3" style="font-size:14px;">2 tiếng</div></div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Giới tính cần tuyển</label>
+            <select id="hostGioiTinhTuyen" class="form-select">
+              <option value="Cả Nam và Nữ">Cả Nam và Nữ</option>
+              <option value="Chỉ tuyển Nam">Chỉ tuyển Nam</option>
+              <option value="Chỉ tuyển Nữ">Chỉ tuyển Nữ</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold d-block">Trình độ cần tuyển (NAM)</label>
+            <div id="tagsTrinhNam">
+              <span class="tag-check" onclick="toggleTagCustom(this, 'Nam_Newbie')">Newbie</span>
+              <span class="tag-check" onclick="toggleTagCustom(this, 'Nam_Yếu')">Yếu</span>
+              <span class="tag-check" onclick="toggleTagCustom(this, 'Nam_TBY')">TBY</span>
+              <span class="tag-check" onclick="toggleTagCustom(this, 'Nam_TB-')">TB-</span>
+              <span class="tag-check" onclick="toggleTagCustom(this, 'Nam_TB+')">TB+</span>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold d-block">Trình độ cần tuyển (NỮ)</label>
+            <div id="tagsTrinhNu">
+              <span class="tag-check" onclick="toggleTagCustom(this, 'Nu_Newbie')">Newbie</span>
+              <span class="tag-check" onclick="toggleTagCustom(this, 'Nu_Yếu')">Yếu</span>
+              <span class="tag-check" onclick="toggleTagCustom(this, 'Nu_TBY')">TBY</span>
+              <span class="tag-check" onclick="toggleTagCustom(this, 'Nu_TB-')">TB-</span>
+              <span class="tag-check" onclick="toggleTagCustom(this, 'Nu_TB+')">TB+</span>
+            </div>
+          </div>
+          <div class="mb-3"><input type="text" id="hostTrinhGhiChu" class="form-control" placeholder="Ghi chú thêm yêu cầu tay vợt..."></div>
+
+          <div class="mb-4">
+            <label class="form-label fw-bold">Chế độ đặt cọc</label>
+            <select id="hostCoc" class="form-select">
+              <option value="Không cần cọc trước">Không cần cọc trước</option>
+              <option value="Cọc giữ chỗ 20.000đ">Cọc giữ chỗ 20.000đ</option>
+            </select>
+          </div>
+
+          <div class="section-title text-info" style="border-left-color: var(--neon-blue);">Hộp Kế Toán Chi Phí & Gợi Ý Thu Tiền Nội Bộ</div>
+          <div class="box-accounting mb-4">
+            
+            <div class="p-3 rounded-3 mb-3" style="background: #111827; border: 2px solid #2d3748;">
+              <label class="form-label fw-bold text-info"><i class="fa-solid fa-money-bill-wave me-1"></i> Giá chốt Public lên sàn tuyển khách (VNĐ)</label>
+              <div class="row g-2">
+                <div class="col-6">
+                  <label class="small text-muted fw-bold">Giá thu NAM / Slot</label>
+                  <input type="text" id="hostGiaNamFake" class="form-control text-success fw-bold fs-5" value="60,000" oninput="formatPublicMoney(this, 'hostGiaNam')">
+                  <input type="hidden" id="hostGiaNam" value="60000">
+                </div>
+                <div class="col-6">
+                  <label class="small text-muted fw-bold">Giá thu NỮ / Slot</label>
+                  <input type="text" id="hostGiaNuFake" class="form-control text-success fw-bold fs-5" value="50,000" oninput="formatPublicMoney(this, 'hostGiaNu')">
+                  <input type="hidden" id="hostGiaNu" value="50000">
+                </div>
+              </div>
+              
+              <label class="form-label small fw-bold d-block text-muted mt-3">Giá trên đã bao gồm trọn gói những mục nào:</label>
+              <div class="d-flex flex-wrap gap-3 mt-1">
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="incSan" checked><label class="form-check-label small" for="incSan">Tiền Sân</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="incCau" checked><label class="form-check-label small" for="incCau">Tiền Cầu</label></div>
+                <div class="form-check"><input class="form-check-input" type="checkbox" id="incNuoc"><label class="form-check-label small" for="incNuoc">Nước uống</label></div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-info">Tiền thuê sân / 1 tiếng (VNĐ)</label>
+              <input type="text" id="accountingTienSan1hFake" class="form-control text-white" value="80,000" oninput="formatAccountingMoney(this, 'accountingTienSan1h')">
+              <input type="hidden" id="accountingTienSan1h" value="80000">
+            </div>
+
+            <div class="mb-3 p-2 rounded-3" style="background: #090d16; border: 2px solid #2d3748;">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <label class="form-label small fw-bold text-warning mb-0">Danh sách các loại cầu sử dụng trong ca</label>
+                <button type="button" class="btn btn-sm btn-info fw-bold text-dark" onclick="addNewCauRow()"><i class="fa-solid fa-plus"></i> Thêm loại cầu</button>
+              </div>
+              <div id="danhSachCauContainer"></div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold text-white">Tiền nước uống / chi phí phát sinh khác (VNĐ)</label>
+              <input type="text" id="accountingTienNuocFake" class="form-control text-white" value="30,000" oninput="formatAccountingMoney(this, 'accountingTienNuoc')">
+              <input type="hidden" id="accountingTienNuoc" value="30000">
+            </div>
+
+            <div class="p-3 rounded-3 mt-3 mb-3" style="background: rgba(0,255,204,0.05); border: 2px solid #00ffcc;">
+              <h6 class="text-info fw-bold mb-3"><i class="fa-solid fa-wand-magic-sparkles"></i> BẢNG TÍNH TOÁN DỰ KIẾN CỦA BAN TỔ CHỨC</h6>
+              <div class="row g-2 mb-3">
+                <div class="col-4"><label class="small text-white fw-bold">SL khách Nam</label><input type="number" id="acNam" class="form-control text-center text-warning" value="4" oninput="tinhToanBoGoiYThuTien()"></div>
+                <div class="col-4"><label class="small text-white fw-bold">SL khách Nữ</label><input type="number" id="acNu" class="form-control text-center text-warning" value="3" oninput="tinhToanBoGoiYThuTien()"></div>
+                <div class="col-4"><label class="small text-white fw-bold">Chênh lệch (đ)</label><input type="number" id="acChenh" class="form-control text-center text-info" value="10000" oninput="tinhToanBoGoiYThuTien()"></div>
+              </div>
+              
+              <button type="button" class="btn btn-info w-100 fw-bold mb-3 text-dark py-2" onclick="tinhToanBoGoiYThuTien()"><i class="fa-solid fa-calculator"></i> BẤM XEM GỢI Ý THU TIỀN / SLOT</button>
+              
+              <div class="mb-2 text-light-clear">Tổng tiền sân dự kiến: <span id="calcTienSan" class="text-white fw-bold">0 đ</span></div>
+              <div class="mb-2 text-light-clear">Tổng tiền cầu ước lượng: <span id="calcTienCau" class="text-white fw-bold">0 đ</span></div>
+              <div class="mb-3 text-light-clear">Tiền nước / phát sinh: <span id="calcTienNuoc" class="text-white fw-bold">0 đ</span></div>
+              
+              <div class="fs-6 text-white border-top border-secondary pt-2">Gợi ý thu NAM: <span id="suggestNam" class="text-warning fw-bold fs-5">0 VNĐ</span></div>
+              <div class="fs-6 text-white">Gợi ý thu NỮ: <span id="suggestNu" class="text-warning fw-bold fs-5">0 VNĐ</span></div>
+            </div>
+
+            <div class="mb-3 mt-3"><label class="form-label small fw-bold text-muted">Nội dung ghi chú khác</label><textarea id="hostNote" class="form-control" rows="2" placeholder="Giới hạn tối đa người trên một sân..."></textarea></div>
+          </div>
+
+          <button type="submit" class="btn-neon" id="btnSubmitHost"><i class="fa-solid fa-paper-plane me-1"></i> XUẤT BẢN KÈO LÊN SÀN TỔNG</button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://kyidswbpfafsoqsdhfpu.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_3Cb5pwmj_zzz88iNiVNmow_JGUWmDzI";
+    const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let danhSachCaSàn = [];
+    let listTrinhNam = [];
+    let listTrinhNu = [];
+    let cauRowCounter = 0;
+
+    const QUAN_HUYEN_DATA = {
+      "Hồ Chí Minh": ["Quận 12", "Quận Gò Vấp", "Quận Bình Thạnh", "Quận Tân Bình", "Quận 1", "Quận 3", "Quận 7", "Thành phố Thủ Đức"],
+      "Hà Nội": ["Quận Cầu Giấy", "Quận Đống Đa", "Quận Ba Đình", "Quận Hai Bà Trưng", "Quận Thanh Xuân"],
+      "Bình Dương": ["Thành phố Thủ Dầu Một", "Thành phố Thuận An", "Thành phố Dĩ An"],
+      "Đồng Nai": ["Thành phố Biên Hòa", "Huyện Long Thành"]
+    };
+
+    function updateQuonHuyenDropdown() {
+      let tinh = document.getElementById('hostTinhThanh').value;
+      let districts = QUAN_HUYEN_DATA[tinh] || [];
+      let html = '';
+      districts.forEach(d => { html += `<option value="${d}">${d}</option>`; });
+      document.getElementById('hostQuanHuyen').innerHTML = html;
+      tinhToanBoGoiYThuTien();
+    }
+
+    function khoiTaoKhungGioMacDinh() {
+      const ngàyHômNay = new Date().toLocaleDateString('en-CA'); 
+      document.getElementById('hostNgay').min = ngàyHômNay;
+      document.getElementById('hostNgay').value = ngàyHômNay;
+      updateQuonHuyenDropdown();
+      tinhTongThoiGianDanh();
+    }
+
+    function tinhTongThoiGianDanh() {
+      let sVal = document.getElementById('hostGioBatDau').value;
+      let eVal = document.getElementById('hostGioKetThuc').value;
+      if(!sVal || !eVal) return;
+      let sMin = parseInt(sVal.split(':')[0])*60 + parseInt(sVal.split(':')[1]);
+      let eMin = parseInt(eVal.split(':')[0])*60 + parseInt(eVal.split(':')[1]);
+      if(eMin <= sMin) { eMin = sMin + 60; let h = Math.floor(eMin/60)%24; let m = eMin%60; document.getElementById('hostGioKetThuc').value = (h<10?'0':'')+h+':'+(m<10?'0':'')+m; }
+      let diff = eMin - sMin; let diffH = Math.floor(diff/60); let diffM = diff%60;
+      document.getElementById('lblTongTieng').innerText = diffM > 0 ? `${diffH}h${diffM}p` : `${diffH} tiếng`;
+      tinhToanBoGoiYThuTien();
+    }
+
+    function changeShuttlecockImage(id) {
+      let val = document.getElementById('cauName_' + id).value;
+      let img = document.getElementById('imgCau_' + id);
+      if(val.includes('VinaStar')) img.src = "https://shopvnb.com/uploads/images/qua-cau-long-vinastar-chinh-hang.webp";
+      else if(val.includes('Yonex')) img.src = "https://shopvnb.com/uploads/images/qua-cau-long-yonex-aerosensa-10-chinh-hang.webp";
+      else if(val.includes('Thành Công')) img.src = "https://shopvnb.com/uploads/images/qua-cau-long-thanh-cong-chinh-hang.webp";
+      else img.src = "https://shopvnb.com/uploads/images/qua-cau-long-hai-yen-chinh-hang.webp";
+    }
+
+    function addNewCauRow(name = "VinaStar Bạc", type = "ONG12", price = 240000, used = 6) {
+      cauRowCounter++;
+      const container = document.getElementById('danhSachCauContainer');
+      const div = document.createElement('div');
+      div.className = 'row-cau-item';
+      div.id = 'cauRow_' + cauRowCounter;
+      div.innerHTML = `
+        <div class="row g-2 align-items-center">
+          <div class="col-2 text-center"><img id="imgCau_${cauRowCounter}" class="img-preview-cau" src=""></div>
+          <div class="col-8">
+            <label class="small">Tên hãng cầu (Gõ chữ xem gợi ý VNB)</label>
+            <input type="text" id="cauName_${cauRowCounter}" class="form-control form-control-sm text-white attr-name" list="vnbShuttlecocks" value="${name}" oninput="changeShuttlecockImage(${cauRowCounter}); tinhToanBoGoiYThuTien();">
+          </div>
+          <div class="col-2 text-end"><button type="button" class="btn btn-sm btn-danger mt-3" onclick="removeCauRow(${cauRowCounter})"><i class="fa-solid fa-trash"></i></button></div>
+          <div class="col-4">
+            <label class="small">Quy cách</label>
+            <select class="form-select form-select-sm attr-type" onchange="tinhToanBoGoiYThuTien()">
+              <option value="ONG12" ${type==='ONG12'?'selected':''}>Ống 12 quả</option>
+              <option value="ONG6" ${type==='ONG6'?'selected':''}>Ống 6 quả</option>
+              <option value="LE1" ${type==='LE1'?'selected':''}>Lẻ 1 quả</option>
+            </select>
+          </div>
+          <div class="col-4">
+            <label class="small">Đơn giá</label>
+            <input type="number" class="form-control form-control-sm attr-price" value="${price}" oninput="tinhToanBoGoiYThuTien()">
+          </div>
+          <div class="col-4">
+            <label class="small text-warning">SL tiêu thụ thực tế</label>
+            <div class="input-group input-group-sm">
+              <input type="number" class="form-control attr-used" value="${used}" oninput="tinhToanBoGoiYThuTien()">
+              <span class="input-group-text bg-dark text-white border-secondary small">quả</span>
+            </div>
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+      changeShuttlecockImage(cauRowCounter);
+      tinhToanBoGoiYThuTien();
+    }
+
+    function removeCauRow(id) { const row = document.getElementById('cauRow_' + id); if(row) row.remove(); tinhToanBoGoiYThuTien(); }
+    function formatSanSoInput(input) { input.value = input.value.replace(/[^0-9,.]/g, ""); }
+    
+    function formatAccountingMoney(input, hiddenId) {
+      let v = input.value.replace(/\D/g, ""); if(!v) v = "0";
+      document.getElementById(hiddenId).value = parseInt(v);
+      input.value = parseInt(v).toLocaleString('vi-VN');
+      tinhToanBoGoiYThuTien();
+    }
+    function formatPublicMoney(input, hiddenId) {
+      let v = input.value.replace(/\D/g, ""); if(!v) v = "0";
+      document.getElementById(hiddenId).value = parseInt(v);
+      input.value = parseInt(v).toLocaleString('vi-VN');
+    }
+
+    // THUẬT TOÁN ĐỘC QUYỀN GIẢI PHƯƠNG TRÌNH PHÂN CHIA CHI PHÍ CHÊNH LỆCH NAM NỮ
+    function tinhToanBoGoiYThuTien() {
+      let soSan = parseInt(document.getElementById('hostSoLuongSan').value) || 1;
+      let sVal = document.getElementById('hostGioBatDau').value;
+      let eVal = document.getElementById('hostGioKetThuc').value;
+      if(!sVal || !eVal) return;
+      let tongTieng = (parseInt(eVal.split(':')[0])*60 + parseInt(eVal.split(':')[1]) - (parseInt(sVal.split(':')[0])*60 + parseInt(sVal.split(':')[1]))) / 60;
+
+      let tienSan1h = parseInt(document.getElementById('accountingTienSan1h').value) || 0;
+      let tongTienSan = tienSan1h * tongTieng * soSan;
+      
+      let tongTienCau = 0;
+      document.querySelectorAll('.row-cau-item').forEach(row => {
+        let type = row.querySelector('.attr-type').value;
+        let price = parseInt(row.querySelector('.attr-price').value) || 0;
+        let used = parseFloat(row.querySelector('.attr-used').value) || 0;
+        if(type === 'ONG12') tongTienCau += (Math.round(price / 12) * used);
+        else if(type === 'ONG6') tongTienCau += (Math.round(price / 6) * used);
+        else tongTienCau += (price * used);
+      });
+      
+      let tienNuoc = parseInt(document.getElementById('accountingTienNuoc').value) || 0;
+      let tongChiPhi = tongTienSan + tongTienCau + tienNuoc;
+      
+      let nNam = parseInt(document.getElementById('acNam').value) || 0;
+      let nNu = parseInt(document.getElementById('acNu').value) || 0;
+      let chenh = parseInt(document.getElementById('acChenh').value) || 0;
+      
+      let giaNu = 0; let giaNam = 0;
+      if((nNam + nNu) > 0) {
+        giaNu = Math.round((tongChiPhi - (nNam * chenh)) / (nNam + nNu));
+        giaNam = giaNu + chenh;
+      }
+      if(giaNu < 0) { giaNu = 0; giaNam = nNam > 0 ? Math.round(tongChiPhi / nNam) : 0; }
+
+      document.getElementById('calcTienSan').innerText = tongTienSan.toLocaleString('vi-VN') + " đ";
+      document.getElementById('calcTienCau').innerText = tongTienCau.toLocaleString('vi-VN') + " đ";
+      document.getElementById('calcTienNuoc').innerText = tienNuoc.toLocaleString('vi-VN') + " đ";
+      document.getElementById('suggestNam').innerText = giaNam.toLocaleString('vi-VN') + " VNĐ";
+      document.getElementById('suggestNu').innerText = giaNu.toLocaleString('vi-VN') + " VNĐ";
+    }
+
+    function toggleTagCustom(el, val) {
+      el.classList.toggle('active');
+      let act = el.classList.contains('active');
+      if(val.startsWith('Nam_')) {
+        let tag = val.replace('Nam_', '');
+        if(act) listTrinhNam.push(tag); else listTrinhNam = listTrinhNam.filter(x => x !== tag);
+      } else {
+        let tag = val.replace('Nu_', '');
+        if(act) listTrinhNu.push(tag); else listTrinhNu = listTrinhNu.filter(x => x !== tag);
+      }
+    }
+
+    function adjustPrice(amt) {
+      let cur = parseInt(document.getElementById('hostGiaNam').value) || 0;
+      let target = Math.max(0, cur + amt);
+      document.getElementById('hostGiaNam').value = target;
+      document.getElementById('hostGiaNamFake').value = target.toLocaleString('vi-VN');
+    }
+
+    function chuyenTabHeThong(num) {
+      if(num === 1) {
+        document.getElementById('tabKhach').classList.remove('d-none');
+        document.getElementById('tabHost').classList.add('d-none');
+        document.getElementById('btnTabKhach').classList.add('active-neon');
+        document.getElementById('btnTabHost').classList.remove('active-neon');
+        tảiToànBộCaMởCủaSàn();
+      } else {
+        document.getElementById('tabHost').classList.remove('d-none');
+        document.getElementById('tabKhach').classList.add('d-none');
+        document.getElementById('btnTabHost').classList.add('active-neon');
+        document.getElementById('btnTabKhach').classList.remove('active-neon');
+      }
+    }
+
+    function tảiToànBộCaMởCủaSàn() {
+      client.from('slots').select('*').then(res => {
+        danhSachCaSàn = res.data || [];
+        const select = document.getElementById('selectCaSàn');
+        if(danhSachCaSàn.length === 0) { select.innerHTML = '<option value="">-- Hiện tại chưa có kèo nào trên sàn --</option>'; return; }
+        let html = '<option value="">-- Bấm vào đây xem danh sách kèo phủi vừa update --</option>';
+        danhSachCaSàn.forEach(ca => {
+          html += `<option value="${ca.id_ca}">🏸 [${ca.ngay_danh}] ${ca.ten_ca} - Sân: ${ca.ten_san}</option>`;
+        });
+        select.innerHTML = html;
+      });
+    }
+
+    function loadChiTietCaChoKhach() {
+      const idCa = document.getElementById('selectCaSàn').value;
+      if(!idCa) { document.getElementById('khoiChiTietKèo').classList.add('d-none'); document.getElementById('formDangKySlot').classList.add('d-none'); return; }
+      const ca = danhSachCaSàn.find(x => x.id_ca === idCa);
+      if(!ca) return;
+
+      document.getElementById('lblTenCa').innerHTML = `<i class="fa-solid fa-shuttlecock text-info"></i> ${ca.ten_ca.toUpperCase()}`;
+      document.getElementById('lblSan').innerText = ca.ten_san;
+      
+      // Bóc tách khu vực tỉnh thành quận huyện
+      let locs = (ca.so_luong_san || "").split('||');
+      document.getElementById('lblKhuVucKhach').innerText = locs[1] ? locs[1] : "TP. Hồ Chí Minh";
+      document.getElementById('lblQuyMo').innerText = locs[0] || "1 Sân";
+
+      // Khởi dựng link bản đồ tự động
+      let mapNode = document.getElementById('lblDiaChi');
+      if(ca.dia_chi_san && (ca.dia_chi_san.includes('http') || ca.dia_chi_san.includes('www'))) {
+        mapNode.innerHTML = `<a href="${ca.dia_chi_san}" target="_blank" class="text-info fw-bold"><i class="fa-solid fa-map-location-dot"></i> Bấm mở Google Maps</a>`;
+      } else if(ca.dia_chi_san) {
+        mapNode.innerHTML = `<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ca.dia_chi_san)}" target="_blank" class="text-info fw-bold"><i class="fa-solid fa-map-location-dot"></i> ${ca.dia_chi_san} (Bấm để xem vị trí)</a>`;
+      } else {
+        mapNode.innerText = "Chưa cập nhật";
+      }
+      
+      document.getElementById('lblGio').innerText = ca.khung_gio;
+      document.getElementById('lblLoaiCau').innerText = ca.link_fb || "Cầu phủi";
+      
+      // Bóc tách trình độ và giới tính bọc gói bảo mật
+      let trinhGom = (ca.trinh_do_tuyen || "").split('||');
+      document.getElementById('lblTrinhNam').innerText = trinhGom[0] || "Tự do";
+      document.getElementById('lblTrinhNu').innerText = trinhGom[1] || "Tự do";
+
+      let packExtra = (ca.username_tele || "").split('||');
+      document.getElementById('lblGioiTinhKhach').innerText = packExtra[1] || "Nam & Nữ";
+      document.getElementById('lblCoc').innerText = packExtra[0] || "Không cọc";
+
+      // XUẤT GIÁ NAM NỮ CÔNG KHAI LÊN THÀNH CÔNG 100%
+      let giaNamXuat = parseInt(ca.gia_slot_vang_lai) || 0;
+      let giaNuXuat = parseInt(packExtra[2]) || 0;
+      document.getElementById('lblGiaNam').innerText = giaNamXuat.toLocaleString('vi-VN') + " đ / Slot";
+      document.getElementById('lblGiaNu').innerText = giaNuXuat.toLocaleString('vi-VN') + " đ / Slot";
+
+      document.getElementById('lblBaoGom').innerText = ca.che_do_coc || "Trọn gói";
+      document.getElementById('lblGhiChuHost').innerHTML = `<strong>Lưu ý từ ban tổ chức:</strong> ${ca.ghi_chu_host || "Không có."}`;
+
+      document.getElementById('khoiChiTietKèo').classList.remove('d-none');
+      document.getElementById('formDangKySlot').classList.remove('d-none');
+    }
+
+    function khachBamDangKySlot() {
+      const idCa = document.getElementById('selectCaSàn').value;
+      const ten = document.getElementById('txtTen').value.trim();
+      const sdt = document.getElementById('txtSdt').value.trim();
+      if(!ten || !sdt) { alert("⚠️ Nhập đầy đủ Tên và Số điện thoại nhé bạn ơi!"); return; }
+      const codeDk = "DK-" + Math.floor(1000 + Math.random() * 9000);
+      client.from('bookings').insert([{ id_dang_ky: codeDk, id_ca: idCa, text_khach: ten, so_dien_thoai: sdt }]).then(res => {
+        alert(`🎉 ĐĂNG KÝ SLOT THÀNH CÔNG!\nMã giữ chỗ: ${codeDk}`);
+        document.getElementById('txtTen').value = ""; document.getElementById('txtSdt').value = "";
+        document.getElementById('khoiChiTietKèo').classList.add('d-none'); document.getElementById('formDangKySlot').classList.add('d-none'); document.getElementById('selectCaSàn').value = "";
+      });
+    }
+
+    function hostDangBaiLenSan(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSubmitHost');
+      btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin me-1"></i> ĐANG XUẤT BẢN KÈO...`;
+      btn.disabled = true;
+
+      const codeCa = "CA-" + Math.floor(1000 + Math.random() * 9000);
+      let bg = [];
+      if(document.getElementById('incSan').checked) bg.push("Sân");
+      if(document.getElementById('incCau').checked) bg.push("Cầu");
+      if(document.getElementById('incNuoc').checked) bg.push("Nước");
+
+      let sVal = document.getElementById('hostGioBatDau').value;
+      let eVal = document.getElementById('hostGioKetThuc').value;
+      let chuoiKhungGio = `${sVal} - ${eVal} (${document.getElementById('lblTongTieng').innerText})`;
+
+      let chuoiCầuGom = [];
+      document.querySelectorAll('.row-cau-item').forEach(row => {
+        let n = row.querySelector('.attr-name').value.trim();
+        let u = row.querySelector('.attr-used').value;
+        if(n) chuoiCầuGom.push(`${n} (${u} quả)`);
+      });
+
+      let khuvucGom = document.getElementById('hostTinhThanh').value + " -> " + document.getElementById('hostQuanHuyen').value;
+
+      const pack = {
+        id_ca: codeCa,
+        category_slug: "caulong",
+        ngay_danh: document.getElementById('hostNgay').value,
+        ten_ca: document.getElementById('hostTenCa').value.trim(),
+        ten_san: document.getElementById('hostTenSan').value.trim(),
+        dia_chi_san: document.getElementById('hostDiaChi').value.trim(),
+        so_luong_san: document.getElementById('hostSoLuongSan').value + " Sân" + "||" + khuvucGom, 
+        trang_thai: document.getElementById('hostSanSo').value.trim(), 
+        khung_gio: chuoiKhungGio,
+        gia_slot_vang_lai: parseInt(document.getElementById('hostGiaNam').value) || 0, // Giá Nam
+        link_fb: chuoiCầuGom.join(", ") || "VinaStar", 
+        che_do_coc: "Đã gồm: " + bg.join(", "), 
+        trinh_do_tuyen: (listTrinhNam.join(",") || "Tự do") + "||" + (listTrinhNu.join(",") || "Tự do"),
+        username_tele: document.getElementById('hostCoc').value + "||" + document.getElementById('hostGioiTinhTuyen').value + "||" + (document.getElementById('hostGiaNu').value), 
+        ghi_chu_host: document.getElementById('hostNote').value.trim(),
+      };
+
+      client.from('slots').insert([pack]).then(res => {
+        alert(`🚀 ĐĂNG BÀI LÊN SÀN THÀNH CÔNG!\nMã số ca: ${codeCa}`);
+        btn.innerHTML = `<i class="fa-solid fa-paper-plane me-1"></i> XUẤT BẢN KÈO LÊN SÀN TỔNG`;
+        btn.disabled = false;
+        document.getElementById('formHostTao').reset();
+        listTrinhNam = []; listTrinhNu = [];
+        document.querySelectorAll('.tag-check').forEach(x => x.classList.remove('active'));
+        document.getElementById('danhSachCauContainer').innerHTML = "";
+        addNewCauRow(); 
+        chuyenTabHeThong(1);
+      });
+    }
+
+    window.onload = function() {
+      khoiTaoKhungGioMacDinh();
+      addNewCauRow(); 
+      tảiToànBộCaMởCủaSàn();
+    };
+  </script>
+</body>
+</html>
