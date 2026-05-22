@@ -4,18 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CHỢ KÈO VÃNG LAI - Sảnh Điều Hướng</title>
-    <!-- Nhúng Font chữ Cao cấp Google Fonts API -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Thư viện biểu tượng FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Cấu trúc phong cách tách biệt có Version kiểm soát cache -->
     <link rel="stylesheet" href="style.css?v=3.5">
 </head>
 <body>
 
-    <!-- Nút chuyển đổi Theme tuyệt đối góc trên bên phải -->
     <div class="theme-container">
         <button class="theme-btn" id="btnToggleTheme" aria-label="Đổi chế độ sáng tối">
             <i class="fa-solid fa-moon" id="iconTheme"></i>
@@ -23,17 +19,14 @@
         </button>
     </div>
 
-    <!-- Khung giao diện chính Trung tâm sảnh chờ -->
     <main class="main-panel">
         <div class="header-box">
             <h1 class="title-app">Chợ Kèo Vãng Lai</h1>
             <p class="tagline">Nền tảng kết nối phủi chuyên nghiệp</p>
         </div>
 
-        <!-- Khối điều phối cổng kết nối hành trình người dùng -->
         <div class="gateway-wrapper">
             
-            <!-- Phân luồng dành cho Khách chơi cầu lông -->
             <a href="khach.html" class="btn-gateway btn-khach-style">
                 <div class="content-layout">
                     <i class="fa-solid fa-shuttlecock icon-prime"></i>
@@ -45,7 +38,6 @@
                 <i class="fa-solid fa-chevron-right icon-arrow"></i>
             </a>
 
-            <!-- Phân luồng dành cho Chủ sân / Ban tổ chức -->
             <a href="host.html" class="btn-gateway btn-host-style">
                 <div class="content-layout">
                     <i class="fa-solid fa-calendar-plus icon-prime"></i>
@@ -59,13 +51,11 @@
 
         </div>
 
-        <!-- Vùng chân trang định danh quản trị bí mật -->
         <div class="footer-bar">
-            <a href="/admin/" class="manage-anchor">System Management</a>
+            <a href="/admin/" class="manage-anchor">SYSTEM MANAGEMENT</a>
         </div>
     </main>
 
-    <!-- Logic Script đồng bộ hóa và xử lý trạng thái giao diện UI -->
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const htmlRoot = document.documentElement;
