@@ -2,236 +2,274 @@
 <html lang="vi" data-theme="light">
 <head>
     <meta charset="UTF-8">
-    <!-- Cấu hình viewport chuẩn cho thiết bị di động, chống phóng to thu nhỏ làm vỡ layout -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CHỢ KÈO VÃNG LAI - Cổng Kết Nối Cầu Lông</title>
-
-    <!-- Nhúng Google Fonts: Plus Jakarta Sans với các định dạng trọng số phổ biến -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CHỢ KÈO VÃNG LAI - ĐẲNG CẤP SÂN PHỦI</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-    <!-- Nhúng FontAwesome 6.5.1 CDN để sử dụng hệ thống biểu tượng -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="crossorigin" referrerpolicy="no-referrer" />
-
-    <!-- Liên kết stylesheet bên ngoài kèm mã phiên bản để tránh lỗi lưu đệm trình duyệt -->
     <link rel="stylesheet" href="style.css?v=3.5">
-
-    <!-- Khối mã style nhúng bắt buộc: Ép toàn bộ thành phần kế thừa font chữ Plus Jakarta Sans -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        * {
-            font-family: 'Plus Jakarta Sans', sans-serif !important;
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { font-family: 'Plus Jakarta Sans', sans-serif !important; }
 
-        /* Định nghĩa hệ thống biến màu sắc cho Light và Dark mode phục vụ UI/UX cao cấp */
+        /* Định nghĩa hệ thống biến màu sắc tùy biến theo Theme (Light/Dark) */
         :root[data-theme="light"] {
-            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
-            --panel-bg: rgba(255, 255, 255, 0.85);
-            --panel-shadow: 0 20px 40px rgba(0, 0, 0, 0.06);
-            --text-main: #1e293b;
-            --text-muted: #64748b;
-            --gradient-title: linear-gradient(135deg, #0f172a 0%, #2563eb 100%);
-            --btn-khach-bg: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            --btn-khach-text: #ffffff;
-            --btn-host-bg: linear-gradient(135deg, #10b981 0%, #047857 100%);
-            --btn-host-text: #ffffff;
-            --anchor-color: #475569;
-            --anchor-hover: #2563eb;
-            --toggle-bg: #e2e8f0;
-            --toggle-icon: #475569;
+            --nen-giao-dien: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            --nen-khung-trung-tam: rgba(255, 255, 255, 0.80);
+            --vien-khung: rgba(255, 255, 255, 0.40);
+            --bong-mo-khung: 0 25px 50px -12px rgba(15, 23, 42, 0.08);
+            --chu-chinh: #0f172a;
+            --chu-phu: #475569;
+            --chu-nut-bam: #ffffff;
+            --goc-nut-khach: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            --bong-nut-khach: rgba(37, 99, 235, 0.3);
+            --goc-nut-host: linear-gradient(135deg, #10b981 0%, #047857 100%);
+            --bong-nut-host: rgba(16, 185, 129, 0.3);
+            --chu-quan-tri: #64748b;
+            --chu-quan-tri-hover: #2563eb;
+            --nen-nut-theme: #ffffff;
+            --chu-nut-theme: #0f172a;
+            --vien-nut-theme: #e2e8f0;
         }
 
         :root[data-theme="dark"] {
-            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #020617 100%);
-            --panel-bg: rgba(30, 41, 59, 0.7);
-            --panel-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --gradient-title: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
-            --btn-khach-bg: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-            --btn-khach-text: #ffffff;
-            --btn-host-bg: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            --btn-host-text: #ffffff;
-            --anchor-color: #94a3b8;
-            --anchor-hover: #38bdf8;
-            --toggle-bg: #334155;
-            --toggle-icon: #f59e0b;
+            --nen-giao-dien: linear-gradient(135deg, #020617 0%, #0f172a 100%);
+            --nen-khung-trung-tam: rgba(30, 41, 59, 0.70);
+            --vien-khung: rgba(255, 255, 255, 0.05);
+            --bong-mo-khung: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            --chu-chinh: #f8fafc;
+            --chu-phu: #94a3b8;
+            --chu-nut-bam: #ffffff;
+            --goc-nut-khach: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            --bong-nut-khach: rgba(37, 99, 235, 0.4);
+            --goc-nut-host: linear-gradient(135deg, #059669 0%, #065f46 100%);
+            --bong-nut-host: rgba(5, 150, 105, 0.4);
+            --chu-quan-tri: #94a3b8;
+            --chu-quan-tri-hover: #38bdf8;
+            --nen-nut-theme: #1e293b;
+            --chu-nut-theme: #f59e0b;
+            --vien-nut-theme: #334155;
         }
 
-        /* Thiết lập cấu trúc giao diện nền căn giữa tuyệt đối */
+        /* Thiết lập các thuộc tính reset và định dạng cơ bản cho toàn trang */
         body {
-            background: var(--bg-gradient);
+            margin: 0;
+            padding: 0;
             min-height: 100vh;
+            background: var(--nen-giao-dien);
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
             position: relative;
-            overflow-x: hidden;
-            transition: background 0.4s ease;
+            transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
         }
 
-        /* Vùng điều khiển chuyển đổi giao diện đặt ở góc trên bên phải màn hình */
+        /* Lớp phủ hiệu ứng lưới trừu tượng tinh tế cho nền giao diện phía sau */
+        body::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(var(--vien-nut-theme) 1px, transparent 1px);
+            background-size: 24px 24px;
+            opacity: 0.3;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Vùng chứa nút chuyển đổi giao diện đặt ở góc trên bên phải trang */
         .theme-container {
             position: absolute;
-            top: 24px;
-            right: 24px;
-            z-index: 100;
+            top: 2rem;
+            right: 2rem;
+            z-index: 10;
         }
 
         .theme-container .theme-btn {
-            background: var(--toggle-bg);
-            color: var(--toggle-icon);
-            border: none;
-            width: 48px;
-            height: 48px;
+            background: var(--nen-nut-theme);
+            color: var(--chu-nut-theme);
+            border: 1px solid var(--vien-nut-theme);
+            width: 3.2rem;
+            height: 3.2rem;
             border-radius: 50%;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            font-size: 1.25rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .theme-container .theme-btn:hover {
-            transform: scale(1.1) rotate(15deg);
+            transform: scale(1.08) rotate(15deg);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
         }
 
-        /* Khối xử lý trung tâm (Main Panel) - Đảm bảo tỷ lệ cân bằng, hiệu ứng Glassmorphism */
+        /* Khung Panel trung tâm sử dụng kỹ thuật Glassmorphic hiện đại */
         .main-panel {
-            background: var(--panel-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 48px 40px;
-            border-radius: 24px;
+            position: relative;
+            z-index: 2;
             width: 100%;
-            max-width: 480px;
+            max-width: 460px;
+            margin: 1.5rem;
+            background: var(--nen-khung-trung-tam);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--vien-khung);
+            border-radius: 2rem;
+            padding: 3.5rem 2.5rem;
             text-align: center;
-            box-shadow: var(--panel-shadow);
-            transition: all 0.4s ease;
-            margin: 20px;
+            box-shadow: var(--bong-mo-khung);
+            transition: background 0.5s ease, border 0.5s ease, box-shadow 0.5s ease;
         }
 
-        /* Thiết kế tiêu đề hệ thống với hiệu ứng Text Gradient đổ màu cao cấp */
+        /* Tiêu đề nền tảng với hiệu ứng chuyển màu chữ dải Gradient cao cấp */
         .main-panel h1 {
-            font-size: 2.2rem;
+            font-size: 2.4rem;
             font-weight: 800;
-            letter-spacing: -0.5px;
-            margin-bottom: 12px;
-            background: var(--gradient-title);
+            letter-spacing: -0.05em;
+            margin: 0 0 0.5rem 0;
+            background: linear-gradient(135deg, #2563eb 0%, #10b981 50%, #6366f1 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
 
-        /* Thẻ mô tả dòng trạng thái (Tagline) */
+        /* Thẻ mô tả phụ đề bên dưới tiêu đề chính */
         .main-panel .tagline {
-            color: var(--text-muted);
             font-size: 1.05rem;
+            color: var(--chu-phu);
             font-weight: 500;
-            margin-bottom: 40px;
+            margin-bottom: 3.5rem;
+            letter-spacing: 0.02em;
         }
 
-        /* Hệ thống tập hợp nút điều hướng luồng người dùng (Routing Buttons) */
-        .action-group {
+        /* Khung nhóm tập hợp các liên kết nút điều hướng */
+        .gateway-actions {
             display: flex;
             flex-direction: column;
-            gap: 16px;
-            margin-bottom: 32px;
+            gap: 1.25rem;
+            margin-bottom: 3rem;
         }
 
-        /* Định dạng cấu trúc cơ bản cho các Button Gateway */
+        /* Cấu trúc thiết kế chung cho toàn bộ nút bấm Gateway */
         .btn-gateway {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
-            padding: 16px 24px;
-            font-size: 1.05rem;
+            gap: 0.85rem;
+            padding: 1.15rem 2rem;
+            font-size: 1.1rem;
             font-weight: 700;
             text-decoration: none;
-            border-radius: 14px;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border-radius: 1.25rem;
+            color: var(--chu-nut-bam);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
 
-        .btn-gateway:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        /* Hiệu ứng hào quang quét sáng khi di chuột qua nút */
+        .btn-gateway::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -50%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.15), transparent);
+            transform: skewX(-25deg);
+            transition: 0.75s;
+            opacity: 0;
         }
 
-        .btn-gateway:active {
-            transform: translateY(0);
+        .btn-gateway:hover::after {
+            left: 120%;
+            opacity: 1;
         }
 
-        /* Phong cách nút dành riêng cho Khách tìm kèo */
+        /* Áp dụng kiểu dáng chuyển màu và đổ bóng cụ thể cho nút Tìm Kèo */
         .btn-khach-style {
-            background: var(--btn-khach-bg);
-            color: var(--btn-khach-text);
+            background: var(--goc-nut-khach);
+            box-shadow: 0 8px 24px var(--bong-nut-khach);
         }
 
-        /* Phong cách nút dành riêng cho Chủ sân đăng ca */
+        /* Áp dụng kiểu dáng chuyển màu và đổ bóng cụ thể cho nút Đăng Ca */
         .btn-host-style {
-            background: var(--btn-host-bg);
-            color: var(--btn-host-text);
+            background: var(--goc-nut-host);
+            box-shadow: 0 8px 24px var(--bong-nut-host);
         }
 
-        /* Cấu trúc biểu tượng bên trong nút bấm */
+        /* Thiết lập tương tác chuyển động kéo nâng nhẹ lên khi Hover */
+        .btn-gateway:hover {
+            transform: translateY(-3px);
+        }
+
+        .btn-gateway:hover.btn-khach-style {
+            box-shadow: 0 12px 28px var(--bong-nut-khach);
+        }
+
+        .btn-gateway:hover.btn-host-style {
+            box-shadow: 0 12px 28px var(--bong-nut-host);
+        }
+
+        /* Phản hồi nhấn nút giảm nhẹ độ cao */
+        .btn-gateway:active {
+            transform: translateY(-1px);
+        }
+
+        /* Căn chỉnh kích thước tỷ lệ biểu tượng icon bên trong nút */
         .btn-gateway i {
-            font-size: 1.2rem;
+            font-size: 1.25rem;
         }
 
-        /* Khu vực chân trang chứa liên kết quản trị hệ thống */
-        .footer-utility {
-            margin-top: 8px;
-        }
-
+        /* Liên kết hệ thống quản trị nội bộ ở cuối khung panel */
         .manage-anchor {
-            color: var(--anchor-color);
-            font-size: 0.9rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: color 0.2s ease;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--chu-quan-tri);
+            text-decoration: none;
+            transition: color 0.3s ease, transform 0.3s ease;
         }
 
         .manage-anchor:hover {
-            color: var(--anchor-hover);
+            color: var(--chu-quan-tri-hover);
+            transform: scale(1.02);
         }
 
-        /* Tối ưu hóa hiển thị Responsive thích ứng mượt mà trên di động (iPhone/Android) */
+        .manage-anchor i {
+            font-size: 0.85rem;
+        }
+
+        /* Tối ưu hóa giao diện hoàn toàn tương thích trên thiết bị di động nhỏ */
         @media (max-width: 480px) {
             .theme-container {
-                top: 16px;
-                right: 16px;
+                top: 1.25rem;
+                right: 1.25rem;
             }
             .theme-container .theme-btn {
-                width: 42px;
-                height: 42px;
+                width: 2.8rem;
+                height: 2.8rem;
                 font-size: 1.1rem;
             }
             .main-panel {
-                padding: 36px 24px;
-                margin: 16px;
-                border-radius: 20px;
+                padding: 3rem 1.75rem;
+                margin: 1rem;
+                border-radius: 1.5rem;
             }
             .main-panel h1 {
-                font-size: 1.8rem;
+                font-size: 2rem;
             }
             .main-panel .tagline {
                 font-size: 0.95rem;
-                margin-bottom: 32px;
+                margin-bottom: 2.5rem;
             }
             .btn-gateway {
-                padding: 14px 20px;
+                padding: 1rem 1.5rem;
                 font-size: 1rem;
             }
         }
@@ -239,100 +277,90 @@
 </head>
 <body>
 
-    <!-- Thành phần đổi giao diện (Theme Switcher) đặt tuyệt đối ở góc trên bên phải -->
+    <!-- Khối nút bấm chuyển giao diện Sáng / Tối tuyệt đối góc màn hình -->
     <div class="theme-container">
-        <button id="themeToggleBtn" class="theme-btn" aria-label="Chuyển đổi giao diện">
+        <button id="js-theme-toggle" class="theme-btn" title="Chuyển chế độ hiển thị">
             <i class="fa-solid fa-moon"></i>
         </button>
     </div>
 
-    <!-- Khối bảng điều khiển trung tâm (Center Core Panel) -->
+    <!-- Khung chức năng điều hướng cổng vào trung tâm -->
     <main class="main-panel">
-        <!-- Tên nền tảng hiển thị dạng Text-Gradient -->
+        <!-- Tên hệ thống nền tảng -->
         <h1>CHỢ KÈO VÃNG LAI</h1>
         
-        <!-- Câu khẩu hiệu Tagline nền tảng -->
+        <!-- Khẩu hiệu phụ đề định vị sản phẩm -->
         <p class="tagline">Nền tảng kết nối phủi chuyên nghiệp</p>
 
-        <!-- Nhóm điều hướng chính của trang Entry Gateway -->
-        <div class="action-group">
-            <!-- Nút điều hướng 1: Dành cho người chơi tìm kiếm danh sách ca đấu -->
+        <!-- Danh sách các hành động điều hướng cổng đích -->
+        <div class="gateway-actions">
+            <!-- Đường dẫn luồng giao diện dành cho Khách hàng vãng lai tìm kiếm ca đấu -->
             <a href="khach.html" class="btn-gateway btn-khach-style">
-                <i class="fa-solid fa-magnifying-glass-location"></i> VÀO TÌM KÈO THƠM
+                <i class="fa-solid fa-magnifying-glass-location"></i>
+                <span>VÀO TÌM KÈO THƠM</span>
             </a>
 
-            <!-- Nút điều hướng 2: Dành cho chủ sân muốn khởi tạo trận đấu mới -->
+            <!-- Đường dẫn luồng giao diện dành cho Chủ sân hoặc Đại diện cụm sân cần gom người -->
             <a href="host.html" class="btn-gateway btn-host-style">
-                <i class="fa-solid fa-square-plus"></i> CHỦ SÂN: ĐĂNG CA ĐẤU
+                <i class="fa-solid fa-square-plus"></i>
+                <span>CHỦ SÂN: ĐĂNG CA ĐẤU</span>
             </a>
         </div>
 
-        <!-- Khu vực tiện ích chân trang dẫn về trang quản trị nội bộ -->
+        <!-- Tiện ích điều hướng chuyển tiếp sang phân hệ quản trị hệ thống chuyên sâu -->
         <div class="footer-utility">
             <a href="/admin/" class="manage-anchor">
-                <i class="fa-solid fa-gear"></i> System Management
+                <i class="fa-solid fa-gears"></i>
+                <span>System Management</span>
             </a>
         </div>
     </main>
 
-    <!-- Khối xử lý JavaScript vận hành đổi chế độ hiển thị sáng/tối -->
+    <!-- Khối kịch bản xử lý logic lưu trữ trạng thái và vận hành cơ chế Theme Toggle chuyển đổi mượt mà -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            const themeToggleBtn = document.getElementById('js-theme-toggle');
             const iconElement = themeToggleBtn.querySelector('i');
-            const htmlElement = document.documentElement;
+            const rootElement = document.documentElement;
 
             /**
-             * Hàm khởi tạo cấu hình giao diện ban đầu dựa trên dữ liệu đã lưu 
-             * trong localStorage hoặc độ ưu tiên cấu hình hệ thống người dùng.
+             * Thực hiện quét trạng thái lưu trữ trong bộ nhớ LocalStorage để xác lập theme phù hợp ngay khi vừa khởi chạy trang
              */
-            function initializeTheme() {
-                // Đọc trạng thái giao diện đã lưu từ bộ nhớ trình duyệt với khóa 'app-theme'
-                const savedTheme = localStorage.getItem('app-theme');
-                
-                if (savedTheme) {
-                    // Nếu có cấu hình lưu sẵn, áp dụng trực tiếp lên thuộc tính data-theme của thẻ html
-                    htmlElement.setAttribute('data-theme', savedTheme);
-                    updateToggleIcon(savedTheme);
-                } else {
-                    // Trường hợp thiết bị chưa có dữ liệu cấu hình, mặc định sử dụng chế độ light
-                    htmlElement.setAttribute('data-theme', 'light');
-                    updateToggleIcon('light');
-                }
-            }
+            const initializeApplicationTheme = () => {
+                // Đọc cờ dữ liệu toàn cục từ khóa bộ nhớ cấu hình có tên 'app-theme'
+                const cachedTheme = localStorage.getItem('app-theme');
 
-            /**
-             * Hàm thực hiện việc hoán đổi và cập nhật icon tương ứng với giao diện hiện hành
-             * @param {string} theme - Chuỗi định danh giao diện hiện tại ('light' hoặc 'dark')
-             */
-            function updateToggleIcon(theme) {
-                if (theme === 'dark') {
-                    // Chế độ tối: Hiển thị icon Mặt Trời để chuyển sang sáng
+                if (cachedTheme === 'dark') {
+                    rootElement.setAttribute('data-theme', 'dark');
                     iconElement.className = 'fa-solid fa-sun';
                 } else {
-                    // Chế độ sáng: Hiển thị icon Mặt Trăng để chuyển sang tối
+                    // Mặc định luôn cấu hình rơi về chế độ Light nếu chưa từng phát sinh cấu hình cá nhân
+                    rootElement.setAttribute('data-theme', 'light');
                     iconElement.className = 'fa-solid fa-moon';
                 }
-            }
+            };
 
             /**
-             * Sự kiện click chuột xử lý logic đảo ngược trạng thái giao diện hiện tại
+             * Lắng nghe sự kiện click của người dùng nhằm đảo chiều giá trị của thuộc tính cấu trúc giao diện nền
              */
             themeToggleBtn.addEventListener('click', () => {
-                const currentTheme = htmlElement.getAttribute('data-theme');
-                // Tính toán xác định trạng thái giao diện mới cần chuyển đổi
-                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-                // Cập nhật thuộc tính trên cây DOM và đồng bộ icon hiển thị
-                htmlElement.setAttribute('data-theme', newTheme);
-                updateToggleIcon(newTheme);
-
-                // Ghi nhớ vĩnh viễn cấu hình lựa chọn của người dùng vào localStorage của trình duyệt
-                localStorage.setItem('app-theme', newTheme);
+                const currentActiveTheme = rootElement.getAttribute('data-theme');
+                
+                if (currentActiveTheme === 'dark') {
+                    // Chuyển sang chế độ Sáng
+                    rootElement.setAttribute('data-theme', 'light');
+                    iconElement.className = 'fa-solid fa-moon';
+                    localStorage.setItem('app-theme', 'light');
+                } else {
+                    // Chuyển sang chế độ Tối
+                    rootElement.setAttribute('data-theme', 'dark');
+                    iconElement.className = 'fa-solid fa-sun';
+                    localStorage.setItem('app-theme', 'dark');
+                }
             });
 
-            // Kích hoạt hàm kiểm tra và cấu hình giao diện ngay khi trang tải xong dữ liệu cấu trúc
-            initializeTheme();
+            // Triển khai tiến trình khởi chạy cấu hình giao diện ban đầu
+            initializeApplicationTheme();
         });
     </script>
 </body>
