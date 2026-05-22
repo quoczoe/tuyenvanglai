@@ -262,3 +262,98 @@ h1 {
     opacity: 1;
     text-shadow: 0 0 10px var(--glow-primary);
 }
+
+/* ==========================================================================
+   BỔ SUNG BỘ KHUNG POPUP & CARD CHUYÊN NGHIỆP CHO TRANG KHÁCH NỀN SHADCN UI
+   ========================================================================== */
+
+/* LỚP NỀN PHỦ ĐÈ TOÀN TRANG CHO POPUP (MODAL OVERLAY) */
+.modal {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(3, 3, 7, 0.6);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    z-index: 9999;
+    display: none; /* Mặc định ẩn, chỉ hiện qua JS */
+    justify-content: center; align-items: center;
+    padding: 20px; box-sizing: border-box;
+}
+
+/* HỘP NỘI DUNG POPUP - NỔI TRÊN KHÔNG GIAN 3D */
+.modal-content {
+    width: 100%; max-width: 420px;
+    background: #0b0c14 !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 24px !important;
+    padding: 35px 30px !important;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+    text-align: center;
+    position: relative;
+    box-sizing: border-box;
+    animation: popupSmooth 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popupSmooth {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* BỐ CỤC LƯỚI CHO FORM CÁC Ô NHẬP LIỆU (SELECT/INPUT) */
+.grid-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+@media (max-width: 480px) {
+    .grid-inputs { grid-template-columns: 1fr; gap: 12px; }
+}
+
+.grid-inputs label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+/* Ô CHỌN SELECT BOX CHUẨN ĐÉT CAO CẤP */
+.select-custom {
+    width: 100%;
+    background: #12131f !important;
+    border: 1px solid var(--border) !important;
+    color: #ffffff !important;
+    padding: 14px 16px !important;
+    border-radius: 12px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    outline: none !important;
+    transition: all 0.25s ease !important;
+    box-sizing: border-box;
+}
+.select-custom:focus {
+    border-color: var(--neon-cyan) !important;
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.15) !important;
+}
+
+/* THẺ HIỂN THỊ THÔNG TIN KÈO ĐẤU CẦU LÔNG (CARD KÈO) */
+.card-keo-phui {
+    background: #0b0c14 !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 20px !important;
+    padding: 24px !important;
+    margin: 20px 0 !important;
+    text-align: left;
+    border-left: 4px solid var(--neon-cyan) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.card-keo-phui:hover {
+    border-left-color: var(--neon-pink) !important;
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
