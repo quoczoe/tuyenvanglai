@@ -1,23 +1,32 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
+/* ĐƯỢC DỊCH CHUẨN TỪ BẢN LỚP NỀN GLOBALS.CSS CỦA SHADCN UI DI SẢN */
 :root {
-    --background: #030307;
-    --card: #0b0c14;
-    --card-hover: #111322;
-    --primary: #00f3ff;
-    --accent: #ff007f;
-    --border: rgba(255, 255, 255, 0.08);
-    --text-muted: #717696;
+    --background: #09090b;       /* Nền đen sâu cực sạch (0 0% 3.9%) */
+    --foreground: #f4f4f5;       /* Chữ trắng mờ cao cấp (0 0% 98%) */
+    --card: #09090b;             /* Hộp khối nền đồng bộ */
+    --card-foreground: #f4f4f5;  
+    --primary: #ffffff;          /* Màu chủ đạo tinh tế */
+    --primary-foreground: #09090b;
+    --muted: #27272a;            /* Khối làm mờ (0 0% 14.9%) */
+    --muted-foreground: #a1a1aa;  /* Chữ phụ mờ (0 0% 63.9%) */
+    --border: #27272a;           /* Đường viền nét mảnh sắc sảo */
+    --radius: 0.75rem;           /* Bo góc chuẩn thiết kế hiện đại (12px) */
+    
+    /* ĐẬP THÊM BIẾN MÀU NEON ĐỂ TẠO ĐỘ RỰC RỠ THỂ THAO */
+    --neon-cyan: #00f3ff;
+    --neon-pink: #ff007f;
 }
 
-/* THIẾT LẬP NỀN GRADIENT CỰC SÂU VÀ SANG CHẢNH */
+/* THIẾT LẬP TOÀN DIỆN DIỆN MẠO SÀNH ĐIỆU CHUYÊN NGHIỆP */
 body {
     background-color: var(--background);
     background-image: 
-        radial-gradient(circle at top left, rgba(0, 243, 255, 0.12) 0%, transparent 40%),
-        radial-gradient(circle at bottom right, rgba(255, 0, 127, 0.12) 0%, transparent 40%);
-    color: #ffffff;
+        radial-gradient(circle at 15% 15%, rgba(0, 243, 255, 0.08) 0%, transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(255, 0, 127, 0.08) 0%, transparent 45%);
+    color: var(--foreground);
     font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -27,94 +36,86 @@ body {
     box-sizing: border-box;
 }
 
-/* BOX TRUNG TÂM KIỂU MODAL GLASSMORPHISM CỦA SHADCN UI */
+/* CONTAINER TRUNG TÂM - FORMAT CHUẨN THEME AGENT AI */
 .main-container {
     width: 100%;
-    max-width: 450px;
-    background: rgba(11, 12, 20, 0.8);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    padding: 50px 35px;
-    border-radius: 24px;
+    max-width: 440px;
+    background: rgba(20, 20, 23, 0.7);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    padding: 55px 35px;
+    border-radius: var(--radius);
     border: 1px solid var(--border);
-    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6),
-                0 0 50px rgba(0, 243, 255, 0.02);
+    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.7);
     text-align: center;
 }
 
-/* TIÊU ĐỀ CHỮ LỚN SANG TRỌNG */
+/* TIÊU ĐỀ KHỐI SÁNG PHÁT QUANG ĐỈNH CAO */
 h1 {
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 800;
     letter-spacing: -0.5px;
-    margin: 0 0 8px 0;
-    background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
+    margin: 0 0 10px 0;
+    background: linear-gradient(135deg, #ffffff 40%, #a1a1aa 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 .description {
     font-size: 14px;
-    color: var(--text-muted);
+    color: var(--muted-foreground);
     margin-bottom: 45px;
     font-weight: 500;
 }
 
-/* NÚT BẤM ACTION FORM DÁNG CHUẨN PREMIUM */
+/* THIẾT KẾ NÚT BẤM DÁNG ĐỒNG BỘ ĐẲNG CẤP */
 .btn-route {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 20px 24px;
-    margin: 18px 0;
-    color: #ffffff;
-    background: linear-gradient(135deg, #131524 0%, #0d0e16 100%);
+    padding: 18px 24px;
+    margin: 16px 0;
+    color: var(--foreground);
+    background: #18181b; /* Màu khối chuẩn Zinc (0 0% 9.0%) */
     border: 1px solid var(--border);
-    border-radius: 14px;
+    border-radius: var(--radius);
     font-weight: 600;
-    font-size: 16px;
+    font-size: 15px;
     text-decoration: none;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: all 0.25s ease-in-out;
     cursor: pointer;
     box-sizing: border-box;
 }
 
-/* HIỆU ỨNG QUÉT MÀU NEON KHI DI CHUỘT (CỰC ĐẸP) */
+/* HIỆU ỨNG QUÉT LED KHI HOVER ĐÚNG KIỂU CHỢ KÈO VIP */
 .btn-khach:hover {
-    border-color: var(--primary);
-    background: rgba(0, 243, 255, 0.03);
-    box-shadow: 0 0 30px rgba(0, 243, 255, 0.25);
+    border-color: var(--neon-cyan);
+    background: rgba(0, 243, 255, 0.02);
+    box-shadow: 0 0 25px rgba(0, 243, 255, 0.2);
     transform: translateY(-2px);
 }
 
 .btn-host:hover {
-    border-color: var(--accent);
-    background: rgba(255, 0, 127, 0.03);
-    box-shadow: 0 0 30px rgba(255, 0, 127, 0.25);
+    border-color: var(--neon-pink);
+    background: rgba(255, 0, 127, 0.02);
+    box-shadow: 0 0 25px rgba(255, 0, 127, 0.2);
     transform: translateY(-2px);
 }
 
-/* KHỐI CHỨA ICON BÊN TRONG NÚT */
 .btn-route .btn-text {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
 }
 
-.btn-route i.fa-main {
-    font-size: 18px;
-    transition: 0.3s;
-}
-
-.btn-khach i.fa-main { color: var(--primary); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5); }
-.btn-host i.fa-main { color: var(--accent); text-shadow: 0 0 10px rgba(255, 0, 127, 0.5); }
+.btn-khach i.fa-main { color: var(--neon-cyan); }
+.btn-host i.fa-main { color: var(--neon-pink); }
 
 .btn-route i.fa-arrow {
-    font-size: 14px;
-    opacity: 0.4;
-    transition: transform 0.3s ease;
+    font-size: 13px;
+    opacity: 0.3;
+    transition: transform 0.2s ease;
 }
 
 .btn-route:hover i.fa-arrow {
@@ -122,18 +123,15 @@ h1 {
     transform: translateX(4px);
 }
 
-/* LINK QUẢN TRỊ ĐƯỢC THIẾT KẾ TINH TẾ */
 .sys-link {
     display: inline-block;
-    color: #3b4266;
+    color: #3f3f46;
     font-size: 11px;
-    margin-top: 40px;
+    margin-top: 35px;
     text-decoration: none;
-    letter-spacing: 1.5px;
+    letter-spacing: 1px;
     font-weight: 600;
-    transition: color 0.3s;
     text-transform: uppercase;
+    transition: color 0.2s;
 }
-.sys-link:hover {
-    color: var(--primary);
-}
+.sys-link:hover { color: var(--neon-cyan); }
