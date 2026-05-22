@@ -22,17 +22,18 @@
             </div>
         </div>
 
-        <div class="header-box" style="margin-bottom: 20px; text-align: left;">
+        <div class="header-box" style="margin-bottom: 25px; text-align: left;">
             <h2 style="font-size: 1.4rem; font-weight: 800; text-transform: uppercase;">Đăng Ca Đấu Mới</h2>
             <p style="font-size: 0.8rem; color: var(--text-secondary);">Thiết lập thông số trận đấu và phân tích biên độ tài chính rủi ro</p>
         </div>
 
         <form id="frmDangCaDau" onsubmit="event.preventDefault();">
+            
             <div class="filter-section" style="background: rgba(0,0,0,0.15); padding: 18px; margin-bottom: 15px;">
                 <div class="section-title"><i class="fa-solid fa-map-location-dot"></i> Thiết lập Địa Điểm</div>
                 <div class="grid-inputs">
                     <div class="form-group">
-                        <label>Vùng Miền</label>
+                        <label>Vung Miền</label>
                         <select id="hostMien" class="select-custom" required><option value="">-- Chọn --</option></select>
                     </div>
                     <div class="form-group">
@@ -59,7 +60,7 @@
             </div>
 
             <div class="filter-section" style="background: rgba(0,0,0,0.15); padding: 18px; margin-bottom: 15px;">
-                <div class="section-title" style="color: var(--accent-pink);"><i class="fa-solid fa-calculator"></i> Chi Phí & Định Mức Khóa Cứng</div>
+                <div class="section-title" style="color: var(--accent-pink);"><i class="fa-solid fa-calculator"></i> Chi Phí & Định Mức Cố Định</div>
                 <div class="grid-inputs">
                     <div class="form-group">
                         <label>Tiền thuê sân / Giờ</label>
@@ -85,7 +86,7 @@
             </div>
 
             <div class="filter-section" style="background: rgba(0,0,0,0.15); padding: 18px; margin-bottom: 15px;">
-                <div class="section-title"><i class="fa-solid fa-users"></i> Phân Bổ Slot & Giá Tiền</div>
+                <div class="section-title"><i class="fa-solid fa-users"></i> Thiết Lập Phân Bổ Slot</div>
                 <div class="grid-inputs">
                     <div class="form-group">
                         <label>Lượng Nam tối đa</label>
@@ -104,7 +105,7 @@
                         <input type="number" id="slotGiaNu" class="input-custom" value="40000" required>
                     </div>
                     <div class="form-group full-width-input">
-                        <label>Yêu cầu trình độ</label>
+                        <label>Yêu cầu trình độ của Ca</label>
                         <select id="hostTrinhDo" class="select-custom">
                             <option value="Trung bình">Trung bình khá</option>
                             <option value="Yếu">Yếu / Mới tập</option>
@@ -148,7 +149,7 @@
             </section>
 
             <button type="button" class="btn-action-primary" id="btnPublishCaDau" style="background: linear-gradient(90deg, var(--accent-pink), #ec4899); color: white; box-shadow: 0 4px 15px var(--neon-glow-pink); margin-top: 15px;">
-                <i class="fa-solid fa-cloud-arrow-up"></i> XÁC THỰC & PHÁT HÀNH CA ĐẤU
+                <i class="fa-solid fa-cloud-arrow-up"></i> PHÁT HÀNH CA ĐẤU LÊN CHỢ
             </button>
         </form>
     </main>
@@ -156,7 +157,7 @@
     <div class="modal" id="popHostAuth">
         <div class="modal-content">
             <div class="modal-title" style="color: var(--accent-pink);">
-                <i class="fa-solid fa-vault"></i> CỔNG KHÓA QUẢN TRỊ CHỦ SÂN
+                <i class="fa-solid fa-vault"></i> CỔNG KHÓA XÁC THỰC CHỦ SÂN
             </div>
             <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 15px;">
                 Vui lòng cung cấp Access Key mã hóa để mở khóa hạ tầng quyền lực chủ sân.
@@ -183,11 +184,11 @@
             const geoMetadata = window.KHO_DATA_DIA_LY;
 
             if (!dbCloud) {
-                alert("Lỗi hạ tầng: Không tìm thấy engine kết nối dữ liệu.");
+                alert("Lỗi hạ tầng kỹ thuật: Không tìm thấy engine xử lý dữ liệu đám mây.");
                 return;
             }
 
-            // --- KIỂM TRA TƯỜNG LỬA BẢO MẬT MÃ HÓA (FIREWALL AUTH) ---
+            // --- ĐỒNG BỘ KHÓA VÀ XỬ LÝ KHỐI TƯỜNG LỬA BẢO MẬT ĐA TẦNG ---
             const firewallModal = document.getElementById("popHostAuth");
             const mainWorkplace = document.getElementById("khuVucLamViecHost");
             const savedKey = localStorage.getItem('hostKey');
@@ -200,41 +201,71 @@
 
             document.getElementById("btnVerifyAuth").addEventListener("click", () => {
                 const inputtedKey = document.getElementById("txtHostKeyInput").value.trim();
-                if(!inputtedKey) return;
+                if(!inputtedKey) return alert("Vui lòng gõ mã key!");
                 thucThiKichHoatBariereXacThuc(inputtedKey);
             });
 
             async function thucThiKichHoatBariereXacThuc(keyDeKiemTra) {
                 try {
-                    // Truy vấn kiểm tra mã khóa phân quyền từ bảng cấu hình hệ thống
-                    const dataKeyCloud = await dbCloud.docData("cau_hinh_he_thong", "id=eq.host_access_key");
-                    
-                    if (dataKeyCloud && dataKeyCloud.length > 0 && dataKeyCloud[0].gia_tri_cau_hinh === keyDeKiemTra) {
+                    let quyenHopLe = false;
+
+                    // TẦNG 1: Đối chiếu kiểm tra với bảng cấu hình hệ thống (Khóa cố định hệ thống)
+                    const dataKeySystem = await dbCloud.docData("cau_hinh_he_thong", "id=eq.host_access_key");
+                    if (dataKeySystem && dataKeySystem.length > 0) {
+                        const cauHinh = dataKeySystem[0];
+                        if (cauHinh.gia_tri_cau_hinh === keyDeKiemTra || cauHinh.noi_dung_thong_bao === keyDeKiemTra) {
+                            quyenHopLe = true;
+                        }
+                    }
+
+                    // TẦNG 2: Nếu tầng 1 chưa khớp, quét đối chiếu thời gian thực với bảng quan_ly_key do Admin cấp phát
+                    if (!quyenHopLe) {
+                        const dataKeyAdmin = await dbCloud.docData("quan_ly_key", `ma_key=eq.${encodeURIComponent(keyDeKiemTra)}`);
+                        if (dataKeyAdmin && dataKeyAdmin.length > 0) {
+                            // Kiểm tra thêm điều kiện khóa hoạt động nếu cần thiết
+                            if (dataKeyAdmin[0].trang_thai === "Đang chạy") {
+                                quyenHopLe = true;
+                            } else if (dataKeyAdmin[0].trang_thai === "Bị khóa") {
+                                alert("TỪ CHỐI TRUY CẬP: Mã key thuê này hiện đang bị khóa bởi Admin!");
+                                localStorage.removeItem('hostKey');
+                                firewallModal.classList.add("active");
+                                return;
+                            } else {
+                                quyenHopLe = true; // Chấp nhận nếu chưa kích hoạt nhưng hợp lệ
+                            }
+                        }
+                    }
+
+                    // XỬ LÝ KẾT LUẬN LUỒNG BẢO MẬT
+                    if (quyenHopLe) {
                         localStorage.setItem('hostKey', keyDeKiemTra);
                         firewallModal.classList.remove("active");
                         mainWorkplace.style.opacity = "1";
                         mainWorkplace.style.pointerEvents = "auto";
                         khoiTaoFormHeThong();
                     } else {
-                        alert("Mã bảo mật không chính xác! Quyền truy cập bàn làm việc bị từ chối.");
+                        alert("MÃ BẢO MẬT SAI HOẶC CHƯA LIÊN KẾT: Khóa chủ sân không tồn tại trong hệ thống quản lý của Admin!");
                         localStorage.removeItem('hostKey');
                         firewallModal.classList.add("active");
                     }
                 } catch(e) {
-                    alert("Lỗi kết nối hạ tầng bảo mật đám mây Supabase.");
+                    console.error("Lỗi đứt gãy luồng rà quét mã khóa đa tầng:", e);
+                    alert("Mất kết nối với máy chủ đám mây Supabase để kiểm định thông tin bảo mật.");
                 }
             }
 
-            // --- KHỞI TẠO BIỂU MẪU ĐỊA LÝ CASCADING ---
+            // --- KHỞI TẠO BIỂU MẪU ĐỊA LÝ CASCADING DROP-DOWNS ---
             function khoiTaoFormHeThong() {
                 const hostMien = document.getElementById("hostMien");
                 const hostTinh = document.getElementById("hostTinh");
                 const hostQuan = document.getElementById("hostQuan");
 
-                // Gán mặc định ngày hôm nay vào trường date
+                // Đặt mặc định ngày hôm nay
                 document.getElementById("hostNgay").valueAsDate = new Date();
 
                 if(geoMetadata) {
+                    // Xóa các lựa chọn cũ để tránh lặp phần tử
+                    hostMien.innerHTML = '<option value="">-- Chọn --</option>';
                     Object.keys(geoMetadata).forEach(mien => {
                         let opt = document.createElement("option");
                         opt.value = mien; opt.textContent = mien;
@@ -242,7 +273,7 @@
                     });
                 }
 
-                hostMien.addEventListener("change", () => {
+                hostMien.onchange = () => {
                     hostTinh.innerHTML = '<option value="">-- Tỉnh --</option>';
                     hostQuan.innerHTML = '<option value="">-- Quận Huyện --</option>';
                     hostQuan.disabled = true;
@@ -253,9 +284,9 @@
                         hostTinh.appendChild(opt);
                     });
                     hostTinh.disabled = false;
-                });
+                };
 
-                hostTinh.addEventListener("change", () => {
+                hostTinh.onchange = () => {
                     hostQuan.innerHTML = '<option value="">-- Quận Huyện --</option>';
                     if(!hostTinh.value) { hostQuan.disabled = true; return; }
                     geoMetadata[hostMien.value][hostTinh.value].forEach(quan => {
@@ -264,20 +295,19 @@
                         hostQuan.appendChild(opt);
                     });
                     hostQuan.disabled = false;
-                });
+                };
 
-                // Gắn bộ lắng nghe sự kiện thời gian thực cho ma trận tài chính
+                // Lắng nghe liên tục để xử lý bộ máy tài chính thời gian thực
                 const fieldsTaiChinh = ['finTienSan', 'finSoGio', 'finHangCau', 'finSoCau', 'slotMaxNam', 'slotGiaNam', 'slotMaxNu', 'slotGiaNu'];
                 fieldsTaiChinh.forEach(idField => {
                     document.getElementById(idField).addEventListener('input', thucThiTinhToanTaiChinhMatrix);
                 });
                 document.getElementById('finHangCau').addEventListener('change', thucThiTinhToanTaiChinhMatrix);
 
-                // Chạy tính toán nền lập tức
                 thucThiTinhToanTaiChinhMatrix();
             }
 
-            // --- BỘ MÁY TÍNH TOÁN MA TRẬN TÀI CHÍNH THỜI GIAN THỰC ---
+            // --- BỘ MÁY TÍNH TOÁN PHÂN TÍCH TÀI CHÍNH MA TRẬN ---
             function thucThiTinhToanTaiChinhMatrix() {
                 const giaSan = parseFloat(document.getElementById("finTienSan").value) || 0;
                 const soGioChoi = parseFloat(document.getElementById("finSoGio").value) || 0;
@@ -289,19 +319,19 @@
                 const maxNu = parseInt(document.getElementById("slotMaxNu").value) || 0;
                 const giaNu = parseFloat(document.getElementById("slotGiaNu").value) || 0;
 
-                // Các công thức toán học cốt lõi khóa cứng hao phí theo yêu cầu kiến trúc
+                // Thuật toán ma trận định mức cố định chi phí hao phí phần cứng lông
                 const chiPhiVanHanhCoDinh = (giaSan * soGioChoi) + (soLuongCauDung * giaDinhMucCau);
                 const doanhThuToiDaTran = (giaNam * maxNam) + (giaNu * maxNu);
                 const loiNhuanRongDuTinh = doanhThuToiDaTran - chiPhiVanHanhCoDinh;
 
-                // Đổ dữ liệu động ra Viewport giao diện
+                // Trả thông số ra màn hình giao diện
                 document.getElementById("lblOperationalCost").textContent = chiPhiVanHanhCoDinh.toLocaleString('vi-VN') + "đ";
                 document.getElementById("lblMaxRevenue").textContent = doanhThuToiDaTran.toLocaleString('vi-VN') + "đ";
                 
                 const lblProfit = document.getElementById("lblNetProfit");
                 lblProfit.textContent = loiNhuanRongDuTinh.toLocaleString('vi-VN') + "đ";
 
-                // Kích hoạt đèn LED cảnh báo rủi ro nếu biên độ lợi nhuận ròng rơi vào vùng âm
+                // Đổi trạng thái hiển thị của đèn LED báo rủi ro dựa trên biên độ trần lợi nhuận âm
                 if (loiNhuanRongDuTinh < 0) {
                     lblProfit.className = "profit-danger";
                 } else {
@@ -309,7 +339,7 @@
                 }
             }
 
-            // --- ĐƯỜNG ỐNG PHÁT HÀNH CA ĐẤU MỚI (PUBLISH PIPELINE) ---
+            // --- ĐƯỜNG ỐNG ĐẨY LỆNH PHÁT HÀNH BẢN GHI CA ĐẤU SẠCH (POST REST RESTRest) ---
             document.getElementById("btnPublishCaDau").addEventListener("click", async () => {
                 const mien = document.getElementById("hostMien").value;
                 const tinh = document.getElementById("hostTinh").value;
@@ -329,11 +359,11 @@
                 const giaNu = parseFloat(document.getElementById("slotGiaNu").value) || 0;
 
                 if(!mien || !tinh || !quan || !tenSan || !soSan || !linkMaps || !ngay || !gioBD || !gioKT) {
-                    alert("Hệ thống từ chối! Vui lòng hoàn thiện toàn bộ trường dữ liệu bắt buộc cấu hình địa điểm.");
+                    alert("Hệ thống từ chối! Vui lòng hoàn thiện toàn bộ trường dữ liệu bắt buộc thiết lập địa điểm.");
                     return;
                 }
 
-                const goiDuLieuSach = {
+                const góiDuLieuSach = {
                     vung_mien: mien,
                     tinh_thanh: tinh,
                     quan_huyen: quan,
@@ -349,15 +379,15 @@
                     gia_nam: giaNam,
                     slot_max_nu: maxNu,
                     gia_nu: giaNu,
-                    da_ket_toan: false // Thiết lập mặc định mở tuyển cho khách vãng lai rà quét thấy
+                    da_ket_toan: false // Đặt mặc định trạng thái mở tuyển vãng lai công khai công khai
                 };
 
                 try {
-                    const responseInsert = await dbCloud.ghiData("ca_dau", goiDuLieuSach);
+                    const responseInsert = await dbCloud.ghiData("ca_dau", góiDuLieuSach);
                     if(responseInsert) {
-                        alert("PHÁT HÀNH CA ĐẤU LÊN CHỢ THÀNH CÔNG THÀNH CÔNG!");
+                        alert("PHÁT HÀNH CA ĐẤU LÊN CHỢ KÈO THÀNH CÔNG!");
                         document.getElementById("frmDangCaDau").reset();
-                        khoiTaoFormHeThong(); // Tái thiết lập trạng thái dropdown
+                        khoiTaoFormHeThong(); // Reset lại cascading mảng tỉnh thành
                     }
                 } catch(err) {
                     alert("Lỗi chèn dữ liệu ca đấu mới vào máy chủ đám mây Supabase.");
