@@ -1,137 +1,229 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-/* ĐƯỢC DỊCH CHUẨN TỪ BẢN LỚP NỀN GLOBALS.CSS CỦA SHADCN UI DI SẢN */
+/* ==========================================================================
+   1. ĐỊNH NGHĨA BIẾN MÀU THEO CHUẨN SHADCN UI CAO CẤP (DỊCH TỪ GLOBALS.CSS)
+   ========================================================================== */
 :root {
-    --background: #09090b;       /* Nền đen sâu cực sạch (0 0% 3.9%) */
-    --foreground: #f4f4f5;       /* Chữ trắng mờ cao cấp (0 0% 98%) */
-    --card: #09090b;             /* Hộp khối nền đồng bộ */
-    --card-foreground: #f4f4f5;  
-    --primary: #ffffff;          /* Màu chủ đạo tinh tế */
-    --primary-foreground: #09090b;
-    --muted: #27272a;            /* Khối làm mờ (0 0% 14.9%) */
-    --muted-foreground: #a1a1aa;  /* Chữ phụ mờ (0 0% 63.9%) */
-    --border: #27272a;           /* Đường viền nét mảnh sắc sảo */
-    --radius: 0.75rem;           /* Bo góc chuẩn thiết kế hiện đại (12px) */
-    
-    /* ĐẬP THÊM BIẾN MÀU NEON ĐỂ TẠO ĐỘ RỰC RỠ THỂ THAO */
-    --neon-cyan: #00f3ff;
-    --neon-pink: #ff007f;
+    /* CHẾ ĐỘ SÁNG (Pearl Light Mode - Sang chảnh, không bị chói) */
+    --background: #f8fafc;
+    --foreground: #0f172a;
+    --card: #ffffff;
+    --card-border: rgba(15, 23, 42, 0.08);
+    --btn-bg: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    --btn-border: rgba(15, 23, 42, 0.06);
+    --text-muted: #64748b;
+    --neon-cyan: #0284c7;   /* Cyan đậm cho chế độ sáng */
+    --neon-pink: #db2777;   /* Hồng đậm cho chế độ sáng */
+    --bg-glow-1: rgba(14, 165, 233, 0.08);
+    --bg-glow-2: rgba(236, 72, 153, 0.08);
+    --radius: 20px;
 }
 
-/* THIẾT LẬP TOÀN DIỆN DIỆN MẠO SÀNH ĐIỆU CHUYÊN NGHIỆP */
+[data-theme="dark"] {
+    /* CHẾ ĐỘ TỐI (Cyber Dark Mode - Sâu thẳm, rực rỡ) */
+    --background: #030307;
+    --foreground: #f8fafc;
+    --card: rgba(13, 14, 26, 0.75);
+    --card-border: rgba(255, 255, 255, 0.08);
+    --btn-bg: linear-gradient(135deg, #0f1120 0%, #07080f 100%);
+    --btn-border: rgba(255, 255, 255, 0.04);
+    --text-muted: #7f8ea3;
+    --neon-cyan: #00f3ff;   /* Cyan phát sáng cực đỉnh */
+    --neon-pink: #ff007f;   /* Hồng Neon cháy bỏng */
+    --bg-glow-1: rgba(0, 243, 255, 0.12);
+    --bg-glow-2: rgba(255, 0, 127, 0.12);
+}
+
+/* ==========================================================================
+   2. THIẾT LẬP NỀN VÀ HIỆU ỨNG TOÀN TRANG
+   ========================================================================== */
 body {
     background-color: var(--background);
     background-image: 
-        radial-gradient(circle at 15% 15%, rgba(0, 243, 255, 0.08) 0%, transparent 45%),
-        radial-gradient(circle at 85% 85%, rgba(255, 0, 127, 0.08) 0%, transparent 45%);
+        radial-gradient(circle at 10% 15%, var(--bg-glow-1) 0%, transparent 45%),
+        radial-gradient(circle at 90% 85%, var(--bg-glow-2) 0%, transparent 45%);
     color: var(--foreground);
-    font-family: 'Inter', sans-serif;
-    -webkit-font-smoothing: antialiased;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    font-family: 'Plus Jakarta Sans', sans-serif;
     min-height: 100vh;
     margin: 0;
     padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     box-sizing: border-box;
+    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow-x: hidden;
 }
 
-/* CONTAINER TRUNG TÂM - FORMAT CHUẨN THEME AGENT AI */
+/* ==========================================================================
+   3. CÔNG TẮC CHUYỂN ĐỔI CHẾ ĐỘ SÁNG / TỐI (THEME TOGGLE)
+   ========================================================================== */
+.theme-switch-container {
+    position: absolute;
+    top: 25px;
+    right: 25px;
+}
+
+.theme-toggle-btn {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--foreground);
+    padding: 12px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.theme-toggle-btn:hover {
+    transform: translateY(-2px);
+    border-color: var(--neon-cyan);
+    box-shadow: 0 0 15px var(--bg-glow-1);
+}
+
+/* ==========================================================================
+   4. KHỐI BOX TRUNG TÂM (MAIN CONTAINER)
+   ========================================================================== */
 .main-container {
     width: 100%;
     max-width: 440px;
-    background: rgba(20, 20, 23, 0.7);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    padding: 55px 35px;
+    background: var(--card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 50px 35px;
     border-radius: var(--radius);
-    border: 1px solid var(--border);
-    box-shadow: 0 40px 100px rgba(0, 0, 0, 0.7);
+    border: 1px solid var(--card-border);
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.25);
     text-align: center;
+    position: relative;
+    overflow: hidden;
+    transition: background 0.5s ease, border-color 0.5s ease;
 }
 
-/* TIÊU ĐỀ KHỐI SÁNG PHÁT QUANG ĐỈNH CAO */
+/* Đèn LED chạy mượt ở viền đỉnh Box */
+.main-container::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 4px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
+}
+
+[data-theme="dark"] .main-container {
+    box-shadow: 0 40px 90px rgba(0, 0, 0, 0.65), 0 0 50px rgba(0, 243, 255, 0.02);
+}
+
+/* TÊN WEB HOÀNH TRÁNG */
 h1 {
-    font-size: 26px;
+    font-size: 28px;
     font-weight: 800;
     letter-spacing: -0.5px;
-    margin: 0 0 10px 0;
-    background: linear-gradient(135deg, #ffffff 40%, #a1a1aa 100%);
+    margin: 0 0 6px 0;
+    background: linear-gradient(135deg, var(--foreground) 30%, var(--text-muted) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
 .description {
     font-size: 14px;
-    color: var(--muted-foreground);
-    margin-bottom: 45px;
+    color: var(--text-muted);
+    margin-bottom: 40px;
     font-weight: 500;
 }
 
-/* THIẾT KẾ NÚT BẤM DÁNG ĐỒNG BỘ ĐẲNG CẤP */
+/* ==========================================================================
+   5. NÚT ĐIỀU HƯỚNG PREMIUM (ACTION BUTTONS)
+   ========================================================================== */
 .btn-route {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 18px 24px;
-    margin: 16px 0;
+    padding: 20px 24px;
+    margin: 18px 0;
     color: var(--foreground);
-    background: #18181b; /* Màu khối chuẩn Zinc (0 0% 9.0%) */
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    font-weight: 600;
-    font-size: 15px;
+    background: var(--btn-bg);
+    border: 1px solid var(--btn-border);
+    border-radius: 16px;
+    font-weight: 700;
+    font-size: 16px;
     text-decoration: none;
-    transition: all 0.25s ease-in-out;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     cursor: pointer;
     box-sizing: border-box;
 }
 
-/* HIỆU ỨNG QUÉT LED KHI HOVER ĐÚNG KIỂU CHỢ KÈO VIP */
-.btn-khach:hover {
-    border-color: var(--neon-cyan);
-    background: rgba(0, 243, 255, 0.02);
-    box-shadow: 0 0 25px rgba(0, 243, 255, 0.2);
-    transform: translateY(-2px);
-}
-
-.btn-host:hover {
-    border-color: var(--neon-pink);
-    background: rgba(255, 0, 127, 0.02);
-    box-shadow: 0 0 25px rgba(255, 0, 127, 0.2);
-    transform: translateY(-2px);
-}
-
+/* KHỐI TEXT VÀ ICON CHÍNH */
 .btn-route .btn-text {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 14px;
 }
 
-.btn-khach i.fa-main { color: var(--neon-cyan); }
-.btn-host i.fa-main { color: var(--neon-pink); }
+.btn-route i.fa-main {
+    font-size: 16px;
+    background: rgba(127, 142, 163, 0.1);
+    padding: 10px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
 
+/* HOVER KHÁCH - BÙNG NỔ SẮC CYAN */
+.btn-khach:hover {
+    border-color: var(--neon-cyan);
+    background: rgba(2, 132, 199, 0.03);
+    box-shadow: 0 0 25px var(--bg-glow-1);
+    transform: translateY(-3px);
+}
+.btn-khach:hover i.fa-main {
+    background: var(--neon-cyan);
+    color: #ffffff !important;
+}
+
+/* HOVER HOST - BÙNG NỔ SẮC HỒNG */
+.btn-host:hover {
+    border-color: var(--neon-pink);
+    background: rgba(219, 39, 119, 0.03);
+    box-shadow: 0 0 25px var(--bg-glow-2);
+    transform: translateY(-3px);
+}
+.btn-host:hover i.fa-main {
+    background: var(--neon-pink);
+    color: #ffffff !important;
+}
+
+/* ICON MŨI TÊN CHẠY ĐỘNG */
 .btn-route i.fa-arrow {
     font-size: 13px;
     opacity: 0.3;
-    transition: transform 0.2s ease;
+    transition: transform 0.3s ease, opacity 0.3s ease;
 }
 
 .btn-route:hover i.fa-arrow {
     opacity: 1;
-    transform: translateX(4px);
+    transform: translateX(5px);
 }
 
+/* LINK FOOTER HỆ THỐNG */
 .sys-link {
     display: inline-block;
-    color: #3f3f46;
+    color: var(--text-muted);
     font-size: 11px;
     margin-top: 35px;
     text-decoration: none;
-    letter-spacing: 1px;
+    letter-spacing: 1.5px;
     font-weight: 600;
     text-transform: uppercase;
-    transition: color 0.2s;
+    transition: color 0.3s;
+    opacity: 0.7;
 }
-.sys-link:hover { color: var(--neon-cyan); }
+.sys-link:hover {
+    color: var(--neon-cyan);
+    opacity: 1;
+}
