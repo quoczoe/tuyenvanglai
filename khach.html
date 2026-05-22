@@ -1,28 +1,21 @@
 <!DOCTYPE html>
-<html lang="vi" data-theme="dark">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHỢ KÈO VÃNG LAI - TÌM KÈO SÂN PHỦI</title>
-    <link rel="stylesheet" href="style.css?v=1.2">
+    <title>SÀN KÈO THƠM VÃNG LAI</title>
+    <link rel="stylesheet" href="style.css?v=1.3">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        body { display: block; padding: 40px 20px; }
-        .wrapper { width: 100%; max-width: 650px; margin: 0 auto; text-align: center; }
-        .filter-section {
-            background: var(--card);
-            border: 1px solid var(--card-border);
-            padding: 40px 30px;
-            border-radius: 24px;
-            margin-bottom: 30px;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.3);
-            text-align: left;
+        .wrapper { width: 100%; max-width: 650px; margin: 0 auto; }
+        .filter-btn-trigger {
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 18px; border-radius: 16px; font-weight: 800; font-size: 15px;
+            background: linear-gradient(90deg, var(--neon-cyan), #00a8ff); color: #000;
+            border: none; cursor: pointer; box-shadow: 0 10px 25px var(--glow-effect);
+            transition: all 0.3s ease; margin-top: 10px; text-transform: uppercase; letter-spacing: 0.5px;
         }
-        .filter-title {
-            font-size: 16px; font-weight: 800; color: var(--neon-cyan);
-            letter-spacing: 1px; margin-bottom: 25px; text-transform: uppercase;
-            display: flex; align-items: center; gap: 10px;
-        }
+        .filter-btn-trigger:hover { transform: translateY(-2px); box-shadow: 0 15px 30px var(--glow-effect); }
     </style>
 </head>
 <body>
@@ -31,34 +24,34 @@
         <div class="modal-content" style="border-top: 4px solid var(--neon-cyan) !important;">
             <h3 style="color:var(--neon-cyan); margin:0 0 15px 0; font-size:18px;"><i class="fa-solid fa-bullhorn"></i> HỆ THỐNG THÔNG BÁO</h3>
             <p id="txtSystemNotice" style="line-height:1.6; font-size:14px; color:var(--text-muted); text-align:left; white-space:pre-line; margin:0;"></p>
-            <button class="btn-gateway btn-khach-style" onclick="closeNoticePopup()" style="margin-top:25px; padding:16px; justify-content:center; border-radius:12px;">OK, VÀO XEM KÈO</button>
+            <button class="filter-btn-trigger" onclick="closeNoticePopup()" style="margin-top:25px; width:100%;">OK, VÀO XEM KÈO</button>
         </div>
     </div>
 
     <div id="popUserLogin" class="modal">
         <div class="modal-content" style="border-top: 4px solid var(--neon-pink) !important;">
-            <h3 style="color:var(--neon-pink); margin:0 0 10px 0; font-size:18px;"><i class="fa-solid fa-user-shield"></i> THÔNG TIN RA SÂN</h3>
-            <p style="font-size:13px; color:var(--text-muted); margin:0 0 25px 0; line-height:1.5;">Nhập SĐT để hệ thống lưu vết điểm danh, tránh tình trạng chim mồi bùng kèo làm mất uy tín sân chơi.</p>
+            <h3 style="color:var(--neon-pink); margin:0 0 12px 0; font-size:18px;"><i class="fa-solid fa-user-shield"></i> THÔNG TIN RA SÂN</h3>
+            <p style="font-size:13px; color:var(--text-muted); margin:0 0 25px 0; line-height:1.5; text-align:left;">Vui lòng điền thông tin chính xác. Hệ thống sẽ lưu vết điểm danh để lọc các thành phần chim mồi bùng kèo làm mất uy tín ca đấu.</p>
             <div style="text-align:left; margin-bottom:16px;">
-                <label style="font-size:12px; font-weight:700; color:var(--text-muted);">Biệt danh / Tên hiển thị</label>
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Biệt danh / Tên ra sân</label>
                 <input type="text" id="txtClientName" class="select-custom" placeholder="Ví dụ: Anh Tuấn, Quốc Zoed...">
             </div>
             <div style="text-align:left; margin-bottom:25px;">
-                <label style="font-size:12px; font-weight:700; color:var(--text-muted);">Số điện thoại liên hệ (Zalo)</label>
+                <label style="font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase;">Số điện thoại (Zalo kết nối)</label>
                 <input type="text" id="txtClientPhone" class="select-custom" placeholder="Nhập số điện thoại...">
             </div>
-            <button class="btn-gateway btn-host-style" onclick="submitClientLogin()" style="padding:16px; justify-content:center; border-radius:12px;">XÁC NHẬN HỆ THỐNG</button>
+            <button class="filter-btn-trigger" onclick="submitClientLogin()" style="background:linear-gradient(90deg, var(--neon-pink), #ff4757); color:#fff; width:100%;">XÁC NHẬN HỆ THỐNG</button>
         </div>
     </div>
 
     <div class="wrapper">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:25px;">
-            <button class="theme-btn" onclick="window.location.href='index.html'"><i class="fa-solid fa-arrow-left"></i> TRANG CHỦ</button>
+            <button class="theme-btn" onclick="window.location.href='index.html'"><i class="fa-solid fa-arrow-left"></i> SẢNH CHỜ</button>
             <span id="lblDisplayUser" style="font-size:14px; font-weight:700; color:var(--neon-cyan);"></span>
         </div>
 
         <div class="filter-section">
-            <div class="filter-title"><i class="fa-solid fa-sliders"></i> BỘ QUÉT BỘ LỌC KÈO THƠM TOÀN QUỐC</div>
+            <div class="filter-title"><i class="fa-solid fa-sliders"></i> BỘ QUÉT BỘ LỌC KÈO THƠM PHỦI</div>
             
             <div class="grid-inputs">
                 <div><label>Chọn Vùng Miền</label><select id="selMien" class="select-custom" onchange="triggerMienChange()"><option value="">-- Tất cả miền --</option><option value="Nam">Miền Nam</option><option value="Trung">Miền Trung</option><option value="Bac">Miền Bắc</option></select></div>
@@ -72,9 +65,7 @@
                 <div><label>Yêu cầu Trình Độ</label><select id="selTrinhDo" class="select-custom"><option value="">-- Tất cả trình độ --</option><option value="Yếu">Yếu</option><option value="Trung Bình Yếu">Trung Bình Yếu</option><option value="Trung Bình">Trung Bình</option><option value="Trung Bình Khá">Trung Bình Khá</option><option value="Khá">Khá - Phủi cứng</option></select></div>
                 <div><label>Giá tối đa (/Slot ca)</label><select id="selGiaMax" class="select-custom"><option value="">-- Tất cả mức giá --</option><option value="50000">Dưới 50k</option><option value="65000">Dưới 65k</option><option value="80000">Dưới 80k</option></select></div>
             </div>
-            <button class="btn-gateway btn-khach-style" onclick="queryKeoTuCloud()" style="justify-content:center; gap:10px; margin:15px 0 0 0; background:linear-gradient(90deg, var(--neon-cyan), #00a8ff); color:#000; border:none;">
-                <i class="fa-solid fa-satellite-dish"></i> TIẾN HÀNH QUÉT KÈO RA SÂN
-            </button>
+            <button class="filter-btn-trigger" onclick="queryKeoTuCloud()"><i class="fa-solid fa-satellite-dish"></i> TIẾN HÀNH QUÉT KÈO THƠM</button>
         </div>
 
         <div id="vungChuaCardKeo"></div>
@@ -86,8 +77,9 @@
         let cPhone = ""; let cName = "";
         
         window.onload = async function() {
-            const currentTheme = localStorage.getItem('app-theme') || 'dark';
-            document.documentElement.setAttribute('data-theme', currentTheme);
+            // Đọc trạng thái theme từ sảnh chờ index chuyển sang để đồng bộ màu sắc 100%
+            const activeTheme = localStorage.getItem('app-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', activeTheme);
             try {
                 const data = await window.khoDuLieuVinhVien.docData('cau_hinh_he_thong', 'id=eq.popup_chinh');
                 document.getElementById('txtSystemNotice').innerText = (data && data.length > 0) ? data[0].noi_dung_thong_bao : "Chào mừng anh em vãng lai!";
@@ -137,17 +129,17 @@
             try {
                 const res = await window.khoDuLieuVinhVien.docData('ca_dau', queryStr);
                 const container = document.getElementById('vungChuaCardKeo'); container.innerHTML = '';
-                if(!res || res.length === 0) { container.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:14px;padding:30px;">Không có ca đấu nào phù hợp quanh khu vực này.</p>'; return; }
+                if(!res || res.length === 0) { container.innerHTML = '<p style="text-align:center;color:var(--text-muted);font-size:14px;padding:40px;font-weight:600;">Không có ca đấu nào phù hợp quanh khu vực này.</p>'; return; }
                 
                 res.forEach(item => {
-                    let mapLink = item.link_maps ? `<br><a href="${item.link_maps}" target="_blank" style="color:var(--neon-cyan);font-size:12px;font-weight:700;text-decoration:none;display:inline-block;margin-top:8px;"><i class="fa-solid fa-location-dot"></i> XEM BẢN ĐỒ GOOGLE MAPS</a>` : '';
+                    let mapLink = item.link_maps ? `<br><a href="${item.link_maps}" target="_blank" style="color:var(--neon-cyan);font-size:12px;font-weight:700;text-decoration:none;display:inline-block;margin-top:8px;"><i class="fa-solid fa-map-location-dot"></i> BẤM XEM BẢN ĐỒ GOOGLE MAPS</a>` : '';
                     container.innerHTML += `<div class="card-keo-phui">
-                        <h3 style="color:var(--text-title); font-size:18px; margin:0 0 6px 0; font-weight:800;">${item.ten_san} <span style="font-size:13px; color:var(--text-muted); font-weight:500;">(Sân: ${item.so_san_cu_the || 'Chung'})</span></h3>
-                        <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.4;"><i class="fa-solid fa-map-pin" style="color:var(--neon-pink);"></i> ${item.dia_chi_san || 'Chưa cập nhật'} (${item.quan_huyen} - ${item.tinh_thanh})${mapLink}</p>
-                        <p style="font-size:14px; color:var(--text-title); margin:15px 0; line-height:1.5;">🏸 Dùng cầu: <b style="color:var(--neon-cyan);">${item.loai_cau_dung || 'VinaStar'}</b> | Tuyển: <b>${item.doi_tuong_tuyen}</b><br>⚡ Trình độ: Nam [<b>${item.trinh_do_nam}</b>] & Nữ [<b>${item.trinh_do_nu}</b>]</p>
-                        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.02); padding:14px; border-radius:12px; border:1px solid var(--border);">
+                        <h3 style="color:var(--text-title); font-size:18px; margin:0 0 6px 0; font-weight:800;">${item.ten_san} <span style="font-size:13px; color:var(--text-muted); font-weight:500;">(Sân cụ thể: ${item.so_san_cu_the || 'Chung'})</span></h3>
+                        <p style="font-size:13px; color:var(--text-muted); margin:0; line-height:1.4;"><i class="fa-solid fa-map-pin" style="color:var(--neon-pink);"></i> Địa chỉ: ${item.dia_chi_san || 'Chưa cập nhật'} (${item.quan_huyen} - ${item.tinh_thanh})${mapLink}</p>
+                        <p style="font-size:14px; color:var(--text-title); margin:15px 0; line-height:1.5;">🏸 Quả cầu dùng: <b style="color:var(--neon-cyan);">${item.loai_cau_dung || 'VinaStar'}</b> | Tuyển chọn: <b style="color:var(--neon-pink);">${item.doi_tuong_tuyen}</b><br>⚡ Yêu cầu trình độ: Nam [<b>${item.trinh_do_nam}</b>] & Nữ [<b>${item.trinh_do_nu}</b>]</p>
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:var(--input-bg); padding:14px; border-radius:14px; border:1px solid var(--card-border);">
                             <span style="font-size:14px; font-weight:800;">Nam: <span style="color:var(--neon-pink);">${parseInt(item.gia_nam).toLocaleString()}đ</span> | Nữ: <span style="color:var(--neon-pink);">${parseInt(item.gia_nu).toLocaleString()}đ</span></span>
-                            <button class="theme-btn" onclick="registerSlotClick('${item.id}')" style="padding:10px 20px; border-radius:10px; background:var(--neon-cyan); color:#000; font-size:13px; font-weight:700; border:none; cursor:pointer;">ĐẶT SLOT</button>
+                            <button onclick="registerSlotClick('${item.id}')" style="padding:10px 20px; border-radius:10px; background:var(--neon-cyan); color:#000; font-size:13px; font-weight:800; border:none; cursor:pointer; box-shadow: 0 4px 12px var(--glow-effect);">ĐẶT SLOT</button>
                         </div>
                     </div>`;
                 });
