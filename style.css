@@ -1,30 +1,137 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+
 :root {
-    --bg-main: #050505;
-    --panel-bg: #0f1016;
-    --primary: #00f3ff;
-    --text: #ffffff;
+    --bg-dark: #060713;
+    --card-bg: #111428;
+    --neon-cyan: #00f3ff;
+    --neon-pink: #ff007f;
+    --neon-purple: #9d4edd;
 }
-body { background: var(--bg-main); font-family: 'Inter', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
 
-/* Box trung tâm: Cho nó to ra và có độ dày */
+/* NỀN TOÀN TRANG SANG CHẢNH CÓ ĐỘ SÂU */
+body {
+    background-color: var(--bg-dark);
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(0, 243, 255, 0.15) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(255, 0, 127, 0.15) 0px, transparent 50%);
+    color: #ffffff;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+}
+
+/* BOX TRUNG TÂM HOÀNH TRÁNG, CHIẾM LĨNH KHÔNG GIAN */
 .main-box {
-    width: 90%; max-width: 500px;
-    background: var(--panel-bg); padding: 60px 40px; 
-    border-radius: 30px;
-    border: 1px solid #1f2230;
-    box-shadow: 0 0 50px rgba(0,0,0,0.8);
+    width: 100%;
+    max-width: 480px;
+    background: var(--card-bg);
+    padding: 50px 40px;
+    border-radius: 28px;
+    border: 2px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 
+                0 0 40px rgba(157, 78, 221, 0.1);
     text-align: center;
+    position: relative;
+    overflow: hidden;
 }
 
-h1 { font-size: 20px; color: var(--primary); margin-bottom: 50px; letter-spacing: 4px; text-transform: uppercase; }
+/* HIỆU ỨNG ĐÈN LED CHẠY NGẦM Ở VIỀN BOX TẠO ĐỘ UY TÍN */
+.main-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 5px;
+    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-purple));
+}
 
-/* Nút bấm: Phải to, rõ, bo góc vừa phải */
+/* TIÊU ĐỀ RỰC RỠ ĐỔI MÀU GRADIENT */
+h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    margin-bottom: 10px;
+    background: linear-gradient(90deg, var(--neon-cyan) 0%, #ffffff 50%, var(--neon-pink) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
+}
+
+.sub-title {
+    font-size: 13px;
+    color: #6f7598;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 45px;
+    font-weight: 600;
+}
+
+/* NÚT BẤM DẠNG KHỐI THỂ THAO CAO CẤP */
 .btn-action {
-    display: block; width: 100%; padding: 22px; margin: 20px 0;
-    background: #191c29; border: 1px solid #2d3345;
-    color: white; border-radius: 16px; font-weight: 700;
-    text-decoration: none; font-size: 18px; transition: 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 22px 28px;
+    margin: 20px 0;
+    color: #ffffff;
+    border-radius: 18px;
+    font-weight: 700;
+    font-size: 16px;
+    text-decoration: none;
+    letter-spacing: 1px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
 }
-.btn-action:hover { border-color: var(--primary); background: #1f2335; transform: scale(1.02); }
 
-.admin-link { color: #2d3345; font-size: 11px; margin-top: 50px; text-decoration: none; }
+/* NÚT KHÁCH TÌM KÈO - SẮC XANH NEON NĂNG ĐỘNG */
+.btn-khach {
+    background: linear-gradient(135deg, #0052d4, #4364f7, #6fb1fc);
+    border: 1px solid rgba(0, 243, 255, 0.3);
+}
+
+.btn-khach:hover {
+    box-shadow: 0 0 30px rgba(0, 243, 255, 0.5);
+    transform: translateY(-5px);
+}
+
+/* NÚT HOST ĐĂNG CA - SẮC HỒNG TÍM LỬA CHÁY */
+.btn-host {
+    background: linear-gradient(135deg, #ca1d7e, #e056fd, #ff7675);
+    border: 1px solid rgba(255, 0, 127, 0.3);
+}
+
+.btn-host:hover {
+    box-shadow: 0 0 30px rgba(255, 0, 127, 0.5);
+    transform: translateY(-5px);
+}
+
+/* ICON PHÁT SÁNG TRÊN NÚT BẤM */
+.btn-action i {
+    font-size: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    padding: 10px;
+    border-radius: 12px;
+    transition: 0.3s;
+}
+
+.btn-action:hover i {
+    background: #ffffff;
+    color: #000000;
+}
+
+/* CỔNG QUẢN TRỊ ẨN KÍN */
+.admin-link {
+    display: inline-block;
+    color: #3b4266;
+    font-size: 11px;
+    margin-top: 40px;
+    text-decoration: none;
+    letter-spacing: 2px;
+    font-weight: 600;
+    transition: 0.3s;
+}
+.admin-link:hover { color: var(--neon-cyan); text-shadow: 0 0 8px var(--neon-cyan); }
