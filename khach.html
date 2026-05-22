@@ -13,7 +13,6 @@
 <body>
 
     <main class="main-panel">
-        <!-- Thanh công cụ điều hướng đỉnh trang -->
         <div class="top-nav-bar">
             <a href="index.html" class="theme-btn" style="text-decoration: none;">
                 <i class="fa-solid fa-arrow-left"></i> Sảnh chính
@@ -23,37 +22,32 @@
             </div>
         </div>
 
-        <!-- HANGAR KHU VỰC BỘ LỌC TÌM KIẾM NÂNG CAO -->
         <section class="filter-section">
             <div class="section-title">
                 <i class="fa-solid fa-radar"></i> Rà Quét Kèo Phủi
             </div>
             
             <div class="grid-inputs">
-                <!-- Dropdown Phân Vùng Miền -->
                 <div class="form-group">
                     <label for="selMien">Vùng Miền</label>
                     <select id="selMien" class="select-custom">
                         <option value="">-- Tất cả --</option>
                     </select>
                 </div>
-                <!-- Dropdown Tỉnh Thành -->
                 <div class="form-group">
                     <label for="selTinh">Tỉnh / Thành</label>
                     <select id="selTinh" class="select-custom" disabled>
                         <option value="">-- Chọn Tỉnh --</option>
                     </select>
                 </div>
-                <!-- Dropdown Quận Huyện -->
-                <div class="form-group" class="full-width-input">
+                <div class="form-group full-width-input">
                     <label for="selQuan">Quận / Huyện</label>
                     <select id="selQuan" class="select-custom" disabled>
                         <option value="">-- Chọn Quận Huyện --</option>
                     </select>
                 </div>
-                <!-- Dropdown Trình độ -->
-                <div class="form-group">
-                    <label for="selTrinhDo">Trình độ</label>
+                <div class="form-group full-width-input">
+                    <label for="selTrinhDo">Yêu cầu Trình độ</label>
                     <select id="selTrinhDo" class="select-custom">
                         <option value="">Mọi cấp độ</option>
                         <option value="Yếu">Yếu / Mới chơi</option>
@@ -69,34 +63,30 @@
             </button>
         </section>
 
-        <!-- KHU VỰC KẾT XUẤT THẺ DỮ LIỆU ĐỘNG -->
         <div class="section-title" style="color: var(--text-primary); padding-left: 5px;">
             <i class="fa-solid fa-fire" style="color: var(--accent-pink);"></i> Trận Đấu Đang Tuyển Vãng Lai
         </div>
         <div class="cards-container" id="vungChuaCardKeo">
-            <!-- Dữ liệu thẻ trận đấu sẽ được bơm từ JavaScript vào đây -->
-        </div>
+            </div>
     </main>
 
-    <!-- MẠCH 1: MODAL POPUP THÔNG BÁO HỆ THỐNG -->
     <div class="modal" id="popSystem">
         <div class="modal-content">
             <div class="modal-title" style="color: var(--accent-cyan);">
                 <i class="fa-solid fa-bullhorn"></i> THÔNG BÁO TỪ HỆ THỐNG
             </div>
-            <div class="modal-body-text" id="txtSysBroadcast">Đang truy vấn dữ liệu thông báo từ máy chủ đám mây Supabase...</div>
+            <div class="modal-body-text" id="txtSysBroadcast">Đang kết nối cổng đám mây để truy vấn bản tin phát sóng khẩn cấp...</div>
             <button class="btn-action-primary" id="btnCloseSysModal">XÁC NHẬN ĐÃ ĐỌC</button>
         </div>
     </div>
 
-    <!-- MẠCH 2: MODAL POPUP ĐĂNG NHẬP LƯU VẾT KHÔNG MẬT KHẨU -->
     <div class="modal" id="popUserLogin">
         <div class="modal-content" style="text-align: left;">
             <div class="modal-title" style="color: var(--accent-pink); text-align: center;">
                 <i class="fa-solid fa-fingerprint"></i> XÁC MINH DANH TÍNH
             </div>
             <p style="font-size: 0.8rem; color: var(--text-secondary); text-align: center; margin-bottom: 15px;">
-                Nhập thông tin để hệ thống ghi vết đặt slot, chống spam ảo.
+                Nhập thông tin liên hệ chính chủ để ghi vết đặt slot và nhận diện trên Zalo.
             </p>
             <div class="form-group" style="margin-bottom: 12px;">
                 <label for="txtClientName">Biệt danh / Tên gọi</label>
@@ -106,37 +96,45 @@
                 <label for="txtClientPhone">Số điện thoại Zalo liên hệ</label>
                 <input type="tel" id="txtClientPhone" class="input-custom" placeholder="Ví dụ: 09xxxxxxxx">
             </div>
-            <button class="btn-action-primary" id="btnSaveUser">KÍCH HOẠT TÀI KHOẢN</button>
+            <button class="btn-action-primary" id="btnSaveUser">KÍCH HOẠT HỘ CHIẾU THÀNH VIÊN</button>
         </div>
     </div>
 
-    <!-- KHỐI LIÊN KẾT LIÊN THÔNG DỮ LIỆU NGOẠI VI -->
     <script src="data-dia-ly.js"></script>
     <script src="ket-noi-supabase.js"></script>
     
     <script>
         document.addEventListener("DOMContentLoaded", async () => {
-            // Đồng bộ nhanh cấu hình theme từ sảnh chính
+            // Đồng bộ theme từ LocalStorage
             document.documentElement.setAttribute('data-theme', localStorage.getItem('app-theme') || 'dark');
             
             const dbCloud = window.khoDuLieuVinhVien;
             const geoMetadata = window.KHO_DATA_DIA_LY;
 
-            // --- LUỒNG MODAL KÉP TUẦN TỰ (SEQUENTIAL DOUBLE MODAL FLOW) ---
+            // Đảm bảo lõi dữ liệu đám mây tồn tại trước khi chạy luồng nghiệp vụ
+            if (!dbCloud) {
+                console.error("Lỗi: Không tìm thấy thực thể kết nối đám mây khoDuLieuVinhVien.");
+                return;
+            }
+
+            // --- LUỒNG XỬ LÝ MODAL KÉP TUẦN TỰ (SEQUENTIAL DOUBLE MODAL FLOW) ---
             const modalSys = document.getElementById("popSystem");
             const modalLogin = document.getElementById("popUserLogin");
             
-            // Kích hoạt hiển thị Mạch 1
             modalSys.classList.add("active");
             try {
-                // Truy vấn cấu hình phát sóng từ bảng cau_hinh_he_thong
-                const responseMessage = await dbCloud.layCauHinhHeThong("popup_chinh");
-                document.getElementById("txtSysBroadcast").textContent = responseMessage || "Không có thông báo mới.";
+                // Đọc thông báo popup_chinh từ bảng cau_hinh_he_thong
+                const responseMessage = await dbCloud.docData("cau_hinh_he_thong", "id=eq.popup_chinh");
+                if(responseMessage && responseMessage.length > 0) {
+                    document.getElementById("txtSysBroadcast").textContent = responseMessage[0].noi_dung_thong_bao || "Không có thông báo hệ thống mới.";
+                } else {
+                    document.getElementById("txtSysBroadcast").textContent = "Hệ thống vận hành bình thường. Chúc các vợt thủ tìm được kèo thơm!";
+                }
             } catch (err) {
-                document.getElementById("txtSysBroadcast").textContent = "Không thể kết nối máy chủ Supabase. Đang chạy chế độ Offline.";
+                document.getElementById("txtSysBroadcast").textContent = "Mất kết nối máy chủ Supabase. Đang hoạt động ở chế độ Offline.";
             }
 
-            // Đóng mạch 1 nhảy lập tức sang mạch 2
+            // Đóng mạch 1 nhảy trực tiếp sang mạch 2 kiểm tra danh tính
             document.getElementById("btnCloseSysModal").addEventListener("click", () => {
                 modalSys.classList.remove("active");
                 kiemTraVaKichHoatMach2();
@@ -149,7 +147,7 @@
                     modalLogin.classList.add("active");
                 } else {
                     capNhatNhanNguoiDung(tenLuuTru, sdtLuuTru);
-                    queryKeoTuCloud(); // Tự động quét kèo khi đã có tài khoản hợp lệ
+                    queryKeoTuCloud(); // Tự động quét kèo khi danh tính đã được kiểm định hợp lệ
                 }
             }
 
@@ -158,7 +156,7 @@
                 const phone = document.getElementById("txtClientPhone").value.trim();
                 
                 if(!name || !phone) {
-                    alert("Vui lòng hoàn thiện toàn bộ trường thông tin!");
+                    alert("Hệ thống từ chối! Vui lòng điền đầy đủ Biệt danh và Số điện thoại Zalo.");
                     return;
                 }
                 localStorage.setItem('userTen', name);
@@ -214,27 +212,29 @@
                 selQuan.disabled = false;
             });
 
-            // --- ENGINE DỰ ÁN ĐƯỜNG ỐNG DỮ LIỆU ĐỘNG (DYNAMIC RENDER PIPELINE) ---
+            // --- ĐƯỜNG ỐNG DỮ LIỆU ĐỘNG RENDERING ENGINE (BẢNG CA_DAU) ---
             document.getElementById("btnScanKeo").addEventListener("click", queryKeoTuCloud);
 
             async function queryKeoTuCloud() {
                 const container = document.getElementById("vungChuaCardKeo");
-                container.innerHTML = '<div style="text-align:center; padding:20px; font-size:0.9rem; color:var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin"></i> Đang rà quét đám mây...</div>';
+                container.innerHTML = '<div style="text-align:center; padding:30px; font-size:0.9rem; color:var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin fa-lg"></i> Đang quét ma trận dữ liệu đám mây Supabase...</div>';
 
-                const BoLoc = {
-                    mien: selMien.value,
-                    tinh: selTinh.value,
-                    quan: selQuan.value,
-                    trinhDo: document.getElementById("selTrinhDo").value
-                };
+                // Tạo câu lệnh lọc động theo đúng chuẩn thiết kế
+                let cauLenhLoc = "da_ket_toan=eq.false&order=ngay_danh.asc";
+                
+                if (selMien.value) cauLenhLoc += `&vung_mien=eq.${encodeURIComponent(selMien.value)}`;
+                if (selTinh.value) cauLenhLoc += `&tinh_thanh=eq.${encodeURIComponent(selTinh.value)}`;
+                if (selQuan.value) cauLenhLoc += `&quan_huyen=eq.${encodeURIComponent(selQuan.value)}`;
+                if (document.getElementById("selTrinhDo").value) {
+                    cauLenhLoc += `&yeu_cau_trinh_do=eq.${encodeURIComponent(document.getElementById("selTrinhDo").value)}`;
+                }
 
                 try {
-                    // Gọi hàm xử lý truy vấn từ file ket-noi-supabase.js ngoại vi công khai
-                    const dataCaDau = await dbCloud.quetDanhSachCaDauActive(BoLoc);
+                    const dataCaDau = await dbCloud.docData("ca_dau", cauLenhLoc);
                     container.innerHTML = "";
 
-                    if(dataCaDau.length === 0) {
-                        container.innerHTML = '<div style="text-align:center; padding:30px; font-size:0.85rem; color:var(--text-secondary);">Không tìm thấy kèo đấu nào khớp với bộ lọc hiện tại.</div>';
+                    if(!dataCaDau || dataCaDau.length === 0) {
+                        container.innerHTML = '<div style="text-align:center; padding:40px; font-size:0.88rem; color:var(--text-secondary); border: 1px dashed var(--border-glass); border-radius:14px;"><i class="fa-solid fa-ghost"></i> Không tìm thấy ca đấu nào phù hợp với bộ lọc hiện tại.</div>';
                         return;
                     }
 
@@ -242,71 +242,71 @@
                         const card = document.createElement("div");
                         card.className = "card-keo-phui";
                         
-                        // Định dạng tiền tệ VND nội địa hóa
-                        const giaNamFormated = ca.gia_nam.toLocaleString('vi-VN') + "đ";
-                        const giaNuFormated = ca.gia_nu.toLocaleString('vi-VN') + "đ";
+                        const giaNamFormated = (ca.gia_nam || 0).toLocaleString('vi-VN') + "đ";
+                        const giaNuFormated = (ca.gia_nu || 0).toLocaleString('vi-VN') + "đ";
 
                         card.innerHTML = `
                             <div class="card-header-info">
                                 <div>
-                                    <div class="court-name">${ca.ten_san} (Sân số ${ca.so_san_cu_the})</div>
+                                    <div class="court-name">${ca.ten_san} (${ca.so_san_cu_the})</div>
                                     <div class="court-address">
                                         <i class="fa-solid fa-location-dot"></i> ${ca.quan_huyen}, ${ca.tinh_thanh}
-                                        <a href="${ca.link_maps}" target="_blank" class="map-link">[Bản đồ]</a>
+                                        <a href="${ca.link_maps}" target="_blank" class="map-link"><i class="fa-solid fa-map-pin"></i> Bản đồ</a>
                                     </div>
                                 </div>
                                 <span class="badge-status">Còn Slot</span>
                             </div>
                             <div class="match-details-grid">
                                 <div>Giờ chơi: <strong>${ca.gio_bat_dau} - ${ca.gio_ket_thuc}</strong></div>
-                                <div>Ngày: <strong>${ca.ngay_danh}</strong></div>
-                                <div>Loại cầu: <strong>${ca.loai_cau_su_dung}</strong></div>
-                                <div>Trình độ: <strong>${ca.yeu_cau_trinh_do}</strong></div>
+                                <div>Ngày đánh: <strong>${ca.ngay_danh}</strong></div>
+                                <div>Dòng cầu: <strong>${ca.loai_cau_su_dung}</strong></div>
+                                <div>Trình độ ca: <strong>${ca.yeu_cau_trinh_do}</strong></div>
                             </div>
                             <div class="card-action-bar">
                                 <div class="price-tag-group">
                                     <span class="price-m"><i class="fa-solid fa-mars"></i> Nam: ${giaNamFormated}</span>
                                     <span class="price-f"><i class="fa-solid fa-venus"></i> Nữ: ${giaNuFormated}</span>
                                 </div>
-                                <button class="btn-booking" onclick="kichHoatDatSlot('${ca.id}')">ĐẶT SLOT</button>
+                                <button class="btn-booking" onclick="kichHoatDatSlot('${ca.id}')">ĐẶT SLOT LIÊN HỆ</button>
                             </div>
                         `;
                         container.appendChild(card);
                     });
                 } catch (error) {
-                    container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--accent-pink);">Lỗi tải dữ liệu. Hãy kiểm tra script kết nối Supabase.</div>';
+                    container.innerHTML = '<div style="text-align:center; padding:25px; color:var(--accent-pink); font-size:0.85rem;"><i class="fa-solid fa-triangle-exclamation"></i> Lỗi nghiêm trọng trong đường ống tải dữ liệu đám mây Supabase.</div>';
                 }
             }
 
-            // Gắn hàm đặt slot trực tiếp vào cửa sổ để thẻ HTML động thực thi gọi lệnh
+            // Đóng gói hàm đặt slot toàn cục cho luồng HTML động thực thi
             window.kichHoatDatSlot = async function(caDauId) {
                 const tenNguoiDung = localStorage.getItem('userTen');
                 const sdtNguoiDung = localStorage.getItem('userSdt');
                 
                 if (!tenNguoiDung || !sdtNguoiDung) {
-                    alert("Yêu cầu định danh tài khoản lỗi. Vui lòng tải lại trang.");
+                    alert("Hồ chiếu định danh lỗi. Vui lòng tải lại trang.");
                     return;
                 }
 
-                if(!confirm(`Xác nhận đăng ký tham gia đặt 1 slot vào trận đấu này?`)) return;
+                if(!confirm(`Xác nhận đăng ký tham gia trận đấu? Hệ thống sẽ tạo yêu cầu chính thức gửi tới chủ sân.`)) return;
 
-                // Sinh token định danh ngẫu nhiên theo đặc tả kiến trúc
+                // Sinh token định danh ngẫu nhiên chống trùng lặp theo kiến trúc thiết kế
                 const tokenSlot = "SLOT-" + Math.floor(10000 + Math.random() * 90000);
 
                 try {
-                    const ketQuaInsert = await dbCloud.chenDonDatSlot({
+                    const ketQuaInsert = await dbCloud.ghiData("dat_slot", {
                         ca_dau_id: caDauId,
                         ten_khach: tenNguoiDung,
                         sdt_khach: sdtNguoiDung,
-                        ma_slot: tokenSlot
+                        ma_slot: tokenSlot,
+                        ngay_dat: new Date().toISOString().split('T')[0]
                     });
 
                     if(ketQuaInsert) {
-                        alert(`ĐẶT SLOT THÀNH CÔNG!\nMã định danh của bạn: ${tokenSlot}\nChủ sân sẽ liên hệ bạn qua Zalo.`);
+                        alert(`ĐẶT SLOT THÀNH CÔNG!\nMã giữ slot của bạn: ${tokenSlot}\nChủ ca đấu sẽ chủ động kết nối với bạn qua Zalo.`);
                         queryKeoTuCloud();
                     }
                 } catch (err) {
-                    alert("Đặt slot thất bại do lỗi xử lý luồng ghi dữ liệu đám mây.");
+                    alert("Giao dịch thất bại! Đứt gãy luồng đồng bộ cơ sở dữ liệu đám mây Supabase.");
                 }
             }
         });
