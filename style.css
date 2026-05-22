@@ -1,56 +1,44 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
 /* ==========================================================================
-   1. ĐỊNH NGHĨA HỆ THỐNG BIẾN MÀU THỂ THAO CAO CẤP
+   1. ĐỊNH NGHĨA BIẾN MÀU SHADCN UI CHUẨN ĐÉT (MƯỢT MÀ, KHÔNG BỊ CHỎI)
    ========================================================================== */
 :root {
-    /* CHẾ ĐỘ TỐI - DEFAULT (Cyber Dark Modern) */
-    --bg-color: #040408;
-    --main-gradient: linear-gradient(135deg, #090a15 0%, #030307 100%);
-    --card-bg: rgba(13, 15, 30, 0.7);
+    /* CHẾ ĐỘ TỐI (Default Cyber Dark - Sang trọng, rực rỡ) */
+    --bg-color: #04050c;
+    --main-gradient: linear-gradient(135deg, #080916 0%, #030307 100%);
+    --card-bg: rgba(15, 17, 33, 0.75);
     --card-border: rgba(255, 255, 255, 0.08);
-    --card-shadow: rgba(0, 0, 0, 0.7);
+    --card-shadow: rgba(0, 0, 0, 0.6);
     --text-title: #ffffff;
-    --text-main: #f8fafc;
+    --text-main: #f1f5f9;
     --text-muted: #6f7b95;
     
     --neon-cyan: #00f3ff;
     --neon-pink: #ff007f;
-    --neon-purple: #9d4edd;
-    
-    --btn-bg: rgba(255, 255, 255, 0.02);
-    --btn-border: rgba(255, 255, 255, 0.05);
-    --btn-hover-bg: rgba(255, 255, 255, 0.05);
-    
-    --glow-primary: rgba(0, 243, 255, 0.15);
-    --glow-accent: rgba(255, 0, 127, 0.15);
+    --input-bg: #0c0d18;
+    --glow-effect: rgba(0, 243, 255, 0.15);
 }
 
 [data-theme="light"] {
-    /* CHẾ ĐỘ SÁNG (Luxury Pearl Light - Phong cách chuyển màu Hologram) */
+    /* CHẾ ĐỘ SÁNG (Luxury Pearl Light - Màu khói Hologram, không lo trắng phớ) */
     --bg-color: #eef2f7;
-    --main-gradient: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-    --card-bg: rgba(255, 255, 255, 0.8);
+    --main-gradient: linear-gradient(135deg, #f1f5f9 0%, #dfe7f2 100%);
+    --card-bg: rgba(255, 255, 255, 0.85);
     --card-border: rgba(15, 23, 42, 0.08);
-    --card-shadow: rgba(15, 23, 42, 0.12);
+    --card-shadow: rgba(15, 23, 42, 0.08);
     --text-title: #0f172a;
     --text-main: #1e293b;
     --text-muted: #64748b;
     
-    --neon-cyan: #0ea5e9;   /* Sắc xanh sâu chuyên nghiệp */
-    --neon-pink: #db2777;   /* Sắc hồng đậm nổi bật */
-    --neon-purple: #7c3aed;
-    
-    --btn-bg: #ffffff;
-    --btn-border: rgba(15, 23, 42, 0.08);
-    --btn-hover-bg: #f8fafc;
-    
-    --glow-primary: rgba(14, 165, 233, 0.2);
-    --glow-accent: rgba(219, 39, 119, 0.2);
+    --neon-cyan: #0ea5e9;
+    --neon-pink: #db2777;
+    --input-bg: #ffffff;
+    --glow-effect: rgba(14, 165, 233, 0.15);
 }
 
 /* ==========================================================================
-   2. REFRESH NỀN TOÀN TRANG & HIỆU ỨNG KHÔNG GIAN ĐA CHIỀU
+   2. REFRESH TOÀN BỘ PHONG CÁCH CHUẨN ĐÉT
    ========================================================================== */
 body {
     background-color: var(--bg-color);
@@ -59,301 +47,136 @@ body {
     font-family: 'Plus Jakarta Sans', sans-serif;
     min-height: 100vh;
     margin: 0;
-    padding: 20px;
+    padding: 40px 20px;
+    box-sizing: border-box;
     display: flex;
     justify-content: center;
-    align-items: center;
-    box-sizing: border-box;
+    align-items: flex-start;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
-    transition: background 0.6s cubic-bezier(0.4, 0, 0.2, 1), color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background 0.5s ease, color 0.5s ease;
 }
 
-/* Các quầng sáng Neon ngầm tạo chiều sâu huyền ảo cho Web */
+/* Các quầng sáng Neon ngầm tạo chiều sâu huyền ảo */
 body::before, body::after {
-    content: '';
-    position: absolute;
-    width: 500px; height: 500px;
-    border-radius: 50%;
-    filter: blur(140px);
-    z-index: -1;
-    pointer-events: none;
-    transition: all 0.6s ease;
+    content: ''; position: absolute; width: 600px; height: 600px; border-radius: 50%;
+    filter: blur(140px); z-index: -1; pointer-events: none; transition: all 0.5s ease;
 }
-body::before {
-    top: -10%; left: -10%;
-    background: var(--glow-primary);
-}
-body::after {
-    bottom: -10%; right: -10%;
-    background: var(--glow-accent);
-}
+body::before { top: -10%; left: -10%; background: var(--glow-effect); }
+body::after { bottom: -10%; right: -10%; background: rgba(255, 0, 127, 0.08); }
 
 /* ==========================================================================
-   3. SWITCH CHUYỂN ĐỔI THEME - DESIGN KIỂU APPS CAO CẤP
+   3. CẤU TRÚC POPUP OVERLAY BIẾN HÌNH (MODAL KÍNH MỜ)
    ========================================================================== */
-.theme-container {
-    position: absolute;
-    top: 30px; right: 30px;
-    z-index: 100;
-}
-
-.theme-btn {
-    background: var(--card-bg);
-    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-    border: 1px solid var(--card-border);
-    color: var(--text-title);
-    padding: 12px 20px;
-    border-radius: 50px;
-    font-weight: 700;
-    font-size: 13px;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    display: flex; align-items: center; gap: 10px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-.theme-btn:hover {
-    transform: translateY(-2px);
-    border-color: var(--neon-cyan);
-    box-shadow: 0 0 20px var(--glow-primary);
-}
-
-/* ==========================================================================
-   4. SIÊU KHỐI TRUNG TÂM (DASHBOARD CONTAINER)
-   ========================================================================== */
-.main-panel {
-    width: 100%;
-    max-width: 460px;
-    background: var(--card-bg);
-    backdrop-filter: blur(30px);
-    -webkit-backdrop-filter: blur(30px);
-    padding: 60px 40px;
-    border-radius: 32px;
-    border: 1px solid var(--card-border);
-    box-shadow: 0 40px 100px var(--card-shadow);
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.5s ease;
-}
-
-/* Thanh LED chỉ thị màu sắc chạy mượt ở đỉnh khối */
-.main-panel::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 5px;
-    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));
-}
-
-/* ĐỊNH DẠNG CHỮ RỰC RỠ, ĐẲNG CẤP THƯƠNG HIỆU */
-h1 {
-    font-size: 32px;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    margin: 0 0 10px 0;
-    background: linear-gradient(135deg, var(--text-title) 30%, var(--text-muted) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    text-shadow: 0 10px 30px rgba(0,0,0,0.2);
-}
-
-.sub-tagline {
-    font-size: 14px;
-    color: var(--text-muted);
-    margin-bottom: 45px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-}
-
-/* ==========================================================================
-   5. THIẾT KẾ HỆ THỐNG NÚT BẤM CỰC CHẤT (DYNAMIC BUTTONS)
-   ========================================================================== */
-.btn-gateway {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 22px 26px;
-    margin: 22px 0;
-    color: var(--text-title);
-    background: var(--btn-bg);
-    border: 1px solid var(--btn-border);
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 16px;
-    letter-spacing: 0.5px;
-    text-decoration: none;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-    cursor: pointer;
-    box-sizing: border-box;
-}
-
-.btn-gateway .content-layout {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-/* Tạo khối phát quang bọc lấy icon */
-.btn-gateway i.icon-prime {
-    font-size: 16px;
-    background: rgba(127, 142, 163, 0.08);
-    padding: 12px;
-    border-radius: 14px;
-    transition: all 0.3s ease;
-}
-
-/* LOGIC HOVER ĐỔI MÀU REALTIME KHÁCH TÌM KÈO */
-.btn-khach-style:hover {
-    border-color: var(--neon-cyan);
-    background: var(--btn-hover-bg);
-    box-shadow: 0 0 35px var(--glow-primary), inset 0 1px 1px rgba(255,255,255,0.1);
-    transform: translateY(-4px) scale(1.01);
-}
-.btn-khach-style:hover i.icon-prime {
-    background: var(--neon-cyan);
-    color: #000000 !important;
-    box-shadow: 0 0 15px var(--neon-cyan);
-}
-
-/* LOGIC HOVER ĐỔI MÀU REALTIME HOST ĐĂNG KÈO */
-.btn-host-style:hover {
-    border-color: var(--neon-pink);
-    background: var(--btn-hover-bg);
-    box-shadow: 0 0 35px var(--glow-accent), inset 0 1px 1px rgba(255,255,255,0.1);
-    transform: translateY(-4px) scale(1.01);
-}
-.btn-host-style:hover i.icon-prime {
-    background: var(--neon-pink);
-    color: #ffffff !important;
-    box-shadow: 0 0 15px var(--neon-pink);
-}
-
-/* Icon mũi tên chỉ hướng động */
-.btn-gateway i.icon-arrow {
-    font-size: 12px;
-    opacity: 0.2;
-    transition: all 0.3s ease;
-}
-.btn-gateway:hover i.icon-arrow {
-    opacity: 1;
-    transform: translateX(6px);
-    color: var(--text-title);
-}
-
-/* MANAGEMENT LINK DƯỚI ĐÁY CONTAINER */
-.manage-anchor {
-    display: inline-block;
-    color: var(--text-muted);
-    font-size: 11px;
-    margin-top: 40px;
-    text-decoration: none;
-    letter-spacing: 2px;
-    font-weight: 700;
-    text-transform: uppercase;
-    transition: all 0.3s ease;
-    opacity: 0.6;
-}
-.manage-anchor:hover {
-    color: var(--neon-cyan);
-    opacity: 1;
-    text-shadow: 0 0 10px var(--glow-primary);
-}
-
-/* ==========================================================================
-   BỔ SUNG BỘ KHUNG POPUP & CARD CHUYÊN NGHIỆP CHO TRANG KHÁCH NỀN SHADCN UI
-   ========================================================================== */
-
-/* LỚP NỀN PHỦ ĐÈ TOÀN TRANG CHO POPUP (MODAL OVERLAY) */
 .modal {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(3, 3, 7, 0.6);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    z-index: 9999;
-    display: none; /* Mặc định ẩn, chỉ hiện qua JS */
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(3, 3, 7, 0.5);
+    backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+    z-index: 9999; display: none;
     justify-content: center; align-items: center;
     padding: 20px; box-sizing: border-box;
 }
 
-/* HỘP NỘI DUNG POPUP - NỔI TRÊN KHÔNG GIAN 3D */
 .modal-content {
-    width: 100%; max-width: 420px;
-    background: #0b0c14 !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    width: 100%; max-width: 440px;
+    background: var(--card-bg) !important;
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--card-border) !important;
     border-radius: 24px !important;
-    padding: 35px 30px !important;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.8);
+    padding: 40px 30px !important;
+    box-shadow: 0 40px 80px var(--card-shadow);
     text-align: center;
-    position: relative;
     box-sizing: border-box;
     animation: popupSmooth 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes popupSmooth {
-    from { transform: translateY(20px); opacity: 0; }
+    from { transform: translateY(15px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
 
-/* BỐ CỤC LƯỚI CHO FORM CÁC Ô NHẬP LIỆU (SELECT/INPUT) */
-.grid-inputs {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-bottom: 20px;
+/* ==========================================================================
+   4. THIẾT KẾ CARD BỘ LỌC KÈO VÀ CÁC Ô SELECT BOX CAO CẤP
+   ========================================================================== */
+.filter-section {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    padding: 40px 35px;
+    border-radius: 24px;
+    margin-bottom: 30px;
+    box-shadow: 0 30px 60px var(--card-shadow);
     text-align: left;
 }
 
-@media (max-width: 480px) {
-    .grid-inputs { grid-template-columns: 1fr; gap: 12px; }
+.filter-title {
+    font-size: 15px; font-weight: 800; color: var(--neon-cyan);
+    letter-spacing: 1px; margin-bottom: 30px; text-transform: uppercase;
+    display: flex; align-items: center; gap: 10px;
+}
+
+.grid-inputs {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;
+}
+
+@media (max-width: 550px) {
+    .grid-inputs { grid-template-columns: 1fr; gap: 16px; }
 }
 
 .grid-inputs label {
-    display: block;
-    font-size: 12px;
-    font-weight: 700;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 6px;
+    display: block; font-size: 11px; font-weight: 700; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;
 }
 
-/* Ô CHỌN SELECT BOX CHUẨN ĐÉT CAO CẤP */
+/* Ô chọn Select mượt mà như app công nghệ Tây */
 .select-custom {
-    width: 100%;
-    background: #12131f !important;
-    border: 1px solid var(--border) !important;
-    color: #ffffff !important;
-    padding: 14px 16px !important;
-    border-radius: 12px !important;
-    font-size: 14px !important;
-    font-weight: 600 !important;
-    outline: none !important;
-    transition: all 0.25s ease !important;
-    box-sizing: border-box;
+    width: 100%; background: var(--input-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    color: var(--text-main) !important;
+    padding: 15px 16px !important;
+    border-radius: 14px !important;
+    font-size: 14px !important; font-weight: 600 !important;
+    outline: none !important; transition: all 0.25s ease !important;
+    box-sizing: border-box; cursor: pointer;
 }
 .select-custom:focus {
     border-color: var(--neon-cyan) !important;
-    box-shadow: 0 0 15px rgba(0, 243, 255, 0.15) !important;
+    box-shadow: 0 0 15px var(--glow-effect) !important;
 }
 
-/* THẺ HIỂN THỊ THÔNG TIN KÈO ĐẤU CẦU LÔNG (CARD KÈO) */
+/* ==========================================================================
+   5. KHỐI THẺ CARD KÈO ĐẤU CẦU LÔNG (SIÊU THẨM MỸ)
+   ========================================================================== */
 .card-keo-phui {
-    background: #0b0c14 !important;
-    border: 1px solid var(--border) !important;
-    border-radius: 20px !important;
-    padding: 24px !important;
-    margin: 20px 0 !important;
+    background: var(--card-bg) !important;
+    border: 1px solid var(--card-border) !important;
+    border-radius: 22px !important;
+    padding: 28px !important;
+    margin: 24px 0 !important;
     text-align: left;
     border-left: 4px solid var(--neon-cyan) !important;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 15px 35px var(--card-shadow);
+    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .card-keo-phui:hover {
     border-left-color: var(--neon-pink) !important;
     transform: translateY(-4px);
-    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+    box-shadow: 0 25px 50px rgba(0,0,0,0.35);
 }
+
+/* BUTTONS THỐNG NHẤT KHUNG HÌNH */
+.btn-gateway {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; padding: 20px 24px; color: #ffffff;
+    background: linear-gradient(135deg, #131524 0%, #0d0e16 100%);
+    border: 1px solid var(--card-border); border-radius: 14px;
+    font-weight: 700; font-size: 15px; text-decoration: none;
+    transition: all 0.3s ease; cursor: pointer; box-sizing: border-box;
+}
+
+.theme-btn {
+    background: var(--card-bg); border: 1px solid var(--card-border);
+    color: var(--text-title); padding: 12px 20px; border-radius: 50px;
+    font-weight: 700; font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 8px;
+    transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.theme-btn:hover { border-color: var(--neon-cyan); transform: translateY(-1px); }
