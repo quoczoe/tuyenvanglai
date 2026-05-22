@@ -13,22 +13,20 @@
 <body>
 
     <main class="main-panel" id="khuVucLamViecHost" style="opacity: 0; pointer-events: none;">
-        <!-- Thanh tiêu đề điều khiển -->
         <div class="top-nav-bar">
             <a href="index.html" class="theme-btn" style="text-decoration: none;">
                 <i class="fa-solid fa-arrow-left"></i> Sảnh chính
             </a>
             <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent-pink);">
-                <i class="fa-solid fa-user-shield"></i> Host Mode Active
+                <i class="fa-solid fa-user-shield"></i> HOST MODE ACTIVE
             </div>
         </div>
 
         <div class="header-box" style="margin-bottom: 20px; text-align: left;">
             <h2 style="font-size: 1.4rem; font-weight: 800; text-transform: uppercase;">Đăng Ca Đấu Mới</h2>
-            <p style="font-size: 0.8rem; color: var(--text-secondary);">Thiết lập thông số trận đấu và phân tích doanh thu biên độ</p>
+            <p style="font-size: 0.8rem; color: var(--text-secondary);">Thiết lập thông số trận đấu và phân tích biên độ tài chính rủi ro</p>
         </div>
 
-        <!-- BIỂU MẪU ĐĂNG KÝ THAM SỐ CA ĐẤU -->
         <form id="frmDangCaDau" onsubmit="event.preventDefault();">
             <div class="filter-section" style="background: rgba(0,0,0,0.15); padding: 18px; margin-bottom: 15px;">
                 <div class="section-title"><i class="fa-solid fa-map-location-dot"></i> Thiết lập Địa Điểm</div>
@@ -41,17 +39,17 @@
                         <label>Tỉnh Thành</label>
                         <select id="hostTinh" class="select-custom" required disabled><option value="">-- Tỉnh --</option></select>
                     </div>
-                    <div class="form-group" style="grid-column: span 2;">
+                    <div class="form-group full-width-input">
                         <label>Quận Huyện</label>
                         <select id="hostQuan" class="select-custom" required disabled><option value="">-- Quận Huyện --</option></select>
                     </div>
-                    <div class="form-group" style="grid-column: span 2;">
+                    <div class="form-group full-width-input">
                         <label>Tên Sân Cầu Lông</label>
                         <input type="text" id="hostTenSan" class="input-custom" placeholder="Ví dụ: Sân Thống Nhất" required>
                     </div>
                     <div class="form-group">
                         <label>Số Sân Cụ Thể</label>
-                        <input type="text" id="hostSoSan" class="input-custom" placeholder="Sân 3" required>
+                        <input type="text" id="hostSoSan" class="input-custom" placeholder="Sân số 3" required>
                     </div>
                     <div class="form-group">
                         <label>Link Google Maps</label>
@@ -61,7 +59,7 @@
             </div>
 
             <div class="filter-section" style="background: rgba(0,0,0,0.15); padding: 18px; margin-bottom: 15px;">
-                <div class="section-title" style="color: var(--accent-pink);"><i class="fa-solid fa-calculator"></i> Cấu Hình Chi Phí & Định Mức</div>
+                <div class="section-title" style="color: var(--accent-pink);"><i class="fa-solid fa-calculator"></i> Chi Phí & Định Mức Khóa Cứng</div>
                 <div class="grid-inputs">
                     <div class="form-group">
                         <label>Tiền thuê sân / Giờ</label>
@@ -71,51 +69,51 @@
                         <label>Số giờ chơi (Ca)</label>
                         <input type="number" step="0.5" id="finSoGio" class="input-custom" value="2" required>
                     </div>
-                    <div class="form-group">
-                        <label>Thương Hiệu Cầu Lông</label>
+                    <div class="form-group full-width-input">
+                        <label>Thương Hiệu Cầu Lông Sử Dụng</label>
                         <select id="finHangCau" class="select-custom">
-                            <option value="33000">Quả cầu VinaStar (33.000đ)</option>
-                            <option value="35000">Quả cầu Hải Yến (35.000đ)</option>
-                            <option value="40000">Quả cầu Victor (40.000đ)</option>
+                            <option value="33000">Quả cầu VinaStar (33.000đ/quả)</option>
+                            <option value="35000">Quả cầu Hải Yến (35.000đ/quả)</option>
+                            <option value="40000">Quả cầu Victor (40.000đ/quả)</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>Số quả cầu đã dùng</label>
+                    <div class="form-group full-width-input">
+                        <label>Số quả cầu dự kiến đã dùng</label>
                         <input type="number" id="finSoCau" class="input-custom" value="6" required>
                     </div>
                 </div>
             </div>
 
             <div class="filter-section" style="background: rgba(0,0,0,0.15); padding: 18px; margin-bottom: 15px;">
-                <div class="section-title"><i class="fa-solid fa-users"></i> Thiết Lập Giá Slot Đấu</div>
+                <div class="section-title"><i class="fa-solid fa-users"></i> Phân Bổ Slot & Giá Tiền</div>
                 <div class="grid-inputs">
                     <div class="form-group">
-                        <label>Số lượng Nam tối đa</label>
+                        <label>Lượng Nam tối đa</label>
                         <input type="number" id="slotMaxNam" class="input-custom" value="4" required>
                     </div>
                     <div class="form-group">
-                        <label>Giá slot Nam</label>
+                        <label>Giá một slot Nam</label>
                         <input type="number" id="slotGiaNam" class="input-custom" value="45000" required>
                     </div>
                     <div class="form-group">
-                        <label>Số lượng Nữ tối đa</label>
+                        <label>Lượng Nữ tối đa</label>
                         <input type="number" id="slotMaxNu" class="input-custom" value="4" required>
                     </div>
                     <div class="form-group">
-                        <label>Giá slot Nữ</label>
+                        <label>Giá một slot Nữ</label>
                         <input type="number" id="slotGiaNu" class="input-custom" value="40000" required>
                     </div>
-                    <div class="form-group" style="grid-column: span 2;">
-                        <label>Yêu cầu trình độ của Ca</label>
+                    <div class="form-group full-width-input">
+                        <label>Yêu cầu trình độ</label>
                         <select id="hostTrinhDo" class="select-custom">
-                            <option value="Trung bình">Trung bình</option>
+                            <option value="Trung bình">Trung bình khá</option>
                             <option value="Yếu">Yếu / Mới tập</option>
                             <option value="Trung bình yếu">Trung bình yếu</option>
                             <option value="Khá cứng">Khá cứng / Cọ xát cao</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label>Ngày đánh</label>
+                    <div class="form-group full-width-input">
+                        <label>Ngày tổ chức đánh</label>
                         <input type="date" id="hostNgay" class="input-custom" required>
                     </div>
                     <div class="form-group">
@@ -129,44 +127,42 @@
                 </div>
             </div>
 
-            <!-- BẢNG BÁO CÁO PHÂN TÍCH TÀI CHÍNH MA TRẬN DỰ TOÁN -->
             <section class="analytics-matrix">
                 <div class="section-title" style="color: var(--text-primary); margin-bottom: 10px;">
-                    <i class="fa-solid fa-chart-pie" style="color: var(--accent-pink);"></i> Thống Kê Tài Chính Dự Kiến
+                    <i class="fa-solid fa-chart-pie" style="color: var(--accent-pink);"></i> Thống Kê Tài Chính Dự Kiến (Real-time)
                 </div>
                 <div class="matrix-grid">
                     <div class="matrix-row">
                         <span>Chi phí vận hành cố định:</span>
-                        <span id="lblOperationalCost">0đ</span>
+                        <span id="lblOperationalCost" style="font-weight: 700;">0đ</span>
                     </div>
                     <div class="matrix-row">
                         <span>Doanh thu tối đa dự trần:</span>
-                        <span id="lblMaxRevenue">0đ</span>
+                        <span id="lblMaxRevenue" style="font-weight: 700;">0đ</span>
                     </div>
                     <div class="matrix-row">
                         <span>Lợi nhuận ròng dự tính:</span>
-                        <span id="lblNetProfit">0đ</span>
+                        <span id="lblNetProfit" style="font-weight: 700;">0đ</span>
                     </div>
                 </div>
             </section>
 
             <button type="button" class="btn-action-primary" id="btnPublishCaDau" style="background: linear-gradient(90deg, var(--accent-pink), #ec4899); color: white; box-shadow: 0 4px 15px var(--neon-glow-pink); margin-top: 15px;">
-                <i class="fa-solid fa-cloud-arrow-up"></i> PHÁT HÀNH CA ĐẤU LÊN CHỢ
+                <i class="fa-solid fa-cloud-arrow-up"></i> XÁC THỰC & PHÁT HÀNH CA ĐẤU
             </button>
         </form>
     </main>
 
-    <!-- TƯỜNG LỬA CHẮN BẢO MẬT CHỦ SÂN (HOST PROTECTION FIREWALL MODAL) -->
     <div class="modal" id="popHostAuth">
         <div class="modal-content">
             <div class="modal-title" style="color: var(--accent-pink);">
-                <i class="fa-solid fa-vault"></i> CỔNG KHÓA QUẢN TRỊ
+                <i class="fa-solid fa-vault"></i> CỔNG KHÓA QUẢN TRỊ CHỦ SÂN
             </div>
             <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 15px;">
-                Vui lòng nhập Access Key mã hóa của Chủ sân để mở khóa bàn làm việc.
+                Vui lòng cung cấp Access Key mã hóa để mở khóa hạ tầng quyền lực chủ sân.
             </p>
             <div class="form-group" style="margin-bottom: 20px; text-align: left;">
-                <label>Mã truy cập hệ thống</label>
+                <label>Mã khóa bảo mật</label>
                 <input type="password" id="txtHostKeyInput" class="input-custom" placeholder="••••••••">
             </div>
             <button class="btn-action-primary" id="btnVerifyAuth" style="background: linear-gradient(90deg, var(--accent-pink), #db2777); color: white; box-shadow: 0 4px 12px var(--neon-glow-pink);">
@@ -180,12 +176,18 @@
     
     <script>
         document.addEventListener("DOMContentLoaded", async () => {
+            // Đồng bộ theme
             document.documentElement.setAttribute('data-theme', localStorage.getItem('app-theme') || 'dark');
             
             const dbCloud = window.khoDuLieuVinhVien;
             const geoMetadata = window.KHO_DATA_DIA_LY;
 
-            // --- KIỂM TRA TƯỜNG LỬA BẢO MẬT (FIREWALL AUTH) ---
+            if (!dbCloud) {
+                alert("Lỗi hạ tầng: Không tìm thấy engine kết nối dữ liệu.");
+                return;
+            }
+
+            // --- KIỂM TRA TƯỜNG LỬA BẢO MẬT MÃ HÓA (FIREWALL AUTH) ---
             const firewallModal = document.getElementById("popHostAuth");
             const mainWorkplace = document.getElementById("khuVucLamViecHost");
             const savedKey = localStorage.getItem('hostKey');
@@ -204,20 +206,22 @@
 
             async function thucThiKichHoatBariereXacThuc(keyDeKiemTra) {
                 try {
-                    const hopLe = await dbCloud.verifyHostAccessKey(keyDeKiemTra);
-                    if (hopLe) {
+                    // Truy vấn kiểm tra mã khóa phân quyền từ bảng cấu hình hệ thống
+                    const dataKeyCloud = await dbCloud.docData("cau_hinh_he_thong", "id=eq.host_access_key");
+                    
+                    if (dataKeyCloud && dataKeyCloud.length > 0 && dataKeyCloud[0].gia_tri_cau_hinh === keyDeKiemTra) {
                         localStorage.setItem('hostKey', keyDeKiemTra);
                         firewallModal.classList.remove("active");
                         mainWorkplace.style.opacity = "1";
                         mainWorkplace.style.pointerEvents = "auto";
                         khoiTaoFormHeThong();
                     } else {
-                        alert("Mã bảo mật sai! Từ chối quyền truy cập bàn làm việc.");
+                        alert("Mã bảo mật không chính xác! Quyền truy cập bàn làm việc bị từ chối.");
                         localStorage.removeItem('hostKey');
                         firewallModal.classList.add("active");
                     }
                 } catch(e) {
-                    alert("Lỗi kiểm tra hạ tầng bảo mật đám mây Supabase.");
+                    alert("Lỗi kết nối hạ tầng bảo mật đám mây Supabase.");
                 }
             }
 
@@ -227,7 +231,7 @@
                 const hostTinh = document.getElementById("hostTinh");
                 const hostQuan = document.getElementById("hostQuan");
 
-                // Gán mặc định ngày hôm nay vào ô Date input
+                // Gán mặc định ngày hôm nay vào trường date
                 document.getElementById("hostNgay").valueAsDate = new Date();
 
                 if(geoMetadata) {
@@ -262,19 +266,20 @@
                     hostQuan.disabled = false;
                 });
 
-                // Kích hoạt lắng nghe sự kiện để chạy Bộ máy tính tài chính thời gian thực
+                // Gắn bộ lắng nghe sự kiện thời gian thực cho ma trận tài chính
                 const fieldsTaiChinh = ['finTienSan', 'finSoGio', 'finHangCau', 'finSoCau', 'slotMaxNam', 'slotGiaNam', 'slotMaxNu', 'slotGiaNu'];
                 fieldsTaiChinh.forEach(idField => {
                     document.getElementById(idField).addEventListener('input', thucThiTinhToanTaiChinhMatrix);
                 });
                 document.getElementById('finHangCau').addEventListener('change', thucThiTinhToanTaiChinhMatrix);
 
-                thucThiTinhToanTaiChinhMatrix(); // Chạy hàm tính toán nền ngay lúc bắt đầu
+                // Chạy tính toán nền lập tức
+                thucThiTinhToanTaiChinhMatrix();
             }
 
-            // --- BỘ MÁY TÍNH TOÁN PHÂN TÍCH TÀI CHÍNH TÀI SẢN (FINANCIAL ANALYTICS MATRIX) ---
+            // --- BỘ MÁY TÍNH TOÁN MA TRẬN TÀI CHÍNH THỜI GIAN THỰC ---
             function thucThiTinhToanTaiChinhMatrix() {
-                const giaSanh = parseFloat(document.getElementById("finTienSan").value) || 0;
+                const giaSan = parseFloat(document.getElementById("finTienSan").value) || 0;
                 const soGioChoi = parseFloat(document.getElementById("finSoGio").value) || 0;
                 const giaDinhMucCau = parseFloat(document.getElementById("finHangCau").value) || 0;
                 const soLuongCauDung = parseFloat(document.getElementById("finSoCau").value) || 0;
@@ -284,19 +289,19 @@
                 const maxNu = parseInt(document.getElementById("slotMaxNu").value) || 0;
                 const giaNu = parseFloat(document.getElementById("slotGiaNu").value) || 0;
 
-                // Các công thức cốt lõi định mức theo Bản thiết kế kiến trúc hệ thống
-                const chiPhiVanHanhCoDinh = (giaSanh * soGioChoi) + (soLuongCauDung * giaDinhMucCau);
+                // Các công thức toán học cốt lõi khóa cứng hao phí theo yêu cầu kiến trúc
+                const chiPhiVanHanhCoDinh = (giaSan * soGioChoi) + (soLuongCauDung * giaDinhMucCau);
                 const doanhThuToiDaTran = (giaNam * maxNam) + (giaNu * maxNu);
                 const loiNhuanRongDuTinh = doanhThuToiDaTran - chiPhiVanHanhCoDinh;
 
-                // Đổ kết quả hiển thị ra Viewport
+                // Đổ dữ liệu động ra Viewport giao diện
                 document.getElementById("lblOperationalCost").textContent = chiPhiVanHanhCoDinh.toLocaleString('vi-VN') + "đ";
                 document.getElementById("lblMaxRevenue").textContent = doanhThuToiDaTran.toLocaleString('vi-VN') + "đ";
                 
                 const lblProfit = document.getElementById("lblNetProfit");
                 lblProfit.textContent = loiNhuanRongDuTinh.toLocaleString('vi-VN') + "đ";
 
-                // Thay đổi trạng thái nhãn cảnh báo rủi ro dựa vào trần lợi nhuận âm hay dương
+                // Kích hoạt đèn LED cảnh báo rủi ro nếu biên độ lợi nhuận ròng rơi vào vùng âm
                 if (loiNhuanRongDuTinh < 0) {
                     lblProfit.className = "profit-danger";
                 } else {
@@ -304,7 +309,7 @@
                 }
             }
 
-            // --- ĐƯỜNG ỐNG ĐẨY LỆNH PHÁT HÀNH CA ĐẤU SẠCH (PUBLISH PIPELINE) ---
+            // --- ĐƯỜNG ỐNG PHÁT HÀNH CA ĐẤU MỚI (PUBLISH PIPELINE) ---
             document.getElementById("btnPublishCaDau").addEventListener("click", async () => {
                 const mien = document.getElementById("hostMien").value;
                 const tinh = document.getElementById("hostTinh").value;
@@ -324,11 +329,11 @@
                 const giaNu = parseFloat(document.getElementById("slotGiaNu").value) || 0;
 
                 if(!mien || !tinh || !quan || !tenSan || !soSan || !linkMaps || !ngay || !gioBD || !gioKT) {
-                    alert("Vui lòng nhập đầy đủ tất cả các trường dữ liệu bắt buộc!");
+                    alert("Hệ thống từ chối! Vui lòng hoàn thiện toàn bộ trường dữ liệu bắt buộc cấu hình địa điểm.");
                     return;
                 }
 
-                const góiDuLieuSach = {
+                const goiDuLieuSach = {
                     vung_mien: mien,
                     tinh_thanh: tinh,
                     quan_huyen: quan,
@@ -344,11 +349,11 @@
                     gia_nam: giaNam,
                     slot_max_nu: maxNu,
                     gia_nu: giaNu,
-                    da_ket_toan: false // Mặc định mở tuyển cho khách vãng lai quét thấy
+                    da_ket_toan: false // Thiết lập mặc định mở tuyển cho khách vãng lai rà quét thấy
                 };
 
                 try {
-                    const responseInsert = await dbCloud.phatHanhCaDauMoi(góiDuLieuSach);
+                    const responseInsert = await dbCloud.ghiData("ca_dau", goiDuLieuSach);
                     if(responseInsert) {
                         alert("PHÁT HÀNH CA ĐẤU LÊN CHỢ THÀNH CÔNG THÀNH CÔNG!");
                         document.getElementById("frmDangCaDau").reset();
