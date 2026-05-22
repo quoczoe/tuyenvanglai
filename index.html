@@ -1,111 +1,76 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHỢ KÈO VÃNG LAI - ĐẲNG CẤP CẦU LÔNG</title>
+    <title>CHỢ KÈO VÃNG LAI - ĐẲNG CẤP SÂN PHỦI</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <style>
-        /* ĐẮP THÊM HIỆU ỨNG RỰC RỠ TRỰC TIẾP CHO SẢNH CHỜ KHÔNG BỊ LÙ ĐÙ */
-        .main-container {
-            position: relative;
-            overflow: hidden;
-            border: 1px solid rgba(0, 243, 255, 0.15) !important;
-            box-shadow: 0 40px 100px rgba(0, 0, 0, 0.8), 
-                        0 0 40px rgba(0, 243, 255, 0.05) !important;
-        }
-        
-        /* ĐÈN LED CHẠY CHUYỂN MÀU ĐỈNH CAO TRÊN ĐẦU BOX */
-        .main-container::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 4px;
-            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink));
-        }
-
-        /* CHỮ TIÊU ĐỀ PHẢI PHÁT SÁNG NỔI BẬT */
-        .glow-title {
-            font-size: 30px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            background: linear-gradient(135deg, #ffffff 30%, var(--neon-cyan) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 30px rgba(0, 243, 255, 0.3);
-            margin-bottom: 5px;
-        }
-
-        /* NÚT BẤM PHẢI ĐẬM ĐÀ, CÓ ĐỘ SÂU */
-        .btn-custom {
-            background: linear-gradient(135deg, #111115 0%, #1c1c24 100%) !important;
-            border: 1px solid rgba(255, 255, 255, 0.05) !important;
-            padding: 22px 24px !important;
-            margin: 22px 0 !important;
-            border-radius: 16px !important;
-            box-shadow: inset 0 1px 1px rgba(255,255,255,0.05), 0 10px 20px rgba(0,0,0,0.4);
-        }
-
-        /* HOVER NÚT KHÁCH - BÙNG NỔ SẮC XANH */
-        .btn-khach-vip:hover {
-            border-color: var(--neon-cyan) !important;
-            background: rgba(0, 243, 255, 0.03) !important;
-            box-shadow: 0 0 30px rgba(0, 243, 255, 0.2), inset 0 1px 1px rgba(255,255,255,0.1) !important;
-            transform: translateY(-3px);
-        }
-        .btn-khach-vip:hover i.fa-main {
-            color: #000 !important;
-            background: var(--neon-cyan) !important;
-            box-shadow: 0 0 15px var(--neon-cyan);
-        }
-
-        /* HOVER NÚT HOST - BÙNG NỔ SẮC HỒNG */
-        .btn-host-vip:hover {
-            border-color: var(--neon-pink) !important;
-            background: rgba(255, 0, 127, 0.03) !important;
-            box-shadow: 0 0 30px rgba(255, 0, 127, 0.2), inset 0 1px 1px rgba(255,255,255,0.1) !important;
-            transform: translateY(-3px);
-        }
-        .btn-host-vip:hover i.fa-main {
-            color: #000 !important;
-            background: var(--neon-pink) !important;
-            box-shadow: 0 0 15px var(--neon-pink);
-        }
-
-        /* ĐỘ TRÒN ĐỀU CHO KHỐI ICON */
-        i.fa-main {
-            background: #27272a;
-            padding: 12px;
-            border-radius: 12px;
-            font-size: 16px;
-            transition: all 0.3s ease;
-        }
-    </style>
 </head>
 <body>
 
+    <div class="theme-switch-container">
+        <button class="theme-toggle-btn" id="themeToggle">
+            <i class="fa-solid fa-sun" id="themeIcon"></i>
+            <span id="themeText">Chế độ Sáng</span>
+        </button>
+    </div>
+
     <div class="main-container">
-        <h1 class="glow-title">CHỢ KÈO VÃNG LAI</h1>
-        <div class="description" style="margin-bottom: 40px;">Nền tảng kết nối phủi chuyên nghiệp</div>
+        <h1>CHỢ KÈO VÃNG LAI</h1>
+        <div class="description">Nền tảng kết nối phủi chuyên nghiệp</div>
         
-        <a href="khach.html" class="btn-route btn-custom btn-khach-vip">
+        <a href="khach.html" class="btn-route btn-khach">
             <div class="btn-text">
                 <i class="fa-solid fa-magnifying-glass fa-main" style="color: var(--neon-cyan);"></i>
-                <span style="font-size: 16px; font-weight: 700; letter-spacing: 0.5px;">VÀO TÌM KÈO THƠM</span>
+                <span>VÀO TÌM KÈO THƠM</span>
             </div>
             <i class="fa-solid fa-chevron-right fa-arrow"></i>
         </a>
 
-        <a href="host.html" class="btn-route btn-custom btn-host-vip">
+        <a href="host.html" class="btn-route btn-host">
             <div class="btn-text">
                 <i class="fa-solid fa-calendar-plus fa-main" style="color: var(--neon-pink);"></i>
-                <span style="font-size: 16px; font-weight: 700; letter-spacing: 0.5px;">CHỦ SÂN: ĐĂNG CA ĐẤU</span>
+                <span>CHỦ SÂN: ĐĂNG CA ĐẤU</span>
             </div>
             <i class="fa-solid fa-chevron-right fa-arrow"></i>
         </a>
         
-        <a href="/admin/" class="sys-link" style="margin-top: 45px; color: #4b5563;">System Management</a>
+        <a href="/admin/" class="sys-link">System Management</a>
     </div>
+
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        const htmlElement = document.documentElement;
+        const themeIcon = document.getElementById('themeIcon');
+        const themeText = document.getElementById('themeText');
+
+        // Kiểm tra xem người dùng trước đó đã chọn theme gì chưa
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        htmlElement.setAttribute('data-theme', savedTheme);
+        updateToggleBtn(savedTheme);
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = htmlElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            // Ép trạng thái theme mới lên toàn trang
+            htmlElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateToggleBtn(newTheme);
+        });
+
+        // Hàm thay đổi icon và chữ của nút gạt theo thời gian thực
+        function updateToggleBtn(theme) {
+            if (theme === 'dark') {
+                themeIcon.className = 'fa-solid fa-sun';
+                themeText.innerText = 'Chế độ Sáng';
+            } else {
+                themeIcon.className = 'fa-solid fa-moon';
+                themeText.innerText = 'Chế độ Tối';
+            }
+        }
+    </script>
 
 </body>
 </html>
