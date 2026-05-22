@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TÌM KÈO THƠM VÃNG LAI</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { display: block; padding: 20px 10px; min-height: 100vh; }
+        .wrapper { max-width: 600px; margin: 0 auto; }
+        .filter-section { background: var(--card); border: 1px solid var(--card-border); padding: 25px; border-radius: var(--radius); margin-bottom: 25px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .filter-title { font-size: 16px; font-weight: 800; color: var(--neon-cyan); letter-spacing: 1px; margin-bottom: 20px; text-transform: uppercase; border-left: 3px solid var(--neon-cyan); padding-left: 10px; }
+        .select-custom { background: #14141a; border: 1px solid var(--border); color: #fff; padding: 14px; border-radius: 12px; font-size: 14px; width: 100%; outline: none; margin-top: 6px; font-weight: 500; transition: 0.3s; }
+        .select-custom:focus { border-color: var(--neon-cyan); box-shadow: 0 0 10px rgba(0,243,255,0.1); }
+        .grid-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .card-keo-phui { background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 22px; margin-bottom: 20px; border-left: 5px solid var(--neon-cyan); position: relative; transition: 0.3s; }
+        .card-keo-phui:hover { transform: translateY(-3px); box-shadow: 0 15px 30px rgba(0,0,0,0.4); border-left-color: var(--neon-pink); }
+    </style>
+</head>
+<body>
+
+    <div id="popSystem" class="modal" style="display: flex;">
+        <div class="modal-content" style="background:#0d0e16; border-radius:20px; padding:30px; border-color:var(--neon-cyan);">
+            <h3 style="color:var(--neon-cyan); margin-bottom:15px; font-size:18px;"><i class="fa-solid fa-bullhorn"></i> THÔNG BÁO TỪ ADMIN</h3>
+            <p id="txtSystemNotice" style="line-height:1.6; font-size:14px; color:#a1a1aa; text-align:left; white-space:pre-line;"></p>
+            <button class="btn-route btn-khach" onclick="closeNoticePopup()" style="margin-top:25px; padding:15px; justify-content:center; border-radius:12px;">OK, VÀO XEM KÈO</button>
+        </div>
+    </div>
+
+    <div id="popUserLogin" class="modal">
+        <div class="modal-content" style="background:#0d0e16; border-radius:20px; padding:30px; border-color:var(--neon-pink);">
+            <h3 style="color:var(--neon-pink); margin-bottom:10px; font-size:18px;"><i class="fa-solid fa-user-check"></i> THÔNG TIN RA SÂN</h3>
+            <p style="font-size:12px; color:#6b7280; margin-bottom:20px;">Nhập SĐT để hệ thống lưu vết điểm danh, tránh tụi bùng kèo.</p>
+            <div style="text-align:left; margin-bottom:12px;">
+                <label style="font-size:12px; color:#a1a1aa;">Tên của bạn / Biệt danh</label>
+                <input type="text" id="txtClientName" class="select-custom" placeholder="Ví dụ: Anh Tuấn, Minh Quốc...">
+            </div>
+            <div style="text-align:left; margin-bottom:20px;">
+                <label style="font-size:12px; color:#a1a1aa;">Số điện thoại liên hệ (Zalo)</label>
+                <input type="text" id="txtClientPhone" class="select-custom" placeholder="Nhập số điện thoại...">
+            </div>
+            <button class="btn-route btn-host" onclick="submitClientLogin()" style="padding:15px; justify-content:center; border-radius:12px;">XÁC NHẬN RA SÂN</button>
+        </div>
+    </div>
+
+    <div class="wrapper">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+            <button class="theme-btn" onclick="window.location.href='index.html'"><i class="fa-solid fa-arrow-left"></i> TRANG CHỦ</button>
+            <span id="lblDisplayUser" style="font-size:13px; font-weight:700; color:var(--neon-cyan);"></span>
+        </div>
+
+        <div class="filter-section">
+            <div class="filter-title"><i class="fa-solid fa-filter"></i> Bộ quét bộ lọc kèo thơm</div>
+            
+            <div class="grid-inputs">
+                <div><label>Chọn Vùng Miền</label><select id="selMien" class="select-custom" onchange="triggerMienChange()"><option value="">-- Tất cả miền --</option><option value="Nam">Miền Nam</option><option value="Trung">Miền Trung</option><option value="Bac">Miền Bắc</option></select></div>
+                <div><label>Tỉnh / Thành Phố</label><select id="selTinh" class="select-custom" onchange="triggerTinhChange()"><option value="">-- Chọn Tỉnh --</option></select></div>
+            </div>
+            <div class="grid-inputs">
+                <div><label>Quận / Huyện khu vực</label><select id="selQuan" class="select-custom"><option value="">-- Chọn Quận Huyện --</option></select></div>
+                <div><label>Đối Tượng Tuyển</label><select id="selDoiTuong" class="select-custom"><option value="">-- Tất cả đối tượng --</option><option value="Cả Nam và Nữ">Cả Nam và Nữ</option><option value="Chỉ tuyển Nam">Chỉ tuyển Nam</option><option value="Chỉ tuyển Nữ">Chỉ tuyển Nữ</option></select></div>
+            </div>
+            <div class="grid-inputs">
+                <div><label>Yêu cầu Trình Độ</label><select id="selTrinhDo" class="select-custom"><option value="">-- Tất cả trình độ --</option><option value="Yếu">Yếu</option><option value="Trung Bình Yếu">Trung Bình Yếu</option><option value="Trung Bình">Trung Bình</option><option value="Trung Bình Khá">Trung Bình Khá</option><option value="Khá">Khá - Phủi cứng</option></select></div>
+                <div><label>Giá tối đa (/Slot ca)</label><select id="selGiaMax" class="select-custom"><option value="">-- Tất cả mức giá --</option><option value="50000">Dưới 50k</option><option value="65000">Dưới 65k</option><option value="80000">Dưới 80k</option></select></div>
+            </div>
+            <button class="btn-route btn-khach" onclick="queryKeoTuCloud()" style="justify-content:center; gap:10px; margin:10px 0 0 0; background:linear-gradient(90deg, #00f3ff, #00a8ff); color:#000;"><i class="fa-solid fa-radar"></i> TIẾN HÀNH QUÉT KÈO THƠM</button>
+        </div>
+
+        <div id="vungChuaCardKeo"></div>
+    </div>
+
+    <script src="data-dia-ly.js"></script>
+    <script src="ket-noi-supabase.js"></script>
+    <script>
+        let cPhone = ""; let cName = "";
+        
+        // Mở màn: Đọc thông báo hệ thống realtime từ Supabase
+        window.onload = async function() {
+            rootHtmlCheck();
+            try {
+                const data = await window.khoDuLieuVinhVien.docData('cau_hinh_he_thong', 'id=eq.popup_chinh');
+                document.getElementById('txtSystemNotice').innerText = (data && data.length > 0) ? data[0].noi_dung_thong_bao : "Chào mừng anh em vãng lai!";
+            } catch(e) { document.getElementById('txtSystemNotice').innerText = "Chào mừng anh em vãng lai!"; }
+        };
+
+        function rootHtmlCheck() {
+            const currentTheme = localStorage.getItem('app-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+        }
+        function closeNoticePopup() {
+            document.getElementById('popSystem').style.display = 'none';
+            cPhone = localStorage.getItem('userSdt'); cName = localStorage.getItem('userTen');
+            if(!cPhone) { document.getElementById('popUserLogin').style.display = 'flex'; } else { startKhachPage(); }
+        }
+        function submitClientLogin() {
+            const n = document.getElementById('txtClientName').value.trim(); const p = document.getElementById('txtClientPhone').value.trim();
+            if(!n || !p) return alert('Vui lòng điền đủ Tên và SĐT liên hệ!');
+            localStorage.setItem('userSdt', p); localStorage.setItem('userTen', n);
+            cPhone = p; cName = n; document.getElementById('popUserLogin').style.display = 'none'; startKhachPage();
+        }
+        function startKhachPage() {
+            document.getElementById('lblDisplayUser').innerText = `👤 ${cName} (${cPhone})`;
+            queryKeoTuCloud();
+        }
+
+        // BIẾN THỂ DROPDOWN ĐỊA LÝ THEO KHO DATA ĐỊA LÝ CHUẨN 100%
+        function triggerMienChange() {
+            const m = document.getElementById('selMien').value; const t = document.getElementById('selTinh'); const q = document.getElementById('selQuan');
+            t.innerHTML = '<option value="">-- Chọn Tỉnh --</option>'; q.innerHTML = '<option value="">-- Chọn Quận Huyện --</option>';
+            if(!m || !KHO_DATA_DIA_LY[m]) return;
+            Object.keys(KHO_DATA_DIA_LY[m]).forEach(x => { t.innerHTML += `<option value="${x}">${x}</option>`; });
+        }
+        function triggerTinhChange() {
+            const m = document.getElementById('selMien').value; const t = document.getElementById('selTinh').value; const q = document.getElementById('selQuan');
+            q.innerHTML = '<option value="">-- Chọn Quận Huyện --</option>';
+            if(!m || !t || !KHO_DATA_DIA_LY[m][t]) return;
+            KHO_DATA_DIA_LY[m][t].forEach(x => { q.innerHTML += `<option value="${x}">${x}</option>`; });
+        }
+
+        // LOGIC QUÉT KÈO REALTIME TỪ TRÊN MÂY CLOUD
+        async function queryKeoTuCloud() {
+            const fM = document.getElementById('selMien').value; const fT = document.getElementById('selTinh').value; const fQ = document.getElementById('selQuan').value;
+            const fD = document.getElementById('selDoiTuong').value; const fTD = document.getElementById('selTrinhDo').value; const fG = document.getElementById('selGiaMax').value;
+            
+            let queryStr = "da_ket_toan=eq.false";
+            if(fM) queryStr += `&mien=eq.${fM}`; if(fT) queryStr += `&tinh_thanh=eq.${fT}`; if(fQ) queryStr += `&quan_huyen=eq.${fQ}`;
+            if(fD) queryStr += `&doi_tuong_tuyen=eq.${fD}`;
+            if(fTD) queryStr += `&or=(trinh_do_nam.eq.${fTD},trinh_do_nu.eq.${fTD})`;
+            if(fG) queryStr += `&and=(gia_nam.lte.${fG},gia_nu.lte.${fG})`;
+            queryStr += "&order=ngay_danh.asc";
+            
+            try {
+                const res = await window.khoDuLieuVinhVien.docData('ca_dau', queryStr);
+                const container = document.getElementById('vungChuaCardKeo'); container.innerHTML = '';
+                if(!res || res.length === 0) { container.innerHTML = '<p style="text-align:center;color:#4b5563;font-size:14px;padding:20px;">Không có ca đấu nào phù hợp quanh đây.</p>'; return; }
+                
+                res.forEach(item => {
+                    let mapLink = item.link_maps ? `<br><a href="${item.link_maps}" target="_blank" style="color:var(--neon-cyan);font-size:12px;font-weight:700;text-decoration:none;display:inline-block;margin-top:5px;"><i class="fa-solid fa-map-location-dot"></i> BẤM XEM BẢN ĐỒ GOOGLE MAPS</a>` : '';
+                    container.innerHTML += `<div class="card-keo-phui">
+                        <h3 style="color:#ffffff; font-size:16px; margin:0 0 5px 0;">${item.ten_san} (Sân cụ thể: ${item.so_san_cu_the || 'Chung'})</h3>
+                        <p style="font-size:12px; color:#a1a1aa; margin:0;"><i class="fa-solid fa-location-dot"></i> Địa chỉ: ${item.dia_chi_san || 'Chưa cập nhật'} (${item.quan_huyen} - ${item.tinh_thanh})${mapLink}</p>
+                        <p style="font-size:13px; color:#cbd5e1; margin:10px 0;">🏸 Dùng quả cầu: <b>${item.loai_cau_dung || 'VinaStar'}</b> | Tuyển: <b style="color:var(--neon-pink);">${item.doi_tuong_tuyen}</b><br>⚡ Yêu cầu trình: Nam [${item.trinh_do_nam}] & Nữ [${item.trinh_do_nu}]</p>
+                        <div style="display:flex; justify-content:space-between; align-items:center; background:#14141a; padding:12px; border-radius:12px; border:1px solid var(--border);">
+                            <span style="font-size:13px; font-weight:700;">Nam: <span style="color:var(--neon-pink);">${parseInt(item.gia_nam).toLocaleString()}đ</span> | Nữ: <span style="color:var(--neon-pink);">${parseInt(item.gia_nu).toLocaleString()}đ</span></span>
+                            <button class="theme-btn" onclick="registerSlotClick('${item.id}')" style="padding:8px 15px; border-radius:8px; background:var(--neon-cyan); color:#000; font-size:12px;">ĐẶT SLOT</button>
+                        </div>
+                    </div>`;
+                });
+            } catch(err) { console.error(err); }
+        }
+
+        async function registerSlotClick(idCaDau) {
+            if(confirm('Xác nhận đặt slot đứng ca giao lưu này? Bùng phốt ráng chịu nha ba!')) {
+                const idSlot = 'SLOT-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+                const slotObj = { id: idSlot, id_ca_dau: idCaDau, sdt_khach: cPhone, ten_khach_hien_thi: cName };
+                try {
+                    await window.khoDuLieuVinhVien.ghiData('dat_slot', slotObj);
+                    alert('🎉 Đặt slot thành công! Vui lòng đến đúng giờ nha bạn hiền.');
+                } catch(e) { alert('Lỗi đặt slot hệ thống!'); }
+            }
+        }
+    </script>
+</body>
+</html>
