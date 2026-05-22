@@ -3,71 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHỢ KÈO VÃNG LAI - ĐẲNG CẤP SÂN PHỦI</title>
+    <title>CHỢ KÈO VÃNG LAI - ĐẲNG CẤP CẦU LÔNG PHỦI</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 </head>
 <body>
 
-    <div class="theme-switch-container">
-        <button class="theme-toggle-btn" id="themeToggle">
-            <i class="fa-solid fa-sun" id="themeIcon"></i>
-            <span id="themeText">Chế độ Sáng</span>
+    <div class="theme-container">
+        <button class="theme-btn" id="modeSwitcher">
+            <i class="fa-solid fa-sun" id="modeIcon"></i>
+            <span id="modeText">LIGHT MODE</span>
         </button>
     </div>
 
-    <div class="main-container">
+    <div class="main-panel">
         <h1>CHỢ KÈO VÃNG LAI</h1>
-        <div class="description">Nền tảng kết nối phủi chuyên nghiệp</div>
+        <div class="sub-tagline">Nền tảng kết nối phủi chuyên nghiệp</div>
         
-        <a href="khach.html" class="btn-route btn-khach">
-            <div class="btn-text">
-                <i class="fa-solid fa-magnifying-glass fa-main" style="color: var(--neon-cyan);"></i>
-                <span>VÀO TÌM KÈO THƠM</span>
+        <a href="khach.html" class="btn-gateway btn-khach-style">
+            <div class="content-layout">
+                <i class="fa-solid fa-magnifying-glass-location icon-prime" style="color: var(--neon-cyan);"></i>
+                <span style="font-size: 16px; font-weight: 700;">VÀO TÌM KÈO THƠM</span>
             </div>
-            <i class="fa-solid fa-chevron-right fa-arrow"></i>
+            <i class="fa-solid fa-chevron-right icon-arrow"></i>
         </a>
 
-        <a href="host.html" class="btn-route btn-host">
-            <div class="btn-text">
-                <i class="fa-solid fa-calendar-plus fa-main" style="color: var(--neon-pink);"></i>
-                <span>CHỦ SÂN: ĐĂNG CA ĐẤU</span>
+        <a href="host.html" class="btn-gateway btn-host-style">
+            <div class="content-layout">
+                <i class="fa-solid fa-square-plus icon-prime" style="color: var(--neon-pink);"></i>
+                <span style="font-size: 16px; font-weight: 700;">CHỦ SÂN: ĐĂNG CA ĐẤU</span>
             </div>
-            <i class="fa-solid fa-chevron-right fa-arrow"></i>
+            <i class="fa-solid fa-chevron-right icon-arrow"></i>
         </a>
         
-        <a href="/admin/" class="sys-link">System Management</a>
+        <a href="/admin/" class="manage-anchor">System Management</a>
     </div>
 
     <script>
-        const themeToggle = document.getElementById('themeToggle');
-        const htmlElement = document.documentElement;
-        const themeIcon = document.getElementById('themeIcon');
-        const themeText = document.getElementById('themeText');
+        const modeSwitcher = document.getElementById('modeSwitcher');
+        const rootHtml = document.documentElement;
+        const modeIcon = document.getElementById('modeIcon');
+        const modeText = document.getElementById('modeText');
 
-        // Kiểm tra xem người dùng trước đó đã chọn theme gì chưa
-        const savedTheme = localStorage.getItem('theme') || 'dark';
-        htmlElement.setAttribute('data-theme', savedTheme);
-        updateToggleBtn(savedTheme);
+        // Đọc cấu hình theme cũ trong ổ nhớ máy, mặc định ban đầu là dark
+        const activeTheme = localStorage.getItem('app-theme') || 'dark';
+        rootHtml.setAttribute('data-theme', activeTheme);
+        toggleInterfaceElements(activeTheme);
 
-        themeToggle.addEventListener('click', () => {
-            const currentTheme = htmlElement.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        modeSwitcher.addEventListener('click', () => {
+            const currentStatus = rootHtml.getAttribute('data-theme');
+            const targetStatus = currentStatus === 'dark' ? 'light' : 'dark';
             
-            // Ép trạng thái theme mới lên toàn trang
-            htmlElement.setAttribute('data-theme', newTheme);
-            localStorage.setItem('theme', newTheme);
-            updateToggleBtn(newTheme);
+            rootHtml.setAttribute('data-theme', targetStatus);
+            localStorage.setItem('app-theme', targetStatus);
+            toggleInterfaceElements(targetStatus);
         });
 
-        // Hàm thay đổi icon và chữ của nút gạt theo thời gian thực
-        function updateToggleBtn(theme) {
+        // Hàm hoán đổi text và icon hiển thị realtime cực mượt
+        function toggleInterfaceElements(theme) {
             if (theme === 'dark') {
-                themeIcon.className = 'fa-solid fa-sun';
-                themeText.innerText = 'Chế độ Sáng';
+                modeIcon.className = 'fa-solid fa-sun';
+                modeText.innerText = 'LIGHT MODE';
             } else {
-                themeIcon.className = 'fa-solid fa-moon';
-                themeText.innerText = 'Chế độ Tối';
+                modeIcon.className = 'fa-solid fa-moon';
+                modeText.innerText = 'DARK MODE';
             }
         }
     </script>
