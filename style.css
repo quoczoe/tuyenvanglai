@@ -1,137 +1,139 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-    --bg-dark: #060713;
-    --card-bg: #111428;
-    --neon-cyan: #00f3ff;
-    --neon-pink: #ff007f;
-    --neon-purple: #9d4edd;
+    --background: #030307;
+    --card: #0b0c14;
+    --card-hover: #111322;
+    --primary: #00f3ff;
+    --accent: #ff007f;
+    --border: rgba(255, 255, 255, 0.08);
+    --text-muted: #717696;
 }
 
-/* NỀN TOÀN TRANG SANG CHẢNH CÓ ĐỘ SÂU */
+/* THIẾT LẬP NỀN GRADIENT CỰC SÂU VÀ SANG CHẢNH */
 body {
-    background-color: var(--bg-dark);
+    background-color: var(--background);
     background-image: 
-        radial-gradient(at 0% 0%, rgba(0, 243, 255, 0.15) 0px, transparent 50%),
-        radial-gradient(at 100% 100%, rgba(255, 0, 127, 0.15) 0px, transparent 50%);
+        radial-gradient(circle at top left, rgba(0, 243, 255, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at bottom right, rgba(255, 0, 127, 0.12) 0%, transparent 40%);
     color: #ffffff;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-family: 'Inter', sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     min-height: 100vh;
     margin: 0;
     padding: 20px;
+    box-sizing: border-box;
 }
 
-/* BOX TRUNG TÂM HOÀNH TRÁNG, CHIẾM LĨNH KHÔNG GIAN */
-.main-box {
+/* BOX TRUNG TÂM KIỂU MODAL GLASSMORPHISM CỦA SHADCN UI */
+.main-container {
     width: 100%;
-    max-width: 480px;
-    background: var(--card-bg);
-    padding: 50px 40px;
-    border-radius: 28px;
-    border: 2px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 
-                0 0 40px rgba(157, 78, 221, 0.1);
+    max-width: 450px;
+    background: rgba(11, 12, 20, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 50px 35px;
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6),
+                0 0 50px rgba(0, 243, 255, 0.02);
     text-align: center;
-    position: relative;
-    overflow: hidden;
 }
 
-/* HIỆU ỨNG ĐÈN LED CHẠY NGẦM Ở VIỀN BOX TẠO ĐỘ UY TÍN */
-.main-box::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 5px;
-    background: linear-gradient(90deg, var(--neon-cyan), var(--neon-pink), var(--neon-purple));
-}
-
-/* TIÊU ĐỀ RỰC RỠ ĐỔI MÀU GRADIENT */
+/* TIÊU ĐỀ CHỮ LỚN SANG TRỌNG */
 h1 {
     font-size: 28px;
     font-weight: 800;
-    letter-spacing: 2px;
-    margin-bottom: 10px;
-    background: linear-gradient(90deg, var(--neon-cyan) 0%, #ffffff 50%, var(--neon-pink) 100%);
+    letter-spacing: -0.5px;
+    margin: 0 0 8px 0;
+    background: linear-gradient(135deg, #ffffff 40%, #a5b4fc 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    text-shadow: 0 0 20px rgba(0, 243, 255, 0.2);
 }
 
-.sub-title {
-    font-size: 13px;
-    color: #6f7598;
-    text-transform: uppercase;
-    letter-spacing: 3px;
+.description {
+    font-size: 14px;
+    color: var(--text-muted);
     margin-bottom: 45px;
-    font-weight: 600;
+    font-weight: 500;
 }
 
-/* NÚT BẤM DẠNG KHỐI THỂ THAO CAO CẤP */
-.btn-action {
+/* NÚT BẤM ACTION FORM DÁNG CHUẨN PREMIUM */
+.btn-route {
     display: flex;
     align-items: center;
     justify-content: space-between;
     width: 100%;
-    padding: 22px 28px;
-    margin: 20px 0;
+    padding: 20px 24px;
+    margin: 18px 0;
     color: #ffffff;
-    border-radius: 18px;
-    font-weight: 700;
+    background: linear-gradient(135deg, #131524 0%, #0d0e16 100%);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    font-weight: 600;
     font-size: 16px;
     text-decoration: none;
-    letter-spacing: 1px;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     cursor: pointer;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    box-sizing: border-box;
 }
 
-/* NÚT KHÁCH TÌM KÈO - SẮC XANH NEON NĂNG ĐỘNG */
-.btn-khach {
-    background: linear-gradient(135deg, #0052d4, #4364f7, #6fb1fc);
-    border: 1px solid rgba(0, 243, 255, 0.3);
-}
-
+/* HIỆU ỨNG QUÉT MÀU NEON KHI DI CHUỘT (CỰC ĐẸP) */
 .btn-khach:hover {
-    box-shadow: 0 0 30px rgba(0, 243, 255, 0.5);
-    transform: translateY(-5px);
-}
-
-/* NÚT HOST ĐĂNG CA - SẮC HỒNG TÍM LỬA CHÁY */
-.btn-host {
-    background: linear-gradient(135deg, #ca1d7e, #e056fd, #ff7675);
-    border: 1px solid rgba(255, 0, 127, 0.3);
+    border-color: var(--primary);
+    background: rgba(0, 243, 255, 0.03);
+    box-shadow: 0 0 30px rgba(0, 243, 255, 0.25);
+    transform: translateY(-2px);
 }
 
 .btn-host:hover {
-    box-shadow: 0 0 30px rgba(255, 0, 127, 0.5);
-    transform: translateY(-5px);
+    border-color: var(--accent);
+    background: rgba(255, 0, 127, 0.03);
+    box-shadow: 0 0 30px rgba(255, 0, 127, 0.25);
+    transform: translateY(-2px);
 }
 
-/* ICON PHÁT SÁNG TRÊN NÚT BẤM */
-.btn-action i {
-    font-size: 20px;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 10px;
-    border-radius: 12px;
+/* KHỐI CHỨA ICON BÊN TRONG NÚT */
+.btn-route .btn-text {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.btn-route i.fa-main {
+    font-size: 18px;
     transition: 0.3s;
 }
 
-.btn-action:hover i {
-    background: #ffffff;
-    color: #000000;
+.btn-khach i.fa-main { color: var(--primary); text-shadow: 0 0 10px rgba(0, 243, 255, 0.5); }
+.btn-host i.fa-main { color: var(--accent); text-shadow: 0 0 10px rgba(255, 0, 127, 0.5); }
+
+.btn-route i.fa-arrow {
+    font-size: 14px;
+    opacity: 0.4;
+    transition: transform 0.3s ease;
 }
 
-/* CỔNG QUẢN TRỊ ẨN KÍN */
-.admin-link {
+.btn-route:hover i.fa-arrow {
+    opacity: 1;
+    transform: translateX(4px);
+}
+
+/* LINK QUẢN TRỊ ĐƯỢC THIẾT KẾ TINH TẾ */
+.sys-link {
     display: inline-block;
     color: #3b4266;
     font-size: 11px;
     margin-top: 40px;
     text-decoration: none;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
     font-weight: 600;
-    transition: 0.3s;
+    transition: color 0.3s;
+    text-transform: uppercase;
 }
-.admin-link:hover { color: var(--neon-cyan); text-shadow: 0 0 8px var(--neon-cyan); }
+.sys-link:hover {
+    color: var(--primary);
+}
