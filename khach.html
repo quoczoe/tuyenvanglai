@@ -1,314 +1,319 @@
 <!DOCTYPE html>
-<html lang="vi" data-theme="dark">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CHỢ KÈO VÃNG LAI - Tìm Kèo Giao Lưu</title>
+    <title>Sàn Khách Vãng Lai | TUYENVANGLAI.IO.VN</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="TUYENVANGLAI.IO.VN - Sàn khách chơi vãng lai môn Cầu Lông chuyên nghiệp. Kết nối nhanh chóng với các ca đấu trên toàn quốc. Đăng ký slot nhanh, xem chi tiêu và bình chọn uy tín.">
+    <meta name="keywords" content="tuyen vang lai, tuyenvanglai.io.vn, cau long, khach choi cau long, tim keo cau long, san cau long">
+    <meta name="author" content="TUYENVANGLAI.IO.VN">
+
+    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="style.css?v=3.5">
-</head>
-<body>
-
-    <main class="main-panel">
-        <div class="top-nav-bar">
-            <a href="index.html" class="theme-btn" style="text-decoration: none;">
-                <i class="fa-solid fa-arrow-left"></i> Sảnh chính
-            </a>
-            <div id="lblDisplayUser" style="font-size: 0.82rem; font-weight: 700; color: var(--accent-cyan);">
-                <i class="fa-solid fa-user-ninja"></i> Đang nạp danh tính...
-            </div>
-        </div>
-
-        <section class="filter-section">
-            <div class="section-title">
-                <i class="fa-solid fa-radar"></i> Rà Quét Kèo Phủi
-            </div>
-            
-            <div class="grid-inputs">
-                <div class="form-group">
-                    <label for="selMien">Vùng Miền</label>
-                    <select id="selMien" class="select-custom">
-                        <option value="">-- Tất cả --</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="selTinh">Tỉnh / Thành</label>
-                    <select id="selTinh" class="select-custom" disabled>
-                        <option value="">-- Chọn Tỉnh --</option>
-                    </select>
-                </div>
-                <div class="form-group full-width-input">
-                    <label for="selQuan">Quận / Huyện</label>
-                    <select id="selQuan" class="select-custom" disabled>
-                        <option value="">-- Chọn Quận Huyện --</option>
-                    </select>
-                </div>
-                <div class="form-group full-width-input">
-                    <label for="selTrinhDo">Yêu cầu Trình độ</label>
-                    <select id="selTrinhDo" class="select-custom">
-                        <option value="">Mọi cấp độ</option>
-                        <option value="Yếu">Yếu / Mới chơi</option>
-                        <option value="Trung bình yếu">Trung bình yếu</option>
-                        <option value="Trung bình">Trung bình khá</option>
-                        <option value="Khá cứng">Khá cứng / Khủng</option>
-                    </select>
-                </div>
-            </div>
-
-            <button class="btn-action-primary" id="btnScanKeo">
-                <i class="fa-solid fa-microchip"></i> TIẾN HÀNH QUÉT KÈO THƠM
-            </button>
-        </section>
-
-        <div class="section-title" style="color: var(--text-primary); padding-left: 5px;">
-            <i class="fa-solid fa-fire" style="color: var(--accent-pink);"></i> Trận Đấu Đang Tuyển Vãng Lai
-        </div>
-        <div class="cards-container" id="vungChuaCardKeo">
-            </div>
-    </main>
-
-    <div class="modal" id="popSystem">
-        <div class="modal-content">
-            <div class="modal-title" style="color: var(--accent-cyan);">
-                <i class="fa-solid fa-bullhorn"></i> THÔNG BÁO TỪ HỆ THỐNG
-            </div>
-            <div class="modal-body-text" id="txtSysBroadcast">Đang kết nối cổng đám mây để truy vấn bản tin phát sóng khẩn cấp...</div>
-            <button class="btn-action-primary" id="btnCloseSysModal">XÁC NHẬN ĐÃ ĐỌC</button>
-        </div>
-    </div>
-
-    <div class="modal" id="popUserLogin">
-        <div class="modal-content" style="text-align: left;">
-            <div class="modal-title" style="color: var(--accent-pink); text-align: center;">
-                <i class="fa-solid fa-fingerprint"></i> XÁC MINH DANH TÍNH
-            </div>
-            <p style="font-size: 0.8rem; color: var(--text-secondary); text-align: center; margin-bottom: 15px;">
-                Nhập thông tin liên hệ chính chủ để ghi vết đặt slot và nhận diện trên Zalo.
-            </p>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label for="txtClientName">Biệt danh / Tên gọi</label>
-                <input type="text" id="txtClientName" class="input-custom" placeholder="Ví dụ: Cường Thần Búa">
-            </div>
-            <div class="form-group" style="margin-bottom: 20px;">
-                <label for="txtClientPhone">Số điện thoại Zalo liên hệ</label>
-                <input type="tel" id="txtClientPhone" class="input-custom" placeholder="Ví dụ: 09xxxxxxxx">
-            </div>
-            <button class="btn-action-primary" id="btnSaveUser">KÍCH HOẠT HỘ CHIẾU THÀNH VIÊN</button>
-        </div>
-    </div>
-
-    <script src="data-dia-ly.js"></script>
-    <script src="ket-noi-supabase.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
     
-    <script>
-        document.addEventListener("DOMContentLoaded", async () => {
-            // Đồng bộ theme từ LocalStorage
-            document.documentElement.setAttribute('data-theme', localStorage.getItem('app-theme') || 'dark');
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Design CSS Style System -->
+    <link rel="stylesheet" href="giao-dien.css?v=3.0">
+</head>
+<body data-theme="dark">
+
+    <!-- Phong Thủy Mộc-Thủy Dương Liễu Decor -->
+    <div class="willow-decor willow-top-left"></div>
+    <div class="willow-decor willow-top-right"></div>
+
+    <!-- Ambient Dynamic Glows -->
+    <div class="ambient-glows">
+        <div class="glow-sphere glow-1"></div>
+        <div class="glow-sphere glow-2"></div>
+        <div class="glow-sphere glow-3"></div>
+        <div class="glow-particle particle-1"></div>
+        <div class="glow-particle particle-2"></div>
+        <div class="glow-particle particle-3"></div>
+        <div class="glow-particle particle-4"></div>
+        <div class="glow-particle particle-5"></div>
+    </div>
+
+    <!-- Gateway System Wrapper -->
+    <div class="gateway-wrapper">
+        
+        <!-- Header -->
+        <header class="gateway-header">
+            <a href="index.html" class="brand-logo" style="text-decoration: none; display: flex; align-items: center;">
+                <!-- SVG quả cầu lông quay nghiêng siêu chất thay cho icon fa-shuttlecock bị lỗi -->
+                <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="shuttlecock-svg" style="color: hsl(var(--neon-mint)); transform: rotate(-45deg); display: inline-block; margin-right: 8px;">
+                    <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill="currentColor"></path>
+                    <path d="M9 6l-5 13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1L15 6"></path>
+                    <path d="M12 6v14"></path>
+                    <path d="M10.5 6l-2.5 14"></path>
+                    <path d="M13.5 6l2.5 14"></path>
+                    <path d="M6 13h12"></path>
+                    <path d="M5 16h14"></path>
+                </svg>
+                <span class="logo-text">TUYENVANGLAI.IO.VN</span>
+            </a>
             
-            const dbCloud = window.khoDuLieuVinhVien;
-            const geoMetadata = window.KHO_DATA_DIA_LY;
+            <button class="btn-theme-toggle" id="themeBtn" onclick="chuyenDoiTheme()" title="Đổi giao diện Sáng/Tối">
+                <div class="theme-toggle-icon-box">
+                    <i class="fa-solid fa-sun" id="themeIcon"></i>
+                </div>
+            </button>
+        </header>
 
-            // Đảm bảo lõi dữ liệu đám mây tồn tại trước khi chạy luồng nghiệp vụ
-            if (!dbCloud) {
-                console.error("Lỗi: Không tìm thấy thực thể kết nối đám mây khoDuLieuVinhVien.");
-                return;
-            }
-
-            // --- LUỒNG XỬ LÝ MODAL KÉP TUẦN TỰ (SEQUENTIAL DOUBLE MODAL FLOW) ---
-            const modalSys = document.getElementById("popSystem");
-            const modalLogin = document.getElementById("popUserLogin");
+        <!-- Main Container -->
+        <div class="gateway-container">
             
-            modalSys.classList.add("active");
-            try {
-                // Đọc thông báo popup_chinh từ bảng cau_hinh_he_thong
-                const responseMessage = await dbCloud.docData("cau_hinh_he_thong", "id=eq.popup_chinh");
-                if(responseMessage && responseMessage.length > 0) {
-                    document.getElementById("txtSysBroadcast").textContent = responseMessage[0].noi_dung_thong_bao || "Không có thông báo hệ thống mới.";
-                } else {
-                    document.getElementById("txtSysBroadcast").textContent = "Hệ thống vận hành bình thường. Chúc các vợt thủ tìm được kèo thơm!";
-                }
-            } catch (err) {
-                document.getElementById("txtSysBroadcast").textContent = "Mất kết nối máy chủ Supabase. Đang hoạt động ở chế độ Offline.";
-            }
+            <section class="panel-view active" id="guestView">
+                <div class="hud-panel">
+                    <div class="hud-panel-header">
+                        <h2 class="hud-panel-title">
+                            <i class="fa-solid fa-user-astronaut"></i> SÀN KHÁCH VÃNG LAI
+                        </h2>
+                        <a href="index.html" class="btn-hud-back" style="text-decoration: none; display: flex; align-items: center; gap: 5px;">
+                            <i class="fa-solid fa-angle-left"></i> Quay lại cổng
+                        </a>
+                    </div>
 
-            // Đóng mạch 1 nhảy trực tiếp sang mạch 2 kiểm tra danh tính
-            document.getElementById("btnCloseSysModal").addEventListener("click", () => {
-                modalSys.classList.remove("active");
-                kiemTraVaKichHoatMach2();
-            });
-
-            function kiemTraVaKichHoatMach2() {
-                const sdtLuuTru = localStorage.getItem('userSdt');
-                const tenLuuTru = localStorage.getItem('userTen');
-                if (!sdtLuuTru || !tenLuuTru) {
-                    modalLogin.classList.add("active");
-                } else {
-                    capNhatNhanNguoiDung(tenLuuTru, sdtLuuTru);
-                    queryKeoTuCloud(); // Tự động quét kèo khi danh tính đã được kiểm định hợp lệ
-                }
-            }
-
-            document.getElementById("btnSaveUser").addEventListener("click", () => {
-                const name = document.getElementById("txtClientName").value.trim();
-                const phone = document.getElementById("txtClientPhone").value.trim();
-                
-                if(!name || !phone) {
-                    alert("Hệ thống từ chối! Vui lòng điền đầy đủ Biệt danh và Số điện thoại Zalo.");
-                    return;
-                }
-                localStorage.setItem('userTen', name);
-                localStorage.setItem('userSdt', phone);
-                modalLogin.classList.remove("active");
-                capNhatNhanNguoiDung(name, phone);
-                queryKeoTuCloud();
-            });
-
-            function capNhatNhanNguoiDung(ten, sdt) {
-                document.getElementById("lblDisplayUser").innerHTML = `<i class="fa-solid fa-user-astronaut"></i> ${ten} (${sdt})`;
-            }
-
-            // --- LOGIC ĐỔ DỮ LIỆU ĐỊA LÝ CASCADING DROP-DOWNS ---
-            const selMien = document.getElementById("selMien");
-            const selTinh = document.getElementById("selTinh");
-            const selQuan = document.getElementById("selQuan");
-
-            if(geoMetadata) {
-                Object.keys(geoMetadata).forEach(mien => {
-                    let opt = document.createElement("option");
-                    opt.value = mien; opt.textContent = mien;
-                    selMien.appendChild(opt);
-                });
-            }
-
-            selMien.addEventListener("change", () => {
-                selTinh.innerHTML = '<option value="">-- Chọn Tỉnh --</option>';
-                selQuan.innerHTML = '<option value="">-- Chọn Quận Huyện --</option>';
-                selQuan.disabled = true;
-                
-                if(!selMien.value) { selTinh.disabled = true; return; }
-                
-                const danhSachTinh = geoMetadata[selMien.value];
-                Object.keys(danhSachTinh).forEach(tinh => {
-                    let opt = document.createElement("option");
-                    opt.value = tinh; opt.textContent = tinh;
-                    selTinh.appendChild(opt);
-                });
-                selTinh.disabled = false;
-            });
-
-            selTinh.addEventListener("change", () => {
-                selQuan.innerHTML = '<option value="">-- Chọn Quận Huyện --</option>';
-                if(!selTinh.value) { selQuan.disabled = true; return; }
-                
-                const danhSachQuan = geoMetadata[selMien.value][selTinh.value];
-                danhSachQuan.forEach(quan => {
-                    let opt = document.createElement("option");
-                    opt.value = quan; opt.textContent = quan;
-                    selQuan.appendChild(opt);
-                });
-                selQuan.disabled = false;
-            });
-
-            // --- ĐƯỜNG ỐNG DỮ LIỆU ĐỘNG RENDERING ENGINE (BẢNG CA_DAU) ---
-            document.getElementById("btnScanKeo").addEventListener("click", queryKeoTuCloud);
-
-            async function queryKeoTuCloud() {
-                const container = document.getElementById("vungChuaCardKeo");
-                container.innerHTML = '<div style="text-align:center; padding:30px; font-size:0.9rem; color:var(--text-secondary);"><i class="fa-solid fa-spinner fa-spin fa-lg"></i> Đang quét ma trận dữ liệu đám mây Supabase...</div>';
-
-                // Tạo câu lệnh lọc động theo đúng chuẩn thiết kế
-                let cauLenhLoc = "da_ket_toan=eq.false&order=ngay_danh.asc";
-                
-                if (selMien.value) cauLenhLoc += `&vung_mien=eq.${encodeURIComponent(selMien.value)}`;
-                if (selTinh.value) cauLenhLoc += `&tinh_thanh=eq.${encodeURIComponent(selTinh.value)}`;
-                if (selQuan.value) cauLenhLoc += `&quan_huyen=eq.${encodeURIComponent(selQuan.value)}`;
-                if (document.getElementById("selTrinhDo").value) {
-                    cauLenhLoc += `&yeu_cau_trinh_do=eq.${encodeURIComponent(document.getElementById("selTrinhDo").value)}`;
-                }
-
-                try {
-                    const dataCaDau = await dbCloud.docData("ca_dau", cauLenhLoc);
-                    container.innerHTML = "";
-
-                    if(!dataCaDau || dataCaDau.length === 0) {
-                        container.innerHTML = '<div style="text-align:center; padding:40px; font-size:0.88rem; color:var(--text-secondary); border: 1px dashed var(--border-glass); border-radius:14px;"><i class="fa-solid fa-ghost"></i> Không tìm thấy ca đấu nào phù hợp với bộ lọc hiện tại.</div>';
-                        return;
-                    }
-
-                    dataCaDau.forEach(ca => {
-                        const card = document.createElement("div");
-                        card.className = "card-keo-phui";
-                        
-                        const giaNamFormated = (ca.gia_nam || 0).toLocaleString('vi-VN') + "đ";
-                        const giaNuFormated = (ca.gia_nu || 0).toLocaleString('vi-VN') + "đ";
-
-                        card.innerHTML = `
-                            <div class="card-header-info">
-                                <div>
-                                    <div class="court-name">${ca.ten_san} (${ca.so_san_cu_the})</div>
-                                    <div class="court-address">
-                                        <i class="fa-solid fa-location-dot"></i> ${ca.quan_huyen}, ${ca.tinh_thanh}
-                                        <a href="${ca.link_maps}" target="_blank" class="map-link"><i class="fa-solid fa-map-pin"></i> Bản đồ</a>
+                    <!-- Guest Interactive Grid Dashboard -->
+                    <div id="guestDashboard">
+                        <div class="hud-grid">
+                            
+                            <!-- Left Column: Authentication OR Profile HUD (Dynamic Left Column) -->
+                            <div class="hud-column">
+                                
+                                <!-- 1. Guest Registration Panel (Shown when NOT logged in) -->
+                                <div id="guestAuthPanel">
+                                    <h3 class="hud-section-title">Ký Danh Khách Chơi Siêu Tốc</h3>
+                                    <div class="pricing-engine-wrapper" style="background: rgba(255,255,255,0.01);">
+                                        <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 15px; line-height: 1.5;">Ký danh tức thì chỉ với Họ tên và SĐT để đặt slot tham gia các ca cầu lông trên toàn quốc.</p>
+                                        <div class="form-group">
+                                            <label class="form-label">Tên của bạn <span class="required">*</span></label>
+                                            <input type="text" class="form-control" id="guestInputName" placeholder="Ví dụ: Nguyễn Văn A">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Số điện thoại <span class="required">*</span></label>
+                                            <input type="tel" class="form-control" id="guestInputPhone" placeholder="Ví dụ: 0987654321">
+                                        </div>
+                                        <button class="btn-cyber w-full mt-4" onclick="xacThucKhachChoi()">
+                                            <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập Sàn
+                                        </button>
                                     </div>
                                 </div>
-                                <span class="badge-status">Còn Slot</span>
-                            </div>
-                            <div class="match-details-grid">
-                                <div>Giờ chơi: <strong>${ca.gio_bat_dau} - ${ca.gio_ket_thuc}</strong></div>
-                                <div>Ngày đánh: <strong>${ca.ngay_danh}</strong></div>
-                                <div>Dòng cầu: <strong>${ca.loai_cau_su_dung}</strong></div>
-                                <div>Trình độ ca: <strong>${ca.yeu_cau_trinh_do}</strong></div>
-                            </div>
-                            <div class="card-action-bar">
-                                <div class="price-tag-group">
-                                    <span class="price-m"><i class="fa-solid fa-mars"></i> Nam: ${giaNamFormated}</span>
-                                    <span class="price-f"><i class="fa-solid fa-venus"></i> Nữ: ${giaNuFormated}</span>
+                                
+                                <!-- 2. Guest Profile HUD Block (Shown dynamically after login) -->
+                                <div class="d-none" id="guestProfileBlock">
+                                    <h3 class="hud-section-title">Hồ Sơ Cầu Thủ Cá Nhân</h3>
+                                    <div class="pricing-engine-wrapper">
+                                        <div class="flex justify-between align-center mb-4">
+                                            <div>
+                                                <h4 style="font-size: 1.2rem; font-weight: 800; color: #fff;" id="profileGuestName">Tên cầu thủ</h4>
+                                                <p style="font-size: 0.82rem; color: #94a3b8;" id="profileGuestPhone">SĐT: --</p>
+                                            </div>
+                                            <div class="flex flex-col gap-2 align-end">
+                                                <span class="chip-item chip-item-mint" id="profileGuestDate">Ngày gia nhập: --</span>
+                                                <button class="btn-cyber-danger" style="padding: 4px 8px; font-size: 0.7rem; border-radius: var(--radius-sm);" onclick="dangXuatKhach()">
+                                                    <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <hr style="border: none; border-top: 1px dashed rgba(255,255,255,0.06); margin: 15px 0;">
+                                        
+                                        <h4 style="font-size: 0.85rem; font-weight: 800; color: #94a3b8; margin-bottom: 12px; text-transform: uppercase;">Lịch sử & Chi tiêu</h4>
+                                        
+                                        <!-- Date range filter for stats -->
+                                        <div class="flex gap-2 mb-4 flex-wrap">
+                                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 120px;">
+                                                <label class="form-label" style="font-size: 0.65rem;">Từ ngày</label>
+                                                <input type="date" class="form-control" id="statsDateFrom" style="padding: 6px 10px; font-size: 0.8rem;" onchange="locThongKeKhach()">
+                                            </div>
+                                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 120px;">
+                                                <label class="form-label" style="font-size: 0.65rem;">Đến ngày</label>
+                                                <input type="date" class="form-control" id="statsDateTo" style="padding: 6px 10px; font-size: 0.8rem;" onchange="locThongKeKhach()">
+                                            </div>
+                                        </div>
+
+                                        <div class="pricing-suggestions">
+                                            <div class="suggestion-box active" style="padding: 12px;">
+                                                <div class="suggestion-title">Đã Tham Gia</div>
+                                                <div class="suggestion-price" id="statsTotalSlots">0 Ca</div>
+                                            </div>
+                                            <div class="suggestion-box active" style="padding: 12px; border-color: hsl(var(--neon-gold));">
+                                                <div class="suggestion-title" style="color: hsl(var(--neon-gold));">Tổng Chi Tiêu</div>
+                                                <div class="suggestion-price text-gold" id="statsTotalCost">0đ</div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Review Host Section -->
+                                    <h3 class="hud-section-title" style="margin-top: 15px;">Đánh Giá Chủ Sân (Host)</h3>
+                                    <div class="pricing-engine-wrapper">
+                                        <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 12px;">Đánh giá thái độ, chất lượng phục vụ và chi phí của chủ sân bạn đã từng tham gia.</p>
+                                        <div class="form-group">
+                                            <label class="form-label">Chọn Host Cần Đánh Giá</label>
+                                            <select class="form-control" id="guestReviewHostSelect">
+                                                <option value="">-- Chưa có dữ liệu ca đấu --</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Điểm đánh giá (1-5 sao)</label>
+                                            <div class="stars-container" id="guestRatingStars">
+                                                <i class="fa-solid fa-star" data-index="1"></i>
+                                                <i class="fa-solid fa-star" data-index="2"></i>
+                                                <i class="fa-solid fa-star" data-index="3"></i>
+                                                <i class="fa-solid fa-star" data-index="4"></i>
+                                                <i class="fa-solid fa-star" data-index="5"></i>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Nhận xét thái độ & Cơ sở vật chất</label>
+                                            <textarea class="form-control" id="guestReviewComment" rows="2" placeholder="Ví dụ: Sân đẹp, host nhiệt tình chuẩn bị cầu tốt..."></textarea>
+                                        </div>
+                                        <button class="btn-cyber w-full" onclick="guiDanhGiaHost()">
+                                            <i class="fa-solid fa-paper-plane"></i> Gửi Đánh Giá Host
+                                        </button>
+                                    </div>
                                 </div>
-                                <button class="btn-booking" onclick="kichHoatDatSlot('${ca.id}')">ĐẶT SLOT LIÊN HỆ</button>
                             </div>
-                        `;
-                        container.appendChild(card);
-                    });
-                } catch (error) {
-                    container.innerHTML = '<div style="text-align:center; padding:25px; color:var(--accent-pink); font-size:0.85rem;"><i class="fa-solid fa-triangle-exclamation"></i> Lỗi nghiêm trọng trong đường ống tải dữ liệu đám mây Supabase.</div>';
-                }
-            }
 
-            // Đóng gói hàm đặt slot toàn cục cho luồng HTML động thực thi
-            window.kichHoatDatSlot = async function(caDauId) {
-                const tenNguoiDung = localStorage.getItem('userTen');
-                const sdtNguoiDung = localStorage.getItem('userSdt');
-                
-                if (!tenNguoiDung || !sdtNguoiDung) {
-                    alert("Hồ chiếu định danh lỗi. Vui lòng tải lại trang.");
-                    return;
-                }
+                            <!-- Right Column: Badminton Slots Search, Filter & Results (Always displayed) -->
+                            <div class="hud-column">
+                                <h3 class="hud-section-title">Tìm Kiếm Ca Cầu Lông Vãng Lai</h3>
+                                
+                                <div class="slot-filter-bar">
+                                    <div class="hud-grid" style="gap: 15px; grid-template-columns: 1fr 1fr;">
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="form-label">Tỉnh / Thành Phố</label>
+                                            <select class="form-control" id="filterProvince" onchange="capNhatQuanHuyenLoc(); timKiemCaDau();">
+                                                <option value="">-- Toàn Quốc --</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="form-label">Quận / Huyện</label>
+                                            <select class="form-control" id="filterDistrict" onchange="timKiemCaDau()">
+                                                <option value="">-- Tất cả Quận/Huyện --</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="form-label">Giới Tính</label>
+                                            <select class="form-control" id="filterGender" onchange="timKiemCaDau()">
+                                                <option value="">-- Tất cả giới tính --</option>
+                                                <option value="male">Nam</option>
+                                                <option value="female">Nữ</option>
+                                                <option value="both">Cả nam & nữ</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="form-label">Trình độ yêu cầu</label>
+                                            <select class="form-control" id="filterLevel" onchange="timKiemCaDau()">
+                                                <option value="">-- Tất cả trình độ --</option>
+                                                <option value="newbie">Newbie</option>
+                                                <option value="yếu">Yếu</option>
+                                                <option value="tby">Trung bình yếu (tby)</option>
+                                                <option value="tb-">Trung bình trừ (tb-)</option>
+                                                <option value="tb+">Trung bình cộng (tb+)</option>
+                                                <option value="tbk">Trung bình khá (tbk)</option>
+                                            </select>
+                                        </div>
+                                        <!-- MỚI: Bổ sung bộ lọc Ngày và bộ lọc Khung Giờ chơi -->
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="form-label">Ngày chơi cụ thể</label>
+                                            <input type="date" class="form-control" id="filterDate" onchange="timKiemCaDau()">
+                                        </div>
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="form-label">Khung giờ ca chơi</label>
+                                            <select class="form-control" id="filterTimeFrame" onchange="timKiemCaDau()">
+                                                <option value="">-- Tất cả khung giờ --</option>
+                                                <option value="morning">🌅 Sáng (5:00 - 12:00)</option>
+                                                <option value="afternoon">☀️ Chiều (12:00 - 17:00)</option>
+                                                <option value="evening">🌙 Tối (17:00 - 23:00)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="form-label">Giá tối đa mong muốn (đ)</label>
+                                            <input type="number" class="form-control" id="filterMaxPrice" placeholder="Ví dụ: 80000" onchange="timKiemCaDau()">
+                                        </div>
+                                        <div class="form-group" style="margin-bottom: 0;">
+                                            <label class="form-label">Tìm kiếm theo tên sân</label>
+                                            <input type="text" class="form-control" id="filterCourtName" placeholder="Tên sân cầu lông..." oninput="timKiemCaDau()">
+                                        </div>
+                                    </div>
+                                    <button class="btn-cyber-gold btn-filter-cyber w-full mt-4" onclick="timKiemCaDau()">
+                                        <i class="fa-solid fa-magnifying-glass"></i> 🏸 TÌM KÈO CẦU LÔNG PHÙ HỢP
+                                    </button>
+                                </div>
 
-                if(!confirm(`Xác nhận đăng ký tham gia trận đấu? Hệ thống sẽ tạo yêu cầu chính thức gửi tới chủ sân.`)) return;
+                                <!-- Slots Grid Results -->
+                                <h4 style="font-size: 0.9rem; font-weight: 800; margin-top: 24px; margin-bottom: 16px; color: #fff;">
+                                    KẾT QUẢ TÌM KIẾM (<span id="countSearchResult">0</span> Ca đấu)
+                                </h4>
+                                <div class="slot-grid" id="slotsSearchResultContainer" style="grid-template-columns: 1fr;">
+                                    <p style="color: #94a3b8; text-align: center; font-size: 0.9rem;">Đang tải dữ liệu ca đấu cầu lông từ đám mây...</p>
+                                </div>
+                            </div>
 
-                // Sinh token định danh ngẫu nhiên chống trùng lặp theo kiến trúc thiết kế
-                const tokenSlot = "SLOT-" + Math.floor(10000 + Math.random() * 90000);
+                        </div>
+                    </div>
+                </div>
+            </section>
 
-                try {
-                    const ketQuaInsert = await dbCloud.ghiData("dat_slot", {
-                        ca_dau_id: caDauId,
-                        ten_khach: tenNguoiDung,
-                        sdt_khach: sdtNguoiDung,
-                        ma_slot: tokenSlot,
-                        ngay_dat: new Date().toISOString().split('T')[0]
-                    });
+        </div>
 
-                    if(ketQuaInsert) {
-                        alert(`ĐẶT SLOT THÀNH CÔNG!\nMã giữ slot của bạn: ${tokenSlot}\nChủ ca đấu sẽ chủ động kết nối với bạn qua Zalo.`);
-                        queryKeoTuCloud();
+        <!-- Footer -->
+        <footer class="gateway-footer">
+            <p>&copy; 2026 TUYENVANGLAI.IO.VN. Hệ thống điều vận tuyển vãng lai Cầu Lông quy chuẩn quốc gia. Tốc độ, thẩm mỹ và bảo mật.</p>
+        </footer>
+
+    </div>
+
+    <!-- TOAST NOTIFICATION ENGINE -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts with Cache-busting -->
+    <script src="ket-noi-supabase.js?v=3.0"></script>
+    <script src="bo-may-du-lieu.js?v=3.0"></script>
+    <script src="hieu-ung-giao-dien.js?v=3.0"></script>
+    <script src="phan-he-khach-choi.js?v=3.0"></script>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // Kiểm tra và xóa data vl_slots cũ nếu có cấu trúc sai
+            try {
+                const rawSlots = localStorage.getItem("vl_slots");
+                if (rawSlots) {
+                    const parsed = JSON.parse(rawSlots);
+                    // Nếu không phải array hoặc có cấu trúc cũ → xóa để nạp lại mẫu
+                    if (!Array.isArray(parsed) || parsed.some(s => s.hasOwnProperty("price_per_slot"))) {
+                        localStorage.removeItem("vl_slots");
+                        console.log("[Init] Đã xóa data vl_slots cũ, sẽ nạp lại mẫu mới.");
                     }
-                } catch (err) {
-                    alert("Giao dịch thất bại! Đứt gãy luồng đồng bộ cơ sở dữ liệu đám mây Supabase.");
                 }
+            } catch (e) {
+                localStorage.removeItem("vl_slots");
+                console.warn("[Init] vl_slots bị lỗi JSON, đã reset.");
             }
+
+            // Khởi chạy giao diện phong thủy theme và hologram
+            const checkTheme = setInterval(() => {
+                if (window.khoiTaoTheme && window.khoiTaoHologramGlow) {
+                    clearInterval(checkTheme);
+                    window.khoiTaoTheme();
+                    window.khoiTaoHologramGlow();
+                }
+            }, 100);
+            
+            // Tự động tìm kiếm tất cả ca đấu ngay khi dbEngine sẵn sàng
+            const checkDb = setInterval(() => {
+                if (window.dbEngine && window.timKiemCaDau) {
+                    clearInterval(checkDb);
+                    console.log("[Init] dbEngine sẵn sàng, tự động tải danh sách ca đấu...");
+                    window.timKiemCaDau();
+                }
+            }, 200);
         });
     </script>
 </body>

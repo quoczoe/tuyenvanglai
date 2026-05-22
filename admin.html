@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Trị Viên Tối Cao | TUYENVANGLAI.IO.VN</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="TUYENVANGLAI.IO.VN - Hệ thống console tối thượng quản trị viên tối cao. Quản lý key thuê trạm, quản trị data khách hàng vãng lai, kiểm duyệt đánh giá và cấu hình trang chủ.">
+    <meta name="keywords" content="tuyen vang lai, tuyenvanglai.io.vn, admin, quan tri tuyen vang lai, admin cau long">
+    <meta name="author" content="TUYENVANGLAI.IO.VN">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom Design CSS Style System -->
+    <link rel="stylesheet" href="giao-dien.css?v=2.0">
+</head>
+<body data-theme="dark">
+
+    <!-- Phong Thủy Mộc-Thủy Dương Liễu Decor -->
+    <div class="willow-decor willow-top-left"></div>
+    <div class="willow-decor willow-top-right"></div>
+
+    <!-- Ambient Dynamic Glows -->
+    <div class="ambient-glows">
+        <div class="glow-sphere glow-1"></div>
+        <div class="glow-sphere glow-2"></div>
+        <div class="glow-sphere glow-3"></div>
+        <div class="glow-particle particle-1"></div>
+        <div class="glow-particle particle-2"></div>
+        <div class="glow-particle particle-3"></div>
+        <div class="glow-particle particle-4"></div>
+        <div class="glow-particle particle-5"></div>
+    </div>
+
+    <!-- Gateway System Wrapper -->
+    <div class="gateway-wrapper">
+        
+        <!-- Header -->
+        <header class="gateway-header">
+            <a href="index.html" class="brand-logo">
+                <i class="fa-solid fa-shuttlecock" style="color: hsl(var(--neon-mint));"></i>
+                TUYENVANGLAI.IO.VN
+            </a>
+            
+            <button class="btn-theme-toggle" id="themeBtn" onclick="chuyenDoiTheme()" title="Đổi giao diện Sáng/Tối">
+                <div class="theme-toggle-icon-box">
+                    <i class="fa-solid fa-sun" id="themeIcon"></i>
+                </div>
+            </button>
+        </header>
+
+        <!-- Main Container -->
+        <div class="gateway-container">
+            
+            <section class="panel-view active" id="adminView">
+                <div class="hud-panel">
+                    <div class="hud-panel-header">
+                        <h2 class="hud-panel-title">
+                            <i class="fa-solid fa-user-shield"></i> HỆ THỐNG QUẢN TRỊ VIÊN TỐI CAO
+                        </h2>
+                        <a href="index.html" class="btn-hud-back" style="text-decoration: none; display: flex; align-items: center; gap: 5px;">
+                            <i class="fa-solid fa-angle-left"></i> Quay lại cổng
+                        </a>
+                    </div>
+
+                    <!-- Admin login key checking panel -->
+                    <div class="hud-grid" id="adminAuthPanel">
+                        <div class="hud-column" style="grid-column: 1 / -1; max-width: 500px; margin: 0 auto; width: 100%;">
+                            <div class="form-group text-center">
+                                <h3 class="hud-section-title" style="border-left: none; padding-left: 0;">Truy Cập Trung Tâm Chỉ Huy</h3>
+                                <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 15px; line-height: 1.5;">Vui lòng điền mã khóa bảo mật của quản trị viên tối cao để truy cập hệ thống quản trị.</p>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Mã khóa bảo mật (Admin Password)</label>
+                                <input type="password" class="form-control" id="adminSecretPassword" placeholder="Nhập mã khóa admin...">
+                            </div>
+                            <button class="btn-cyber w-full mt-4" onclick="xacThucQuyenAdmin()">
+                                <i class="fa-solid fa-shield-halved"></i> Đăng Nhập Root Admin
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Admin Workstation Console (Shown after auth) -->
+                    <div class="d-none" id="adminConsole">
+                        
+                        <!-- Premium Active Session HUD -->
+                        <div class="flex justify-between align-center mb-4 p-4" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius-sm); flex-wrap: wrap; gap: 15px;">
+                            <div>
+                                <span style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase;">Trạng thái quản trị</span>
+                                <h4 style="font-size: 1.1rem; font-weight: 800; color: hsl(var(--neon-gold));"><i class="fa-solid fa-user-shield"></i> ROOT ADMIN SESSION ACTIVE</h4>
+                            </div>
+                            <button class="btn-cyber-danger" style="padding: 6px 12px; font-size: 0.85rem;" onclick="dangXuatAdmin()">
+                                <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất Admin
+                            </button>
+                        </div>
+
+                        <!-- Mini tabs for admin tasks -->
+                        <div class="flex gap-2 flex-wrap mb-4" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
+                            <button class="btn-cyber" onclick="chuyenAdminTab('keys')"><i class="fa-solid fa-key"></i> Quản Lý Keys Host</button>
+                            <button class="btn-cyber" onclick="chuyenAdminTab('players')"><i class="fa-solid fa-address-book"></i> Danh Sách Khách Hàng</button>
+                            <button class="btn-cyber" onclick="chuyenAdminTab('reviews')"><i class="fa-solid fa-star-half-stroke"></i> Quản Lý Đánh Giá</button>
+                            <button class="btn-cyber" onclick="chuyenAdminTab('config')"><i class="fa-solid fa-sliders"></i> Cấu HÌnh Trang Chủ</button>
+                        </div>
+
+                        <!-- Admin Tab 1: Key Management -->
+                        <div class="hud-grid admin-tab-view" id="adminTabKeys">
+                            
+                            <!-- Left: Create new Host Key -->
+                            <div class="hud-column">
+                                <h3 class="hud-section-title">Cấp Phát Key Thuê Mới Cho Host</h3>
+                                <div class="pricing-engine-wrapper" style="background: rgba(255,255,255,0.01);">
+                                    <div class="form-group">
+                                        <label class="form-label">Chọn Hạn Sử Dụng</label>
+                                        <select class="form-control" id="adminNewKeyExpiryDays">
+                                            <option value="1">Kích hoạt 1 Ngày (Dùng thử)</option>
+                                            <option value="7">Kích hoạt 7 Ngày (Tuần)</option>
+                                            <option value="30" selected>Kích hoạt 30 Ngày (Tháng)</option>
+                                            <option value="365">Kích hoạt 365 Ngày (Năm)</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Tên Host Thuê (Ghi chú)</label>
+                                        <input type="text" class="form-control" id="adminNewKeyNote" placeholder="Vd: Sân Viettel Quận 10 - Anh Bình">
+                                    </div>
+                                    <button class="btn-cyber w-full mt-4" onclick="taoKeyMoiChoHost()">
+                                        <i class="fa-solid fa-plus"></i> Tạo & Kích Hoạt Key
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Right: Key List Dashboard -->
+                            <div class="hud-column">
+                                <h3 class="hud-section-title">Danh Sách Quản Lý Cốc Key Trạm</h3>
+                                <div class="hud-table-wrapper">
+                                    <table class="hud-table" id="adminKeysTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Mã Key</th>
+                                                <th>Hạn sử dụng</th>
+                                                <th>Ghi chú Host</th>
+                                                <th>Trạng thái</th>
+                                                <th>Hành động</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Dynamic key rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Admin Tab 2: Players Data Repository -->
+                        <div class="hud-grid admin-tab-view d-none" id="adminTabPlayers">
+                            <div class="hud-column" style="grid-column: 1 / -1;">
+                                <h3 class="hud-section-title">Cơ Sở Dữ Liệu Khách Vãng Lai Đồng Bộ Toàn Quốc</h3>
+                                <div class="hud-table-wrapper">
+                                    <table class="hud-table" id="adminPlayersTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Tên khách</th>
+                                                <th>Số điện thoại</th>
+                                                <th>Ngày Đăng Ký</th>
+                                                <th>Số buổi đã tham gia</th>
+                                                <th>Tổng tiền đã chi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Dynamic player rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Admin Tab 3: Two-way Reviews Manager -->
+                        <div class="hud-grid admin-tab-view d-none" id="adminTabReviews">
+                            <div class="hud-column" style="grid-column: 1 / -1;">
+                                <h3 class="hud-section-title">Kho Đánh Giá Hai Chiều Hệ Thống (Host & Guest)</h3>
+                                <div class="hud-table-wrapper">
+                                    <table class="hud-table" id="adminReviewsTable">
+                                        <thead>
+                                            <tr>
+                                                <th>Người đánh giá</th>
+                                                <th>Đối tượng được đánh giá</th>
+                                                <th>Vai trò</th>
+                                                <th>Số Sao</th>
+                                                <th>Nội dung nhận xét</th>
+                                                <th>Hành động</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Dynamic review rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Admin Tab 4: Web Config & Notifications Editor -->
+                        <div class="hud-grid admin-tab-view d-none" id="adminTabConfig">
+                            <div class="hud-column" style="grid-column: 1 / -1; max-width: 700px; margin: 0 auto; width: 100%;">
+                                <h3 class="hud-section-title">Chỉnh Sửa Giao Diện & Thông Báo Trang Chủ</h3>
+                                <div class="pricing-engine-wrapper" style="background: rgba(255,255,255,0.01);">
+                                    <div class="form-group">
+                                        <label class="form-label">Thông Báo Bản Tin Khẩn (Popup Chạy Chữ Trên Cloud)</label>
+                                        <textarea class="form-control" id="adminConfigAnnouncement" rows="4" placeholder="Nhập nội dung thông báo..."></textarea>
+                                        <span style="font-size: 0.72rem; color: #64748b;"><i class="fa-solid fa-circle-info"></i> Để trống nếu muốn tắt hiển thị popup khi người dùng truy cập web</span>
+                                    </div>
+                                    
+                                    <div class="hud-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                                        <div class="form-group">
+                                            <label class="form-label">Giả Lập Thống Kê: Kèo Mở</label>
+                                            <input type="number" class="form-control" id="adminConfigTotalSlots" value="45">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="form-label">Giả Lập Thống Kê: Cầu Thủ Online</label>
+                                            <input type="number" class="form-control" id="adminConfigOnlinePlayers" value="1820">
+                                        </div>
+                                    </div>
+
+                                    <button class="btn-cyber-gold w-full mt-4" onclick="luuCauHinhTrangChu()">
+                                        <i class="fa-solid fa-floppy-disk"></i> Lưu & Đồng Bộ Lên Đám Mây
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Footer -->
+        <footer class="gateway-footer">
+            <p>&copy; 2026 TUYENVANGLAI.IO.VN. Hệ thống điều vận tuyển vãng lai Cầu Lông quy chuẩn quốc gia. Tốc độ, thẩm mỹ và bảo mật.</p>
+        </footer>
+
+    </div>
+
+    <!-- TOAST NOTIFICATION ENGINE -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Scripts -->
+    <script src="ket-noi-supabase.js"></script>
+    <script src="bo-may-du-lieu.js"></script>
+    <script src="hieu-ung-giao-dien.js"></script>
+    <script src="phan-he-quan-tri.js"></script>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // Khởi chạy giao diện phong thủy theme và hologram
+            const checkTheme = setInterval(() => {
+                if (window.khoiTaoTheme && window.khoiTaoHologramGlow) {
+                    clearInterval(checkTheme);
+                    window.khoiTaoTheme();
+                    window.khoiTaoHologramGlow();
+                }
+            }, 100);
+        });
+    </script>
+</body>
+</html>

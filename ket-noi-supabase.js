@@ -1,89 +1,184 @@
-/* ==========================================================================
-   HỆ THỐNG KẾT NỐI CƠ SỞ DỮ LIỆU ĐÁM MÂY SUPABASE (ket-noi-supabase.js)
-   Nền tảng: CHỢ KÈO VÃNG LAI (tuyenvanglai.io.vn)
-   Trạng thái: ĐÃ VÁ LỖI CÚ PHÁP TIÊU ĐỀ - SẴN SÀNG VẬN HÀNH PRODUCTION
-   ========================================================================== */
+/* 
+ * =========================================================================
+ * ⚙️ HỆ THỐNG ĐIỀU VẬN DỮ LIỆU ĐÁM MÂY - KET-NOI-SUPABASE.JS
+ * Dự án: TUYENVANGLAI.IO.VN
+ * Chức năng: Cung cấp đối tượng toàn cục window.khoDuLieuVinhVien giao tiếp trực tiếp
+ *            với Supabase REST API bằng phương thức Fetch thuần túy (không cần SDK cồng kềnh).
+ * =========================================================================
+ */
 
-// Khai báo các tham số cấu hình hạ tầng đám mây chính chủ từ Supabase
-const SUPABASE_URL = "https://kyidswbpfafsoqsdhfpu.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_3Cb5pwmj_zzz88iNiVNmow_JGUWmDzI";
+(function () {
+    // 1. Cấu hình thông số bảo mật Supabase cố định từ Bản đặc tả
+    const SUPABASE_URL = "https://kyidswbpfafsoqsdhfpu.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_3Cb5pwmj_zzz88iNiVNmow_JGUWmDzI";
 
-// Định nghĩa đối tượng quản trị luồng dữ liệu toàn cục
-const khoDuLieuVinhVien = {
-    
-    /**
-     * 1. HÀM GHI DỮ LIỆU MỚI (POST)
-     * Thêm một bản ghi mới vào bảng chỉ định
-     * @param {string} tenBang - Tên bảng trên Supabase (ca_dau, dat_slot,...)
-     * @param {object} duLieuMuonLuu - Gói dữ liệu dạng Object cần chèn vào database
-     */
-    ghiData: async function(tenBang, duLieuMuonLuu) {
-        try {
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/${tenBang}`, {
-                method: 'POST',
-                headers: {
-                    'apikey': SUPABASE_ANON_KEY,
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
-                },
-                body: JSON.stringify(duLieuMuonLuu)
-            });
-            return await response.json();
-        } catch (error) { 
-            console.error("Lỗi nghiêm trọng khi ghi dữ liệu lên Supabase:", error);
-            return null; 
-        }
-    },
+    // 2. Thiết lập Headers tiêu chuẩn để xác thực với Supabase REST API
+    const LAY_HEADERS_CHUAN = () => {
+        return {
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+            "Content-Type": "application/json",
+            "Prefer": "return=representation" // Yêu cầu trả về dữ liệu sau khi ghi/sửa
+        };
+    };
 
     /**
-     * 2. HÀM ĐỌC / TRUY VẤN DỮ LIỆU (GET) - ĐÃ ĐƯỢC VÁ LỖI CÚ PHÁP HOÀN TOÀN
-     * Lấy dữ liệu từ bảng kết hợp các tham số lọc động
-     * @param {string} tenBang - Tên bảng cần lấy dữ liệu
-     * @param {string} cauLenhLoc - Chuỗi tham số lọc chuẩn REST (Ví dụ: id=eq.popup_chinh)
+     * Hàm nội bộ chuyển đổi đối tượng Query sang chuỗi tham số URL của Supabase REST API
+     * Ví dụ: { id: "123", trang_thai: "Đang chạy" } -> id=eq.123&trang_thai=eq.Đang%20chạy
      */
-    docData: async function(tenBang, cauLenhLoc = "") {
-        try {
-            // Chuẩn hóa đường dẫn URL, kiểm tra nếu có tham số lọc thì nối chuỗi hợp lệ
-            const urlDich = cauLenhLoc ? `${SUPABASE_URL}/rest/v1/${tenBang}?${cauLenhLoc}` : `${SUPABASE_URL}/rest/v1/${tenBang}`;
-            
-            const response = await fetch(urlDich, {
-                method: 'GET',
-                headers: { 
-                    'apikey': SUPABASE_ANON_KEY, 
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}` 
-                }
-            });
-            return await response.json();
-        } catch (error) { 
-            console.error("Lỗi nghiêm trọng khi truy vấn dữ liệu từ Supabase:", error);
-            return []; 
+    function xayDungQueryString(matchQuery) {
+        if (!matchQuery) return "";
+        const parts = [];
+        for (const [key, value] of Object.entries(matchQuery)) {
+            if (value === null) {
+                parts.push(`${key}=is.null`);
+            } else {
+                parts.push(`${key}=eq.${encodeURIComponent(value)}`);
+            }
         }
-    },
-
-    /**
-     * 3. HÀM XÓA BẢN GHI DỮ LIỆU (DELETE)
-     * Gỡ bỏ dữ liệu thỏa mãn điều kiện chỉ định
-     * @param {string} tenBang - Tên bảng chứa bản ghi cần xóa
-     * @param {string} cotDieuKien - Tên cột dùng để đối chiếu (Ví dụ: id, ma_key,...)
-     * @param {string|number} giaTriDieuKien - Giá trị đích cần xóa
-     */
-    xoaData: async function(tenBang, cotDieuKien, giaTriDieuKien) {
-        try {
-            await fetch(`${SUPABASE_URL}/rest/v1/${tenBang}?${cotDieuKien}=eq.${giaTriDieuKien}`, {
-                method: 'DELETE',
-                headers: { 
-                    'apikey': SUPABASE_ANON_KEY, 
-                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}` 
-                }
-            });
-            return true;
-        } catch (error) { 
-            console.error("Lỗi nghiêm trọng khi thực thi xóa dữ liệu trên Supabase:", error);
-            return false; 
-        }
+        return parts.join("&");
     }
-};
 
-// Đóng gói và đính kèm thực thể xử lý vào đối tượng window toàn cục của trình duyệt
-window.khoDuLieuVinhVien = khoDuLieuVinhVien;
+    // 3. Khởi tạo đối tượng kho lưu trữ toàn cục
+    window.khoDuLieuVinhVien = {
+        
+        /**
+         * A. PHƯƠNG THỨC ĐỌC DỮ LIỆU (READ) - docData
+         * @param {string} tenBang - Tên bảng PostgreSQL trên Supabase (ví dụ: 'ca_dau', 'dat_slot')
+         * @param {Object} boLoc - Các tham số lọc dữ liệu
+         * @param {Object} boLoc.eq - Lọc bằng nhau (Ví dụ: { trang_thai: 'Đang chạy' })
+         * @param {string} boLoc.select - Các cột cần lấy, mặc định là '*'
+         * @param {string} boLoc.order - Sắp xếp (Ví dụ: 'created_at.desc')
+         * @param {number} boLoc.limit - Giới hạn số dòng trả về
+         * @returns {Promise<Array>} Danh sách kết quả trả về từ database
+         */
+        async docData(tenBang, boLoc = {}) {
+            try {
+                let url = `${SUPABASE_URL}/rest/v1/${tenBang}`;
+                const thamSoUrl = [];
+
+                // 1. Áp dụng bộ lọc bằng nhau (eq)
+                if (boLoc.eq) {
+                    for (const [key, val] of Object.entries(boLoc.eq)) {
+                        if (val !== undefined && val !== null) {
+                            thamSoUrl.push(`${key}=eq.${encodeURIComponent(val)}`);
+                        }
+                    }
+                }
+
+                // 2. Áp dụng cấu hình cột cần lấy (mặc định lấy hết '*')
+                const selectCol = boLoc.select || "*";
+                thamSoUrl.push(`select=${encodeURIComponent(selectCol)}`);
+
+                // 3. Áp dụng sắp xếp (order)
+                if (boLoc.order) {
+                    thamSoUrl.push(`order=${encodeURIComponent(boLoc.order)}`);
+                }
+
+                // 4. Áp dụng giới hạn số dòng (limit)
+                if (boLoc.limit) {
+                    thamSoUrl.push(`limit=${boLoc.limit}`);
+                }
+
+                // Ghép tham số vào URL chính
+                if (thamSoUrl.length > 0) {
+                    url += `?${thamSoUrl.join("&")}`;
+                }
+
+                // Gửi yêu cầu GET tới Supabase
+                const response = await fetch(url, {
+                    method: "GET",
+                    headers: LAY_HEADERS_CHUAN()
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Lỗi API Supabase khi đọc bảng ${tenBang}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error("❌ [Lỗi Đọc Data]:", error);
+                throw error;
+            }
+        },
+
+        /**
+         * B. PHƯƠNG THỨC GHI DỮ LIỆU (INSERT / UPDATE) - ghiData
+         * @param {string} tenBang - Tên bảng PostgreSQL trên Supabase
+         * @param {Object} payload - Dữ liệu cần ghi vào bảng
+         * @param {Object|null} matchQuery - Lọc dòng cần UPDATE. 
+         *                                   - Nếu truyền null: Tự động hiểu là THÊM MỚI (INSERT).
+         *                                   - Nếu truyền đối tượng lọc (vd: { id: "..." }): Tiến hành CẬP NHẬT (UPDATE).
+         * @returns {Promise<Array>} Trả về bản ghi vừa được ghi nhận thành công trong cơ sở dữ liệu
+         */
+        async ghiData(tenBang, payload, matchQuery = null) {
+            try {
+                let url = `${SUPABASE_URL}/rest/v1/${tenBang}`;
+                let phuongThuc = "POST"; // Mặc định là INSERT
+                
+                // Nếu có điều kiện lọc matchQuery, chuyển sang chế độ UPDATE (PATCH)
+                if (matchQuery && Object.keys(matchQuery).length > 0) {
+                    phuongThuc = "PATCH";
+                    const queryString = xayDungQueryString(matchQuery);
+                    url += `?${queryString}`;
+                }
+
+                const response = await fetch(url, {
+                    method: phuongThuc,
+                    headers: LAY_HEADERS_CHUAN(),
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Lỗi API Supabase khi ghi vào bảng ${tenBang} (${phuongThuc}): ${errorText}`);
+                }
+
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error(`❌ [Lỗi Ghi Data - ${tenBang}]:`, error);
+                throw error;
+            }
+        },
+
+        /**
+         * C. PHƯƠNG THỨC XÓA DỮ LIỆU (DELETE) - xoaData
+         * @param {string} tenBang - Tên bảng PostgreSQL trên Supabase
+         * @param {Object} matchQuery - Bộ lọc xác định chính xác các dòng cần xóa (RÀNG BUỘC: Không được để trống để tránh xóa sạch bảng)
+         * @returns {Promise<Array>} Trả về bản ghi vừa bị xóa
+         */
+        async xoaData(tenBang, matchQuery) {
+            try {
+                // Ràng buộc bảo mật tối cao: Không cho phép chạy xoaData nếu matchQuery rỗng
+                if (!matchQuery || Object.keys(matchQuery).length === 0) {
+                    throw new Error("Cảnh báo bảo mật: Không thể chạy hàm xoaData với bộ lọc rỗng để tránh mất mát dữ liệu toàn bảng.");
+                }
+
+                let url = `${SUPABASE_URL}/rest/v1/${tenBang}`;
+                const queryString = xayDungQueryString(matchQuery);
+                url += `?${queryString}`;
+
+                const response = await fetch(url, {
+                    method: "DELETE",
+                    headers: LAY_HEADERS_CHUAN()
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Lỗi API Supabase khi xóa trong bảng ${tenBang}: ${errorText}`);
+                }
+
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error(`❌ [Lỗi Xóa Data - ${tenBang}]:`, error);
+                throw error;
+            }
+        }
+    };
+
+    console.log("⚡ [Hệ thống điều vận Supabase]: Đã kích hoạt đối tượng window.khoDuLieuVinhVien thành công.");
+})();

@@ -15,20 +15,20 @@
     --font-display: 'Lexend', sans-serif;
     --font-body: 'Plus Jakarta Sans', sans-serif;
 
-    /* Base Core Colors (Deep Pitch Dark Green & Electric Accents) */
-    --background: 155 18% 4.5%;         /* Slate Emerald tối sẫm sân cỏ đêm */
-    --foreground: 150 12% 97%;          /* Trắng ngọc trai */
+    /* Base Core Colors (Dương Liễu Mộc - Xanh ngọc lục bảo cát tường) */
+    --background: 155 24% 4%;           /* Slate Jade tối sẫm sân cỏ đêm */
+    --foreground: 150 15% 98%;          /* Trắng ngọc trai */
     
-    --card: 155 15% 7.2%;               /* Thẻ kính cỏ sẫm */
-    --card-foreground: 150 12% 97%;
+    --card: 155 20% 6.5%;               /* Thẻ kính ngọc lục bảo sẫm */
+    --card-foreground: 150 15% 98%;
     
-    --popover: 155 15% 6%;
-    --popover-foreground: 150 12% 97%;
+    --popover: 155 20% 5.5%;
+    --popover-foreground: 150 15% 98%;
     
-    /* Neon Accents & Colors (Sports Aura) */
-    --neon-mint: 157 100% 50%;          /* #00ff9d - Xanh mint thể thao rực cháy */
+    /* Neon Accents & Colors (Sports Aura phong thủy cát tường) */
+    --neon-mint: 157 100% 50%;          /* #00ff9d - Xanh mint bản mệnh Mộc cực sinh động */
     --neon-gold: 47 100% 50%;           /* #ffd700 - Vàng Cup vô địch hoàng gia */
-    --neon-cyan: 190 100% 50%;          /* #00e5ff - Xanh điện tử ổn định */
+    --neon-cyan: 190 100% 50%;          /* #00e5ff - Xanh dương Thủy tương sinh đại cát */
     --neon-pink: 325 100% 50%;          /* #ff007f - Hồng đột phá */
     
     --neon-mint-glow: rgba(0, 255, 157, 0.22);
@@ -39,15 +39,15 @@
     --success: 142 76% 45%;             /* Xanh lá đạt chuẩn */
     --warning: 47 100% 50%;             /* Vàng cảnh báo */
     --danger: 346 84% 50%;              /* Đỏ lỗi/Khóa */
-    --muted: 150 8% 65%;                /* Chữ nhạt */
-    --muted-foreground: 150 8% 65%;
+    --muted: 150 10% 70%;               /* Chữ nhạt */
+    --muted-foreground: 150 10% 70%;
     
     /* Borders & Inputs */
-    --border: 155 12% 13%;
+    --border: 155 18% 12%;
     --border-glow: rgba(0, 255, 157, 0.08);
     --border-hover: rgba(0, 255, 157, 0.25);
     
-    --input: 155 12% 8.5%;
+    --input: 155 18% 8%;
     --ring: 157 100% 50%;
     
     /* Radius */
@@ -60,31 +60,58 @@
     --transition-bounce: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* 🌟 PHONG CÁCH KÍNH BẢY MÀU CHO CHẾ ĐỘ SÁNG (PREMIUM IRIDESCENT AURORA GLASS) */
+/* 🌟 PHONG CÁCH KÍNH BẢY MÀU CHO CHẾ ĐỘ SÁNG (PREMIUM IRIDESCENT AURORA GLASS - MỆNH MỘC) */
 [data-theme="light"] {
-    --background: 150 25% 95.8%;         /* Nền Mint sữa mát mắt kết hợp Platinum */
-    --foreground: 160 35% 10%;          /* Chữ tối lục sẫm tương phản cao */
+    /* Tránh mảng màu trắng bạc lớn (Kim khắc Mộc). Tông màu Matcha & Soft Sage e-ink chống chói tối đa */
+    --background: 150 12% 90%;          /* Soft Sage Green - Dịu mát như sương sớm, êm dịu võng mạc */
+    --foreground: 160 25% 10%;          /* Forest Charcoal - Chữ xám rêu sẫm đậm đà dễ đọc, không mỏi mắt */
     
-    --card: 0 0% 100%;                  /* Thẻ trắng tinh */
-    --card-foreground: 160 35% 10%;
+    --card: 150 14% 94%;                /* Cream Matcha Glass - Nền kính matchamilk ấm mịn */
+    --card-foreground: 160 25% 10%;
     
-    --popover: 0 0% 100%;
-    --popover-foreground: 160 35% 10%;
+    --popover: 150 14% 93%;
+    --popover-foreground: 160 25% 10%;
     
-    --muted: 160 10% 42%;
-    --muted-foreground: 160 10% 42%;
+    --muted: 160 15% 28%;               /* Chữ phụ rêu nhạt đậm nét hơn dễ chịu */
+    --muted-foreground: 160 15% 28%;
     
-    --border: 155 15% 88%;
-    --border-glow: rgba(0, 201, 120, 0.06);
-    --border-hover: rgba(0, 201, 120, 0.2);
+    --border: 150 15% 68%;              /* Tăng độ tương phản của viền cho sắc nét */
+    --border-glow: rgba(0, 180, 100, 0.06);
+    --border-hover: rgba(0, 180, 100, 0.25);
     
-    --input: 155 15% 94%;
-    --ring: 157 90% 42%;
+    --input: 150 15% 85%;
+    --ring: 157 65% 35%;
     
-    --neon-mint-glow: rgba(0, 201, 120, 0.12);
+    --neon-mint-glow: rgba(0, 180, 100, 0.12);
     --neon-gold-glow: rgba(217, 119, 6, 0.12);
     --neon-cyan-glow: rgba(37, 99, 235, 0.12);
 }
+
+/* Khắc phục triệt để lỗi Dropdown select option bị trắng chữ trắng nền ở chế độ tối (Dark Mode) */
+[data-theme="dark"] select option {
+    background-color: #0b111e !important;
+    color: #ffffff !important;
+}
+[data-theme="dark"] select {
+    background-color: rgba(15, 23, 42, 0.85) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+[data-theme="dark"] select:focus {
+    border-color: hsl(var(--neon-mint)) !important;
+    box-shadow: 0 0 10px rgba(0, 255, 157, 0.2) !important;
+}
+
+[data-theme="light"] select option {
+    background-color: #f0f5f2 !important;
+    color: #12221a !important;
+}
+[data-theme="light"] select {
+    background-color: #edf2ef !important;
+    color: #12221a !important;
+    border: 1px solid #738a7c !important;
+}
+
 
 /* =========================================================================
    2. THIẾT LẬP CƠ BẢN & RESET CSS
@@ -111,9 +138,9 @@ body {
 
 [data-theme="light"] body {
     background-image: 
-        radial-gradient(circle at 5% 5%, rgba(0, 255, 157, 0.08) 0%, transparent 50%),
-        radial-gradient(circle at 95% 95%, rgba(255, 215, 0, 0.06) 0%, transparent 50%),
-        linear-gradient(135deg, #eafaf3 0%, #f5f7f6 50%, #fffdf0 100%);
+        radial-gradient(circle at 5% 5%, rgba(0, 180, 100, 0.04) 0%, transparent 50%),
+        radial-gradient(circle at 95% 95%, rgba(217, 119, 6, 0.03) 0%, transparent 50%),
+        linear-gradient(135deg, #e4eee9 0%, #edf1ef 50%, #f7f6f0 100%);
 }
 
 /* Lưới Cyber Grid nhạy cảm ánh sáng */
@@ -137,8 +164,9 @@ body::before {
 
 [data-theme="light"] body::before {
     background-image: 
-        linear-gradient(rgba(0, 180, 100, 0.018) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 180, 100, 0.018) 1px, transparent 1px);
+        linear-gradient(rgba(0, 180, 100, 0.01) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 180, 100, 0.01) 1px, transparent 1px);
+    opacity: 0.8;
 }
 
 /* Sơ đồ sân cầu lông vẽ chìm mờ ảo ở Light Mode tăng vibe */
@@ -149,12 +177,12 @@ body::before {
     left: -10%;
     width: 450px;
     height: 450px;
-    background-image: radial-gradient(circle, transparent 20%, #eafbf3 70%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath d='M 10,10 L 90,10 L 90,90 L 10,90 Z M 10,25 L 90,25 M 10,75 L 90,75 M 50,10 L 50,90' fill='none' stroke='rgba(0,180,100,0.02)' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-image: radial-gradient(circle, transparent 20%, #e4eee9 70%), url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Cpath d='M 10,10 L 90,10 L 90,90 L 10,90 Z M 10,25 L 90,25 M 10,75 L 90,75 M 50,10 L 50,90' fill='none' stroke='rgba(0,180,100,0.015)' stroke-width='1.5'/%3E%3C/svg%3E");
     background-size: contain;
     background-repeat: no-repeat;
     pointer-events: none;
     z-index: 2;
-    opacity: 0.7;
+    opacity: 0.6;
 }
 
 /* =========================================================================
@@ -456,10 +484,12 @@ body::before {
 }
 
 [data-theme="light"] .hud-metrics {
-    background: rgba(255, 255, 255, 0.75);
+    background: rgba(240, 245, 242, 0.8);
     border: 1px solid rgba(0, 180, 100, 0.08);
-    color: #334155;
-    box-shadow: 0 8px 24px rgba(0, 180, 100, 0.03);
+    color: #1e293b;
+    box-shadow: 
+        0 8px 24px rgba(13, 50, 33, 0.02),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.7);
 }
 
 .metric-item {
@@ -578,24 +608,24 @@ body::before {
 
 /* 🌈 CHẾ ĐỘ SÁNG KÍNH ĐỔI SẮC BẦY MÀU CAO CẤP */
 [data-theme="light"] .gateway-card {
-    background: rgba(255, 255, 255, 0.65);
-    border: 1px solid rgba(0, 180, 100, 0.07);
+    background: rgba(240, 245, 242, 0.75);
+    border: 1px solid rgba(0, 180, 100, 0.08);
     box-shadow: 
-        0 20px 40px rgba(0, 180, 100, 0.03),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-    color: #0f172a;
+        0 15px 35px rgba(13, 50, 33, 0.03),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+    color: #12221a;
 }
 
 [data-theme="light"] .gateway-card:hover {
-    background: rgba(255, 255, 255, 0.85);
+    background: rgba(243, 247, 245, 0.9);
     border-color: transparent;
     /* Hiệu ứng viền bảy màu phát sáng lung linh */
     background: 
-        linear-gradient(rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.88)) padding-box,
-        linear-gradient(135deg, #00ff9d 0%, #ffd700 33%, #00e5ff 66%, #ff007f 100%) border-box;
+        linear-gradient(rgba(243, 247, 245, 0.92), rgba(243, 247, 245, 0.92)) padding-box,
+        linear-gradient(135deg, #00b464 0%, #d97706 33%, #2563eb 66%, #db2777 100%) border-box;
     box-shadow: 
-        0 25px 50px rgba(0, 180, 100, 0.07),
-        0 0 20px rgba(0, 255, 157, 0.06);
+        0 20px 45px rgba(13, 50, 33, 0.06),
+        0 0 15px rgba(0, 180, 100, 0.04);
 }
 
 [data-theme="light"] .card-corner { border-color: rgba(0, 180, 100, 0.1); }
@@ -826,11 +856,11 @@ body::before {
 }
 
 [data-theme="light"] .hud-panel {
-    background: rgba(255, 255, 255, 0.72);
+    background: rgba(240, 245, 242, 0.75);
     border: 1px solid rgba(0, 180, 100, 0.08);
     box-shadow: 
-        0 15px 40px rgba(0, 180, 100, 0.04),
-        inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+        0 15px 40px rgba(13, 50, 33, 0.03),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.8);
 }
 
 /* Viền LED phía trên bảng điều khiển */
@@ -971,7 +1001,7 @@ body::before {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-[data-theme="light"] .hud-table th { background: rgba(0, 180, 100, 0.02); color: #475569; border-bottom-color: rgba(0, 180, 100, 0.08); }
+[data-theme="light"] .hud-table th { background: rgba(0, 180, 100, 0.015); color: #334155; border-bottom-color: rgba(0, 180, 100, 0.06); }
 
 .hud-table td {
     padding: 14px 16px;
@@ -979,7 +1009,7 @@ body::before {
     color: #e2e8f0;
 }
 
-[data-theme="light"] .hud-table td { border-bottom-color: rgba(0, 180, 100, 0.04); color: #1e293b; }
+[data-theme="light"] .hud-table td { border-bottom-color: rgba(0, 180, 100, 0.03); color: #0f172a; }
 
 .hud-table tr:last-child td { border-bottom: none; }
 
@@ -987,7 +1017,7 @@ body::before {
     background: rgba(255, 255, 255, 0.01);
 }
 
-[data-theme="light"] .hud-table tr:hover td { background: rgba(0, 180, 100, 0.01); }
+[data-theme="light"] .hud-table tr:hover td { background: rgba(0, 180, 100, 0.008); }
 
 /* =========================================================================
    5. NÚT BẤM CYBER CUT CẮT GÓC & PHÁT SÁNG (CYBERPUNK NEON BUTTONS)
@@ -1056,6 +1086,47 @@ body::before {
     box-shadow: 0 0 18px hsl(var(--neon-gold));
 }
 
+/* Light mode override cho btn-cyber */
+[data-theme="light"] .btn-cyber {
+    color: #0d3221;
+    border-color: #00b464;
+    box-shadow: 0 0 8px rgba(0,180,100,0.15);
+}
+[data-theme="light"] .btn-cyber:hover {
+    background: #00b464;
+    color: #fff;
+    box-shadow: 0 0 15px rgba(0,180,100,0.35);
+}
+[data-theme="light"] .btn-cyber-gold {
+    border-color: #d97706;
+    box-shadow: 0 0 8px rgba(217,119,6,0.15);
+    color: #7c2d12;
+}
+[data-theme="light"] .btn-cyber-gold:hover {
+    background: #d97706;
+    color: #fff;
+    box-shadow: 0 0 15px rgba(217,119,6,0.35);
+}
+
+/* Nút Đăng Ký Kèo Ngay nổi bật */
+.btn-register-slot {
+    background: linear-gradient(135deg, hsl(var(--neon-mint)) 0%, hsl(var(--neon-cyan)) 100%) !important;
+    border: none !important;
+    color: #000 !important;
+    font-weight: 800 !important;
+    box-shadow: 0 4px 15px rgba(0,255,157,0.25) !important;
+}
+.btn-register-slot:hover {
+    background: linear-gradient(135deg, hsl(var(--neon-gold)) 0%, hsl(var(--neon-mint)) 100%) !important;
+    box-shadow: 0 6px 20px rgba(0,255,157,0.45) !important;
+    transform: translateY(-3px) !important;
+}
+[data-theme="light"] .btn-register-slot {
+    background: linear-gradient(135deg, #00b464 0%, #0ea5e9 100%) !important;
+    color: #fff !important;
+    box-shadow: 0 4px 15px rgba(0,180,100,0.2) !important;
+}
+
 .btn-cyber-danger {
     border-color: hsl(var(--danger));
     box-shadow: none;
@@ -1117,6 +1188,17 @@ body::before {
     outline: none;
 }
 
+[data-theme="light"] .form-control {
+    background-color: #edf2ef !important;
+    border: 1px solid #738a7c !important;
+    color: #12221a !important;
+}
+
+[data-theme="light"] .form-control::placeholder {
+    color: #64748b !important;
+}
+
+
 .form-control:focus {
     border-color: hsl(var(--neon-mint));
     background: rgba(0, 255, 157, 0.015);
@@ -1161,7 +1243,7 @@ body::before {
     background: rgba(0, 255, 157, 0.02);
 }
 
-[data-theme="light"] .checkbox-custom-label { background: #fff; }
+[data-theme="light"] .checkbox-custom-label { background: rgba(255, 255, 255, 0.6); }
 [data-theme="light"] .checkbox-custom-label:hover { border-color: #00b464; background: rgba(0, 180, 100, 0.02); }
 
 .checkbox-custom-input {
@@ -1177,7 +1259,7 @@ body::before {
 
 [data-theme="light"] .checkbox-custom-input:checked + .checkbox-custom-label {
     border-color: #00b464;
-    background: rgba(0, 180, 100, 0.06);
+    background: rgba(0, 180, 100, 0.05);
     color: #008a4c;
     box-shadow: none;
 }
@@ -1190,7 +1272,7 @@ body::before {
     border-radius: var(--radius-sm);
 }
 
-[data-theme="light"] .gender-level-box { background: rgba(0, 180, 100, 0.01); border-color: rgba(0, 180, 100, 0.1); }
+[data-theme="light"] .gender-level-box { background: rgba(0, 180, 100, 0.005); border-color: rgba(0, 180, 100, 0.06); }
 
 /* =========================================================================
    7. CHIP VÀ CÁC THẺ PHÂN LOẠI CẦU LÔNG ĐỘC ĐÁO
@@ -1236,8 +1318,8 @@ body::before {
 }
 
 [data-theme="light"] .pricing-engine-wrapper {
-    background: rgba(0, 180, 100, 0.01);
-    border-color: rgba(0, 180, 100, 0.08);
+    background: rgba(0, 180, 100, 0.015);
+    border-color: rgba(0, 180, 100, 0.06);
 }
 
 .shuttlecock-row {
@@ -1277,8 +1359,8 @@ body::before {
     transform: translateY(-2px);
 }
 
-[data-theme="light"] .suggestion-box { background: #fff; border-color: rgba(0, 180, 100, 0.08); }
-[data-theme="light"] .suggestion-box:hover { border-color: #00b464; }
+[data-theme="light"] .suggestion-box { background: rgba(255, 255, 255, 0.5); border-color: rgba(0, 180, 100, 0.08); }
+[data-theme="light"] .suggestion-box:hover { border-color: #00b464; background: rgba(0, 180, 100, 0.02); }
 
 .suggestion-box.active {
     border-color: hsl(var(--neon-mint));
@@ -1288,7 +1370,7 @@ body::before {
 
 [data-theme="light"] .suggestion-box.active {
     border-color: #00b464;
-    background: rgba(0, 180, 100, 0.04);
+    background: rgba(0, 180, 100, 0.03);
     box-shadow: none;
 }
 
@@ -1356,8 +1438,8 @@ body::before {
 }
 
 [data-theme="light"] .card-keo-cauthi {
-    background: rgba(255, 255, 255, 0.7);
-    border-color: rgba(0, 180, 100, 0.06);
+    background: rgba(240, 245, 242, 0.7);
+    border-color: rgba(0, 180, 100, 0.05);
     color: #0f172a;
 }
 
@@ -1368,8 +1450,9 @@ body::before {
 }
 
 [data-theme="light"] .card-keo-cauthi:hover {
+    background: rgba(243, 247, 245, 0.85);
     border-color: #00b464;
-    box-shadow: 0 12px 28px rgba(0, 180, 100, 0.03);
+    box-shadow: 0 12px 28px rgba(13, 50, 33, 0.04);
 }
 
 .card-keo-header {
@@ -1543,9 +1626,9 @@ body::before {
 }
 
 [data-theme="light"] .modal {
-    background: #fff;
-    border-color: rgba(0, 180, 100, 0.12);
-    box-shadow: 0 20px 45px rgba(0, 180, 100, 0.08);
+    background: rgba(245, 248, 246, 0.95);
+    border-color: rgba(0, 180, 100, 0.1);
+    box-shadow: 0 20px 45px rgba(13, 50, 33, 0.06);
 }
 
 .modal-header { padding: 26px 28px 16px; position: relative; }
@@ -1652,6 +1735,95 @@ body::before {
 .stars-container i { cursor: pointer; transition: var(--transition-smooth); }
 .stars-container i.active, .stars-container i:hover { color: hsl(var(--neon-gold)); }
 
+/* Card Kèo: nội dung text dùng biến CSS thay vì hardcode #fff */
+.card-keo-body-text { color: hsl(var(--foreground)); }
+.card-keo-address-text { font-size: 0.82rem; color: hsl(var(--muted-foreground)); margin-top: 4px; }
+.card-keo-meta-row { font-size: 0.8rem; color: hsl(var(--muted-foreground)); }
+.card-keo-meta-row b { color: hsl(var(--foreground)); }
+.card-keo-count-text { font-size: 0.85rem; font-weight: 800; color: hsl(var(--neon-gold)); }
+[data-theme="light"] .card-keo-count-text { color: #b45309; }
+.card-keo-meta-box {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+    font-size: 0.85rem;
+    background: rgba(0,0,0,0.015);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid hsl(var(--border));
+    margin-bottom: 12px;
+}
+[data-theme="light"] .card-keo-meta-box {
+    background: rgba(0,0,0,0.02);
+    border-color: rgba(0,180,100,0.1);
+}
+
+/* Chip items trong card kèo */
+.chip-group { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border: 1px solid transparent;
+    background: rgba(255,255,255,0.03);
+}
+.chip-item-mint {
+    color: hsl(var(--neon-mint));
+    border-color: rgba(0,255,157,0.15);
+}
+[data-theme="light"] .chip-item-mint { color: #00914d; border-color: rgba(0,180,100,0.2); }
+
+/* Nút LỌC CA ĐẤU nổi bật */
+.btn-filter-cyber {
+    position: relative;
+    height: 52px !important;
+    font-size: 1rem !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.05em;
+    background: linear-gradient(135deg, hsl(var(--neon-mint)) 0%, hsl(var(--neon-gold)) 100%) !important;
+    color: #0b1a0f !important;
+    border: none !important;
+    box-shadow: 0 6px 20px rgba(0,255,157,0.3), 0 2px 8px rgba(255,215,0,0.2) !important;
+    animation: filterBtnPulse 3s infinite alternate ease-in-out;
+}
+.btn-filter-cyber::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: calc(var(--radius-sm) + 2px);
+    background: linear-gradient(135deg, hsl(var(--neon-mint)), hsl(var(--neon-gold)));
+    z-index: -1;
+    filter: blur(8px);
+    opacity: 0.5;
+    transition: var(--transition-smooth);
+}
+.btn-filter-cyber:hover::before { opacity: 0.8; filter: blur(12px); }
+.btn-filter-cyber:hover {
+    transform: translateY(-3px) scale(1.02) !important;
+    box-shadow: 0 10px 30px rgba(0,255,157,0.4), 0 4px 15px rgba(255,215,0,0.25) !important;
+}
+@keyframes filterBtnPulse {
+    0% { box-shadow: 0 6px 20px rgba(0,255,157,0.25), 0 2px 8px rgba(255,215,0,0.15); }
+    100% { box-shadow: 0 8px 28px rgba(0,255,157,0.4), 0 4px 15px rgba(255,215,0,0.3); }
+}
+[data-theme="light"] .btn-filter-cyber {
+    background: linear-gradient(135deg, #00b464 0%, #d97706 100%) !important;
+    color: #fff !important;
+    box-shadow: 0 6px 20px rgba(0,180,100,0.25) !important;
+}
+
+/* Shake animation cho auth panel */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-8px); }
+    40%, 80% { transform: translateX(8px); }
+}
+.shake-animation { animation: shake 0.5s ease-in-out; }
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .gateway-button-grid { grid-template-columns: 1fr; gap: 20px; }
@@ -1660,4 +1832,37 @@ body::before {
     .hud-metrics { padding: 8px 18px; flex-wrap: wrap; justify-content: center; gap: 10px; border-radius: var(--radius-md); }
     .metric-divider { display: none; }
     .hud-panel { padding: 24px 18px; }
+}
+
+/* 🌿 HOẠT ẢNH DƯƠNG LIỄU LAY ĐỘNG PHONG THỦY CÁT TƯỜNG (MỆNH MỘC Nhâm Ngọ 2002) */
+.willow-decor {
+    position: fixed;
+    width: 220px;
+    height: 220px;
+    pointer-events: none;
+    z-index: 3;
+    opacity: 0.18;
+    transform-origin: top center;
+    animation: swayWillow 6s infinite alternate ease-in-out;
+}
+.willow-top-left {
+    top: 0;
+    left: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M0,0 C30,10 50,40 40,70 C35,60 20,40 0,30 Z M10,0 C40,20 60,50 50,80 C45,70 30,50 10,40 Z' fill='%2300b464'/%3E%3C/svg%3E") no-repeat;
+    background-size: contain;
+}
+.willow-top-right {
+    top: 0;
+    right: 0;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M100,0 C70,10 50,40 60,70 C65,60 80,40 100,30 Z M90,0 C60,20 40,50 50,80 C55,70 70,50 90,40 Z' fill='%2300b464'/%3E%3C/svg%3E") no-repeat;
+    background-size: contain;
+    transform-origin: top center;
+}
+@keyframes swayWillow {
+    0% { transform: rotate(-5deg) translateY(0); }
+    100% { transform: rotate(5deg) translateY(2px); }
+}
+[data-theme="dark"] .willow-decor {
+    opacity: 0.08;
+    filter: brightness(0.8) contrast(1.2);
 }
