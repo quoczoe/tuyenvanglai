@@ -1,662 +1,548 @@
 /* ==========================================================================
-   CHỢ KÈO VÃNG LAI - HỆ THỐNG PHONG CÁCH ĐỒ HỌA TOÀN CỤC (GLOBAL STYLESHEET)
-   Thiết kế bởi: UI/UX Architect & Senior Front-End Developer
-   Cảm hứng: Shadcn UI, Premium SaaS Dashboard & Crypto Trading Interface
+   HỆ THỐNG PHONG CÁCH TOÀN CỤC - CHỢ KÈO VÃNG LAI (style.css)
+   Thiết kế bởi: Senior UI/UX Architect
+   Giao diện: Shadcn UI Cyberpunk Hybrid (Kính mờ cao cấp & Đèn Led Neon)
    ========================================================================== */
 
-/* ==========================================================================
-   1. ĐỊNH NGHĨA BIẾN SỐ TOÀN CỤC & HỆ THỐNG TOKENS (CSS VARIABLES)
-   ========================================================================== */
-
-:root, [data-theme="dark"] {
-  /* Giao diện tối mặc định (Cyber Dark Modern) - Tối ưu độ tin cậy và tính bảo mật */
-  --background: #030408;
-  --main-gradient: linear-gradient(135deg, #090a16 0%, #030307 100%);
-  --card-bg: rgba(13, 15, 30, 0.75);
-  --card-border: rgba(255, 255, 255, 0.08);
-  --card-shadow: rgba(0, 0, 0, 0.8);
-  
-  /* Hệ thống hiển thị văn bản và phân cấp nội dung */
-  --text-title: #ffffff;
-  --text-main: #f1f5f9;
-  --text-muted: #6f7b95;
-  
-  /* Điểm nhấn năng động (Cyber Athlete Accents) */
-  --neon-cyan: #00f3ff;
-  --neon-pink: #ff007f;
-  --neon-purple: #9d4edd;
-  --input-bg: #0c0d18;
-  --glow-strength: rgba(0, 243, 255, 0.2);
-  
-  /* Các biến bổ trợ hiệu ứng chuyển động và bo góc */
-  --led-gradient: linear-gradient(90deg, var(--neon-cyan), var(--neon-purple), var(--neon-pink));
-  --radius-container: 28px;
-  --radius-component: 16px;
-  --radius-control: 10px;
+/* 1. KHỞI TẠO BIẾN HỆ THỐNG & ĐỒNG BỘ THEME */
+:root {
+    /* CHẾ ĐỘ TỐI - DARK SYSTEM (MẶC ĐỊNH) */
+    --bg-main: linear-gradient(135deg, #080916 0%, #030307 100%);
+    --bg-glass: rgba(15, 17, 33, 0.75);
+    --border-glass: rgba(255, 255, 255, 0.08);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --accent-cyan: #00f3ff;
+    --accent-pink: #ff007f;
+    --shadow-ambient: rgba(0, 0, 0, 0.6);
+    --neon-glow-cyan: rgba(0, 243, 255, 0.25);
+    --neon-glow-pink: rgba(255, 0, 127, 0.25);
+    --card-border: rgba(255, 255, 255, 0.05);
 }
 
 [data-theme="light"] {
-  /* Giao diện sáng cao cấp (Luxury Pearl Light Mode) - Tinh tế, sang trọng như ngọc trai */
-  --background: #f1f5f9;
-  --main-gradient: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  --card-bg: rgba(255, 255, 255, 0.85);
-  --card-border: rgba(15, 23, 42, 0.08);
-  --card-shadow: rgba(15, 23, 42, 0.06);
-  
-  /* Hệ thống văn bản cho nền sáng */
-  --text-title: #0f172a;
-  --text-main: #1e293b;
-  --text-muted: #64748b;
-  
-  /* Điểm nhấn dịu nhẹ nhưng vẫn đảm bảo tính tương phản cao */
-  --neon-cyan: #0ea5e9;
-  --neon-pink: #db2777;
-  --neon-purple: #7c3aed;
-  --input-bg: #ffffff;
-  --glow-strength: rgba(14, 165, 233, 0.15);
+    /* CHẾ ĐỘ SÁNG - LUXURY PEARL GRAY */
+    --bg-main: linear-gradient(135deg, #f1f5f9 0%, #dfe7f2 100%);
+    --bg-glass: rgba(255, 255, 255, 0.85);
+    --border-glass: rgba(15, 23, 42, 0.08);
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --accent-cyan: #0ea5e9;
+    --accent-pink: #db2777;
+    --shadow-ambient: rgba(148, 163, 184, 0.15);
+    --neon-glow-cyan: rgba(14, 165, 233, 0.15);
+    --neon-glow-pink: rgba(219, 39, 119, 0.15);
+    --card-border: rgba(15, 23, 42, 0.05);
 }
 
-/* ==========================================================================
-   2. KHỞI TẠO TOÀN CỤC & TỐI ƯU HÓA KHÔNG GIAN (GLOBAL RESET & BASE SETUP)
-   ========================================================================== */
-
-*, *::before, *::after {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html {
-  scroll-behavior: smooth;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* ÉP BUỘC FONT TOÀN CỤC CHUẨN ĐỒNG BỘ */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+    transition: background 0.4s cubic-bezier(0.4, 0, 0.2, 1), 
+                border-color 0.3s ease, 
+                box-shadow 0.3s ease;
 }
 
 body {
-  font-family: "Plus Jakarta Sans", "Inter", system-ui, -apple-system, sans-serif;
-  background-color: var(--background);
-  background-image: var(--main-gradient);
-  color: var(--text-main);
-  min-height: 100vh;
-  width: 100vw;
-  overflow-x: hidden;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  /* Kích hoạt chuyển đổi mượt mà toàn cục khi chuyển đổi trạng thái hoặc theme */
-  transition: background 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
-              color 0.5s cubic-bezier(0.4, 0, 0.2, 1), 
-              border-color 0.3s ease, 
-              box-shadow 0.3s ease, 
-              transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    min-height: 100vh;
+    background: var(--bg-main);
+    color: var(--text-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow-x: hidden;
+    position: relative;
+    padding: 20px;
 }
 
-/* Ép các thuộc tính phông chữ cho các phần tử nhập liệu */
-input, select, textarea, button {
-  font-family: inherit;
-  color: inherit;
-  outline: none;
+/* HIỆU ỨNG MESH GRADIENT NỀN CHO CHẾ ĐỘ TỐI */
+body::before, body::after {
+    content: "";
+    position: absolute;
+    width: 350px;
+    height: 350px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--neon-glow-cyan) 0%, transparent 70%);
+    z-index: -1;
+    filter: blur(60px);
+    opacity: 0.6;
+}
+body::before { top: 10%; left: 10%; }
+body::after { bottom: 10%; right: 10%; }
+
+/* 2. KHUNG CHỨA KÍNH MỜ CHUẨN LUXURY (GLASSMORPHISM) */
+.main-panel {
+    width: 100%;
+    max-width: 460px;
+    background: var(--bg-glass);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
+    border: 1px solid var(--border-glass);
+    border-radius: 28px;
+    padding: 45px 35px;
+    box-shadow: 0 20px 50px var(--shadow-ambient), 
+                inset 0 1px 2px rgba(255, 255, 255, 0.05);
+    position: relative;
+    overflow: hidden;
 }
 
-/* ==========================================================================
-   3. HIỆU ỨNG KHÔNG GIAN NỀN ĐA SẮC SÂU (LUXURY BACKGROUND ATMOSPHERE)
-   ========================================================================== */
-
-body::before {
-  content: "";
-  position: fixed;
-  top: -10%;
-  left: -10%;
-  width: 600px;
-  height: 600px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(0, 243, 255, 0.1) 0%, transparent 75%);
-  filter: blur(150px);
-  z-index: -1;
-  pointer-events: none;
+/* DẢI ĐÈN LED CHỈ THỊ TRÊN MÉP ĐỈNH (INDICATOR LED STRIP) */
+.main-panel::before, .filter-section::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent-cyan), #a855f7, var(--accent-pink));
+    z-index: 10;
 }
 
-body::after {
-  content: "";
-  position: fixed;
-  bottom: -10%;
-  right: -10%;
-  width: 600px;
-  height: 600px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 0, 127, 0.08) 0%, transparent 75%);
-  filter: blur(150px);
-  z-index: -1;
-  pointer-events: none;
+/* 3. PHẦN ĐẦU TRANG & CHUYỂN ĐỔI GIAO DIỆN (THEME SWITCHER) */
+.header-box {
+    text-align: center;
+    margin-bottom: 35px;
 }
 
-/* ==========================================================================
-   4. KHUNG CHỨA TRUNG TÂM CAO CẤP (.main-panel / .main-container)
-   ========================================================================== */
-
-.main-panel, .main-container {
-  position: relative;
-  width: 100%;
-  max-width: 460px;
-  padding: 55px 35px 45px 35px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-container);
-  box-shadow: 0 25px 60px -15px var(--card-shadow), 
-              0 0 30px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  overflow: hidden;
-  z-index: 10;
+.title-app {
+    font-size: 2.2rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(90deg, var(--accent-cyan), var(--accent-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-transform: uppercase;
+    margin-bottom: 6px;
 }
 
-/* Dải LED 3 màu cao cấp chạy ở đỉnh của hộp tổng */
-.main-panel::before, .main-container::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: var(--led-gradient);
-  background-size: 200% auto;
-  animation: ledFlowMotion 5s linear infinite;
-  z-index: 20;
+.tagline {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    font-weight: 500;
 }
-
-@keyframes ledFlowMotion {
-  0% { background-position: 0% center; }
-  50% { background-position: 100% center; }
-  100% { background-position: 0% center; }
-}
-
-/* ==========================================================================
-   5. BỘ CHUYỂN ĐỔI GIAO DIỆN NỔI (.theme-container & .theme-btn)
-   ========================================================================== */
 
 .theme-container {
-  position: absolute;
-  top: 24px;
-  right: 24px;
-  z-index: 150;
+    position: absolute;
+    top: 25px;
+    right: 25px;
+    z-index: 100;
 }
 
 .theme-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 16px;
-  height: 40px;
-  border-radius: 50px;
-  border: 1px solid var(--card-border);
-  background: var(--card-bg);
-  color: var(--text-title);
-  font-weight: 600;
-  font-size: 0.85rem;
-  cursor: pointer;
-  box-shadow: 0 4px 15px var(--card-shadow);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  gap: 8px;
-  transition: all 0.3s ease;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    color: var(--text-primary);
+    padding: 10px 14px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px var(--shadow-ambient);
 }
-
 .theme-btn:hover {
-  transform: translateY(-2px);
-  border-color: var(--neon-cyan);
-  box-shadow: 0 0 15px var(--glow-strength);
-  color: var(--neon-cyan);
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 15px var(--neon-glow-cyan);
 }
 
-/* ==========================================================================
-   6. HỆ THỐNG NÚT CỔNG VÀO ĐIỀU HƯỚNG (.btn-gateway & BIẾN THỂ)
-   ========================================================================== */
+/* BACK BUTTON TRONG CÁC TRANG CON */
+.top-nav-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+/* 4. HỆ THỐNG NÚT CỔNG ĐIỀU HƯỚNG (GATEWAY BUTTONS) */
+.gateway-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
 
 .btn-gateway {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-component);
-  cursor: pointer;
-  text-decoration: none;
-  margin-bottom: 18px;
-  position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 20px 24px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-glass);
+    border-radius: 16px;
+    cursor: pointer;
+    text-decoration: none;
+    color: var(--text-primary);
 }
 
-/* Cấu trúc phần bố cục nội dung văn bản bên trái */
-.btn-gateway .content-layout {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  flex: 1;
+.content-layout {
+    display: flex;
+    align-items: center;
+    gap: 16px;
 }
 
-/* Khung chứa huy hiệu icon cốt lõi */
-.btn-gateway i.icon-prime {
-  width: 46px;
-  height: 46px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-control);
-  font-size: 1.3rem;
-  color: var(--text-title);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.icon-prime {
+    font-size: 1.4rem;
 }
 
-.btn-gateway .text-block {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
+.text-layout {
+    text-align: left;
 }
 
-.btn-gateway .gateway-title {
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--text-title);
-  letter-spacing: -0.01em;
+.text-layout span {
+    display: block;
+    font-weight: 700;
+    font-size: 1.1rem;
 }
 
-.btn-gateway .gateway-subtitle {
-  font-size: 0.85rem;
-  color: var(--text-muted);
+.text-layout small {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
 }
 
-/* Mũi tên chỉ hướng dịch chuyển bên phải */
-.btn-gateway i.icon-arrow {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-muted);
-  font-size: 1.2rem;
-  transition: all 0.3s ease;
+.icon-arrow {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* --- BIẾN THỂ CỔNG VÀO KHÁCH (.btn-khach-style) --- */
-.btn-gateway.btn-khach-style:hover {
-  transform: translateY(-3px) scale(1.01);
-  background: rgba(13, 15, 30, 0.9);
-  border-color: var(--neon-cyan);
-  box-shadow: 0 15px 30px -10px rgba(0, 243, 255, 0.3), 
-              0 0 20px var(--glow-strength);
+/* PHONG CÁCH NÚT KHÁCH TÌM KÈO */
+.btn-khach-style:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 25px var(--neon-glow-cyan);
+    background: rgba(0, 243, 255, 0.03);
+}
+.btn-khach-style:hover .icon-prime { color: var(--accent-cyan); }
+.btn-khach-style:hover .icon-arrow { 
+    transform: translateX(6px); 
+    color: var(--accent-cyan);
 }
 
-.btn-gateway.btn-khach-style:hover i.icon-prime {
-  color: #030408;
-  background: var(--neon-cyan);
-  border-color: var(--neon-cyan);
-  box-shadow: 0 0 14px var(--neon-cyan);
+/* PHONG CÁCH NÚT CHỦ SÂN ĐĂNG CA */
+.btn-host-style:hover {
+    border-color: var(--accent-pink);
+    box-shadow: 0 0 25px var(--neon-glow-pink);
+    background: rgba(255, 0, 127, 0.03);
+}
+.btn-host-style:hover .icon-prime { color: var(--accent-pink); }
+.btn-host-style:hover .icon-arrow { 
+    transform: translateX(6px); 
+    color: var(--accent-pink);
 }
 
-.btn-gateway.btn-khach-style:hover i.icon-arrow {
-  color: var(--neon-cyan);
-  transform: translateX(6px);
-}
-
-/* --- BIẾN THỂ CỔNG VÀO CHỦ SÂN (.btn-host-style) --- */
-.btn-gateway.btn-host-style:hover {
-  transform: translateY(-3px) scale(1.01);
-  background: rgba(13, 15, 30, 0.9);
-  border-color: var(--neon-pink);
-  box-shadow: 0 15px 30px -10px rgba(255, 0, 127, 0.3), 
-              0 0 20px rgba(255, 0, 127, 0.15);
-}
-
-.btn-gateway.btn-host-style:hover i.icon-prime {
-  color: #ffffff;
-  background: var(--neon-pink);
-  border-color: var(--neon-pink);
-  box-shadow: 0 0 14px var(--neon-pink);
-}
-
-.btn-gateway.btn-host-style:hover i.icon-arrow {
-  color: var(--neon-pink);
-  transform: translateX(6px);
-}
-
-/* ==========================================================================
-   7. GIAO DIỆN CỬA SỔ BẬT LÊN FROSTED GLASSMISM (.modal & .modal-content)
-   ========================================================================== */
-
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(3, 4, 8, 0.5);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  padding: 24px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.4s ease;
-}
-
-.modal.is-active {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.modal-content {
-  width: 100%;
-  max-width: 480px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-container);
-  padding: 45px 35px;
-  box-shadow: 0 35px 70px rgba(0, 0, 0, 0.7);
-  position: relative;
-}
-
-/* Kích hoạt hoạt ảnh phóng to nhẹ khi modal xuất hiện */
-.modal.is-active .modal-content {
-  animation: popScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-}
-
-@keyframes popScale {
-  from {
-    transform: scale(0.95) translateY(10px);
-    opacity: 0;
-  }
-  to {
-    transform: scale(1) translateY(0);
-    opacity: 1;
-  }
-}
-
-/* Nút tắt nhanh modal góc trên bên phải */
-.modal-close {
-  position: absolute;
-  top: 24px;
-  right: 24px;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--card-border);
-  cursor: pointer;
-  color: var(--text-muted);
-  transition: all 0.2s ease;
-}
-
-.modal-close:hover {
-  background: var(--neon-pink);
-  color: white;
-  border-color: var(--neon-pink);
-}
-
-/* ==========================================================================
-   8. PHÂN HỆ BỘ LỌC ĐA NĂNG & KHUNG NHẬP LIỆU (.filter-section & .select-custom)
-   ========================================================================== */
-
+/* 5. CẤU TRÚC BLOCK BỘ LỌC VÀ KHU VỰC NHẬP LIỆU */
 .filter-section {
-  width: 100%;
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-component);
-  padding: 24px;
-  margin-bottom: 26px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border-glass);
+    border-radius: 20px;
+    padding: 22px;
+    margin-bottom: 25px;
+    position: relative;
+    overflow: hidden;
+}
+
+.section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: var(--accent-cyan);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .grid-inputs {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 15px;
 }
 
-.field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.full-width-input {
+    grid-column: span 2;
 }
 
-.field-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-muted);
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 }
 
-/* Định hình chuyên sâu cho các ô Select và Input Text cao cấp */
-.select-wrapper {
-  position: relative;
-  width: 100%;
+.form-group label {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.select-custom, .input-text-custom {
-  width: 100%;
-  height: 46px;
-  padding: 0 16px;
-  background: var(--input-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--radius-control);
-  font-size: 0.95rem;
-  color: var(--text-main);
-  appearance: none;
-  -webkit-appearance: none;
-  transition: all 0.25s ease;
+.select-custom, .input-custom {
+    width: 100%;
+    padding: 11px 14px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-glass);
+    border-radius: 10px;
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    outline: none;
 }
 
-/* Thiết kế cấu trúc vector chỉ hướng thay thế mũi tên mặc định */
-.select-wrapper::after {
-  content: "▼";
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
+.select-custom:focus, .input-custom:focus {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 10px var(--neon-glow-cyan);
 }
 
-.select-custom:hover, .input-text-custom:hover {
-  border-color: rgba(255, 255, 255, 0.18);
+.btn-action-primary {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(90deg, var(--accent-cyan), #00d2ff);
+    border: none;
+    border-radius: 12px;
+    color: #030307;
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    box-shadow: 0 4px 15px var(--neon-glow-cyan);
+}
+.btn-action-primary:hover {
+    opacity: 0.95;
+    transform: translateY(-1px);
 }
 
-/* Trạng thái Focus - Kích hoạt quầng sáng và đổi viền màu sắc */
-.select-custom:focus, .input-text-custom:focus {
-  border-color: var(--neon-cyan);
-  box-shadow: 0 0 0 1px var(--neon-cyan), 
-              0 0 16px var(--glow-strength);
+/* 6. DANH SÁCH THẺ TRẬN ĐẤU DÀNH CHO KHÁCH (CARD KÈO PHỦI) */
+.cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-height: 480px;
+    overflow-y: auto;
+    padding-right: 5px;
 }
 
-/* Khử nền lỗi của thẻ option trên các trình duyệt mã nguồn mở */
-.select-custom option {
-  background-color: #0d0f1e;
-  color: #ffffff;
-  padding: 14px;
-}
-
-/* ==========================================================================
-   9. THẺ HIỂN THỊ DANH SÁCH TRẬN ĐẤU (.card-keo-phui)
-   ========================================================================== */
-
-.match-grid-container {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
+/* Tùy biến thanh cuộn cuộn mượt */
+.cards-container::-webkit-scrollbar { width: 5px; }
+.cards-container::-webkit-scrollbar-track { background: transparent; }
+.cards-container::-webkit-scrollbar-thumb { background: var(--border-glass); border-radius: 10px; }
 
 .card-keo-phui {
-  width: 100%;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-left: 4px solid var(--neon-cyan); /* Thanh định danh màu neon nổi bật bên trái */
-  border-radius: var(--radius-component);
-  padding: 24px;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  cursor: pointer;
-}
-
-.card-header-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-status-badge {
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--neon-cyan);
-  background: rgba(0, 243, 255, 0.07);
-  padding: 4px 10px;
-  border-radius: 6px;
-}
-
-.card-time-stamp {
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  font-weight: 500;
-}
-
-.card-main-title {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--text-title);
-  line-height: 1.4;
-  letter-spacing: -0.01em;
-}
-
-.card-parameter-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  font-size: 0.9rem;
-  color: var(--text-main);
-}
-
-.card-parameter-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.card-parameter-item i {
-  color: var(--text-muted);
-}
-
-.card-divider-line {
-  border: none;
-  height: 1px;
-  background: var(--card-border);
-  margin: 4px 0;
-}
-
-.card-footer-layout {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-profile-host {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.card-host-avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--card-border);
-  border: 1.5px solid var(--neon-purple);
-  object-fit: cover;
-}
-
-.card-host-name {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-title);
-}
-
-.card-bet-value {
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--neon-pink);
-  text-shadow: 0 0 12px rgba(255, 0, 127, 0.25);
-}
-
-/* Cơ chế tương tác chuyển đổi khi rê chuột qua thẻ trận đấu */
-.card-keo-phui:hover {
-  transform: translateY(-4px) scale(1.005);
-  border-color: rgba(255, 255, 255, 0.15);
-  border-left-color: var(--neon-pink); /* Đổi màu dải chỉ số sang hồng thời thượng */
-  box-shadow: 0 18px 35px -10px var(--card-shadow), 
-              0 0 20px rgba(255, 0, 127, 0.1);
-}
-
-.card-keo-phui:hover .card-status-badge {
-  color: var(--neon-pink);
-  background: rgba(255, 0, 127, 0.07);
-}
-
-/* ==========================================================================
-   10. CẤU HÌNH TƯƠNG THÍCH THIẾT BỊ DI ĐỘNG (RESPONSIVE ARCHITECTURE)
-   ========================================================================== */
-
-@media (max-width: 500px) {
-  body {
+    background: rgba(255, 255, 255, 0.01);
+    border: 1px solid var(--card-border);
+    border-left: 4px solid var(--accent-cyan);
+    border-radius: 12px;
     padding: 16px;
-  }
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
 
-  .main-panel, .main-container {
-    padding: 45px 20px 35px 20px;
-    border-radius: 24px;
-  }
+.card-keo-phui:hover {
+    border-left-color: var(--accent-pink);
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: 0 4px 15px var(--shadow-ambient);
+}
 
-  .modal-content {
-    padding: 35px 20px;
-    border-radius: 24px;
-  }
+.card-header-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
 
-  .grid-inputs {
-    grid-template-columns: 1fr;
-  }
+.court-name {
+    font-weight: 700;
+    font-size: 1.1rem;
+}
 
-  .btn-gateway {
-    padding: 18px;
-    margin-bottom: 14px;
-  }
+.badge-status {
+    background: rgba(0, 243, 255, 0.1);
+    border: 1px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
 
-  .btn-gateway i.icon-prime {
-    width: 40px;
-    height: 40px;
-    font-size: 1.15rem;
-    margin-right: 12px;
-  }
+.court-address {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
 
-  .btn-gateway .gateway-title {
-    font-size: 1rem;
-  }
-  
-  .card-main-title {
-    font-size: 1.15rem;
-  }
+.map-link {
+    color: var(--accent-cyan);
+    text-decoration: none;
+    margin-left: 5px;
+}
+.map-link:hover { text-decoration: underline; }
+
+.match-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+    font-size: 0.82rem;
+    border-top: 1px solid var(--border-glass);
+    border-bottom: 1px solid var(--border-glass);
+    padding: 8px 0;
+    color: var(--text-secondary);
+}
+
+.match-details-grid strong {
+    color: var(--text-primary);
+}
+
+.card-action-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.price-tag-group {
+    display: flex;
+    gap: 10px;
+    font-size: 0.85rem;
+}
+
+.price-m { color: #38bdf8; font-weight: 600; }
+.price-f { color: #f472b6; font-weight: 600; }
+
+.btn-booking {
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--accent-cyan);
+    color: var(--accent-cyan);
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+.btn-booking:hover {
+    background: var(--accent-cyan);
+    color: #030307;
+    box-shadow: 0 0 12px var(--accent-cyan);
+}
+
+/* 7. HỆ THỐNG KHỐI BÁO CÁO TÀI CHÍNH CHỦ SÂN (ANALYTICS MATRIX) */
+.analytics-matrix {
+    margin-top: 20px;
+    background: rgba(255, 0, 127, 0.02);
+    border: 1px solid var(--border-glass);
+    border-radius: 18px;
+    padding: 20px;
+}
+
+.matrix-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.matrix-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px dashed var(--border-glass);
+    font-size: 0.9rem;
+}
+
+.matrix-row:last-child {
+    border-bottom: none;
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+/* TRẠNG THÁI CẢNH BÁO RỦI RO TÀI CHÍNH */
+.profit-safe { color: #4ade80 !important; }
+.profit-danger { 
+    color: var(--accent-pink) !important;
+    animation: flash-warning 1s infinite alternate;
+}
+
+/* 8. LỚP PHỦ MÀN HÌNH MODAL BẢO MẬT & THÔNG BÁO */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(3, 3, 7, 0.6);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.modal.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-content {
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: 22px;
+    padding: 30px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+    text-align: center;
+    transform: scale(0.85);
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.modal.active .modal-content {
+    transform: scale(1);
+}
+
+.modal-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: var(--text-primary);
+}
+
+.modal-body-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    line-height: 1.5;
+    white-space: pre-line;
+}
+
+/* FOOTER QUẢN TRỊ VIÊN */
+.footer-bar {
+    text-align: center;
+    margin-top: 30px;
+}
+.manage-anchor {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-decoration: none;
+    opacity: 0.5;
+}
+.manage-anchor:hover { opacity: 1; color: var(--accent-pink); }
+
+/* ANIMATION KEYFRAMES HOẠT ẢNH */
+@keyframes flash-warning {
+    0% { text-shadow: 0 0 2px var(--accent-pink); }
+    100% { text-shadow: 0 0 12px var(--accent-pink); }
+}
+
+/* ĐÁP ỨNG THIẾT BỊ DI ĐỘNG (RESPONSIVE) */
+@media (max-width: 550px) {
+    .grid-inputs {
+        grid-template-columns: 1fr;
+    }
+    .full-width-input {
+        grid-column: span 1;
+    }
+    .main-panel {
+        padding: 35px 20px;
+    }
 }
