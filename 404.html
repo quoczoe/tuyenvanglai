@@ -240,5 +240,28 @@
         <p class="brand-404">TUYENVANGLAI.IO.VN — &copy; 2026</p>
     </div>
 
+<style>/* Bảo vệ: disable text selection */
+*{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none}
+input,textarea,[contenteditable]{user-select:text;-webkit-user-select:text}
+</style>
+<script>
+// ── BẢO VỆ MÃ NGUỒN ──
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{
+  if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','C','J'].includes(e.key))||(e.ctrlKey&&e.key==='u')){
+    e.preventDefault();return false;
+  }
+});
+(function(){
+  const t=160;
+  setInterval(()=>{
+    if(window.outerWidth-window.innerWidth>t||window.outerHeight-window.innerHeight>t){
+      document.body.innerHTML='<h1 style="color:#00c96e;text-align:center;padding-top:200px;font-family:sans-serif">Vui lòng đóng DevTools</h1>';
+    }
+  },1000);
+})();
+setInterval(()=>console.clear(),100);
+console.log=()=>{};
+</script>
 </body>
 </html>

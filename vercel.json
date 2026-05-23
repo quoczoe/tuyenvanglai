@@ -1,12 +1,9 @@
 {
-  "redirects": [
-    { "source": "/admin",  "destination": "/admin.html",  "permanent": false },
-    { "source": "/host",   "destination": "/host.html",   "permanent": false },
-    { "source": "/khach",  "destination": "/khach.html",  "permanent": false },
-    { "source": "/index",  "destination": "/index.html",  "permanent": false }
-  ],
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/404.html", "status": 404 }
+  "rewrites": [
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/index", "destination": "/index.html" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/host", "destination": "/host.html" },
+    { "source": "/khach", "destination": "/khach.html" }
   ]
 }

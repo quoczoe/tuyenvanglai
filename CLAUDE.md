@@ -475,9 +475,9 @@ Trước khi xuất bất kỳ file code nào, AI phải tự kiểm tra:
 | `phan-he-chu-san.js` | Toàn bộ logic Host: xác thực key, đăng kèo, kế toán, cầu bidirectional sync, smart pricing, Chốt Ca, quản lý khách, đánh giá | 2026-05-23 |
 | `phan-he-khach-choi.js` | Toàn bộ logic Khách: đăng nhập nhanh, 8-filter tìm kèo, đặt slot SLOT-XXXXX, hồ sơ 4-thống kê, đánh giá host | 2026-05-23 |
 | `phan-he-quan-tri.js` | Toàn bộ logic Admin: xác thực cứng, CRUD key TVL-XXXXX-XXXX, big data khách, kiểm duyệt đánh giá, cấu hình popup | 2026-05-23 |
-| `host.html` | Giao diện Trạm Chủ Sân — 2 cột (thông tin công khai + kế toán nội bộ), 3 modal (khách/đánh giá/maps) | 2026-05-23 |
-| `khach.html` | Giao diện Sàn Khách Vãng Lai — login/profile, 8-filter tìm kèo, đặt slot, hồ sơ cá nhân | 2026-05-23 |
-| `admin.html` | Giao diện Admin tối thượng — 5 tab (keys/guests/reviews/config/stats), modal tạo/sửa key | 2026-05-23 |
+| `host.html` | Giao diện Trạm Chủ Sân v2 — Inter font, dark-only, hs-* design system, nút Maps xanh lá, filter tabs (Tất cả/Đang chạy/Đã đóng), alternating table rows, form validation style | 2026-05-23 |
+| `khach.html` | Giao diện Sàn Khách v2 — Inter font, dark-only, kh-* design system, filter bar sticky top:68px, avatar 64px, stats 4-badge compact, logout đỏ, nút ĐẶT SLOT gradient xanh lá to | 2026-05-23 |
+| `admin.html` | Giao diện Admin v2 — Inter font, dark-only, ad-* design system, dashboard 4 metric cards (Tổng Key/Đang Dùng/Hết Hạn/Tổng Host), filter pills 5 trạng thái key, alternating table rows, auto highlight sắp hết hạn | 2026-05-23 |
 | `components.css` | Component system v5.0 — btn-mini, status-badge, radio/checkbox pill, host-status-bar, shuttlecock grid, pricing sug, slot card, stats-grid-4, gender-badge, tien-ich, maps sug | 2026-05-23 |
 | `index.html` | **v5.2 — 6 fixes**: Section "Tại sao chọn?" (3 feature card ngang), fallback HUD 45 CA ĐẤU / 1820 THÀNH VIÊN, title mobile -20% (`clamp(1.12rem,7.2vw,1.6rem)`), disabled card dim icon (không dim text), badge-gold overflow fix mobile, Barlow Condensed h1-h6 toàn trang | 2026-05-23 |
 | `404.html` | Trang 404 riêng: số 404 gradient neon, shuttlecock xoay, nút quay về trang chủ + back, quick links | 2026-05-23 |
@@ -520,6 +520,92 @@ Trước khi xuất bất kỳ file code nào, AI phải tự kiểm tra:
 - **Admin URL:** File là `admin.html` (không phải `admin-toi-cao.html` như CLAUDE.md đặc tả). Đường dẫn thực tế: `/admin.html`.
 - **dbEngine fallback:** Khi Supabase không kết nối được, hệ thống tự động chuyển sang LocalStorage sandbox — dữ liệu chỉ tồn tại trong browser, mất khi clear cache.
 - **Chốt Ca:** Sau khi `da_chot_ca = true`, chỉ Admin mới có thể can thiệp dữ liệu. Host bị khóa hoàn toàn.
+
+---
+
+## 🔒 PHẦN VIII: BẢO MẬT & CHỐNG COPY (áp dụng cho tất cả file HTML)
+
+> ⚠️ **Lưu ý bảo mật thực tế:** Các biện pháp dưới đây chỉ ngăn **người dùng thông thường** (không có kiến thức kỹ thuật). Developer có thể bypass hoàn toàn. **Bảo mật thật sự nằm ở backend Supabase** — RLS policies, anon key restrictions, và server-side validation.
+
+---
+
+### 8.1 Checklist bắt buộc cho mỗi file HTML
+
+Mỗi file HTML khi xuất ra **PHẢI** có đoạn script bảo vệ sau (đặt trước `</body>`):
+
+```javascript
+// ── BẢO VỆ MÃ NGUỒN — chống xem source người dùng thông thường ──
+(function(){
+    // 1. Disable chuột phải
+    document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+    // 2. Disable phím tắt DevTools & View Source
+    document.addEventListener('keydown', function(e){
+        // F12
+        if (e.key === 'F12') { e.preventDefault(); return false; }
+        // Ctrl+Shift+I / Ctrl+Shift+C / Ctrl+Shift+J
+        if (e.ctrlKey && e.shiftKey && ['I','C','J'].includes(e.key.toUpperCase())) {
+            e.preventDefault(); return false;
+        }
+        // Ctrl+U (View Source)
+        if (e.ctrlKey && e.key.toUpperCase() === 'U') {
+            e.preventDefault(); return false;
+        }
+    });
+
+    // 3. Detect DevTools mở → reload page
+    (function devToolsDetect(){
+        var threshold = 160;
+        setInterval(function(){
+            if (window.outerWidth - window.innerWidth > threshold ||
+                window.outerHeight - window.innerHeight > threshold) {
+                document.body.innerHTML = '';
+                window.location.reload();
+            }
+        }, 1000);
+    })();
+
+    // 4. Console protection — clear định kỳ + fake message
+    setInterval(function(){ console.clear(); }, 2000);
+    console.log('%c⛔ DỪNG LẠI!', 'color:red;font-size:2rem;font-weight:bold;');
+    console.log('%cĐây là tính năng dành cho developer. Nếu ai đó yêu cầu bạn dán gì đó vào đây, đó là lừa đảo.',
+        'color:#ff6b6b;font-size:1rem;');
+})();
+```
+
+### 8.2 CSS bắt buộc trong mọi file HTML
+
+```css
+/* Disable text selection toàn trang */
+body, * {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+/* Cho phép select trong ô input/textarea (UX) */
+input, textarea, [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
+}
+```
+
+### 8.3 Quy tắc về JS Minification
+
+- Các file `.js` khi đã ổn định (không còn debug) **nên được minify** để khó đọc hơn.
+- Công cụ gợi ý: [Terser](https://terser.org/) hoặc [UglifyJS](https://lisperator.net/uglifyjs/).
+- File gốc vẫn giữ trong repo, file minified deploy lên hosting.
+- Khi AI sinh code JS mới: viết code rõ ràng trước, minify sau — **không viết code rối từ đầu**.
+
+### 8.4 Phạm vi áp dụng
+
+| File | Bảo vệ chuột phải | Disable F12 | User-select: none | Console warning |
+|---|---|---|---|---|
+| `index.html` | ✅ | ✅ | ✅ | ✅ |
+| `host.html` | ✅ | ✅ | ✅ | ✅ |
+| `khach.html` | ✅ | ✅ | ✅ | ✅ |
+| `admin.html` | ✅ | ✅ | ✅ | ✅ |
+| `404.html` | ✅ | ❌ (không cần) | ✅ | ❌ |
 
 ---
 

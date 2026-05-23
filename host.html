@@ -7,10 +7,320 @@
     <meta name="description" content="Trạm quản trị chủ sân cầu lông - kích hoạt key, đăng kèo vãng lai, kế toán thông minh.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="giao-dien.css?v=5.0">
     <link rel="stylesheet" href="components.css?v=5.0">
+    <style>
+        /* ══ DESIGN SYSTEM — ĐỒNG BỘ VỚI INDEX ══ */
+        :root {
+            --bg-base:      #0a1628;
+            --bg-card:      #1a2332;
+            --bg-card2:     #151e2b;
+            --accent-green: #00ff88;
+            --accent-blue:  #1a73e8;
+            --text-main:    #f0f0f0;
+            --text-muted:   #9ca3af;
+            --border:       #2a3f5f;
+            --radius-lg:    16px;
+            --radius-md:    12px;
+            --radius-sm:    8px;
+        }
+        html, body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-base);
+            color: var(--text-main);
+            overflow-y: auto;
+            min-height: 100vh;
+        }
+        .gateway-wrapper { height: auto; min-height: 100vh; overflow: visible; }
+        .gateway-container { overflow: visible; height: auto; }
+        .scrollable-y { overflow: visible; height: auto; }
+
+        /* ══ HEADER ══ */
+        .hs-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 2rem; height: 60px;
+            background: rgba(10,22,40,0.95);
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 200;
+            backdrop-filter: blur(12px);
+        }
+        .hs-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .hs-brand svg { color: var(--accent-green); }
+        .hs-brand-text { font-size: 1rem; font-weight: 700; color: var(--accent-green); letter-spacing: 0.02em; }
+        .hs-back-btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: 6px 14px; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); background: transparent;
+            color: var(--text-muted); font-size: 0.82rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; text-decoration: none;
+        }
+        .hs-back-btn:hover { border-color: var(--accent-green); color: var(--accent-green); }
+
+        /* ══ LAYOUT ══ */
+        .hs-main {
+            max-width: 1280px; margin: 0 auto;
+            padding: 1.5rem 2rem 3rem;
+        }
+        @media (max-width: 768px) { .hs-main { padding: 1rem; } }
+
+        /* ══ COMMON COMPONENTS ══ */
+        .hs-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+        .hs-section-title {
+            font-size: 0.95rem; font-weight: 700; color: var(--text-main);
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 1.25rem;
+        }
+        .hs-section-title i { color: var(--accent-green); }
+        .hs-section-sub { font-size: 0.75rem; font-weight: 400; color: var(--text-muted); margin-left: auto; }
+
+        .hs-label {
+            display: block; font-size: 0.78rem; font-weight: 600;
+            color: var(--text-muted); margin-bottom: 5px;
+        }
+        .hs-label .req { color: #ef4444; }
+        .hs-input, .hs-select, .hs-textarea {
+            width: 100%; background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 10px 14px; color: var(--text-main); font-size: 0.88rem;
+            font-family: inherit; transition: border-color 0.2s; box-sizing: border-box;
+        }
+        .hs-input:focus, .hs-select:focus, .hs-textarea:focus {
+            outline: none; border-color: var(--accent-green);
+            box-shadow: 0 0 0 3px rgba(0,255,136,0.1);
+        }
+        .hs-input::placeholder, .hs-textarea::placeholder { color: var(--text-muted); }
+        .hs-input.readonly {
+            color: var(--accent-green); font-weight: 800; cursor: not-allowed;
+            background: rgba(0,255,136,0.04); border-color: rgba(0,255,136,0.2);
+        }
+        .hs-input.invalid { border-color: #ef4444; box-shadow: 0 0 0 3px rgba(239,68,68,0.1); }
+        .hs-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .hs-form-grid .full { grid-column: 1 / -1; }
+        @media (max-width: 600px) { .hs-form-grid { grid-template-columns: 1fr; } }
+        .hs-form-group { display: flex; flex-direction: column; gap: 0; }
+        .hs-hint { font-size: 0.72rem; color: #64748b; margin-top: 4px; display: block; }
+
+        /* Buttons */
+        .hs-btn-primary {
+            padding: 12px 24px; border-radius: var(--radius-md);
+            background: linear-gradient(135deg, #00d97a, #00a855);
+            border: none; color: #fff; font-size: 0.9rem; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; font-family: inherit;
+            display: inline-flex; align-items: center; gap: 8px;
+        }
+        .hs-btn-primary:hover { transform: scale(1.02); filter: brightness(1.1); }
+        .hs-btn-blue {
+            padding: 10px 18px; border-radius: var(--radius-md);
+            background: rgba(26,115,232,0.12); border: 1px solid rgba(26,115,232,0.4);
+            color: #60a5fa; font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; font-family: inherit;
+            display: inline-flex; align-items: center; gap: 7px;
+        }
+        .hs-btn-blue:hover { background: rgba(26,115,232,0.22); transform: scale(1.02); }
+        .hs-btn-maps {
+            padding: 10px 16px; border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, rgba(0,255,136,0.12), rgba(0,200,100,0.08));
+            border: 1px solid rgba(0,255,136,0.4); color: var(--accent-green);
+            font-size: 0.85rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+            font-family: inherit; white-space: nowrap;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .hs-btn-maps:hover { background: rgba(0,255,136,0.18); transform: scale(1.02); }
+        .hs-btn-danger {
+            padding: 8px 16px; border-radius: var(--radius-sm);
+            border: 1px solid rgba(239,68,68,0.4); background: rgba(239,68,68,0.06);
+            color: #ef4444; font-size: 0.82rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; font-family: inherit;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .hs-btn-danger:hover { background: rgba(239,68,68,0.14); }
+        .hs-btn-ghost {
+            padding: 8px 14px; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); background: transparent;
+            color: var(--text-muted); font-size: 0.82rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; font-family: inherit;
+        }
+        .hs-btn-ghost:hover { border-color: var(--accent-green); color: var(--accent-green); }
+        .hs-btn-gold {
+            padding: 13px 24px; border-radius: var(--radius-md);
+            background: linear-gradient(135deg, rgba(251,191,36,0.2), rgba(245,158,11,0.12));
+            border: 1px solid rgba(251,191,36,0.5); color: #fbbf24;
+            font-size: 0.95rem; font-weight: 800; cursor: pointer; transition: all 0.2s;
+            font-family: inherit; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .hs-btn-gold:hover { filter: brightness(1.15); transform: scale(1.02); }
+
+        /* ══ AUTH PANEL (kích hoạt Key) ══ */
+        .hs-auth-wrap {
+            max-width: 480px; margin: 60px auto 0; padding: 0 1rem;
+        }
+        .hs-auth-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 2.5rem 2rem; text-align: center;
+        }
+        .hs-auth-icon { font-size: 3rem; margin-bottom: 16px; display: block; }
+        .hs-auth-title { font-size: 1.3rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px; }
+        .hs-auth-sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 28px; line-height: 1.6; }
+        .hs-key-input {
+            text-align: center; font-size: 1.05rem; font-weight: 700;
+            letter-spacing: 3px; text-transform: uppercase;
+        }
+
+        /* ══ STATUS BAR ══ */
+        .hs-status-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(0,255,136,0.04); border: 1px solid rgba(0,255,136,0.15);
+            border-radius: var(--radius-md); padding: 12px 18px;
+            margin-bottom: 1.5rem; flex-wrap: wrap; gap: 10px;
+        }
+        .hs-status-left { display: flex; align-items: center; gap: 12px; }
+        .hs-status-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 8px rgba(0,255,136,0.8);
+            animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { box-shadow: 0 0 8px rgba(0,255,136,0.8); }
+            50% { box-shadow: 0 0 16px rgba(0,255,136,0.4); }
+        }
+        .hs-host-name { font-size: 1rem; font-weight: 700; color: var(--text-main); }
+        .hs-host-meta { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+        .hs-host-key { color: var(--accent-green); font-family: monospace; margin-right: 8px; }
+        .hs-host-expiry { color: #64748b; }
+
+        /* ══ FORM 2 CỘT ══ */
+        .hs-form-layout {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem;
+        }
+        @media (max-width: 900px) { .hs-form-layout { grid-template-columns: 1fr; } }
+
+        /* Radio group */
+        .hs-radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .hs-radio-group input[type="radio"] { display: none; }
+        .hs-radio-label {
+            padding: 8px 14px; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); color: var(--text-muted);
+            font-size: 0.82rem; font-weight: 600; cursor: pointer;
+            transition: all 0.2s; display: flex; align-items: center; gap: 6px;
+        }
+        .hs-radio-group input[type="radio"]:checked + .hs-radio-label {
+            border-color: var(--accent-green); color: var(--accent-green);
+            background: rgba(0,255,136,0.08);
+        }
+
+        /* Checkbox pill group */
+        .hs-check-group { display: flex; gap: 6px; flex-wrap: wrap; }
+        .hs-check-group input[type="checkbox"] { display: none; }
+        .hs-check-label {
+            padding: 6px 12px; border-radius: 20px;
+            border: 1px solid var(--border); color: var(--text-muted);
+            font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+        }
+        .hs-check-group input[type="checkbox"]:checked + .hs-check-label {
+            border-color: var(--accent-green); color: var(--accent-green);
+            background: rgba(0,255,136,0.08);
+        }
+
+        /* ══ KẾ TOÁN — SUGGESTION BOXES ══ */
+        .hs-pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        @media (max-width: 480px) { .hs-pricing-grid { grid-template-columns: 1fr; } }
+        .hs-sug-box {
+            background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+            border-radius: var(--radius-md); padding: 14px; cursor: pointer;
+            transition: all 0.2s; position: relative;
+        }
+        .hs-sug-box:hover { border-color: var(--accent-green); transform: translateY(-2px); }
+        .hs-sug-box.selected {
+            border-color: var(--accent-green);
+            background: rgba(0,255,136,0.06);
+            box-shadow: 0 0 16px rgba(0,255,136,0.15);
+        }
+        .hs-sug-badge {
+            position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+            background: var(--accent-green); color: #000; font-size: 0.62rem; font-weight: 800;
+            padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+        }
+        .hs-sug-title { font-size: 0.82rem; font-weight: 700; color: var(--text-main); margin-bottom: 6px; }
+        .hs-sug-price { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 2px; }
+        .hs-sug-profit { font-size: 0.82rem; font-weight: 700; margin-top: 6px; }
+        .hs-sug-apply { font-size: 0.7rem; color: var(--accent-green); margin-top: 8px; font-weight: 600; }
+
+        /* ══ DANH SÁCH KÈO — Filter tabs ══ */
+        .hs-filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+        .hs-tab-pill {
+            padding: 6px 14px; border-radius: 20px; font-size: 0.78rem; font-weight: 600;
+            border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+            cursor: pointer; transition: all 0.2s; font-family: inherit;
+        }
+        .hs-tab-pill.active {
+            border-color: var(--accent-green); color: var(--accent-green);
+            background: rgba(0,255,136,0.08);
+        }
+        .hs-tab-pill:hover:not(.active) { border-color: var(--text-muted); color: var(--text-main); }
+
+        /* Table */
+        .hs-table-wrap { overflow-x: auto; border-radius: var(--radius-md); }
+        .hs-table {
+            width: 100%; min-width: 760px; border-collapse: collapse;
+        }
+        .hs-table thead th {
+            padding: 10px 14px; text-align: left; font-size: 0.75rem;
+            font-weight: 700; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 0.05em; background: var(--bg-card2);
+            border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0;
+        }
+        .hs-table tbody tr {
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            transition: background 0.15s;
+        }
+        .hs-table tbody tr:nth-child(odd) { background: rgba(255,255,255,0.01); }
+        .hs-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.025); }
+        .hs-table tbody tr:hover { background: rgba(0,255,136,0.04); }
+        .hs-table td {
+            padding: 10px 14px; font-size: 0.82rem; color: var(--text-main);
+            vertical-align: middle;
+        }
+        .hs-status-running {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 3px 10px; border-radius: 20px;
+            background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3);
+            color: var(--accent-green); font-size: 0.72rem; font-weight: 700;
+        }
+        .hs-status-closed {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 3px 10px; border-radius: 20px;
+            background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+            color: #64748b; font-size: 0.72rem; font-weight: 700;
+        }
+        .hs-action-btn {
+            padding: 5px 10px; border-radius: var(--radius-sm); font-size: 0.75rem;
+            font-weight: 600; cursor: pointer; transition: all 0.18s; font-family: inherit;
+            border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .hs-action-btn:hover { border-color: var(--accent-green); color: var(--accent-green); }
+        .hs-action-btn.red:hover { border-color: #ef4444; color: #ef4444; }
+        .hs-actions-cell { display: flex; gap: 4px; flex-wrap: wrap; }
+
+        /* Cầu dynamic list */
+        .hs-shuttlecock-item {
+            background: var(--bg-card2); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 12px; margin-bottom: 10px;
+        }
+        .hs-shuttlecock-header {
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
+        }
+        .hs-sc-title { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); }
+    </style>
 </head>
 <body data-theme="dark">
 
@@ -20,377 +330,373 @@
     <div class="glow-sphere glow-1"></div>
     <div class="glow-sphere glow-2"></div>
     <div class="glow-sphere glow-3"></div>
-    <div class="glow-particle particle-1"></div>
-    <div class="glow-particle particle-2"></div>
-    <div class="glow-particle particle-3"></div>
 </div>
 
-<div class="gateway-wrapper">
+<!-- HEADER -->
+<header class="hs-header">
+    <a href="index.html" class="hs-brand">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.2" fill="none" style="transform:rotate(-45deg);flex-shrink:0;">
+            <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill="currentColor"/>
+            <path d="M9 6l-5 13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1L15 6"/>
+            <path d="M12 6v14"/><path d="M6 13h12"/>
+        </svg>
+        <span class="hs-brand-text">TUYENVANGLAI.IO.VN</span>
+    </a>
+    <a href="index.html" class="hs-back-btn">
+        <i class="fa-solid fa-angle-left"></i> Cổng chính
+    </a>
+</header>
 
-    <!-- HEADER -->
-    <header class="gateway-header">
-        <a href="index.html" class="brand-logo">
-            <svg viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" stroke-width="2" fill="none" style="color:hsl(var(--neon-mint));transform:rotate(-45deg);flex-shrink:0;">
-                <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill="currentColor"/>
-                <path d="M9 6l-5 13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1L15 6"/>
-                <path d="M12 6v14"/><path d="M10.5 6l-2.5 14"/><path d="M13.5 6l2.5 14"/>
-                <path d="M6 13h12"/><path d="M5 16h14"/>
-            </svg>
-            <span class="logo-text">TUYENVANGLAI.IO.VN</span>
-        </a>
-        <button class="btn-theme-toggle" onclick="chuyenDoiTheme()" title="Đổi giao diện">
-            <div class="theme-toggle-icon-box"><i class="fa-solid fa-sun" id="themeIcon"></i></div>
-        </button>
-    </header>
+<div class="hs-main">
 
-    <div class="gateway-container">
-    <section class="panel-view active">
-    <div class="hud-panel">
+    <!-- ══════════ MÀN KÍCH HOẠT KEY ══════════ -->
+    <div id="hostAuthPanel">
+        <div class="hs-auth-wrap">
+            <div class="hs-auth-card">
+                <span class="hs-auth-icon">🔑</span>
+                <div class="hs-auth-title">Kích Hoạt Key Thuê Trạm</div>
+                <p class="hs-auth-sub">
+                    Nhập mã Key được Admin cấp để mở khóa toàn bộ chức năng quản trị và đăng kèo cầu lông.
+                </p>
+                <label class="hs-label">Mã Key kích hoạt</label>
+                <input type="text" class="hs-input hs-key-input" id="hostActivationKey"
+                    placeholder="TVL-XXXXX-XXXX"
+                    oninput="this.value=this.value.toUpperCase()"
+                    onkeydown="if(event.key==='Enter') xacThucKeyHost()"
+                    style="margin-bottom:16px;">
+                <button class="hs-btn-primary" style="width:100%;justify-content:center;" onclick="xacThucKeyHost()">
+                    <i class="fa-solid fa-key"></i> Kích Hoạt Quyền Quản Trị
+                </button>
+                <div style="margin-top:16px;">
+                    <a href="index.html" style="font-size:0.8rem;color:#64748b;text-decoration:none;">
+                        <i class="fa-solid fa-arrow-left"></i> Quay lại trang chủ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <!-- Panel Header -->
-        <div class="hud-panel-header">
-            <h2 class="hud-panel-title"><i class="fa-solid fa-chess-knight"></i> TRẠM QUẢN TRỊ CHỦ SÂN</h2>
-            <a href="index.html" class="btn-hud-back"><i class="fa-solid fa-angle-left"></i> Cổng</a>
+    <!-- ══════════ CONSOLE CHỦ SÂN ══════════ -->
+    <div id="hostConsole" style="display:none;">
+
+        <!-- Thanh trạng thái -->
+        <div class="hs-status-bar">
+            <div class="hs-status-left">
+                <div class="hs-status-dot"></div>
+                <div>
+                    <div class="hs-host-name" id="hostDisplayName">Chủ Sân</div>
+                    <div class="hs-host-meta">
+                        <span class="hs-host-key" id="hostDisplayKey"></span>
+                        <span class="hs-host-expiry" id="hostDisplayExpiry"></span>
+                    </div>
+                </div>
+            </div>
+            <button class="hs-btn-danger" onclick="dangXuatHost()">
+                <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+            </button>
         </div>
 
-        <div class="scrollable-y flex-grow-1" style="padding-bottom:32px;">
+        <!-- ══ FORM 2 CỘT ══ -->
+        <div class="hs-form-layout" id="hostFormSection">
 
-            <!-- ══════════ MÀN KÍCH HOẠT KEY ══════════ -->
-            <div id="hostAuthPanel" style="max-width:500px;margin:40px auto;padding:0 16px;">
-                <div class="pricing-engine-wrapper" style="text-align:center;">
-                    <div style="font-size:3rem;margin-bottom:16px;">🔑</div>
-                    <h3 style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:8px;">Kích Hoạt Key Thuê Trạm</h3>
-                    <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:24px;line-height:1.6;">
-                        Nhập mã Key được cấp từ Admin để kích hoạt toàn bộ chức năng quản trị và đăng kèo cầu lông.
-                    </p>
-                    <div class="form-group">
-                        <label class="form-label">Mã Key kích hoạt</label>
-                        <input type="text" class="form-control" id="hostActivationKey" placeholder="Ví dụ: TVL-A3K9P-7X2Q"
-                            style="text-align:center;font-size:1rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;"
-                            oninput="this.value=this.value.toUpperCase()"
-                            onkeydown="if(event.key==='Enter') xacThucKeyHost()">
+            <!-- CỘT TRÁI: Thông tin công khai -->
+            <div class="hs-card">
+                <div class="hs-section-title">
+                    <i class="fa-solid fa-globe"></i> Thông Tin Đăng Tuyển Công Khai
+                </div>
+
+                <div class="hs-form-grid">
+
+                    <!-- Địa lý -->
+                    <div class="hs-form-group">
+                        <label class="hs-label">Tỉnh / Thành phố <span class="req">*</span></label>
+                        <select class="hs-select" id="hostProvince" onchange="capNhatQuanHuyenHost()">
+                            <option value="">-- Chọn tỉnh/thành --</option>
+                        </select>
                     </div>
-                    <button class="btn-cyber w-full" style="height:50px;margin-top:8px;" onclick="xacThucKeyHost()">
-                        <i class="fa-solid fa-key"></i> Kích Hoạt Quyền Quản Trị
+                    <div class="hs-form-group">
+                        <label class="hs-label">Quận / Huyện <span class="req">*</span></label>
+                        <select class="hs-select" id="hostDistrict">
+                            <option value="">-- Chọn quận/huyện --</option>
+                        </select>
+                    </div>
+
+                    <!-- Thời gian -->
+                    <div class="hs-form-group">
+                        <label class="hs-label">Ngày đánh <span class="req">*</span></label>
+                        <input type="date" class="hs-input" id="hostDatePlay" onchange="tinhToanThoiGianHieuLuc()">
+                    </div>
+                    <div class="hs-form-group">
+                        <label class="hs-label">Tổng giờ chơi</label>
+                        <input type="text" class="hs-input readonly" id="hostTotalDuration" value="2.0 Giờ" readonly>
+                    </div>
+                    <div class="hs-form-group">
+                        <label class="hs-label">Giờ bắt đầu <span class="req">*</span></label>
+                        <input type="time" class="hs-input" id="hostTimeStart" onchange="tinhToanThoiGianHieuLuc()">
+                    </div>
+                    <div class="hs-form-group">
+                        <label class="hs-label">Giờ kết thúc <span class="req">*</span></label>
+                        <input type="time" class="hs-input" id="hostTimeEnd" onchange="tinhToanThoiGianHieuLuc()">
+                    </div>
+
+                    <!-- Sân -->
+                    <div class="hs-form-group">
+                        <label class="hs-label">Tên sân cầu lông <span class="req">*</span></label>
+                        <input type="text" class="hs-input" id="hostCourtName" placeholder="Vd: Sân Kỳ Hòa Q10">
+                    </div>
+                    <div class="hs-form-group">
+                        <label class="hs-label">Số lượng sân mở <span class="req">*</span></label>
+                        <select class="hs-select" id="hostCourtQuantity" onchange="tinhToanPricingGoiY()">
+                            <option value="1">1 Sân</option><option value="2">2 Sân</option>
+                            <option value="3">3 Sân</option><option value="4">4 Sân</option>
+                            <option value="5">5 Sân</option><option value="6">6 Sân</option>
+                            <option value="7">7 Sân</option><option value="8">8 Sân (Tối đa)</option>
+                        </select>
+                    </div>
+                    <div class="hs-form-group full">
+                        <label class="hs-label">Số thứ tự sân</label>
+                        <input type="text" class="hs-input" id="hostCourtNumber" placeholder="Vd: Sân 1, 2 hoặc 1.2">
+                    </div>
+
+                    <!-- Địa chỉ + Maps -->
+                    <div class="hs-form-group full">
+                        <label class="hs-label">Địa chỉ sân <span class="req">*</span></label>
+                        <div style="display:flex;gap:8px;">
+                            <input type="text" class="hs-input" id="hostCourtAddress"
+                                placeholder="Nhập địa chỉ hoặc tìm trên Maps..." style="flex:1;">
+                            <button class="hs-btn-maps" type="button" onclick="giaLapTimGoogleMaps()">
+                                <i class="fa-solid fa-map-location-dot"></i> Maps
+                            </button>
+                        </div>
+                        <span class="hs-hint" id="hostMapLinkState">
+                            <i class="fa-solid fa-circle-info"></i> Tìm địa chỉ qua Google Maps hoặc điền tự do
+                        </span>
+                    </div>
+
+                    <!-- Giới tính -->
+                    <div class="hs-form-group full">
+                        <label class="hs-label">Giới tính tuyển chọn <span class="req">*</span></label>
+                        <div class="hs-radio-group">
+                            <input type="radio" name="hostGenderSelect" id="genderMale" value="male" checked onchange="chuyenTrangThaiLienKetGioiTinh()">
+                            <label for="genderMale" class="hs-radio-label"><i class="fa-solid fa-mars"></i> Nam</label>
+                            <input type="radio" name="hostGenderSelect" id="genderFemale" value="female" onchange="chuyenTrangThaiLienKetGioiTinh()">
+                            <label for="genderFemale" class="hs-radio-label"><i class="fa-solid fa-venus"></i> Nữ</label>
+                            <input type="radio" name="hostGenderSelect" id="genderBoth" value="both" onchange="chuyenTrangThaiLienKetGioiTinh()">
+                            <label for="genderBoth" class="hs-radio-label"><i class="fa-solid fa-venus-mars"></i> Cả Nam & Nữ</label>
+                        </div>
+                    </div>
+
+                    <!-- Trình độ Nam -->
+                    <div class="hs-form-group full" id="linkedMaleLevelBlock">
+                        <label class="hs-label" style="color:#60a5fa;">Trình độ Nam <span class="req">*</span></label>
+                        <div class="hs-check-group">
+                            <input type="checkbox" id="m_lvl_newbie" value="Newbie"><label for="m_lvl_newbie" class="hs-check-label">Newbie</label>
+                            <input type="checkbox" id="m_lvl_yeu" value="Yếu"><label for="m_lvl_yeu" class="hs-check-label">Yếu</label>
+                            <input type="checkbox" id="m_lvl_tby" value="Trung bình yếu" checked><label for="m_lvl_tby" class="hs-check-label">TB Yếu</label>
+                            <input type="checkbox" id="m_lvl_tb_minus" value="Trung bình-" checked><label for="m_lvl_tb_minus" class="hs-check-label">TB-</label>
+                            <input type="checkbox" id="m_lvl_tb_plus" value="Trung bình+"><label for="m_lvl_tb_plus" class="hs-check-label">TB+</label>
+                            <input type="checkbox" id="m_lvl_tbk" value="Trung bình khá"><label for="m_lvl_tbk" class="hs-check-label">TB Khá</label>
+                        </div>
+                        <input type="text" class="hs-input" id="hostMaleCustomLevel" placeholder="Hoặc tự nhập: 6 tháng, 1 năm..." style="margin-top:8px;">
+                    </div>
+
+                    <!-- Trình độ Nữ -->
+                    <div class="hs-form-group full" id="linkedFemaleLevelBlock" style="display:none;">
+                        <label class="hs-label" style="color:#f472b6;">Trình độ Nữ <span class="req">*</span></label>
+                        <div class="hs-check-group">
+                            <input type="checkbox" id="f_lvl_newbie" value="Newbie"><label for="f_lvl_newbie" class="hs-check-label">Newbie</label>
+                            <input type="checkbox" id="f_lvl_yeu" value="Yếu"><label for="f_lvl_yeu" class="hs-check-label">Yếu</label>
+                            <input type="checkbox" id="f_lvl_tby" value="Trung bình yếu" checked><label for="f_lvl_tby" class="hs-check-label">TB Yếu</label>
+                            <input type="checkbox" id="f_lvl_tb_minus" value="Trung bình-"><label for="f_lvl_tb_minus" class="hs-check-label">TB-</label>
+                            <input type="checkbox" id="f_lvl_tb_plus" value="Trung bình+"><label for="f_lvl_tb_plus" class="hs-check-label">TB+</label>
+                            <input type="checkbox" id="f_lvl_tbk" value="Trung bình khá"><label for="f_lvl_tbk" class="hs-check-label">TB Khá</label>
+                        </div>
+                        <input type="text" class="hs-input" id="hostFemaleCustomLevel" placeholder="Hoặc tự nhập: 6 tháng, 1 năm..." style="margin-top:8px;">
+                    </div>
+
+                    <!-- Giá công khai -->
+                    <div class="hs-form-group">
+                        <label class="hs-label">Giá thu <span style="color:#60a5fa;">Nam</span> (VNĐ)</label>
+                        <input type="number" class="hs-input" id="hostPublicPriceMale" value="70000" min="0" step="5000">
+                    </div>
+                    <div class="hs-form-group">
+                        <label class="hs-label">Giá thu <span style="color:#f472b6;">Nữ</span> (VNĐ)</label>
+                        <input type="number" class="hs-input" id="hostPublicPriceFemale" value="65000" min="0" step="5000">
+                    </div>
+
+                    <!-- Tiện ích -->
+                    <div class="hs-form-group full">
+                        <label class="hs-label">Giá trên đã bao gồm:</label>
+                        <div class="hs-check-group">
+                            <input type="checkbox" id="inc_san" checked><label for="inc_san" class="hs-check-label"><i class="fa-solid fa-map"></i> Sân</label>
+                            <input type="checkbox" id="inc_cau" checked><label for="inc_cau" class="hs-check-label"><i class="fa-solid fa-feather-pointed"></i> Cầu</label>
+                            <input type="checkbox" id="inc_nuoc"><label for="inc_nuoc" class="hs-check-label"><i class="fa-solid fa-bottle-water"></i> Nước</label>
+                            <input type="checkbox" id="inc_xe"><label for="inc_xe" class="hs-check-label"><i class="fa-solid fa-motorcycle"></i> Gửi xe</label>
+                        </div>
+                    </div>
+
+                </div><!-- end form-grid -->
+            </div>
+
+            <!-- CỘT PHẢI: Kế toán nội bộ -->
+            <div class="hs-card">
+                <div class="hs-section-title">
+                    <i class="fa-solid fa-lock" style="color:#fbbf24;"></i>
+                    Kế Toán Nội Bộ
+                    <span class="hs-section-sub">Chỉ Host thấy — không công khai</span>
+                </div>
+
+                <div class="hs-form-grid">
+
+                    <!-- Giá sân -->
+                    <div class="hs-form-group full">
+                        <label class="hs-label">Tiền thuê sân / 1 giờ (VNĐ)</label>
+                        <input type="number" class="hs-input" id="hostAccountingCourtPrice" value="80000" onchange="tinhToanPricingGoiY()">
+                        <span class="hs-hint">Tổng chi phí sân: <strong id="hostTotalCost" style="color:#fbbf24;">0đ</strong></span>
+                    </div>
+
+                    <!-- Danh sách cầu -->
+                    <div class="hs-form-group full">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                            <label class="hs-label" style="margin:0;">Chi Phí Cầu Tiêu Thụ</label>
+                            <button type="button" class="hs-btn-ghost" onclick="themLoaiCauMoi()" style="font-size:0.78rem;padding:5px 10px;">
+                                <i class="fa-solid fa-plus"></i> Thêm loại cầu
+                            </button>
+                        </div>
+                        <div id="shuttlecockListContainer"></div>
+                    </div>
+
+                    <!-- Tiền nước -->
+                    <div class="hs-form-group full">
+                        <label class="hs-label">Tiền nước / Chi phí phát sinh (VNĐ)</label>
+                        <input type="number" class="hs-input" id="hostAccountingWaterCost" value="30000" onchange="tinhToanPricingGoiY()">
+                    </div>
+
+                    <!-- Số người -->
+                    <div class="hs-form-group">
+                        <label class="hs-label">Số Nam dự kiến</label>
+                        <input type="number" class="hs-input" id="hostAccountingEstMale" value="6" min="0" onchange="tinhToanPricingGoiY()">
+                    </div>
+                    <div class="hs-form-group">
+                        <label class="hs-label">Số Nữ dự kiến</label>
+                        <input type="number" class="hs-input" id="hostAccountingEstFemale" value="4" min="0" onchange="tinhToanPricingGoiY()">
+                    </div>
+
+                    <!-- Chênh lệch -->
+                    <div class="hs-form-group full">
+                        <label class="hs-label">Chênh lệch Nam cao hơn Nữ (VNĐ)</label>
+                        <input type="number" class="hs-input" id="hostAccountingGap" value="5000" onchange="tinhToanPricingGoiY()">
+                        <span class="hs-hint">Nhập 0 để chia đều. Âm = Nữ cao hơn Nam.</span>
+                    </div>
+
+                </div>
+
+                <!-- GỢI Ý THU TIỀN -->
+                <div style="margin-top:16px;">
+                    <div style="font-size:0.78rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;margin-bottom:10px;letter-spacing:0.05em;">
+                        <i class="fa-solid fa-calculator"></i> Gợi Ý Thu Tiền Khách
+                    </div>
+                    <div class="hs-pricing-grid">
+                        <div class="hs-sug-box" id="sugBoxBreak" onclick="apDungGoiYGia('breakeven')">
+                            <div class="hs-sug-title">⚖️ Huề Vốn</div>
+                            <div class="hs-sug-price" id="sugBreakNam">Nam: --</div>
+                            <div class="hs-sug-price" id="sugBreakNu" style="color:#f472b6;">Nữ: --</div>
+                            <div class="hs-sug-profit" id="sugBreakLai" style="color:var(--text-muted);">--</div>
+                            <div class="hs-sug-apply">▶ Chọn</div>
+                        </div>
+                        <div class="hs-sug-box" id="sugBoxSmall" onclick="apDungGoiYGia('small')" style="position:relative;padding-top:22px;">
+                            <div class="hs-sug-badge">⭐ Khuyên dùng</div>
+                            <div class="hs-sug-title">💰 Lãi Ít</div>
+                            <div class="hs-sug-price" id="sugSmallNam">Nam: --</div>
+                            <div class="hs-sug-price" id="sugSmallNu" style="color:#f472b6;">Nữ: --</div>
+                            <div class="hs-sug-profit" id="sugSmallLai" style="color:var(--accent-green);">--</div>
+                            <div class="hs-sug-apply">▶ Chọn</div>
+                        </div>
+                        <div class="hs-sug-box" id="sugBoxBig" onclick="apDungGoiYGia('big')">
+                            <div class="hs-sug-title">🚀 Lãi Nhiều</div>
+                            <div class="hs-sug-price" id="sugBigNam">Nam: --</div>
+                            <div class="hs-sug-price" id="sugBigNu" style="color:#f472b6;">Nữ: --</div>
+                            <div class="hs-sug-profit" id="sugBigLai" style="color:#60a5fa;">--</div>
+                            <div class="hs-sug-apply">▶ Chọn</div>
+                        </div>
+                    </div>
+                    <p style="font-size:0.7rem;color:#64748b;margin-top:8px;text-align:center;">
+                        <i class="fa-solid fa-circle-info"></i> Bấm chọn phương án → tự động điền vào ô giá bên trái.
+                    </p>
+                </div>
+
+                <!-- NÚT ĐĂNG -->
+                <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">
+                    <button class="hs-btn-gold" id="btnDangCa" style="flex:1;justify-content:center;" onclick="dangCaDauCuaHost()">
+                        <i class="fa-solid fa-circle-check"></i> XÁC NHẬN ĐĂNG TUYỂN
+                    </button>
+                    <button class="hs-btn-danger" id="btnHuyChinhSua" style="display:none;" onclick="huyChinhSuaCaDau()">
+                        <i class="fa-solid fa-xmark"></i> Hủy sửa
                     </button>
                 </div>
             </div>
 
-            <!-- ══════════ CONSOLE CHỦ SÂN (SAU KHI KÍCH HOẠT) ══════════ -->
-            <div id="hostConsole" style="display:none;">
+        </div><!-- end form-layout -->
 
-                <!-- Thanh trạng thái Host -->
-                <div class="host-status-bar">
-                    <div class="host-status-info">
-                        <span class="host-status-dot"></span>
-                        <div>
-                            <div class="host-name" id="hostDisplayName">Chủ Sân</div>
-                            <div class="host-meta">
-                                <span id="hostDisplayKey" style="font-size:0.72rem;color:hsl(var(--neon-mint));font-family:monospace;"></span>
-                                <span id="hostDisplayExpiry" style="font-size:0.72rem;color:#64748b;margin-left:8px;"></span>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="btn-cyber-danger" style="padding:6px 14px;font-size:0.8rem;" onclick="dangXuatHost()">
-                        <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
-                    </button>
+        <!-- ══ DANH SÁCH KÈO ĐÃ ĐĂNG ══ -->
+        <div class="hs-card" style="margin-top:0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
+                <div class="hs-section-title" style="margin-bottom:0;">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Danh Sách Kèo Đã Đăng
                 </div>
+                <button class="hs-btn-ghost" onclick="loadLichSuCaDauHost()" style="font-size:0.8rem;padding:6px 12px;">
+                    <i class="fa-solid fa-rotate-right"></i> Làm mới
+                </button>
+            </div>
 
-                <!-- ── LAYOUT 2 CỘT FORM ── -->
-                <div class="hud-grid" id="hostFormSection">
+            <!-- Filter tabs -->
+            <div class="hs-filter-tabs">
+                <button class="hs-tab-pill active" onclick="locDanhSachKeo('all', this)">
+                    <i class="fa-solid fa-list"></i> Tất cả
+                </button>
+                <button class="hs-tab-pill" onclick="locDanhSachKeo('running', this)">
+                    <i class="fa-solid fa-circle" style="color:var(--accent-green);font-size:0.6em;"></i> Đang chạy
+                </button>
+                <button class="hs-tab-pill" onclick="locDanhSachKeo('closed', this)">
+                    <i class="fa-solid fa-circle" style="color:#64748b;font-size:0.6em;"></i> Đã đóng
+                </button>
+            </div>
 
-                    <!-- CỘT TRÁI: Thông tin công khai -->
-                    <div class="hud-column">
-                        <h3 class="hud-section-title"><i class="fa-solid fa-globe" style="margin-right:8px;color:hsl(var(--neon-mint));"></i>Thông Tin Đăng Tuyển Công Khai</h3>
-
-                        <div class="pricing-engine-wrapper">
-                            <div class="form-grid-2">
-
-                                <!-- Tỉnh / Huyện -->
-                                <div class="form-group">
-                                    <label class="form-label">Tỉnh / Thành Phố <span class="required">*</span></label>
-                                    <select class="form-control" id="hostProvince" onchange="capNhatQuanHuyenHost()">
-                                        <option value="">-- Chọn tỉnh/thành --</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Quận / Huyện <span class="required">*</span></label>
-                                    <select class="form-control" id="hostDistrict">
-                                        <option value="">-- Chọn quận/huyện --</option>
-                                    </select>
-                                </div>
-
-                                <!-- Ngày tháng & Giờ -->
-                                <div class="form-group">
-                                    <label class="form-label">Ngày đánh <span class="required">*</span></label>
-                                    <input type="date" class="form-control" id="hostDatePlay" onchange="tinhToanThoiGianHieuLuc()">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Tổng giờ chơi</label>
-                                    <input type="text" class="form-control" id="hostTotalDuration" value="2.0 Giờ"
-                                        readonly style="color:hsl(var(--neon-mint));font-weight:800;cursor:not-allowed;">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Giờ bắt đầu <span class="required">*</span></label>
-                                    <input type="time" class="form-control" id="hostTimeStart" onchange="tinhToanThoiGianHieuLuc()">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Giờ kết thúc <span class="required">*</span></label>
-                                    <input type="time" class="form-control" id="hostTimeEnd" onchange="tinhToanThoiGianHieuLuc()">
-                                </div>
-
-                                <!-- Tên sân & Số sân -->
-                                <div class="form-group">
-                                    <label class="form-label">Tên sân cầu lông <span class="required">*</span></label>
-                                    <input type="text" class="form-control" id="hostCourtName" placeholder="Vd: Sân Kỳ Hòa Q10">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Số lượng sân mở <span class="required">*</span></label>
-                                    <select class="form-control" id="hostCourtQuantity" onchange="tinhToanPricingGoiY()">
-                                        <option value="1">1 Sân</option><option value="2">2 Sân</option>
-                                        <option value="3">3 Sân</option><option value="4">4 Sân</option>
-                                        <option value="5">5 Sân</option><option value="6">6 Sân</option>
-                                        <option value="7">7 Sân</option><option value="8">8 Sân (Tối đa)</option>
-                                    </select>
-                                </div>
-                                <div class="form-group" style="grid-column:1/-1;">
-                                    <label class="form-label">Số thứ tự sân</label>
-                                    <input type="text" class="form-control" id="hostCourtNumber" placeholder="Vd: Sân 1, 2 hoặc 1.2">
-                                </div>
-
-                                <!-- Địa chỉ với Maps -->
-                                <div class="form-group" style="grid-column:1/-1;">
-                                    <label class="form-label">Địa chỉ sân <span class="required">*</span></label>
-                                    <div style="display:flex;gap:8px;">
-                                        <input type="text" class="form-control" id="hostCourtAddress"
-                                            placeholder="Nhập địa chỉ hoặc tìm trên Maps..." style="flex:1;">
-                                        <button class="btn-cyber" type="button" style="padding:10px 14px;white-space:nowrap;"
-                                            onclick="giaLapTimGoogleMaps()">
-                                            <i class="fa-solid fa-map-location-dot"></i> Maps
-                                        </button>
-                                    </div>
-                                    <span style="font-size:0.72rem;color:#64748b;" id="hostMapLinkState">
-                                        <i class="fa-solid fa-circle-info"></i> Tìm địa chỉ qua Google Maps hoặc điền tự do
-                                    </span>
-                                </div>
-
-                                <!-- Giới tính -->
-                                <div class="form-group" style="grid-column:1/-1;">
-                                    <label class="form-label">Giới tính tuyển chọn <span class="required">*</span></label>
-                                    <div class="radio-btn-group">
-                                        <input type="radio" name="hostGenderSelect" id="genderMale" value="male" checked onchange="chuyenTrangThaiLienKetGioiTinh()">
-                                        <label for="genderMale" class="radio-btn-label"><i class="fa-solid fa-mars"></i> Tuyển Nam</label>
-                                        <input type="radio" name="hostGenderSelect" id="genderFemale" value="female" onchange="chuyenTrangThaiLienKetGioiTinh()">
-                                        <label for="genderFemale" class="radio-btn-label"><i class="fa-solid fa-venus"></i> Tuyển Nữ</label>
-                                        <input type="radio" name="hostGenderSelect" id="genderBoth" value="both" onchange="chuyenTrangThaiLienKetGioiTinh()">
-                                        <label for="genderBoth" class="radio-btn-label"><i class="fa-solid fa-venus-mars"></i> Cả Nam & Nữ</label>
-                                    </div>
-                                </div>
-
-                                <!-- Trình độ Nam -->
-                                <div class="form-group" style="grid-column:1/-1;" id="linkedMaleLevelBlock">
-                                    <label class="form-label" style="color:hsl(var(--neon-cyan));">Trình độ Nam <span class="required">*</span></label>
-                                    <div class="checkbox-pill-group">
-                                        <input type="checkbox" id="m_lvl_newbie" value="Newbie"><label for="m_lvl_newbie">Newbie</label>
-                                        <input type="checkbox" id="m_lvl_yeu" value="Yếu"><label for="m_lvl_yeu">Yếu</label>
-                                        <input type="checkbox" id="m_lvl_tby" value="Trung bình yếu" checked><label for="m_lvl_tby">TB Yếu</label>
-                                        <input type="checkbox" id="m_lvl_tb_minus" value="Trung bình-" checked><label for="m_lvl_tb_minus">TB-</label>
-                                        <input type="checkbox" id="m_lvl_tb_plus" value="Trung bình+"><label for="m_lvl_tb_plus">TB+</label>
-                                        <input type="checkbox" id="m_lvl_tbk" value="Trung bình khá"><label for="m_lvl_tbk">TB Khá</label>
-                                    </div>
-                                    <input type="text" class="form-control" id="hostMaleCustomLevel" placeholder="Hoặc tự nhập: 6 tháng, 1 năm..." style="margin-top:8px;">
-                                </div>
-
-                                <!-- Trình độ Nữ -->
-                                <div class="form-group" style="grid-column:1/-1;display:none;" id="linkedFemaleLevelBlock">
-                                    <label class="form-label" style="color:hsl(var(--neon-pink));">Trình độ Nữ <span class="required">*</span></label>
-                                    <div class="checkbox-pill-group">
-                                        <input type="checkbox" id="f_lvl_newbie" value="Newbie"><label for="f_lvl_newbie">Newbie</label>
-                                        <input type="checkbox" id="f_lvl_yeu" value="Yếu"><label for="f_lvl_yeu">Yếu</label>
-                                        <input type="checkbox" id="f_lvl_tby" value="Trung bình yếu" checked><label for="f_lvl_tby">TB Yếu</label>
-                                        <input type="checkbox" id="f_lvl_tb_minus" value="Trung bình-"><label for="f_lvl_tb_minus">TB-</label>
-                                        <input type="checkbox" id="f_lvl_tb_plus" value="Trung bình+"><label for="f_lvl_tb_plus">TB+</label>
-                                        <input type="checkbox" id="f_lvl_tbk" value="Trung bình khá"><label for="f_lvl_tbk">TB Khá</label>
-                                    </div>
-                                    <input type="text" class="form-control" id="hostFemaleCustomLevel" placeholder="Hoặc tự nhập: 6 tháng, 1 năm..." style="margin-top:8px;">
-                                </div>
-
-                                <!-- Giá công khai -->
-                                <div class="form-group">
-                                    <label class="form-label">Giá thu <span style="color:hsl(var(--neon-cyan));">Nam</span> (VNĐ)</label>
-                                    <input type="number" class="form-control" id="hostPublicPriceMale" value="70000" min="0" step="5000">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Giá thu <span style="color:hsl(var(--neon-pink));">Nữ</span> (VNĐ)</label>
-                                    <input type="number" class="form-control" id="hostPublicPriceFemale" value="65000" min="0" step="5000">
-                                </div>
-
-                                <!-- Tiện ích bao gồm -->
-                                <div class="form-group" style="grid-column:1/-1;">
-                                    <label class="form-label">Giá trên đã bao gồm:</label>
-                                    <div class="checkbox-pill-group">
-                                        <input type="checkbox" id="inc_san" checked><label for="inc_san"><i class="fa-solid fa-map"></i> Tiền sân</label>
-                                        <input type="checkbox" id="inc_cau" checked><label for="inc_cau"><i class="fa-solid fa-feather-pointed"></i> Quả cầu</label>
-                                        <input type="checkbox" id="inc_nuoc"><label for="inc_nuoc"><i class="fa-solid fa-bottle-water"></i> Nước uống</label>
-                                        <input type="checkbox" id="inc_xe"><label for="inc_xe"><i class="fa-solid fa-motorcycle"></i> Gửi xe</label>
-                                    </div>
-                                </div>
-
-                            </div><!-- end form-grid-2 -->
-                        </div>
-                    </div>
-
-                    <!-- CỘT PHẢI: Kế toán nội bộ -->
-                    <div class="hud-column">
-                        <h3 class="hud-section-title">
-                            <i class="fa-solid fa-lock" style="color:hsl(var(--neon-gold));margin-right:8px;"></i>Bộ Máy Kế Toán Nội Bộ
-                            <span style="font-size:0.7rem;color:#64748b;font-weight:400;display:block;margin-top:2px;">Chỉ hiển thị với Host — Không công khai</span>
-                        </h3>
-
-                        <div class="pricing-engine-wrapper">
-                            <div class="form-grid-2">
-
-                                <!-- Giá sân -->
-                                <div class="form-group" style="grid-column:1/-1;">
-                                    <label class="form-label">Tiền thuê sân / 1 giờ (VNĐ)</label>
-                                    <input type="number" class="form-control" id="hostAccountingCourtPrice" value="80000" onchange="tinhToanPricingGoiY()">
-                                    <span style="font-size:0.72rem;color:#64748b;margin-top:4px;display:block;">
-                                        Tổng chi phí sân: <strong id="hostTotalCost" style="color:hsl(var(--neon-gold));">0đ</strong>
-                                    </span>
-                                </div>
-
-                                <!-- Danh sách cầu -->
-                                <div class="form-group" style="grid-column:1/-1;">
-                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-                                        <label class="form-label" style="margin-bottom:0;">Chi Phí Cầu Tiêu Thụ</label>
-                                        <button type="button" class="btn-mini btn-mini-cyan" onclick="themLoaiCauMoi()">
-                                            <i class="fa-solid fa-plus"></i> Thêm loại cầu
-                                        </button>
-                                    </div>
-                                    <div id="shuttlecockListContainer"></div>
-                                </div>
-
-                                <!-- Tiền nước -->
-                                <div class="form-group" style="grid-column:1/-1;">
-                                    <label class="form-label">Tiền nước / Chi phí phát sinh khác (VNĐ)</label>
-                                    <input type="number" class="form-control" id="hostAccountingWaterCost" value="30000" onchange="tinhToanPricingGoiY()">
-                                </div>
-
-                                <!-- Số người -->
-                                <div class="form-group">
-                                    <label class="form-label">Số Nam dự kiến</label>
-                                    <input type="number" class="form-control" id="hostAccountingEstMale" value="6" min="0" onchange="tinhToanPricingGoiY()">
-                                </div>
-                                <div class="form-group">
-                                    <label class="form-label">Số Nữ dự kiến</label>
-                                    <input type="number" class="form-control" id="hostAccountingEstFemale" value="4" min="0" onchange="tinhToanPricingGoiY()">
-                                </div>
-
-                                <!-- Chênh lệch giá -->
-                                <div class="form-group" style="grid-column:1/-1;">
-                                    <label class="form-label">Chênh lệch thu Nam cao hơn Nữ (VNĐ)</label>
-                                    <input type="number" class="form-control" id="hostAccountingGap" value="5000" onchange="tinhToanPricingGoiY()">
-                                    <span style="font-size:0.71rem;color:#64748b;margin-top:3px;display:block;">Nhập 0 để chia đều. Nhập âm nếu Nữ cao hơn Nam.</span>
-                                </div>
-
-                            </div>
-
-                            <!-- GỢI Ý THU TIỀN -->
-                            <div style="margin-top:16px;">
-                                <h4 style="font-size:0.82rem;font-weight:800;color:hsl(var(--neon-gold));text-transform:uppercase;margin-bottom:12px;">
-                                    <i class="fa-solid fa-calculator" style="margin-right:6px;"></i>Gợi Ý Thu Tiền Khách
-                                </h4>
-                                <div class="pricing-suggestions-grid">
-                                    <div class="sug-box" id="sugBoxBreak" onclick="apDungGoiYGia('breakeven')">
-                                        <div class="sug-title">⚖️ Huề Vốn</div>
-                                        <div class="sug-price-row" id="sugBreakNam">Nam: --</div>
-                                        <div class="sug-price-row" id="sugBreakNu" style="color:hsl(var(--neon-pink));">Nữ: --</div>
-                                        <div class="sug-profit" id="sugBreakLai">--</div>
-                                        <div class="sug-apply-btn">Chọn phương án này</div>
-                                    </div>
-                                    <div class="sug-box sug-box-recommended" id="sugBoxSmall" onclick="apDungGoiYGia('small')">
-                                        <div class="sug-badge">⭐ Khuyên dùng</div>
-                                        <div class="sug-title">💰 Lãi Ít</div>
-                                        <div class="sug-price-row" id="sugSmallNam">Nam: --</div>
-                                        <div class="sug-price-row" id="sugSmallNu" style="color:hsl(var(--neon-pink));">Nữ: --</div>
-                                        <div class="sug-profit" id="sugSmallLai" style="color:hsl(var(--neon-mint));">--</div>
-                                        <div class="sug-apply-btn">Chọn phương án này</div>
-                                    </div>
-                                    <div class="sug-box" id="sugBoxBig" onclick="apDungGoiYGia('big')">
-                                        <div class="sug-title">🚀 Lãi Nhiều</div>
-                                        <div class="sug-price-row" id="sugBigNam">Nam: --</div>
-                                        <div class="sug-price-row" id="sugBigNu" style="color:hsl(var(--neon-pink));">Nữ: --</div>
-                                        <div class="sug-profit" id="sugBigLai" style="color:hsl(var(--neon-cyan));">--</div>
-                                        <div class="sug-apply-btn">Chọn phương án này</div>
-                                    </div>
-                                </div>
-                                <p style="font-size:0.7rem;color:#64748b;margin-top:8px;text-align:center;">
-                                    <i class="fa-solid fa-circle-info"></i> Bấm vào một phương án để tự động điền giá vào ô công khai bên trên.
-                                </p>
-                            </div>
-
-                            <!-- NÚT ĐĂNG -->
-                            <div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap;">
-                                <button class="btn-cyber-gold" id="btnDangCa" style="flex:1;min-width:200px;height:52px;font-size:0.95rem;font-weight:800;" onclick="dangCaDauCuaHost()">
-                                    <i class="fa-solid fa-circle-check"></i> XÁC NHẬN ĐĂNG TUYỂN
-                                </button>
-                                <button class="btn-cyber-danger" id="btnHuyChinhSua" style="display:none;padding:0 20px;" onclick="huyChinhSuaCaDau()">
-                                    <i class="fa-solid fa-xmark"></i> Hủy sửa
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                </div><!-- end hud-grid form -->
-
-                <!-- ══════════ LỊCH SỬ CA ĐẤU ══════════ -->
-                <div style="margin-top:32px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
-                        <h3 class="hud-section-title" style="margin-bottom:0;">
-                            <i class="fa-solid fa-clock-rotate-left" style="margin-right:8px;color:hsl(var(--neon-mint));"></i>Danh Sách Kèo Đã Đăng
-                        </h3>
-                        <button class="btn-mini btn-mini-cyan" onclick="loadLichSuCaDauHost()">
-                            <i class="fa-solid fa-rotate-right"></i> Làm mới
-                        </button>
-                    </div>
-                    <div class="hud-table-wrapper">
-                        <table class="hud-table">
-                            <thead>
-                                <tr>
-                                    <th>Ngày / Giờ</th>
-                                    <th>Thông tin Sân</th>
-                                    <th>Giới tính / Trình độ</th>
-                                    <th>Giá công khai</th>
-                                    <th>Khách đăng ký</th>
-                                    <th>Trạng thái</th>
-                                    <th>Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody id="hostSlotsBody">
-                                <tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b;">Đang tải lịch sử...</td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-            </div><!-- end hostConsole -->
+            <div class="hs-table-wrap">
+                <table class="hs-table">
+                    <thead>
+                        <tr>
+                            <th>Ngày / Giờ</th>
+                            <th>Thông tin Sân</th>
+                            <th>Giới tính / Trình độ</th>
+                            <th>Giá công khai</th>
+                            <th>Khách đăng ký</th>
+                            <th>Trạng thái</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="hostSlotsBody">
+                        <tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b;">
+                            <i class="fa-solid fa-spinner fa-spin"></i> Đang tải lịch sử...
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-    </div>
-    </section>
-    </div>
+    </div><!-- end hostConsole -->
 
-    <footer class="gateway-footer">
-        <p>&copy; 2026 TUYENVANGLAI.IO.VN — Hệ thống tuyển vãng lai Cầu Lông quy chuẩn quốc gia.</p>
-    </footer>
-</div>
+</div><!-- end hs-main -->
 
-<!-- ══════════ MODAL: DANH SÁCH KHÁCH ══════════ -->
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══ MODAL: DANH SÁCH KHÁCH ══ -->
 <div class="modal-overlay" id="modalDanhSachKhachOverlay" style="display:none;">
     <div class="modal" style="max-width:700px;width:95%;">
         <div class="modal-header">
             <div>
-                <h3 class="modal-title"><i class="fa-solid fa-users" style="margin-right:8px;color:hsl(var(--neon-cyan));"></i>Danh Sách Khách Đăng Ký</h3>
+                <h3 class="modal-title"><i class="fa-solid fa-users" style="margin-right:8px;color:#60a5fa;"></i>Danh Sách Khách Đăng Ký</h3>
                 <p class="modal-desc" id="modalKhachHeader">--</p>
             </div>
             <button class="modal-close" onclick="dongModalDanhSachKhach()"><i class="fa-solid fa-xmark"></i></button>
@@ -406,17 +712,17 @@
                     </tbody>
                 </table>
             </div>
-            <button class="btn-cyber w-full" style="margin-top:16px;" onclick="dongModalDanhSachKhach()">Đóng</button>
+            <button class="hs-btn-primary" style="margin-top:16px;width:100%;justify-content:center;" onclick="dongModalDanhSachKhach()">Đóng</button>
         </div>
     </div>
 </div>
 
-<!-- ══════════ MODAL: ĐÁNH GIÁ KHÁCH ══════════ -->
+<!-- ══ MODAL: ĐÁNH GIÁ KHÁCH ══ -->
 <div class="modal-overlay" id="modalDanhGiaKhachOverlay" style="display:none;">
     <div class="modal" style="max-width:500px;width:95%;">
         <div class="modal-header">
             <div>
-                <h3 class="modal-title"><i class="fa-solid fa-star" style="margin-right:8px;color:hsl(var(--neon-gold));"></i>Đánh Giá Khách Chơi</h3>
+                <h3 class="modal-title"><i class="fa-solid fa-star" style="margin-right:8px;color:#fbbf24;"></i>Đánh Giá Khách Chơi</h3>
                 <p class="modal-desc">Chỉ đánh giá được khách đã xác nhận "Đã tham gia"</p>
             </div>
             <button class="modal-close" onclick="dongModalDanhGiaKhach()"><i class="fa-solid fa-xmark"></i></button>
@@ -429,30 +735,30 @@
                 </select>
             </div>
             <div class="form-group">
-                <label class="form-label">Điểm đánh giá (1-5 sao)</label>
+                <label class="form-label">Điểm đánh giá (1–5 sao)</label>
                 <div class="stars-container" id="hostRatingStars" style="font-size:1.8rem;gap:8px;cursor:pointer;"></div>
             </div>
             <div class="form-group">
                 <label class="form-label">Nhận xét thái độ & Trình độ thực tế</label>
                 <textarea class="form-control" id="hostReviewComment" rows="3"
-                    placeholder="Vd: Thái độ hòa đồng, đánh đúng trình độ, đóng tiền đúng hẹn..."></textarea>
+                    placeholder="Thái độ hòa đồng, đánh đúng trình độ, đóng tiền đúng hẹn..."></textarea>
             </div>
             <div style="display:flex;gap:10px;">
-                <button class="btn-cyber" style="flex:1;" onclick="guiDanhGiaKhach()">
+                <button class="hs-btn-primary" style="flex:1;justify-content:center;" onclick="guiDanhGiaKhach()">
                     <i class="fa-solid fa-paper-plane"></i> Gửi Đánh Giá
                 </button>
-                <button class="btn-cyber-danger" onclick="dongModalDanhGiaKhach()">Đóng</button>
+                <button class="hs-btn-danger" onclick="dongModalDanhGiaKhach()">Đóng</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ══════════ MODAL: GOOGLE MAPS ══════════ -->
+<!-- ══ MODAL: GOOGLE MAPS ══ -->
 <div class="modal-overlay" id="mapsMockModalOverlay" style="display:none;">
     <div class="modal" style="max-width:460px;width:95%;">
         <div class="modal-header">
             <div>
-                <h3 class="modal-title"><i class="fa-solid fa-map-location-dot" style="margin-right:8px;color:hsl(var(--neon-mint));"></i>Tìm Địa Chỉ Sân</h3>
+                <h3 class="modal-title"><i class="fa-solid fa-map-location-dot" style="margin-right:8px;color:var(--accent-green);"></i>Tìm Địa Chỉ Sân</h3>
                 <p class="modal-desc">Tìm kiếm hoặc điền địa chỉ tự do</p>
             </div>
             <button class="modal-close" onclick="dongMapsMockModal()"><i class="fa-solid fa-xmark"></i></button>
@@ -467,12 +773,50 @@
     </div>
 </div>
 
-<!-- TOAST -->
-<div class="toast-container" id="toastContainer"></div>
-
 <script src="ket-noi-supabase.js?v=5.0"></script>
 <script src="bo-may-du-lieu.js?v=5.0"></script>
 <script src="hieu-ung-giao-dien.js?v=5.0"></script>
 <script src="phan-he-chu-san.js?v=5.0"></script>
+
+<script>
+// Filter danh sách kèo theo tab
+function locDanhSachKeo(loai, btn) {
+    document.querySelectorAll('.hs-tab-pill').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    const rows = document.querySelectorAll('#hostSlotsBody tr[data-status]');
+    rows.forEach(row => {
+        if (loai === 'all') { row.style.display = ''; return; }
+        const status = row.getAttribute('data-status');
+        row.style.display = (
+            (loai === 'running' && status === 'running') ||
+            (loai === 'closed' && status === 'closed')
+        ) ? '' : 'none';
+    });
+}
+</script>
+
+<style>/* Bảo vệ: disable text selection */
+*{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none}
+input,textarea,[contenteditable]{user-select:text;-webkit-user-select:text}
+</style>
+<script>
+// ── BẢO VỆ MÃ NGUỒN ──
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{
+  if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','C','J'].includes(e.key))||(e.ctrlKey&&e.key==='u')){
+    e.preventDefault();return false;
+  }
+});
+(function(){
+  const t=160;
+  setInterval(()=>{
+    if(window.outerWidth-window.innerWidth>t||window.outerHeight-window.innerHeight>t){
+      document.body.innerHTML='<h1 style="color:#00c96e;text-align:center;padding-top:200px;font-family:sans-serif">Vui lòng đóng DevTools</h1>';
+    }
+  },1000);
+})();
+setInterval(()=>console.clear(),100);
+console.log=()=>{};
+</script>
 </body>
 </html>
