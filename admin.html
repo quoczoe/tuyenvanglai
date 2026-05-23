@@ -3,31 +3,256 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Quản Trị Viên Tối Cao | TUYENVANGLAI.IO.VN</title>
-    
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="TUYENVANGLAI.IO.VN - Hệ thống console tối thượng quản trị viên tối cao. Quản lý key thuê trạm, quản trị data khách hàng vãng lai, kiểm duyệt đánh giá và cấu hình trang chủ.">
-    <meta name="keywords" content="tuyen vang lai, tuyenvanglai.io.vn, admin, quan tri tuyen vang lai, admin cau long">
-    <meta name="author" content="TUYENVANGLAI.IO.VN">
+    <title>👑 Trung Tâm Chỉ Huy | TUYENVANGLAI.IO.VN</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="Admin Panel bảo mật — Hệ thống quản trị tuyệt mật TUYENVANGLAI.IO.VN.">
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
-    
+
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom Design CSS Style System -->
-    <link rel="stylesheet" href="giao-dien.css?v=2.0">
+
+    <!-- CSS Hệ thống -->
+    <link rel="stylesheet" href="giao-dien.css?v=5.0">
+    <link rel="stylesheet" href="components.css?v=5.0">
+
+    <style>
+        /* ── Admin Panel overrides ── */
+        .admin-tab-nav {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding-bottom: 12px;
+            margin-bottom: 20px;
+        }
+        .admin-tab-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.03);
+            color: #94a3b8;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: inherit;
+        }
+        .admin-tab-btn:hover {
+            background: rgba(255,255,255,0.07);
+            color: #e2e8f0;
+        }
+        .admin-tab-btn.active {
+            background: linear-gradient(135deg, rgba(0,255,157,0.15), rgba(0,212,255,0.1));
+            border-color: hsl(var(--neon-mint));
+            color: hsl(var(--neon-mint));
+            box-shadow: 0 0 12px rgba(0,255,157,0.2);
+        }
+        .admin-tab-content { display: none; }
+        .admin-tab-content.active { display: block; }
+
+        /* ── Stats Cards ── */
+        .stats-grid-admin {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+        .stat-card-admin {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+        .stat-card-admin:hover { border-color: rgba(0,255,157,0.3); }
+        .stat-card-admin .stat-value {
+            font-size: 2rem;
+            font-weight: 900;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+        .stat-card-admin .stat-label {
+            font-size: 0.72rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* ── Auth Panel ── */
+        .admin-auth-wrapper {
+            max-width: 440px;
+            margin: 60px auto 0;
+            padding: 0 16px;
+        }
+        .admin-auth-card {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 36px 32px;
+            text-align: center;
+        }
+        .admin-auth-badge {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(255,200,0,0.2), rgba(255,160,0,0.1));
+            border: 2px solid hsl(var(--neon-gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin: 0 auto 20px;
+            box-shadow: 0 0 24px rgba(255,200,0,0.25);
+        }
+        .admin-auth-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: hsl(var(--neon-gold));
+            margin-bottom: 6px;
+        }
+        .admin-auth-sub {
+            font-size: 0.82rem;
+            color: #64748b;
+            margin-bottom: 28px;
+            line-height: 1.5;
+        }
+
+        /* ── Console Header Bar ── */
+        .admin-console-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255,200,0,0.05);
+            border: 1px solid rgba(255,200,0,0.2);
+            border-radius: 12px;
+            padding: 14px 20px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .admin-console-bar-left { display: flex; align-items: center; gap: 12px; }
+        .admin-shield-icon { font-size: 1.5rem; color: hsl(var(--neon-gold)); }
+        .admin-session-label { font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; }
+        .admin-session-title { font-size: 1rem; font-weight: 800; color: hsl(var(--neon-gold)); }
+
+        /* ── Keys Table action area ── */
+        .keys-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .keys-toolbar-left { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+        /* ── Modal overlay ── */
+        .modal-overlay-admin {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(6px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 16px;
+        }
+        .modal-overlay-admin.open { display: flex; }
+        .modal-box-admin {
+            background: var(--surface);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            padding: 28px 24px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        .modal-title-admin {
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: hsl(var(--neon-mint));
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .modal-close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: color 0.2s;
+        }
+        .modal-close-btn:hover { color: #e2e8f0; }
+
+        /* ── Guest data header ── */
+        .guests-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .guest-count-badge {
+            background: rgba(0,212,255,0.1);
+            border: 1px solid rgba(0,212,255,0.3);
+            color: hsl(var(--neon-cyan));
+            font-size: 0.78rem;
+            font-weight: 700;
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        /* ── Full page sections ── */
+        #adminAuthPanel { display: none; }
+        #adminConsole { display: none; }
+
+        /* ── Gói dịch vụ badges ── */
+        .plan-basic { color: #94a3b8; }
+        .plan-pro { color: hsl(var(--neon-cyan)); }
+        .plan-vip { color: hsl(var(--neon-gold)); }
+
+        /* ── Responsive table scroll ── */
+        .table-scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+        /* ── Light mode adjustments ── */
+        [data-theme="light"] .admin-tab-btn {
+            background: rgba(0,0,0,0.03);
+            border-color: rgba(0,0,0,0.1);
+            color: #475569;
+        }
+        [data-theme="light"] .admin-tab-btn.active {
+            background: linear-gradient(135deg, rgba(0,180,120,0.12), rgba(0,150,200,0.08));
+        }
+        [data-theme="light"] .stat-card-admin { background: rgba(0,0,0,0.03); border-color: rgba(0,0,0,0.07); }
+        [data-theme="light"] .admin-auth-card { background: rgba(0,0,0,0.02); border-color: rgba(0,0,0,0.08); }
+        [data-theme="light"] .admin-console-bar { background: rgba(200,150,0,0.05); border-color: rgba(200,150,0,0.2); }
+        [data-theme="light"] .modal-box-admin { background: #fff; border-color: rgba(0,0,0,0.1); }
+    </style>
 </head>
 <body data-theme="dark">
 
-    <!-- Phong Thủy Mộc-Thủy Dương Liễu Decor -->
+    <!-- Hiệu ứng nền Cyberpunk -->
     <div class="willow-decor willow-top-left"></div>
     <div class="willow-decor willow-top-right"></div>
-
-    <!-- Ambient Dynamic Glows -->
     <div class="ambient-glows">
         <div class="glow-sphere glow-1"></div>
         <div class="glow-sphere glow-2"></div>
@@ -39,233 +264,484 @@
         <div class="glow-particle particle-5"></div>
     </div>
 
-    <!-- Gateway System Wrapper -->
+    <!-- Layout chính -->
     <div class="gateway-wrapper">
-        
+
         <!-- Header -->
         <header class="gateway-header">
-            <a href="index.html" class="brand-logo">
-                <i class="fa-solid fa-shuttlecock" style="color: hsl(var(--neon-mint));"></i>
-                TUYENVANGLAI.IO.VN
+            <a href="index.html" class="brand-logo" style="text-decoration:none;display:flex;align-items:center;">
+                <svg viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="color:hsl(var(--neon-mint));transform:rotate(-45deg);display:inline-block;margin-right:8px;">
+                    <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill="currentColor"/>
+                    <path d="M9 6l-5 13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1L15 6"/>
+                    <path d="M12 6v14"/><path d="M10.5 6l-2.5 14"/><path d="M13.5 6l2.5 14"/>
+                    <path d="M6 13h12"/><path d="M5 16h14"/>
+                </svg>
+                <span class="logo-text">TUYENVANGLAI.IO.VN</span>
             </a>
-            
-            <button class="btn-theme-toggle" id="themeBtn" onclick="chuyenDoiTheme()" title="Đổi giao diện Sáng/Tối">
-                <div class="theme-toggle-icon-box">
-                    <i class="fa-solid fa-sun" id="themeIcon"></i>
-                </div>
-            </button>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:0.72rem;color:#64748b;padding:4px 10px;border:1px solid rgba(255,200,0,0.2);border-radius:6px;">
+                    <i class="fa-solid fa-shield-halved" style="color:hsl(var(--neon-gold));"></i> ADMIN ZONE
+                </span>
+                <button class="btn-theme-toggle" id="themeBtn" onclick="chuyenDoiTheme()" title="Đổi giao diện Sáng/Tối">
+                    <div class="theme-toggle-icon-box">
+                        <i class="fa-solid fa-sun" id="themeIcon"></i>
+                    </div>
+                </button>
+            </div>
         </header>
 
-        <!-- Main Container -->
+        <!-- Container chính -->
         <div class="gateway-container">
-            
-            <section class="panel-view active" id="adminView">
-                <div class="hud-panel">
-                    <div class="hud-panel-header">
-                        <h2 class="hud-panel-title">
-                            <i class="fa-solid fa-user-shield"></i> HỆ THỐNG QUẢN TRỊ VIÊN TỐI CAO
-                        </h2>
-                        <a href="index.html" class="btn-hud-back" style="text-decoration: none; display: flex; align-items: center; gap: 5px;">
-                            <i class="fa-solid fa-angle-left"></i> Quay lại cổng
-                        </a>
-                    </div>
 
-                    <!-- Admin login key checking panel -->
-                    <div class="hud-grid" id="adminAuthPanel">
-                        <div class="hud-column" style="grid-column: 1 / -1; max-width: 500px; margin: 0 auto; width: 100%;">
-                            <div class="form-group text-center">
-                                <h3 class="hud-section-title" style="border-left: none; padding-left: 0;">Truy Cập Trung Tâm Chỉ Huy</h3>
-                                <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 15px; line-height: 1.5;">Vui lòng điền mã khóa bảo mật của quản trị viên tối cao để truy cập hệ thống quản trị.</p>
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Mã khóa bảo mật (Admin Password)</label>
-                                <input type="password" class="form-control" id="adminSecretPassword" placeholder="Nhập mã khóa admin...">
-                            </div>
-                            <button class="btn-cyber w-full mt-4" onclick="xacThucQuyenAdmin()">
-                                <i class="fa-solid fa-shield-halved"></i> Đăng Nhập Root Admin
-                            </button>
+            <!-- ═══════════════════════════════════════════
+                 PANEL ĐĂNG NHẬP ADMIN
+            ═══════════════════════════════════════════ -->
+            <div id="adminAuthPanel">
+                <div class="admin-auth-wrapper">
+                    <div class="admin-auth-card">
+                        <div class="admin-auth-badge">👑</div>
+                        <div class="admin-auth-title">TRUNG TÂM CHỈ HUY</div>
+                        <p class="admin-auth-sub">
+                            Khu vực bảo mật tuyệt mật.<br>
+                            Chỉ Quản Trị Viên Tối Cao mới được truy cập.
+                        </p>
+                        <div class="form-group" style="text-align:left;margin-bottom:14px;">
+                            <label class="form-label">Tên đăng nhập</label>
+                            <input type="text" class="form-control" id="adminUsername"
+                                   placeholder="Nhập tên đăng nhập..."
+                                   autocomplete="username"
+                                   onkeydown="if(event.key==='Enter')document.getElementById('adminSecretPassword').focus()">
                         </div>
-                    </div>
-
-                    <!-- Admin Workstation Console (Shown after auth) -->
-                    <div class="d-none" id="adminConsole">
-                        
-                        <!-- Premium Active Session HUD -->
-                        <div class="flex justify-between align-center mb-4 p-4" style="background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius-sm); flex-wrap: wrap; gap: 15px;">
-                            <div>
-                                <span style="font-size: 0.8rem; color: #94a3b8; text-transform: uppercase;">Trạng thái quản trị</span>
-                                <h4 style="font-size: 1.1rem; font-weight: 800; color: hsl(var(--neon-gold));"><i class="fa-solid fa-user-shield"></i> ROOT ADMIN SESSION ACTIVE</h4>
-                            </div>
-                            <button class="btn-cyber-danger" style="padding: 6px 12px; font-size: 0.85rem;" onclick="dangXuatAdmin()">
-                                <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất Admin
-                            </button>
-                        </div>
-
-                        <!-- Mini tabs for admin tasks -->
-                        <div class="flex gap-2 flex-wrap mb-4" style="border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px;">
-                            <button class="btn-cyber" onclick="chuyenAdminTab('keys')"><i class="fa-solid fa-key"></i> Quản Lý Keys Host</button>
-                            <button class="btn-cyber" onclick="chuyenAdminTab('players')"><i class="fa-solid fa-address-book"></i> Danh Sách Khách Hàng</button>
-                            <button class="btn-cyber" onclick="chuyenAdminTab('reviews')"><i class="fa-solid fa-star-half-stroke"></i> Quản Lý Đánh Giá</button>
-                            <button class="btn-cyber" onclick="chuyenAdminTab('config')"><i class="fa-solid fa-sliders"></i> Cấu HÌnh Trang Chủ</button>
-                        </div>
-
-                        <!-- Admin Tab 1: Key Management -->
-                        <div class="hud-grid admin-tab-view" id="adminTabKeys">
-                            
-                            <!-- Left: Create new Host Key -->
-                            <div class="hud-column">
-                                <h3 class="hud-section-title">Cấp Phát Key Thuê Mới Cho Host</h3>
-                                <div class="pricing-engine-wrapper" style="background: rgba(255,255,255,0.01);">
-                                    <div class="form-group">
-                                        <label class="form-label">Chọn Hạn Sử Dụng</label>
-                                        <select class="form-control" id="adminNewKeyExpiryDays">
-                                            <option value="1">Kích hoạt 1 Ngày (Dùng thử)</option>
-                                            <option value="7">Kích hoạt 7 Ngày (Tuần)</option>
-                                            <option value="30" selected>Kích hoạt 30 Ngày (Tháng)</option>
-                                            <option value="365">Kích hoạt 365 Ngày (Năm)</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label class="form-label">Tên Host Thuê (Ghi chú)</label>
-                                        <input type="text" class="form-control" id="adminNewKeyNote" placeholder="Vd: Sân Viettel Quận 10 - Anh Bình">
-                                    </div>
-                                    <button class="btn-cyber w-full mt-4" onclick="taoKeyMoiChoHost()">
-                                        <i class="fa-solid fa-plus"></i> Tạo & Kích Hoạt Key
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Right: Key List Dashboard -->
-                            <div class="hud-column">
-                                <h3 class="hud-section-title">Danh Sách Quản Lý Cốc Key Trạm</h3>
-                                <div class="hud-table-wrapper">
-                                    <table class="hud-table" id="adminKeysTable">
-                                        <thead>
-                                            <tr>
-                                                <th>Mã Key</th>
-                                                <th>Hạn sử dụng</th>
-                                                <th>Ghi chú Host</th>
-                                                <th>Trạng thái</th>
-                                                <th>Hành động</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <!-- Dynamic key rows -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <!-- Admin Tab 2: Players Data Repository -->
-                        <div class="hud-grid admin-tab-view d-none" id="adminTabPlayers">
-                            <div class="hud-column" style="grid-column: 1 / -1;">
-                                <h3 class="hud-section-title">Cơ Sở Dữ Liệu Khách Vãng Lai Đồng Bộ Toàn Quốc</h3>
-                                <div class="hud-table-wrapper">
-                                    <table class="hud-table" id="adminPlayersTable">
-                                        <thead>
-                                            <tr>
-                                                <th>Tên khách</th>
-                                                <th>Số điện thoại</th>
-                                                <th>Ngày Đăng Ký</th>
-                                                <th>Số buổi đã tham gia</th>
-                                                <th>Tổng tiền đã chi</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <!-- Dynamic player rows -->
-                                        </tbody>
-                                    </table>
-                                </div>
+                        <div class="form-group" style="text-align:left;margin-bottom:24px;">
+                            <label class="form-label">Mật khẩu bảo mật</label>
+                            <div style="position:relative;">
+                                <input type="password" class="form-control" id="adminSecretPassword"
+                                       placeholder="Nhập mật khẩu admin..."
+                                       autocomplete="current-password"
+                                       onkeydown="if(event.key==='Enter')xacThucQuyenAdmin()"
+                                       style="padding-right:44px;">
+                                <button type="button" onclick="
+                                    const f=document.getElementById('adminSecretPassword');
+                                    f.type=f.type==='password'?'text':'password';
+                                    this.innerHTML=f.type==='password'?'<i class=\'fa-solid fa-eye\'></i>':'<i class=\'fa-solid fa-eye-slash\'></i>';
+                                " style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#64748b;cursor:pointer;font-size:0.9rem;">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
                             </div>
                         </div>
-
-                        <!-- Admin Tab 3: Two-way Reviews Manager -->
-                        <div class="hud-grid admin-tab-view d-none" id="adminTabReviews">
-                            <div class="hud-column" style="grid-column: 1 / -1;">
-                                <h3 class="hud-section-title">Kho Đánh Giá Hai Chiều Hệ Thống (Host & Guest)</h3>
-                                <div class="hud-table-wrapper">
-                                    <table class="hud-table" id="adminReviewsTable">
-                                        <thead>
-                                            <tr>
-                                                <th>Người đánh giá</th>
-                                                <th>Đối tượng được đánh giá</th>
-                                                <th>Vai trò</th>
-                                                <th>Số Sao</th>
-                                                <th>Nội dung nhận xét</th>
-                                                <th>Hành động</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <!-- Dynamic review rows -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                        <button class="btn-cyber" style="width:100%;padding:12px;font-size:1rem;font-weight:700;background:linear-gradient(135deg,rgba(255,200,0,0.2),rgba(255,160,0,0.1));border-color:hsl(var(--neon-gold));color:hsl(var(--neon-gold));" onclick="xacThucQuyenAdmin()">
+                            <i class="fa-solid fa-shield-halved"></i> Đăng Nhập Root Admin
+                        </button>
+                        <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);">
+                            <a href="index.html" style="font-size:0.8rem;color:#64748b;text-decoration:none;">
+                                <i class="fa-solid fa-arrow-left"></i> Quay lại trang chủ
+                            </a>
                         </div>
-
-                        <!-- Admin Tab 4: Web Config & Notifications Editor -->
-                        <div class="hud-grid admin-tab-view d-none" id="adminTabConfig">
-                            <div class="hud-column" style="grid-column: 1 / -1; max-width: 700px; margin: 0 auto; width: 100%;">
-                                <h3 class="hud-section-title">Chỉnh Sửa Giao Diện & Thông Báo Trang Chủ</h3>
-                                <div class="pricing-engine-wrapper" style="background: rgba(255,255,255,0.01);">
-                                    <div class="form-group">
-                                        <label class="form-label">Thông Báo Bản Tin Khẩn (Popup Chạy Chữ Trên Cloud)</label>
-                                        <textarea class="form-control" id="adminConfigAnnouncement" rows="4" placeholder="Nhập nội dung thông báo..."></textarea>
-                                        <span style="font-size: 0.72rem; color: #64748b;"><i class="fa-solid fa-circle-info"></i> Để trống nếu muốn tắt hiển thị popup khi người dùng truy cập web</span>
-                                    </div>
-                                    
-                                    <div class="hud-grid" style="grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
-                                        <div class="form-group">
-                                            <label class="form-label">Giả Lập Thống Kê: Kèo Mở</label>
-                                            <input type="number" class="form-control" id="adminConfigTotalSlots" value="45">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Giả Lập Thống Kê: Cầu Thủ Online</label>
-                                            <input type="number" class="form-control" id="adminConfigOnlinePlayers" value="1820">
-                                        </div>
-                                    </div>
-
-                                    <button class="btn-cyber-gold w-full mt-4" onclick="luuCauHinhTrangChu()">
-                                        <i class="fa-solid fa-floppy-disk"></i> Lưu & Đồng Bộ Lên Đám Mây
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
                     </div>
                 </div>
-            </section>
+            </div>
+
+            <!-- ═══════════════════════════════════════════
+                 CONSOLE QUẢN TRỊ (Hiển thị sau khi đăng nhập)
+            ═══════════════════════════════════════════ -->
+            <div id="adminConsole">
+
+                <!-- Thanh trạng thái phiên Admin -->
+                <div class="admin-console-bar">
+                    <div class="admin-console-bar-left">
+                        <div class="admin-shield-icon">👑</div>
+                        <div>
+                            <div class="admin-session-label">Trạng thái phiên làm việc</div>
+                            <div class="admin-session-title">ROOT ADMIN SESSION ACTIVE</div>
+                        </div>
+                    </div>
+                    <button class="btn-cyber" style="padding:7px 14px;font-size:0.82rem;border-color:rgba(239,68,68,0.5);color:#ef4444;background:rgba(239,68,68,0.08);" onclick="dangXuatAdmin()">
+                        <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                    </button>
+                </div>
+
+                <!-- ── Tab điều hướng ── -->
+                <div class="admin-tab-nav">
+                    <button class="admin-tab-btn" data-tab="keys" onclick="chuyenTabAdmin('keys')">
+                        <i class="fa-solid fa-key"></i> Quản Lý Key
+                    </button>
+                    <button class="admin-tab-btn" data-tab="guests" onclick="chuyenTabAdmin('guests')">
+                        <i class="fa-solid fa-users"></i> Big Data Khách
+                    </button>
+                    <button class="admin-tab-btn" data-tab="reviews" onclick="chuyenTabAdmin('reviews')">
+                        <i class="fa-solid fa-star-half-stroke"></i> Kiểm Duyệt Đánh Giá
+                    </button>
+                    <button class="admin-tab-btn" data-tab="config" onclick="chuyenTabAdmin('config')">
+                        <i class="fa-solid fa-sliders"></i> Cấu Hình Hệ Thống
+                    </button>
+                    <button class="admin-tab-btn" data-tab="stats" onclick="chuyenTabAdmin('stats')">
+                        <i class="fa-solid fa-chart-bar"></i> Thống Kê Tổng Quan
+                    </button>
+                </div>
+
+                <!-- ══════════════════════════════
+                     TAB 1: QUẢN LÝ KEY HOST
+                ══════════════════════════════ -->
+                <div class="admin-tab-content" id="adminTab_keys">
+                    <div class="keys-toolbar">
+                        <div class="keys-toolbar-left">
+                            <button class="btn-cyber" style="padding:8px 16px;font-size:0.85rem;" onclick="moModalTaoKey()">
+                                <i class="fa-solid fa-plus"></i> Tạo Key Mới
+                            </button>
+                            <span style="font-size:0.78rem;color:#64748b;">Quản lý toàn bộ mã kích hoạt Host</span>
+                        </div>
+                        <div style="position:relative;">
+                            <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#64748b;font-size:0.8rem;"></i>
+                            <input type="text" class="form-control" id="adminKeySearch"
+                                   placeholder="Tìm key, tên host..."
+                                   oninput="locKeyAdmin()"
+                                   style="padding-left:32px;font-size:0.82rem;height:36px;width:220px;">
+                        </div>
+                    </div>
+
+                    <!-- Bảng Key -->
+                    <div class="table-scroll-x">
+                        <table class="hud-table" style="min-width:860px;">
+                            <thead>
+                                <tr>
+                                    <th>Mã Key</th>
+                                    <th>Tên Host</th>
+                                    <th>SĐT Host</th>
+                                    <th>Trạng thái</th>
+                                    <th>Hết hạn</th>
+                                    <th>Thiết bị</th>
+                                    <th>Gói / Ngày</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminKeysBody">
+                                <tr>
+                                    <td colspan="8" style="text-align:center;padding:24px;color:#64748b;">
+                                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════
+                     TAB 2: BIG DATA KHÁCH VÃNG LAI
+                ══════════════════════════════ -->
+                <div class="admin-tab-content" id="adminTab_guests">
+                    <div class="guests-header">
+                        <div>
+                            <h3 class="hud-section-title" style="margin:0;">Cơ Sở Dữ Liệu Khách Vãng Lai Toàn Quốc</h3>
+                            <p style="font-size:0.78rem;color:#64748b;margin-top:4px;">Thu thập tự động từ tất cả Host — phục vụ chiến dịch marketing.</p>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                            <span class="guest-count-badge" id="adminGuestCount">-- thành viên</span>
+                            <div style="position:relative;">
+                                <i class="fa-solid fa-magnifying-glass" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#64748b;font-size:0.8rem;"></i>
+                                <input type="text" class="form-control" id="adminGuestSearch"
+                                       placeholder="Tìm tên, SĐT..."
+                                       oninput="locKhachAdmin()"
+                                       style="padding-left:32px;font-size:0.82rem;height:36px;width:200px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-scroll-x">
+                        <table class="hud-table" style="min-width:700px;">
+                            <thead>
+                                <tr>
+                                    <th style="width:40px;">#</th>
+                                    <th>Tên Khách</th>
+                                    <th>SĐT Zalo</th>
+                                    <th>Ngày Tham Gia</th>
+                                    <th>Số Ca Tham Gia</th>
+                                    <th>Tổng Chi / Host</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminGuestsBody">
+                                <tr>
+                                    <td colspan="6" style="text-align:center;padding:24px;color:#64748b;">
+                                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════
+                     TAB 3: KIỂM DUYỆT ĐÁNH GIÁ
+                ══════════════════════════════ -->
+                <div class="admin-tab-content" id="adminTab_reviews">
+                    <div style="margin-bottom:14px;">
+                        <h3 class="hud-section-title" style="margin:0;">Kho Đánh Giá Hai Chiều (Host ↔ Khách)</h3>
+                        <p style="font-size:0.78rem;color:#64748b;margin-top:4px;">
+                            Admin có quyền xóa bất kỳ đánh giá nào. Dữ liệu đánh giá bị khóa sau khi tạo — chỉ Admin mới xóa được.
+                        </p>
+                    </div>
+                    <div class="table-scroll-x">
+                        <table class="hud-table" style="min-width:800px;">
+                            <thead>
+                                <tr>
+                                    <th>Loại</th>
+                                    <th>Người viết (SĐT)</th>
+                                    <th>Đối tượng (SĐT)</th>
+                                    <th>Sao</th>
+                                    <th>Nội dung nhận xét</th>
+                                    <th>Ngày / Xóa</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminReviewsBody">
+                                <tr>
+                                    <td colspan="6" style="text-align:center;padding:24px;color:#64748b;">
+                                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════
+                     TAB 4: CẤU HÌNH HỆ THỐNG
+                ══════════════════════════════ -->
+                <div class="admin-tab-content" id="adminTab_config">
+                    <div style="max-width:680px;margin:0 auto;">
+                        <h3 class="hud-section-title">Cấu Hình & Thông Báo Trang Chủ</h3>
+
+                        <!-- Thông báo popup -->
+                        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:24px;margin-bottom:20px;">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                                <i class="fa-solid fa-bullhorn" style="color:hsl(var(--neon-gold));"></i>
+                                <span style="font-weight:700;font-size:0.95rem;">Nội Dung Thông Báo Popup</span>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Thông báo hiển thị cho Khách khi vào trang chủ</label>
+                                <textarea class="form-control" id="adminAnnouncementContent" rows="5"
+                                          placeholder="Nhập nội dung thông báo... Để trống để tắt popup."></textarea>
+                                <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">
+                                    <i class="fa-solid fa-circle-info"></i>
+                                    Để trống = tắt popup. Nội dung này lưu vào Supabase → tự động cập nhật cho tất cả Khách.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Thống kê giả lập -->
+                        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:24px;margin-bottom:20px;">
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                                <i class="fa-solid fa-chart-simple" style="color:hsl(var(--neon-cyan));"></i>
+                                <span style="font-weight:700;font-size:0.95rem;">Thống Kê Hiển Thị Trang Chủ (Giả Lập)</span>
+                            </div>
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fa-solid fa-calendar-check"></i> Số Kèo Đang Mở</label>
+                                    <input type="number" class="form-control" id="adminConfigTotalSlots"
+                                           min="0" max="9999" value="45">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label"><i class="fa-solid fa-person-running"></i> Cầu Thủ Online</label>
+                                    <input type="number" class="form-control" id="adminConfigOnlinePlayers"
+                                           min="0" max="999999" value="1820">
+                                </div>
+                            </div>
+                        </div>
+
+                        <button class="btn-cyber" id="btnLuuThongBao"
+                                style="width:100%;padding:12px;font-size:0.95rem;font-weight:700;background:linear-gradient(135deg,rgba(255,200,0,0.15),rgba(255,160,0,0.08));border-color:hsl(var(--neon-gold));color:hsl(var(--neon-gold));"
+                                onclick="luuThongBaoAdmin()">
+                            <i class="fa-solid fa-floppy-disk"></i> Lưu & Đồng Bộ Lên Đám Mây
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ══════════════════════════════
+                     TAB 5: THỐNG KÊ TỔNG QUAN
+                ══════════════════════════════ -->
+                <div class="admin-tab-content" id="adminTab_stats">
+                    <h3 class="hud-section-title">Dashboard Tổng Quan Hệ Thống</h3>
+
+                    <!-- 6 thẻ số liệu -->
+                    <div class="stats-grid-admin">
+                        <div class="stat-card-admin">
+                            <div class="stat-value" style="color:hsl(var(--neon-mint));" id="statTotalKeys">--</div>
+                            <div class="stat-label"><i class="fa-solid fa-key"></i> Tổng Key</div>
+                        </div>
+                        <div class="stat-card-admin">
+                            <div class="stat-value" style="color:hsl(var(--neon-cyan));" id="statActiveKeys">--</div>
+                            <div class="stat-label"><i class="fa-solid fa-circle-check"></i> Key Đang Chạy</div>
+                        </div>
+                        <div class="stat-card-admin">
+                            <div class="stat-value" style="color:hsl(var(--neon-gold));" id="statTotalSlots">--</div>
+                            <div class="stat-label"><i class="fa-solid fa-calendar"></i> Tổng Ca Đấu</div>
+                        </div>
+                        <div class="stat-card-admin">
+                            <div class="stat-value" style="color:#a78bfa;" id="statOpenSlots">--</div>
+                            <div class="stat-label"><i class="fa-solid fa-door-open"></i> Ca Còn Mở</div>
+                        </div>
+                        <div class="stat-card-admin">
+                            <div class="stat-value" style="color:#fb923c;" id="statTotalGuests">--</div>
+                            <div class="stat-label"><i class="fa-solid fa-users"></i> Tổng Khách</div>
+                        </div>
+                        <div class="stat-card-admin">
+                            <div class="stat-value" style="color:#f472b6;" id="statTotalReviews">--</div>
+                            <div class="stat-label"><i class="fa-solid fa-star"></i> Đánh Giá</div>
+                        </div>
+                    </div>
+
+                    <!-- Phân tích nhanh -->
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:8px;">
+                        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:20px;">
+                            <div style="font-size:0.8rem;color:#64748b;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;">
+                                <i class="fa-solid fa-key"></i> Phân Bổ Trạng Thái Key
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:8px;" id="keyStatusBreakdown">
+                                <div style="font-size:0.82rem;color:#64748b;">Đang tải...</div>
+                            </div>
+                        </div>
+                        <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:20px;">
+                            <div style="font-size:0.8rem;color:#64748b;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;">
+                                <i class="fa-solid fa-circle-info"></i> Ghi Chú Hoạt Động
+                            </div>
+                            <div style="font-size:0.82rem;color:#94a3b8;line-height:1.7;">
+                                <div><i class="fa-solid fa-circle" style="color:hsl(var(--neon-mint));font-size:0.5rem;"></i> Thống kê tự động cập nhật khi chuyển tab.</div>
+                                <div><i class="fa-solid fa-circle" style="color:hsl(var(--neon-gold));font-size:0.5rem;"></i> Dữ liệu đồng bộ real-time từ Supabase.</div>
+                                <div><i class="fa-solid fa-circle" style="color:#a78bfa;font-size:0.5rem;"></i> Chỉ Admin mới thấy trang này.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Nút tải lại -->
+                    <div style="margin-top:20px;text-align:center;">
+                        <button class="btn-cyber" onclick="chuyenTabAdmin('stats')" style="padding:8px 24px;font-size:0.85rem;">
+                            <i class="fa-solid fa-arrows-rotate"></i> Làm Mới Thống Kê
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+            <!-- /adminConsole -->
 
         </div>
+        <!-- /gateway-container -->
 
         <!-- Footer -->
         <footer class="gateway-footer">
-            <p>&copy; 2026 TUYENVANGLAI.IO.VN. Hệ thống điều vận tuyển vãng lai Cầu Lông quy chuẩn quốc gia. Tốc độ, thẩm mỹ và bảo mật.</p>
+            <p>© 2026 TUYENVANGLAI.IO.VN — Hệ thống điều vận tuyển vãng lai Cầu Lông. Tốc độ · Thẩm mỹ · Bảo mật tuyệt đối.</p>
         </footer>
 
     </div>
+    <!-- /gateway-wrapper -->
 
-    <!-- TOAST NOTIFICATION ENGINE -->
+    <!-- ═══════════════════════════════════════════════════
+         MODAL: TẠO / CHỈNH SỬA KEY HOST
+    ═══════════════════════════════════════════════════ -->
+    <div class="modal-overlay-admin" id="modalKeyOverlay">
+        <div class="modal-box-admin">
+            <button class="modal-close-btn" onclick="dongModalKey()" title="Đóng">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="modal-title-admin">
+                <i class="fa-solid fa-key"></i>
+                <span id="modalKeyTitle">Tạo Key Mới</span>
+            </div>
+
+            <!-- Mã Key -->
+            <div class="form-group">
+                <label class="form-label">Mã Key <span style="color:#ef4444;">*</span></label>
+                <div style="display:flex;gap:8px;">
+                    <input type="text" class="form-control" id="keyFormMaKey"
+                           placeholder="TVL-XXXXX-XXXX"
+                           style="font-family:monospace;font-weight:700;letter-spacing:0.05em;flex:1;"
+                           maxlength="15">
+                    <button class="btn-cyber" style="padding:8px 12px;font-size:0.8rem;white-space:nowrap;" onclick="sinhLaiMaKey()" title="Sinh lại mã ngẫu nhiên">
+                        <i class="fa-solid fa-shuffle"></i> Random
+                    </button>
+                </div>
+                <div style="font-size:0.72rem;color:#64748b;margin-top:4px;">
+                    Định dạng: TVL-XXXXX-XXXX (chữ hoa + số)
+                </div>
+            </div>
+
+            <!-- Tên Host -->
+            <div class="form-group">
+                <label class="form-label">Tên Host <span style="color:#ef4444;">*</span></label>
+                <input type="text" class="form-control" id="keyFormTenHost"
+                       placeholder="Vd: Sân Viettel Q.10 - Anh Bình">
+            </div>
+
+            <!-- SĐT Host -->
+            <div class="form-group">
+                <label class="form-label">Số Điện Thoại Host</label>
+                <input type="tel" class="form-control" id="keyFormSdtHost"
+                       placeholder="Vd: 0909123456">
+            </div>
+
+            <!-- Số ngày sử dụng -->
+            <div class="form-group">
+                <label class="form-label">Số Ngày Sử Dụng</label>
+                <select class="form-control" id="keyFormSoNgay">
+                    <option value="1">1 ngày (Dùng thử)</option>
+                    <option value="7">7 ngày (Tuần)</option>
+                    <option value="30" selected>30 ngày (Tháng)</option>
+                    <option value="90">90 ngày (Quý)</option>
+                    <option value="180">180 ngày (Nửa năm)</option>
+                    <option value="365">365 ngày (Năm)</option>
+                </select>
+            </div>
+
+            <!-- Gói dịch vụ -->
+            <div class="form-group">
+                <label class="form-label">Cấp Độ Gói</label>
+                <select class="form-control" id="keyFormGoi">
+                    <option value="basic">🥉 Basic — Cơ bản</option>
+                    <option value="pro">🥈 Pro — Chuyên nghiệp</option>
+                    <option value="vip">🥇 VIP — Cao cấp</option>
+                </select>
+            </div>
+
+            <!-- Trạng thái -->
+            <div class="form-group">
+                <label class="form-label">Trạng Thái Key</label>
+                <select class="form-control" id="keyFormStatus">
+                    <option value="inactive">⏳ Chưa kích hoạt</option>
+                    <option value="active">✅ Đang chạy</option>
+                    <option value="locked">🔒 Bị khóa</option>
+                </select>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:24px;">
+                <button class="btn-cyber" id="btnLuuKey" onclick="luuKey()" style="flex:1;padding:11px;font-weight:700;">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu Key
+                </button>
+                <button class="btn-cyber" onclick="dongModalKey()"
+                        style="padding:11px 20px;border-color:rgba(239,68,68,0.4);color:#ef4444;background:rgba(239,68,68,0.06);">
+                    <i class="fa-solid fa-xmark"></i> Hủy
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- Scripts -->
-    <script src="ket-noi-supabase.js"></script>
-    <script src="bo-may-du-lieu.js"></script>
-    <script src="hieu-ung-giao-dien.js"></script>
-    <script src="phan-he-quan-tri.js"></script>
-    
+    <!-- ═══ Scripts ═══ -->
+    <script src="ket-noi-supabase.js?v=5.0"></script>
+    <script src="bo-may-du-lieu.js?v=5.0"></script>
+    <script src="hieu-ung-giao-dien.js?v=5.0"></script>
+    <script src="phan-he-quan-tri.js?v=5.0"></script>
+
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            // Khởi chạy giao diện phong thủy theme và hologram
-            const checkTheme = setInterval(() => {
-                if (window.khoiTaoTheme && window.khoiTaoHologramGlow) {
-                    clearInterval(checkTheme);
-                    window.khoiTaoTheme();
-                    window.khoiTaoHologramGlow();
-                }
-            }, 100);
+        // Script khởi động — mọi logic chính đã nằm trong phan-he-quan-tri.js
+        // (DOMContentLoaded listener trong JS đó sẽ gọi khoiTaoTrangAdmin() tự động)
+
+        // Hiển thị panel đăng nhập ngay để tránh flash trắng
+        document.addEventListener("DOMContentLoaded", function () {
+            document.getElementById("adminAuthPanel").style.display = "block";
+        });
+
+        // Đóng modal khi click ra ngoài
+        document.getElementById("modalKeyOverlay").addEventListener("click", function (e) {
+            if (e.target === this) dongModalKey();
         });
     </script>
 </body>

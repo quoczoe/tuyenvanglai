@@ -4,30 +4,674 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TUYENVANGLAI.IO.VN | Cổng Tuyển Vãng Lai Cầu Lông Quốc Gia</title>
-    
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="TUYENVANGLAI.IO.VN - Cổng tuyển vãng lai môn Cầu Lông chuyên nghiệp trên toàn quốc. Kết nối nhanh chóng giữa Chủ sân (Host) và Khách chơi (Guest). Hệ thống tài chính thông minh, bảo mật cao.">
+
+    <!-- ══ SEO Meta Tags ══ -->
+    <meta name="description" content="Nền tảng tuyển vãng lai cầu lông toàn quốc - Tìm kèo, ghép cặp, quản lý sân nhanh chóng">
     <meta name="keywords" content="tuyen vang lai, tuyenvanglai.io.vn, cau long, tuyen vang lai cau long, danh cau long, thue san cau long">
     <meta name="author" content="TUYENVANGLAI.IO.VN">
+    <meta name="robots" content="index, follow">
 
-    <!-- Google Fonts - Lexend (Athletic/Tech display) & Plus Jakarta Sans (Sleek/Premium body) -->
+    <!-- ══ Open Graph / Social Share ══ -->
+    <meta property="og:type"        content="website">
+    <meta property="og:url"         content="https://tuyenvanglai.io.vn">
+    <meta property="og:title"       content="TUYENVANGLAI.IO.VN — Cổng Tuyển Vãng Lai Cầu Lông Quốc Gia">
+    <meta property="og:description" content="Nền tảng tuyển vãng lai cầu lông toàn quốc - Tìm kèo, ghép cặp, quản lý sân nhanh chóng">
+    <meta property="og:image"       content="https://tuyenvanglai.io.vn/og-image.png">
+    <meta property="og:locale"      content="vi_VN">
+    <meta name="twitter:card"       content="summary_large_image">
+    <meta name="twitter:title"      content="TUYENVANGLAI.IO.VN — Cổng Tuyển Vãng Lai Cầu Lông">
+    <meta name="twitter:description" content="Nền tảng tuyển vãng lai cầu lông toàn quốc - Tìm kèo, ghép cặp, quản lý sân nhanh chóng">
+
+    <!-- ══ Favicon 🏸 ══ -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏸</text></svg>">
+
+    <!-- ══ Google Fonts: Oswald + Barlow Condensed + Plus Jakarta Sans ══ -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
-    
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom Design CSS Style System -->
-    <link rel="stylesheet" href="giao-dien.css?v=3.0">
-</head>
-<body data-theme="dark">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
 
-    <!-- Phong Thủy Mộc-Thủy Dương Liễu Decor -->
+    <!-- ══ FontAwesome ══ -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- ══ CSS Hệ thống ══ -->
+    <link rel="stylesheet" href="giao-dien.css?v=5.0">
+    <link rel="stylesheet" href="components.css?v=5.0">
+
+    <style>
+        /* ═══════════════════════════════════════════════════════════
+           PHONG THUỶ DƯƠNG LIỄU MỘC — Mệnh sinh 2002
+           Màu xanh ngọc lục (Mộc sinh) + Navy xanh sâu (Thuỷ tương sinh)
+           DARK MODE DUY NHẤT — Không có light mode
+           ═══════════════════════════════════════════════════════════ */
+        :root {
+            --bg-primary:     #0a1628;
+            --bg-card:        #0f1e38;
+            --bg-card-hover:  #132342;
+            --accent-green:   #00ff88;
+            --accent-navy:    #1a4a7a;
+            --accent-blue:    #2196f3;
+            --text-main:      #f0f0f0;
+            --text-sub:       #94a3b8;
+            --text-muted:     #64748b;
+            --border-dim:     rgba(0,255,136,0.1);
+            --border-bright:  rgba(0,255,136,0.3);
+            --glow-green:     rgba(0,255,136,0.18);
+            --glow-navy:      rgba(26,74,122,0.4);
+
+            /* Override giao-dien.css variables */
+            --background:    220 47% 10%;
+            --foreground:    0 0% 94%;
+            --card:          220 44% 8%;
+            --neon-mint:     151 100% 55%;
+            --neon-gold:     210 65% 28%;
+            --neon-cyan:     210 90% 55%;
+            --neon-pink:     151 100% 55%;
+            --border:        220 40% 14%;
+        }
+
+        /* ── Nền tổng thể ── */
+        html, body { background-color: var(--bg-primary) !important; color: var(--text-main); }
+        .gateway-wrapper { background: transparent; }
+
+        /* ── Font tiêu đề — Oswald cho brand title, Barlow Condensed cho heading chung ── */
+        .title-brand,
+        .btn-cta-hero {
+            font-family: 'Oswald', 'Barlow Condensed', sans-serif;
+            letter-spacing: 0.06em;
+        }
+        h1, h2, h3, h4, h5, h6,
+        .title-primary,
+        .hero-cta-label,
+        .sport-branch-card h4,
+        .card-title,
+        .section-title,
+        .why-card-title {
+            font-family: 'Barlow Condensed', 'Oswald', sans-serif;
+            letter-spacing: 0.06em;
+        }
+
+        /* ═══════════════════════════════════════
+           HERO TITLE
+           ═══════════════════════════════════════ */
+        .gateway-title-glow {
+            text-align: center;
+            margin-bottom: 10px;
+            padding: 0 12px;
+            display: flex !important;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .title-primary {
+            font-size: clamp(0.85rem, 3vw, 1.1rem);
+            color: var(--text-sub);
+            letter-spacing: 0.2em;
+            font-weight: 400;
+            text-transform: uppercase;
+        }
+        .title-brand {
+            font-size: clamp(2rem, 7vw, 4.2rem);
+            background: linear-gradient(135deg, var(--accent-green) 0%, #00e0ff 60%, var(--accent-green) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            filter: drop-shadow(0 0 18px var(--glow-green));
+            letter-spacing: 0.04em;
+        }
+
+        /* ── Mô tả hero ── */
+        .gateway-desc {
+            font-size: clamp(0.82rem, 2.5vw, 0.95rem);
+            color: var(--text-sub);
+            text-align: center;
+            max-width: 580px;
+            margin: 8px auto 16px;
+            line-height: 1.65;
+            padding: 0 16px;
+        }
+
+        /* ═══════════════════════════════════════
+           NÚT CTA LỚN "TÌM KÈO NGAY"
+           ═══════════════════════════════════════ */
+        .btn-cta-hero {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 36px;
+            background: var(--accent-green);
+            color: #021a0a;
+            font-family: 'Oswald', 'Barlow Condensed', sans-serif;
+            font-size: clamp(1rem, 4vw, 1.25rem);
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            text-decoration: none;
+            margin: 0 auto 24px;
+            box-shadow: 0 0 28px var(--glow-green), 0 4px 16px rgba(0,255,136,0.3);
+            transition: all 0.22s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-cta-hero::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.4s ease;
+        }
+        .btn-cta-hero:hover::before { transform: translateX(100%); }
+        .btn-cta-hero:hover {
+            transform: translateY(-2px) scale(1.03);
+            box-shadow: 0 0 40px var(--glow-green), 0 8px 24px rgba(0,255,136,0.4);
+        }
+        .btn-cta-hero:active { transform: scale(0.98); }
+
+        /* ═══════════════════════════════════════
+           HUD METRICS — Skeleton + Real data
+           ═══════════════════════════════════════ */
+        .hud-metrics {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 16px auto 20px;
+            padding: 14px 20px;
+            background: rgba(0,255,136,0.04);
+            border: 1px solid var(--border-dim);
+            border-radius: 50px;
+            max-width: fit-content;
+        }
+        .metric-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            min-width: 90px;
+        }
+        .metric-label {
+            font-size: 0.62rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+        .metric-value {
+            font-family: 'Oswald', 'Barlow Condensed', monospace;
+            font-size: 0.92rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+        .value-mint  { color: var(--accent-green); }
+        .value-gold  { color: #2196f3; }     /* Đổi vàng → xanh dương */
+        .value-cyan  { color: #00d4ff; }
+        .metric-divider {
+            width: 1px;
+            height: 32px;
+            background: rgba(0,255,136,0.15);
+            flex-shrink: 0;
+        }
+
+        /* Skeleton loading */
+        .metric-skeleton {
+            display: inline-block;
+            width: 72px;
+            height: 18px;
+            border-radius: 4px;
+            background: linear-gradient(90deg,
+                rgba(255,255,255,0.05) 0%,
+                rgba(255,255,255,0.12) 50%,
+                rgba(255,255,255,0.05) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.4s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+            0%   { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* ═══════════════════════════════════════
+           SECTION TITLE
+           ═══════════════════════════════════════ */
+        .section-title {
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+            font-weight: 700;
+            letter-spacing: 0.15em;
+            color: var(--text-muted);
+            text-align: center;
+            text-transform: uppercase;
+            margin: 0 0 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        /* ═══════════════════════════════════════
+           SPORT BRANCHES — Card ngang, 4 cột desktop / 2x2 mobile
+           ═══════════════════════════════════════ */
+        .sport-branches-section {
+            width: 100%;
+            max-width: 760px;
+            margin: 0 auto 20px;
+            padding: 0 8px;
+        }
+        .sport-branches-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        .sport-branch-card {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.06);
+            background: var(--bg-card);
+            cursor: default;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            min-height: 64px;
+        }
+        .sport-branch-card.active {
+            border-color: var(--border-bright);
+            background: linear-gradient(135deg, rgba(0,255,136,0.08), rgba(0,255,136,0.02));
+            cursor: pointer;
+        }
+        .sport-branch-card.active:hover {
+            border-color: var(--accent-green);
+            box-shadow: 0 0 20px var(--glow-green);
+            transform: translateY(-2px);
+        }
+        /* Disabled card — mờ nền + icon, giữ text đọc được rõ ràng */
+        .sport-branch-card.disabled {
+            cursor: pointer;
+            background: rgba(10, 18, 36, 0.6);
+            border-color: rgba(255,255,255,0.04);
+        }
+        .sport-branch-card.disabled .branch-icon { opacity: 0.4; }
+        .sport-branch-card.disabled .branch-info h4 { color: #94a3b8; }
+        .sport-branch-card.disabled .branch-badge { opacity: 0.82; }
+        .sport-branch-card.disabled:hover {
+            background: rgba(15, 26, 52, 0.75);
+            border-color: rgba(255,255,255,0.08);
+        }
+
+        .branch-glow {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(ellipse at 20% 50%, var(--glow-green), transparent 70%);
+            pointer-events: none;
+        }
+        .branch-icon {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .branch-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            min-width: 0;
+        }
+        .branch-info h4 {
+            font-size: clamp(0.72rem, 2vw, 0.85rem);
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            letter-spacing: 0.04em;
+        }
+        .branch-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.62rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 20px;
+            letter-spacing: 0.04em;
+            white-space: nowrap;
+        }
+        .badge-active {
+            background: rgba(0,255,136,0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(0,255,136,0.3);
+        }
+        .badge-active::before {
+            content: '';
+            display: inline-block;
+            width: 5px; height: 5px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            box-shadow: 0 0 6px var(--accent-green);
+            animation: pulseDot 1.5s ease-in-out infinite;
+        }
+        @keyframes pulseDot {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+        .badge-lock {
+            background: rgba(100,116,139,0.15);
+            color: var(--text-muted);
+            border: 1px solid rgba(100,116,139,0.2);
+        }
+
+        /* ═══════════════════════════════════════
+           GATEWAY CARDS (Guest / Host)
+           ═══════════════════════════════════════ */
+        .gateway-button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            width: 100%;
+            max-width: 760px;
+            margin: 0 auto;
+        }
+        .gateway-card {
+            position: relative;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.07);
+            background: var(--bg-card);
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+        }
+        .gateway-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-green);
+            box-shadow: 0 12px 36px var(--glow-green);
+        }
+        .card-glass-glow {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .gateway-card:hover .card-glass-glow { opacity: 1; }
+        .card-pink .card-glass-glow  { background: radial-gradient(ellipse at 50% 0%, rgba(0,255,136,0.08), transparent 70%); }
+        .card-cyan .card-glass-glow  { background: radial-gradient(ellipse at 50% 0%, rgba(0,212,255,0.06), transparent 70%); }
+
+        /* Corner decorations */
+        .card-corner {
+            position: absolute;
+            width: 10px; height: 10px;
+            border-color: rgba(0,255,136,0.25);
+            border-style: solid;
+        }
+        .corner-tl { top:8px; left:8px;  border-width:1px 0 0 1px; }
+        .corner-tr { top:8px; right:8px; border-width:1px 1px 0 0; }
+        .corner-bl { bottom:8px; left:8px;  border-width:0 0 1px 1px; }
+        .corner-br { bottom:8px; right:8px; border-width:0 1px 1px 0; }
+
+        .card-top-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px 8px;
+            gap: 6px;
+        }
+        .card-badge {
+            font-size: 0.65rem;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .badge-mint { background: rgba(0,255,136,0.1); color: var(--accent-green); border: 1px solid rgba(0,255,136,0.25); }
+        .badge-gold { background: rgba(26,74,122,0.25); color: #60a5fa; border: 1px solid rgba(26,74,122,0.5); }
+
+        .card-status {
+            font-size: 0.62rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .status-online {
+            background: rgba(0,255,136,0.08);
+            color: var(--accent-green);
+            border: 1px solid rgba(0,255,136,0.2);
+        }
+        .status-online i { font-size: 0.45rem; animation: pulseDot 1.5s ease-in-out infinite; }
+
+        .card-main-content {
+            padding: 8px 14px 12px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .card-icon-wrapper {
+            font-size: 2rem;
+            color: var(--accent-green);
+            margin-bottom: 2px;
+        }
+        .card-cyan .card-icon-wrapper { color: #00d4ff; }
+        .card-title {
+            font-size: clamp(1rem, 3.5vw, 1.3rem);
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.1;
+            letter-spacing: 0.04em;
+        }
+        .card-desc {
+            font-size: clamp(0.72rem, 2vw, 0.8rem);
+            color: var(--text-sub);
+            line-height: 1.55;
+            margin: 0;
+        }
+        .card-action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 14px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--accent-green);
+            background: rgba(0,255,136,0.03);
+        }
+        .card-cyan .card-action-bar { color: #00d4ff; background: rgba(0,212,255,0.03); }
+        .action-arrow {
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            border: 1px solid currentColor;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            transition: transform 0.2s;
+        }
+        .gateway-card:hover .action-arrow { transform: translateX(3px); }
+
+        /* ── Ẩn hoàn toàn theme toggle (không có light mode) ── */
+        .btn-theme-toggle { display: none !important; }
+
+        /* ── Header ── */
+        .gateway-header {
+            background: rgba(10,22,40,0.85);
+            border-bottom: 1px solid rgba(0,255,136,0.08);
+            backdrop-filter: blur(12px);
+        }
+        .logo-text { color: var(--accent-green); }
+
+        /* ── Ambient glows tông xanh dương ── */
+        .glow-sphere.glow-1 { background: radial-gradient(circle, rgba(0,255,136,0.12), transparent 70%); }
+        .glow-sphere.glow-2 { background: radial-gradient(circle, rgba(26,74,122,0.3), transparent 70%); }
+        .glow-sphere.glow-3 { background: radial-gradient(circle, rgba(0,212,255,0.08), transparent 70%); }
+
+        /* ── Footer ── */
+        .gateway-footer {
+            border-top: 1px solid rgba(0,255,136,0.07);
+            background: rgba(5,12,24,0.6);
+            color: var(--text-muted);
+            font-size: 0.78rem;
+        }
+
+        /* ── Panel tech decor ── */
+        .panel-tech-decor { margin-bottom: 8px; }
+        .decor-line { background: rgba(0,255,136,0.2); }
+        .decor-dot  { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+
+        /* ── main panel ── */
+        .main-panel { background: transparent; border: none; box-shadow: none; }
+
+        /* ═══════════════════════════════════════
+           TẠI SAO CHỌN — 3 feature cards ngang
+           ═══════════════════════════════════════ */
+        .why-choose-section {
+            width: 100%;
+            max-width: 760px;
+            margin: 28px auto 8px;
+            padding: 0 8px;
+        }
+        .why-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+        .why-card {
+            display: flex;
+            flex-direction: row;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 12px;
+            border: 1px solid rgba(0,255,136,0.1);
+            background: rgba(0,255,136,0.025);
+            transition: all 0.2s ease;
+        }
+        .why-card:hover {
+            border-color: rgba(0,255,136,0.28);
+            background: rgba(0,255,136,0.055);
+            transform: translateY(-2px);
+        }
+        .why-card-icon {
+            flex-shrink: 0;
+            font-size: 1.4rem;
+            color: var(--accent-green);
+            padding-top: 1px;
+            width: 32px;
+            text-align: center;
+        }
+        .why-card-body {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 0;
+        }
+        .why-card-title {
+            font-size: 0.88rem;
+            font-weight: 800;
+            color: var(--text-main);
+            margin: 0;
+        }
+        .why-card-desc {
+            font-size: 0.74rem;
+            color: var(--text-sub);
+            line-height: 1.55;
+            margin: 0;
+        }
+
+        /* ═══════════════════════════════════════
+           RESPONSIVE MOBILE
+           ═══════════════════════════════════════ */
+        @media (max-width: 768px) {
+            /* Sport branches: 2×2 grid */
+            .sport-branches-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            /* Gateway cards: vertical stack */
+            .gateway-button-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+            /* Title giảm 40% */
+            .title-brand {
+                font-size: clamp(1.6rem, 11vw, 2.4rem) !important;
+            }
+            .title-primary { font-size: 0.72rem; letter-spacing: 0.15em; }
+
+            /* HUD metrics compact */
+            .hud-metrics {
+                gap: 12px;
+                padding: 10px 14px;
+                border-radius: 12px;
+            }
+            .metric-item { min-width: 64px; }
+            .metric-divider { height: 24px; }
+
+            /* Branch card compact */
+            .sport-branch-card { padding: 10px 10px; gap: 8px; min-height: 54px; }
+            .branch-icon { width: 32px; height: 32px; }
+            .branch-info h4 { font-size: 0.68rem; }
+
+            /* Card compact */
+            .card-main-content { padding: 6px 12px 10px; }
+            .card-desc { font-size: 0.72rem; }
+            .card-top-header { padding: 10px 12px 6px; }
+
+            /* Why-choose: 1 cột trên mobile */
+            .why-cards-grid { grid-template-columns: 1fr; gap: 8px; }
+            .why-choose-section { margin-top: 20px; }
+        }
+
+        @media (max-width: 480px) {
+            /* Tiêu đề giảm thêm 20% so với 768px breakpoint */
+            .title-brand { font-size: clamp(1.12rem, 7.2vw, 1.6rem) !important; }
+            .btn-cta-hero { padding: 12px 28px; font-size: 0.95rem; }
+            .hud-metrics { width: 100%; justify-content: space-around; }
+            .metric-divider { display: none; }
+            .metric-item { min-width: unset; }
+
+            /* Fix HOST WORKSTATION badge overflow */
+            .badge-gold {
+                font-size: 0.54rem;
+                letter-spacing: 0.01em;
+                padding: 2px 7px;
+            }
+            .card-badge {
+                max-width: 128px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                display: inline-block;
+            }
+            .card-top-header { flex-wrap: wrap; gap: 4px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Decor phong thuỷ -->
     <div class="willow-decor willow-top-left"></div>
     <div class="willow-decor willow-top-right"></div>
 
-    <!-- Ambient Dynamic Glows (Đốm sáng chuyển dịch 3D và hạt trôi nổi tự nhiên) -->
+    <!-- Ambient Dynamic Glows -->
     <div class="ambient-glows">
         <div class="glow-sphere glow-1"></div>
         <div class="glow-sphere glow-2"></div>
@@ -39,305 +683,414 @@
         <div class="glow-particle particle-5"></div>
     </div>
 
-    <!-- Gateway System Wrapper -->
     <div class="gateway-wrapper">
-        
-        <!-- Header -->
+
+        <!-- ── HEADER ── -->
         <header class="gateway-header">
-            <a href="index.html" class="brand-logo" style="text-decoration: none; display: flex; align-items: center;">
-                <!-- SVG quả cầu lông quay nghiêng siêu chất thay cho icon fa-shuttlecock bị lỗi -->
-                <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="shuttlecock-svg" style="color: hsl(var(--neon-mint)); transform: rotate(-45deg); display: inline-block; margin-right: 8px;">
-                    <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill="currentColor"></path>
-                    <path d="M9 6l-5 13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1L15 6"></path>
-                    <path d="M12 6v14"></path>
-                    <path d="M10.5 6l-2.5 14"></path>
-                    <path d="M13.5 6l2.5 14"></path>
-                    <path d="M6 13h12"></path>
-                    <path d="M5 16h14"></path>
+            <a href="index.html" class="brand-logo" style="text-decoration:none;display:flex;align-items:center;">
+                <svg viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" stroke-width="2" fill="none"
+                     style="color:#00ff88;transform:rotate(-45deg);flex-shrink:0;margin-right:8px;">
+                    <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill="currentColor"/>
+                    <path d="M9 6l-5 13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1L15 6"/>
+                    <path d="M12 6v14"/><path d="M10.5 6l-2.5 14"/><path d="M13.5 6l2.5 14"/>
+                    <path d="M6 13h12"/><path d="M5 16h14"/>
                 </svg>
-                <span class="logo-text">TUYENVANGLAI.IO.VN</span>
+                <span class="logo-text" style="font-family:'Oswald','Barlow Condensed',sans-serif;font-size:1.1rem;letter-spacing:0.08em;">
+                    TUYENVANGLAI.IO.VN
+                </span>
             </a>
-            
-            <button class="btn-theme-toggle" id="themeBtn" onclick="chuyenDoiTheme()" title="Đổi giao diện Sáng/Tối">
-                <div class="theme-toggle-icon-box">
-                    <i class="fa-solid fa-sun" id="themeIcon"></i>
-                </div>
-            </button>
+            <!-- Không có theme toggle — Dark mode duy nhất -->
         </header>
 
-        <!-- Gateway Container -->
+        <!-- ── MAIN ── -->
         <div class="gateway-container">
-            
-            <!-- Gateway Landing Gateway Panel -->
-            <main class="panel-view active" id="mainView">
-                <div class="main-panel">
-                    <div class="panel-tech-decor">
-                        <span class="decor-line decor-l"></span>
-                        <span class="decor-dot"></span>
-                        <span class="decor-line decor-r"></span>
+        <main class="panel-view active" id="mainView">
+        <div class="main-panel">
+
+            <div class="panel-tech-decor">
+                <span class="decor-line decor-l"></span>
+                <span class="decor-dot"></span>
+                <span class="decor-line decor-r"></span>
+            </div>
+
+            <div class="scrollable-y w-full flex-grow-1"
+                 style="padding-bottom:32px;display:flex;flex-direction:column;align-items:center;">
+
+                <!-- ── HERO TITLE ── -->
+                <h1 class="gateway-title-glow">
+                    <span class="title-primary">CỔNG TUYỂN VÃNG LAI CẦU LÔNG</span>
+                    <span class="title-brand">TUYENVANGLAI.IO.VN</span>
+                </h1>
+
+                <p class="gateway-desc">
+                    Nền tảng kết nối người chơi vãng lai và chủ sân cầu lông toàn quốc.<br>
+                    Thiết lập sân bãi, đồng bộ kế toán, đánh giá uy tín tức thì.
+                </p>
+
+                <!-- ── CTA LỚN "TÌM KÈO NGAY" ── -->
+                <a href="khach.html" class="btn-cta-hero">
+                    <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2.5" fill="none"
+                         style="transform:rotate(-45deg);flex-shrink:0;">
+                        <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill="currentColor"/>
+                        <path d="M9 6l-5 13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1L15 6"/>
+                        <path d="M12 6v14"/>
+                    </svg>
+                    TÌM KÈO NGAY
+                    <i class="fa-solid fa-arrow-right"></i>
+                </a>
+
+                <!-- ── HUD METRICS ── -->
+                <div class="hud-metrics">
+                    <div class="metric-item">
+                        <span class="metric-label">HỆ THỐNG</span>
+                        <span class="metric-value value-mint" id="hudSystemStatus">
+                            <i class="fa-solid fa-circle" style="font-size:0.5rem;"></i> CONNECTED
+                        </span>
                     </div>
-                    
-                    <h1 class="gateway-title-glow" style="display: flex; flex-col; align-items: center; justify-content: center; gap: 4px;">
-                        <span class="title-primary">CỔNG TUYỂN VÃNG LAI CẦU LÔNG</span>
-                        <span class="title-brand">TUYENVANGLAI.IO.VN</span>
-                    </h1>
-                    <p class="gateway-desc">Nền tảng kết nối người chơi vãng lai và chủ sân cầu lông toàn quốc. Thiết lập sân bãi, đồng bộ kế toán, đánh giá uy tín tức thì.</p>
-
-                    <!-- Live Metrics HUD Bar (Dynamically updated from DB) -->
-                    <div class="hud-metrics">
-                        <div class="metric-item">
-                            <span class="metric-label">HỆ THỐNG</span>
-                            <span class="metric-value value-mint" id="hudSystemStatus"><i class="fa-solid fa-circle"></i> CONNECTED</span>
-                        </div>
-                        <div class="metric-divider"></div>
-                        <div class="metric-item">
-                            <span class="metric-label">KÈO MỞ</span>
-                            <span class="metric-value value-gold" id="hudTotalSlots">-- CA ĐẤU</span>
-                        </div>
-                        <div class="metric-divider"></div>
-                        <div class="metric-item">
-                            <span class="metric-label">CẦU THỦ ONLINE</span>
-                            <span class="metric-value value-cyan" id="hudOnlinePlayers">-- THÀNH VIÊN</span>
-                        </div>
+                    <div class="metric-divider"></div>
+                    <div class="metric-item">
+                        <span class="metric-label">KÈO MỞ</span>
+                        <span class="metric-value value-gold" id="hudTotalSlots">
+                            <span class="metric-skeleton"></span>
+                        </span>
                     </div>
-
-                    <!-- =========================================================================
-                         🏸 PHÂN NHÁNH MÔN THỂ THAO TÌM KÈO
-                         ========================================================================= -->
-                    <div class="sport-branches-section">
-                        <h3 class="section-title">
-                            <!-- SVG quả cầu lông quay xéo nhỏ tinh tế -->
-                            <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate(-45deg); display: inline-block; vertical-align: middle; margin-right: 6px; color: hsl(var(--neon-mint));">
-                                <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill="currentColor"></path>
-                                <path d="M9 6l-5 13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1L15 6"></path>
-                                <path d="M12 6v14"></path>
-                                <path d="M6 13h12"></path>
-                            </svg>
-                            PHÂN NHÁNH MÔN THỂ THAO TÌM KÈO
-                        </h3>
-                        <div class="sport-branches-grid">
-                            <!-- Cầu lông (Active) -->
-                            <div class="sport-branch-card active">
-                                <div class="branch-glow"></div>
-                                <div class="branch-icon">
-                                    <svg viewBox="0 0 24 24" width="36" height="36" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round" style="transform: rotate(-45deg); display: inline-block; color: hsl(var(--neon-mint));">
-                                        <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill="currentColor"></path>
-                                        <path d="M9 6l-5 13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1L15 6"></path>
-                                        <path d="M12 6v14"></path>
-                                        <path d="M10.5 6l-2.5 14"></path>
-                                        <path d="M13.5 6l2.5 14"></path>
-                                        <path d="M6 13h12"></path>
-                                        <path d="M5 16h14"></path>
-                                    </svg>
-                                </div>
-                                <div class="branch-info">
-                                    <h4>CẦU LÔNG</h4>
-                                    <span class="branch-badge badge-active">ĐANG HOẠT ĐỘNG</span>
-                                </div>
-                            </div>
-                            <!-- Bida (Disabled) -->
-                            <div class="sport-branch-card disabled" onclick="window.hienToast('Đang phát triển', 'Phân hệ Bida đang được phát triển, dự kiến ra mắt trong quý này!', 'warning')">
-                                <div class="branch-icon">
-                                    <svg viewBox="0 0 24 24" width="36" height="36" fill="currentColor" style="display: inline-block; color: #64748b;">
-                                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none"></circle>
-                                        <circle cx="12" cy="12" r="4" fill="white"></circle>
-                                        <text x="12" y="15.5" font-size="10" font-weight="bold" font-family="sans-serif" text-anchor="middle" fill="black">8</text>
-                                    </svg>
-                                </div>
-                                <div class="branch-info">
-                                    <h4>BIDA (BILLIARDS)</h4>
-                                    <span class="branch-badge badge-lock"><i class="fa-solid fa-lock"></i> ĐANG PHÁT TRIỂN</span>
-                                </div>
-                            </div>
-                            <!-- Pickleball (Disabled) -->
-                            <div class="sport-branch-card disabled" onclick="window.hienToast('Đang update', 'Phân hệ Pickleball đang được phát triển và chuẩn bị cập nhật!', 'warning')">
-                                <div class="branch-icon">
-                                    <svg viewBox="0 0 24 24" width="36" height="36" fill="none" stroke="currentColor" stroke-width="1.8" style="display: inline-block; color: #64748b;">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <circle cx="12" cy="7" r="1" fill="currentColor"></circle>
-                                        <circle cx="12" cy="17" r="1" fill="currentColor"></circle>
-                                        <circle cx="7" cy="12" r="1" fill="currentColor"></circle>
-                                        <circle cx="17" cy="12" r="1" fill="currentColor"></circle>
-                                        <circle cx="8.5" cy="8.5" r="1" fill="currentColor"></circle>
-                                        <circle cx="15.5" cy="15.5" r="1" fill="currentColor"></circle>
-                                        <circle cx="8.5" cy="15.5" r="1" fill="currentColor"></circle>
-                                        <circle cx="15.5" cy="8.5" r="1" fill="currentColor"></circle>
-                                    </svg>
-                                </div>
-                                <div class="branch-info">
-                                    <h4>PICKLEBALL</h4>
-                                    <span class="branch-badge badge-lock"><i class="fa-solid fa-lock"></i> ĐANG UPDATE</span>
-                                </div>
-                            </div>
-                            <!-- Game (Disabled) -->
-                            <div class="sport-branch-card disabled" onclick="window.hienToast('Chưa liên kết', 'Phân hệ Game & E-Sports đang trong lộ trình nâng cấp hệ thống!', 'warning')">
-                                <div class="branch-icon">
-                                    <i class="fa-solid fa-gamepad" style="font-size: 34px; color: #64748b;"></i>
-                                </div>
-                                <div class="branch-info">
-                                    <h4>E-SPORTS (GAME)</h4>
-                                    <span class="branch-badge badge-lock"><i class="fa-solid fa-lock"></i> ĐANG PHÁT TRIỂN</span>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="metric-divider"></div>
+                    <div class="metric-item">
+                        <span class="metric-label">CẦU THỦ</span>
+                        <span class="metric-value value-cyan" id="hudOnlinePlayers">
+                            <span class="metric-skeleton"></span>
+                        </span>
                     </div>
+                </div>
 
-                    <!-- Grid Lựa chọn Phân hệ -->
-                    <div class="gateway-button-grid" style="margin-top: 30px;">
-                        
-                        <!-- 🏸 Sàn Khách Vãng Lai -->
-                        <div class="gateway-card card-pink" onclick="window.location.href='khach.html'">
-                            <div class="card-glass-glow"></div>
-                            <div class="card-corner corner-tl"></div>
-                            <div class="card-corner corner-tr"></div>
-                            <div class="card-corner corner-bl"></div>
-                            <div class="card-corner corner-br"></div>
+                <!-- ── SPORT BRANCHES ── -->
+                <div class="sport-branches-section">
+                    <h3 class="section-title">
+                        <i class="fa-solid fa-layer-group"></i>
+                        PHÂN NHÁNH MÔN THỂ THAO
+                    </h3>
+                    <div class="sport-branches-grid">
 
-                            <div class="card-top-header">
-                                <span class="card-badge badge-mint"><i class="fa-solid fa-circle-play"></i> GUEST ENTRY</span>
-                                <span class="card-status status-online"><i class="fa-solid fa-circle"></i> ĐANG MỞ</span>
+                        <!-- Cầu lông — Active -->
+                        <div class="sport-branch-card active" onclick="window.location.href='khach.html'">
+                            <div class="branch-glow"></div>
+                            <div class="branch-icon">
+                                <svg viewBox="0 0 24 24" width="36" height="36" stroke="#00ff88" stroke-width="1.8"
+                                     fill="none" style="transform:rotate(-45deg);">
+                                    <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill="#00ff88"/>
+                                    <path d="M9 6l-5 13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1L15 6"/>
+                                    <path d="M12 6v14"/><path d="M10.5 6l-2.5 14"/><path d="M13.5 6l2.5 14"/>
+                                    <path d="M6 13h12"/><path d="M5 16h14"/>
+                                </svg>
                             </div>
-                            <div class="card-main-content">
-                                <div class="card-icon-wrapper">
-                                    <i class="fa-solid fa-user-astronaut"></i>
-                                </div>
-                                <h3 class="card-title">SÀN KHÁCH VÃNG LAI</h3>
-                                <p class="card-desc">Tìm kèo cầu lông vãng lai siêu tốc, đăng ký nhanh không cần tài khoản, thống kê chi phí chơi cầu và xem điểm xếp hạng uy tín.</p>
-                            </div>
-                            <div class="card-action-bar">
-                                <span>Tìm Kèo Ghép Cặp</span>
-                                <div class="action-arrow">
-                                    <i class="fa-solid fa-arrow-right"></i>
-                                </div>
+                            <div class="branch-info">
+                                <h4>CẦU LÔNG</h4>
+                                <span class="branch-badge badge-active">ĐANG HOẠT ĐỘNG</span>
                             </div>
                         </div>
 
-                        <!-- 🏟️ Trạm Làm Việc Chủ Sân -->
-                        <div class="gateway-card card-cyan" onclick="window.location.href='host.html'">
-                            <div class="card-glass-glow"></div>
-                            <div class="card-corner corner-tl"></div>
-                            <div class="card-corner corner-tr"></div>
-                            <div class="card-corner corner-bl"></div>
-                            <div class="card-corner corner-br"></div>
+                        <!-- Bida — Disabled -->
+                        <div class="sport-branch-card disabled"
+                             onclick="window.hienToast('Đang phát triển','Phân hệ Bida sắp ra mắt!','warning')">
+                            <div class="branch-icon">
+                                <svg viewBox="0 0 24 24" width="34" height="34" fill="none"
+                                     stroke="#64748b" stroke-width="1.5">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <circle cx="12" cy="12" r="4" fill="#64748b" opacity="0.4"/>
+                                    <text x="12" y="15.5" font-size="9" font-weight="bold"
+                                          font-family="sans-serif" text-anchor="middle" fill="#94a3b8">8</text>
+                                </svg>
+                            </div>
+                            <div class="branch-info">
+                                <h4>BIDA</h4>
+                                <span class="branch-badge badge-lock"><i class="fa-solid fa-lock"></i> SẮP RA MẮT</span>
+                            </div>
+                        </div>
 
-                            <div class="card-top-header">
-                                <span class="card-badge badge-gold"><i class="fa-solid fa-server"></i> HOST WORKSTATION</span>
-                                <span class="card-status status-online"><i class="fa-solid fa-circle"></i> ĐANG MỞ</span>
+                        <!-- Pickleball — Disabled -->
+                        <div class="sport-branch-card disabled"
+                             onclick="window.hienToast('Đang update','Phân hệ Pickleball đang cập nhật!','warning')">
+                            <div class="branch-icon">
+                                <svg viewBox="0 0 24 24" width="34" height="34" fill="none"
+                                     stroke="#64748b" stroke-width="1.8">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <circle cx="12" cy="7"  r="1" fill="#64748b"/>
+                                    <circle cx="12" cy="17" r="1" fill="#64748b"/>
+                                    <circle cx="7"  cy="12" r="1" fill="#64748b"/>
+                                    <circle cx="17" cy="12" r="1" fill="#64748b"/>
+                                    <circle cx="8.5" cy="8.5"   r="1" fill="#64748b"/>
+                                    <circle cx="15.5" cy="15.5" r="1" fill="#64748b"/>
+                                    <circle cx="8.5" cy="15.5"  r="1" fill="#64748b"/>
+                                    <circle cx="15.5" cy="8.5"  r="1" fill="#64748b"/>
+                                </svg>
                             </div>
-                            <div class="card-main-content">
-                                <div class="card-icon-wrapper">
-                                    <i class="fa-solid fa-chess-knight"></i>
-                                </div>
-                                <h3 class="card-title">TRẠM QUẢN TRỊ CHỦ SÂN</h3>
-                                <p class="card-desc">Kích hoạt key thuê, đăng kèo cầu lông tự động, tích hợp bộ máy kế toán thông minh chia đầu người và quản lý ca đấu vĩnh viễn.</p>
+                            <div class="branch-info">
+                                <h4>PICKLEBALL</h4>
+                                <span class="branch-badge badge-lock"><i class="fa-solid fa-lock"></i> SẮP RA MẮT</span>
                             </div>
-                            <div class="card-action-bar">
-                                <span>Vào Trạm Quản Trị</span>
-                                <div class="action-arrow">
-                                    <i class="fa-solid fa-arrow-right"></i>
-                                </div>
+                        </div>
+
+                        <!-- E-Sports — Disabled -->
+                        <div class="sport-branch-card disabled"
+                             onclick="window.hienToast('Chưa liên kết','Phân hệ E-Sports đang trong lộ trình nâng cấp!','warning')">
+                            <div class="branch-icon">
+                                <i class="fa-solid fa-gamepad" style="font-size:30px;color:#64748b;"></i>
+                            </div>
+                            <div class="branch-info">
+                                <h4>E-SPORTS</h4>
+                                <span class="branch-badge badge-lock"><i class="fa-solid fa-lock"></i> SẮP RA MẮT</span>
                             </div>
                         </div>
 
                     </div>
                 </div>
-            </main>
 
+                <!-- ── GATEWAY CARDS: KHÁCH / HOST ── -->
+                <div class="gateway-button-grid">
+
+                    <!-- Sàn Khách Vãng Lai -->
+                    <div class="gateway-card card-pink" onclick="window.location.href='khach.html'">
+                        <div class="card-glass-glow"></div>
+                        <div class="card-corner corner-tl"></div>
+                        <div class="card-corner corner-tr"></div>
+                        <div class="card-corner corner-bl"></div>
+                        <div class="card-corner corner-br"></div>
+                        <div class="card-top-header">
+                            <span class="card-badge badge-mint"><i class="fa-solid fa-circle-play"></i> GUEST ENTRY</span>
+                            <span class="card-status status-online"><i class="fa-solid fa-circle"></i> ĐANG MỞ</span>
+                        </div>
+                        <div class="card-main-content">
+                            <div class="card-icon-wrapper"><i class="fa-solid fa-user-astronaut"></i></div>
+                            <h3 class="card-title">SÀN KHÁCH VÃNG LAI</h3>
+                            <p class="card-desc">Tìm kèo siêu tốc, đăng ký không cần tài khoản, thống kê chi phí và xem điểm uy tín.</p>
+                        </div>
+                        <div class="card-action-bar">
+                            <span>Tìm Kèo Ghép Cặp</span>
+                            <div class="action-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                        </div>
+                    </div>
+
+                    <!-- Trạm Chủ Sân -->
+                    <div class="gateway-card card-cyan" onclick="window.location.href='host.html'">
+                        <div class="card-glass-glow"></div>
+                        <div class="card-corner corner-tl"></div>
+                        <div class="card-corner corner-tr"></div>
+                        <div class="card-corner corner-bl"></div>
+                        <div class="card-corner corner-br"></div>
+                        <div class="card-top-header">
+                            <span class="card-badge badge-gold"><i class="fa-solid fa-server"></i> HOST WORKSTATION</span>
+                            <span class="card-status status-online"><i class="fa-solid fa-circle"></i> ĐANG MỞ</span>
+                        </div>
+                        <div class="card-main-content">
+                            <div class="card-icon-wrapper"><i class="fa-solid fa-chess-knight"></i></div>
+                            <h3 class="card-title">TRẠM QUẢN TRỊ CHỦ SÂN</h3>
+                            <p class="card-desc">Kích hoạt key, đăng kèo tự động, kế toán thông minh chia đầu người và quản lý ca đấu.</p>
+                        </div>
+                        <div class="card-action-bar">
+                            <span>Vào Trạm Quản Trị</span>
+                            <div class="action-arrow"><i class="fa-solid fa-arrow-right"></i></div>
+                        </div>
+                    </div>
+
+                </div>
+                <!-- end gateway cards -->
+
+                <!-- ── TẠI SAO CHỌN TUYENVANGLAI.IO.VN? ── -->
+                <div class="why-choose-section">
+                    <h3 class="section-title" style="margin-bottom:14px;">
+                        <i class="fa-solid fa-circle-check"></i>
+                        TẠI SAO CHỌN TUYENVANGLAI.IO.VN?
+                    </h3>
+                    <div class="why-cards-grid">
+
+                        <!-- Tìm kèo siêu tốc -->
+                        <div class="why-card">
+                            <div class="why-card-icon">
+                                <i class="fa-solid fa-bolt"></i>
+                            </div>
+                            <div class="why-card-body">
+                                <h4 class="why-card-title">TÌM KÈO SIÊU TỐC</h4>
+                                <p class="why-card-desc">Lọc kèo theo khu vực, trình độ và mức giá chỉ trong vài giây. Không cần đăng ký tài khoản.</p>
+                            </div>
+                        </div>
+
+                        <!-- Kết nối toàn quốc -->
+                        <div class="why-card">
+                            <div class="why-card-icon" style="color:#00d4ff;">
+                                <i class="fa-solid fa-earth-asia"></i>
+                            </div>
+                            <div class="why-card-body">
+                                <h4 class="why-card-title">KẾT NỐI TOÀN QUỐC</h4>
+                                <p class="why-card-desc">Mạng lưới sân cầu lông từ TP.HCM đến Hà Nội và toàn bộ 63 tỉnh thành Việt Nam.</p>
+                            </div>
+                        </div>
+
+                        <!-- Miễn phí đăng ký -->
+                        <div class="why-card">
+                            <div class="why-card-icon" style="color:#a78bfa;">
+                                <i class="fa-solid fa-gift"></i>
+                            </div>
+                            <div class="why-card-body">
+                                <h4 class="why-card-title">MIỄN PHÍ ĐĂNG KÝ</h4>
+                                <p class="why-card-desc">Khách vãng lai tham gia hoàn toàn miễn phí. Đặt slot nhanh, theo dõi lịch sử chi phí tức thì.</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <!-- end why-choose -->
+
+            </div>
+        </div>
+        </main>
         </div>
 
-        <!-- Footer -->
+        <!-- ── FOOTER ── -->
         <footer class="gateway-footer">
-            <p>&copy; 2026 TUYENVANGLAI.IO.VN. Hệ thống điều vận tuyển vãng lai Cầu Lông quy chuẩn quốc gia. Tốc độ, thẩm mỹ và bảo mật.</p>
+            <p style="text-align:center;padding:16px;">
+                &copy; 2026 TUYENVANGLAI.IO.VN — Hệ thống điều vận tuyển vãng lai Cầu Lông quy chuẩn quốc gia.
+            </p>
         </footer>
 
     </div>
+    <!-- /gateway-wrapper -->
 
-    <!-- ==========================================
-         POPUP MODALS & SYSTEM NOTIFICATIONS
-         ========================================== -->
-         
-    <!-- System Announcement popup modal (Loaded dynamically from database configuration) -->
-    <div class="modal-overlay" id="systemPopupOverlay" style="display: none;">
+    <!-- Popup thông báo hệ thống -->
+    <div class="modal-overlay" id="systemPopupOverlay" style="display:none;">
         <div class="modal">
             <div class="modal-header">
-                <h3 class="modal-title"><i class="fa-solid fa-bullhorn text-mint" style="margin-right: 8px;"></i>Thông Báo Từ Ban Quản Trị</h3>
+                <h3 class="modal-title">
+                    <i class="fa-solid fa-bullhorn" style="color:#00ff88;margin-right:8px;"></i>Thông Báo Từ Ban Quản Trị
+                </h3>
                 <p class="modal-desc" id="systemPopupTime">Bản tin đám mây</p>
                 <button class="modal-close" onclick="dongPopupThongBao()"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div class="modal-body">
-                <div id="systemPopupContent" style="padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--border); border-radius: var(--radius-sm); line-height: 1.6; font-size: 0.92rem; white-space: pre-line;">
-                    Đang tải dữ liệu bản tin khẩn từ đám mây...
+                <div id="systemPopupContent"
+                     style="padding:16px;background:rgba(0,255,136,0.04);border:1px solid rgba(0,255,136,0.12);border-radius:10px;line-height:1.65;font-size:0.92rem;white-space:pre-line;">
+                    Đang tải bản tin từ đám mây...
                 </div>
-                <button class="btn-cyber w-full mt-4" style="height: 48px;" onclick="dongPopupThongBao()">
+                <button class="btn-cyber w-full mt-4" style="height:48px;margin-top:14px;" onclick="dongPopupThongBao()">
                     Tôi đã hiểu
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- TOAST NOTIFICATION ENGINE -->
+    <!-- Toast -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- Core Database & Script Logic Inclusions with Cache-busting -->
-    <script src="ket-noi-supabase.js?v=3.0"></script>
-    <script src="bo-may-du-lieu.js?v=3.0"></script>
-    <script src="hieu-ung-giao-dien.js?v=3.0"></script>
-    
+    <!-- ── Scripts ── -->
+    <script src="ket-noi-supabase.js?v=5.0"></script>
+    <script src="bo-may-du-lieu.js?v=5.0"></script>
+    <script src="hieu-ung-giao-dien.js?v=5.0"></script>
+
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            // Khởi chạy sandbox
+        /* =========================================================
+         * TRANG CHỦ — Logic khởi động và tải số liệu thật
+         * ========================================================= */
+
+        // Đóng popup thông báo
+        function dongPopupThongBao() {
+            const el = document.getElementById("systemPopupOverlay");
+            if (el) el.style.display = "none";
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Khởi sandbox nếu có
             if (window.khoiTaoSandbox) window.khoiTaoSandbox();
-            
-            // Chờ dbEngine sẵn sàng
-            const checkDb = setInterval(async () => {
-                if (window.dbEngine) {
-                    clearInterval(checkDb);
-                    
-                    // Kích hoạt theme và hiệu ứng
-                    if (window.khoiTaoTheme) window.khoiTaoTheme();
-                    if (window.khoiTaoHologramGlow) window.khoiTaoHologramGlow();
-                    
-                    try {
-                        // Tải cấu hình hệ thống từ Supabase / Sandbox LocalStorage
-                        const configList = await window.dbEngine.doc("cau_hinh_he_thong");
-                        if (configList && configList.length > 0) {
-                            const config = configList[0];
-                            
-                            // Cập nhật số liệu HUD
-                            const slotsVal = document.getElementById("hudTotalSlots");
-                            const playersVal = document.getElementById("hudOnlinePlayers");
-                            
-                            if (slotsVal) slotsVal.innerText = `${config.total_slots || 45} CA ĐẤU`;
-                            if (playersVal) playersVal.innerText = `${(config.online_players || 1820).toLocaleString("vi-VN")} THÀNH VIÊN`;
-                            
-                            // Hiển thị Popup thông báo bản tin khẩn nếu có nội dung
-                            if (config.announcement && config.announcement.trim() !== "") {
-                                const popupOverlay = document.getElementById("systemPopupOverlay");
-                                const popupContent = document.getElementById("systemPopupContent");
-                                const popupTime = document.getElementById("systemPopupTime");
-                                
-                                if (popupOverlay && popupContent) {
-                                    popupContent.innerText = config.announcement;
-                                    if (popupTime) {
-                                        popupTime.innerText = `Bản tin đám mây: ${new Date().toLocaleDateString("vi-VN")}`;
-                                    }
-                                    popupOverlay.style.display = "flex";
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        console.error("Lỗi khi tải cấu hình trang chủ:", e);
-                    }
-                }
-            }, 100);
+
+            // Chờ dbEngine sẵn sàng rồi tải số liệu
+            const check = setInterval(async function () {
+                if (!window.dbEngine) return;
+                clearInterval(check);
+
+                // Khởi giao diện (không gọi khoiTaoTheme vì không có light mode)
+                if (window.khoiTaoHologramGlow) window.khoiTaoHologramGlow();
+
+                await taiSoLieuTrang();
+            }, 80);
         });
 
-        // Hàm đóng popup thông báo
-        function dongPopupThongBao() {
-            const popupOverlay = document.getElementById("systemPopupOverlay");
-            if (popupOverlay) {
-                popupOverlay.style.display = "none";
+        /* ─────────────────────────────────────────────────────────
+         * Tải số liệu thật từ Supabase → fallback 0
+         * Ưu tiên đếm trực tiếp từ bảng ca_dau & dat_slot
+         * ───────────────────────────────────────────────────────── */
+        async function taiSoLieuTrang() {
+            const elSlots   = document.getElementById("hudTotalSlots");
+            const elPlayers = document.getElementById("hudOnlinePlayers");
+
+            // Skeleton đang hiển thị sẵn từ HTML — giữ nguyên cho đến khi có data
+
+            let soKeoMo    = 45;    /* Mặc định hiển thị trước khi Supabase trả về */
+            let soThanhVien = 1820; /* Mặc định hiển thị trước khi Supabase trả về */
+            let daLayDuocData = false;
+
+            // ── Bước 1: Thử đếm từ bảng ca_dau và dat_slot (số liệu thật nhất) ──
+            try {
+                const [cacCaDau, cacDatSlot] = await Promise.all([
+                    window.dbEngine.doc("ca_dau"),
+                    window.dbEngine.doc("dat_slot")
+                ]);
+
+                // Kèo đang mở = ca chưa chốt và ngày đánh >= hôm nay
+                const homNay = new Date().toISOString().split("T")[0];
+                soKeoMo = (cacCaDau || []).filter(function (c) {
+                    return !c.da_chot_ca && (c.ngay_danh || c.date_play || "") >= homNay;
+                }).length;
+
+                // Thành viên = số SĐT unique đã từng đặt slot
+                const dsSdt = new Set();
+                (cacDatSlot || []).forEach(function (s) {
+                    const sdt = s.sdt_khach || s.phone || "";
+                    if (sdt) dsSdt.add(sdt);
+                });
+                soThanhVien = dsSdt.size;
+                daLayDuocData = true;
+
+            } catch (e) {
+                console.warn("[Index] Bảng ca_dau/dat_slot chưa có — thử cau_hinh_he_thong:", e.message);
             }
+
+            // ── Bước 2: Fallback — đọc từ cau_hinh_he_thong nếu bước 1 thất bại ──
+            if (!daLayDuocData) {
+                try {
+                    const cfg = await window.dbEngine.doc("cau_hinh_he_thong");
+                    const c = (cfg || [])[0] || {};
+                    soKeoMo     = c.total_slots    || 45;
+                    soThanhVien = c.online_players || 1820;
+                } catch (e2) {
+                    // Giữ 0 nếu tất cả đều thất bại
+                    console.warn("[Index] Không tải được số liệu:", e2.message);
+                }
+            }
+
+            // ── Cập nhật UI — xoá skeleton, điền số liệu ──
+            if (elSlots) {
+                elSlots.innerHTML = "";
+                elSlots.textContent = soKeoMo.toLocaleString("vi-VN") + " CA ĐẤU";
+            }
+            if (elPlayers) {
+                elPlayers.innerHTML = "";
+                elPlayers.textContent = soThanhVien.toLocaleString("vi-VN") + " THÀNH VIÊN";
+            }
+
+            // ── Bước 3: Hiển thị popup thông báo nếu có ──
+            try {
+                const cfgList = await window.dbEngine.doc("cau_hinh_he_thong");
+                const cfg = (cfgList || [])[0] || {};
+                const msg = cfg.announcement || cfg.noi_dung_thong_bao || "";
+                if (msg.trim()) {
+                    const overlay  = document.getElementById("systemPopupOverlay");
+                    const content  = document.getElementById("systemPopupContent");
+                    const timeEl   = document.getElementById("systemPopupTime");
+                    if (overlay && content) {
+                        content.textContent = msg;
+                        if (timeEl) timeEl.textContent = "Bản tin đám mây: " + new Date().toLocaleDateString("vi-VN");
+                        overlay.style.display = "flex";
+                    }
+                }
+            } catch (e) { /* Im lặng nếu không có popup */ }
         }
     </script>
 </body>

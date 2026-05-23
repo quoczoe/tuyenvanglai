@@ -1,359 +1,449 @@
 /* =========================================================================
- * 🛡️ PHÂN HỆ QUẢN TRỊ VIÊN TỐI CAO - PHAN-HE-QUAN-TRI.JS
+ * 👑 PHÂN HỆ QUẢN TRỊ VIÊN TỐI CAO - PHAN-HE-QUAN-TRI.JS (v2)
  * Dự án: TUYENVANGLAI.IO.VN
- * Chức năng: Cung cấp các công cụ tối thượng dành cho Admin để tạo/khoá/xoá Key thuê trạm,
- *            lưu trữ danh sách cầu thủ vãng lai và lịch sử ca chơi phục vụ khai thác Data,
- *            kiểm duyệt ý kiến đánh giá hai chiều, thay đổi popup thông báo tin tức và
- *            chạy chữ trên trang chủ thông qua đồng bộ đám mây.
+ * Chức năng: Xác thực admin, CRUD key host, xem big data khách vãng lai,
+ *            kiểm duyệt đánh giá, cấu hình thông báo trang chủ.
  * =========================================================================
  */
 
 (function () {
-    // Mật khẩu quản trị hệ thống tối cao mặc định
-    const MAT_MAU_ADMIN = "admin2026";
+    // ── Thông tin đăng nhập Admin (hardcoded client-side) ──
+    const ADMIN_USER = "admin";
+    const MAT_MAU_ADMIN = "TVL@2026";  // Đổi trước khi deploy thật
 
-    // 1. Khởi tạo trang Admin độc lập (cho admin.html)
+    let _editingKeyId = null;
+
+    /* ═══════════════════════════════════════════════════
+     * 1. KHỞI TẠO TRANG ADMIN
+     * ═══════════════════════════════════════════════════ */
     window.khoiTaoTrangAdmin = function () {
-        const passInput = document.getElementById("adminSecretPassword");
-        if (passInput) passInput.value = "";
-
-        // Kiểm tra xem Admin đã đăng nhập trong phiên làm việc này chưa
-        const isAdmin = localStorage.getItem("tvl_logged_admin") === "true";
-        if (isAdmin) {
-            window.hienThiConsoleAdmin();
+        const ok = sessionStorage.getItem("tvl_admin");
+        if (ok === "ok") {
+            _hienConsole();
         } else {
-            window.hienThiGiaoDienChuaDangNhapAdmin();
+            _hienManLogin();
         }
     };
 
-    // Hiển thị giao diện khi chưa đăng nhập Admin
-    window.hienThiGiaoDienChuaDangNhapAdmin = function () {
-        const authPanel = document.getElementById("adminAuthPanel");
-        const consolePanel = document.getElementById("adminConsole");
-        if (authPanel) authPanel.classList.remove("d-none");
-        if (consolePanel) consolePanel.classList.add("d-none");
+    function _hienManLogin() {
+        _setDisplay("adminAuthPanel", "block");
+        _setDisplay("adminConsole", "none");
+    }
 
-        const passInput = document.getElementById("adminSecretPassword");
-        if (passInput) passInput.value = "";
-    };
+    function _hienConsole() {
+        _setDisplay("adminAuthPanel", "none");
+        _setDisplay("adminConsole", "block");
+        window.chuyenTabAdmin("keys");
+    }
 
-    // 2. Xác thực quyền năng quản trị viên tối cao
+    function _setDisplay(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = val;
+    }
+
+    /* ═══════════════════════════════════════════════════
+     * 2. XÁC THỰC ADMIN
+     * ═══════════════════════════════════════════════════ */
     window.xacThucQuyenAdmin = function () {
-        const passInput = document.getElementById("adminSecretPassword");
-        if (!passInput) return;
+        const userEl = document.getElementById("adminUsername");
+        const passEl = document.getElementById("adminSecretPassword");
+        const user = userEl?.value?.trim() || "";
+        const pass = passEl?.value || "";
 
-        const pass = passInput.value;
-        if (pass === MAT_MAU_ADMIN) {
-            localStorage.setItem("tvl_logged_admin", "true");
-            window.hienToast("Root Admin Connected", "Chào mừng quản trị viên tối cao gia nhập hệ thống.", "success");
-            window.hienThiConsoleAdmin();
-        } else {
-            window.hienToast("Sai mật khẩu", "Mật mã quản trị viên cấp cao chưa chính xác. Truy cập bị từ chối!", "danger");
-        }
-    };
-
-    // Đăng xuất Admin
-    window.dangXuatAdmin = function () {
-        localStorage.removeItem("tvl_logged_admin");
-        window.hienToast("Đăng xuất thành công", "Đã ngắt kết nối an toàn với máy chủ Admin.", "success");
-        window.hienThiGiaoDienChuaDangNhapAdmin();
-    };
-
-    // 3. Hiển thị Console Admin và chuyển tab mặc định
-    window.hienThiConsoleAdmin = function () {
-        const authPanel = document.getElementById("adminAuthPanel");
-        const consolePanel = document.getElementById("adminConsole");
-        if (authPanel) authPanel.classList.add("d-none");
-        if (consolePanel) consolePanel.classList.remove("d-none");
-        
-        window.chuyenAdminTab("keys");
-    };
-
-    // Chuyển đổi qua lại giữa các Tab chức năng của Admin
-    window.chuyenAdminTab = function (tabName) {
-        const tabs = document.querySelectorAll(".admin-tab-view");
-        tabs.forEach(tab => tab.classList.add("d-none"));
-
-        if (tabName === "keys") {
-            const keyTab = document.getElementById("adminTabKeys");
-            if (keyTab) keyTab.classList.remove("d-none");
-            window.taiDanhSachKeysAdmin();
-        } else if (tabName === "players") {
-            const playersTab = document.getElementById("adminTabPlayers");
-            if (playersTab) playersTab.classList.remove("d-none");
-            window.taiDanhSachKhachChoiAdmin();
-        } else if (tabName === "reviews") {
-            const reviewsTab = document.getElementById("adminTabReviews");
-            if (reviewsTab) reviewsTab.classList.remove("d-none");
-            window.taiKhoDanhGiaAdmin();
-        } else if (tabName === "config") {
-            const configTab = document.getElementById("adminTabConfig");
-            if (configTab) configTab.classList.remove("d-none");
-            window.taiConfigTrangChuAdmin();
-        }
-    };
-
-    // =========================================================================
-    // 🔑 TAB 1: QUẢN LÝ KEY THUÊ TRẠM CỦA HOST
-    // =========================================================================
-    
-    // Tải danh sách Key thuê
-    window.taiDanhSachKeysAdmin = async function () {
-        try {
-            const keys = await window.dbEngine.doc("keys");
-            const tbody = document.querySelector("#adminKeysTable tbody");
-            if (!tbody) return;
-
-            tbody.innerHTML = "";
-
-            if (keys.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #94a3b8; padding:20px;">Không có mã Key thuê nào tồn tại trên hệ thống.</td></tr>';
-                return;
-            }
-
-            keys.forEach(k => {
-                const tr = document.createElement("tr");
-                const isExpired = new Date(k.expires_at) < new Date();
-                
-                let badge = "";
-                if (k.status === "locked") {
-                    badge = '<span class="chip-item" style="color:hsl(var(--danger)); border-color:rgba(239,68,68,0.15);">ĐÃ KHÓA</span>';
-                } else if (isExpired) {
-                    badge = '<span class="chip-item" style="color:#64748b; border-color:rgba(100,116,139,0.15);">HẾT HẠN</span>';
-                } else {
-                    badge = '<span class="chip-item chip-item-mint">ĐANG CHẠY</span>';
-                }
-
-                tr.innerHTML = `
-                    <td><b class="text-mint">${k.key}</b></td>
-                    <td><b>${new Date(k.expires_at).toLocaleDateString("vi-VN")}</b></td>
-                    <td>${k.note || "Chưa có ghi chú"}</td>
-                    <td>${badge}</td>
-                    <td>
-                        <div class="flex gap-2">
-                            ${k.status === "active" 
-                                ? `<button class="btn-hud-back" style="padding: 4px 8px; font-size:0.7rem; color:hsl(var(--danger)); border-color:rgba(239,68,68,0.15);" onclick="window.khoaHoacMoKeyAdmin('${k.key}', 'locked')"><i class="fa-solid fa-lock"></i> Khóa</button>`
-                                : `<button class="btn-hud-back" style="padding: 4px 8px; font-size:0.7rem; color:hsl(var(--neon-mint)); border-color:rgba(0,255,157,0.15);" onclick="window.khoaHoacMoKeyAdmin('${k.key}', 'active')"><i class="fa-solid fa-unlock"></i> Mở khóa</button>`
-                            }
-                            <button class="btn-hud-back" style="padding: 4px 8px; font-size:0.7rem; color:#64748b;" onclick="window.xoaKeyAdmin('${k.key}')"><i class="fa-solid fa-trash-can"></i> Xóa</button>
-                        </div>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        } catch (e) {
-            console.error("Lỗi tải danh sách keys admin:", e);
-        }
-    };
-
-    // Sinh mã Key thuê trạm mới
-    window.taoKeyMoiChoHost = async function () {
-        const daysInput = document.getElementById("adminNewKeyExpiryDays");
-        const noteInput = document.getElementById("adminNewKeyNote");
-        if (!daysInput || !noteInput) return;
-
-        const days = Number(daysInput.value) || 30;
-        const note = noteInput.value.trim();
-
-        if (!note) {
-            window.hienToast("Trống thông tin", "Vui lòng nhập tên Host thuê (ví dụ: Sân Bách Khoa, Sân Viettel) để tiện quản lý.", "danger");
+        if (user !== ADMIN_USER || pass !== MAT_MAU_ADMIN) {
+            window.hienToast("Sai thông tin đăng nhập", "Tên đăng nhập hoặc mật khẩu không đúng.", "danger");
+            if (passEl) passEl.value = "";
             return;
         }
 
-        // Sinh key ngẫu nhiên theo chuẩn Emerald Premium
-        const randKey = `KEY-EMERALD-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-        const expiryDate = new Date();
-        expiryDate.setDate(expiryDate.getDate() + days);
-
-        try {
-            await window.dbEngine.ghi("keys", {
-                key: randKey,
-                note: note,
-                expires_at: expiryDate.toISOString(),
-                status: "active"
-            });
-
-            noteInput.value = "";
-            window.hienToast("Tạo key thành công", `Đã cấp Key thuê trạm: ${randKey}`, "success");
-            window.taiDanhSachKeysAdmin();
-        } catch (e) {
-            console.error("Lỗi khi tạo key mới:", e);
-            window.hienToast("Lỗi hệ thống", "Không thể tạo key mới lên đám mây.", "danger");
-        }
+        sessionStorage.setItem("tvl_admin", "ok");
+        window.hienToast("Chào Admin! 👑", "Đã vào Trung Tâm Chỉ Huy thành công.", "success");
+        _hienConsole();
     };
 
-    // Khóa hoặc mở khóa quyền năng của Key thuê trạm
-    window.khoaHoacMoKeyAdmin = async function (key, newStatus) {
+    window.dangXuatAdmin = function () {
+        sessionStorage.removeItem("tvl_admin");
+        window.hienToast("Đã đăng xuất", "Phiên Admin đã kết thúc an toàn.", "info");
+        _hienManLogin();
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * 3. ĐIỀU HƯỚNG TAB
+     * ═══════════════════════════════════════════════════ */
+    window.chuyenTabAdmin = function (tabName) {
+        document.querySelectorAll(".admin-tab-content").forEach(el => el.classList.remove("active"));
+        document.querySelectorAll(".admin-tab-btn").forEach(el => el.classList.remove("active"));
+
+        const content = document.getElementById(`adminTab_${tabName}`);
+        if (content) content.classList.add("active");
+        const btn = document.querySelector(`.admin-tab-btn[data-tab="${tabName}"]`);
+        if (btn) btn.classList.add("active");
+
+        // Tải dữ liệu tương ứng
+        if (tabName === "keys") _taiDanhSachKey();
+        else if (tabName === "guests") _taiDanhSachKhach();
+        else if (tabName === "reviews") _taiDanhSachDanhGia();
+        else if (tabName === "config") _taiThongBao();
+        else if (tabName === "stats") _taiThongKe();
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * 4. THỐNG KÊ TỔNG QUAN
+     * ═══════════════════════════════════════════════════ */
+    async function _taiThongKe() {
+        try {
+            const [keys, slots, users, reviews] = await Promise.all([
+                window.dbEngine.doc("keys"),
+                window.dbEngine.doc("slots"),
+                window.dbEngine.doc("users"),
+                window.dbEngine.doc("reviews")
+            ]);
+            _st("statTotalKeys", keys.length);
+            _st("statTotalSlots", slots.length);
+            _st("statTotalGuests", users.length);
+            _st("statTotalReviews", reviews.length);
+            _st("statActiveKeys", keys.filter(k => (k.status || "") === "active").length);
+            _st("statOpenSlots", slots.filter(s => !s.da_chot_ca && s.status !== "closed").length);
+        } catch (e) { console.error("Thống kê lỗi:", e); }
+    }
+
+    function _st(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = val;
+    }
+
+    /* ═══════════════════════════════════════════════════
+     * 5. QUẢN LÝ KEY HOST
+     * ═══════════════════════════════════════════════════ */
+    async function _taiDanhSachKey() {
+        const tbody = document.getElementById("adminKeysBody");
+        if (!tbody) return;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:16px;color:#64748b;">
+            <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>`;
         try {
             const keys = await window.dbEngine.doc("keys");
-            const matched = keys.find(k => k.key === key);
-            if (!matched) return;
-
-            matched.status = newStatus;
-            await window.dbEngine.ghi("keys", matched, { key: key });
-
-            window.hienToast("Cập nhật key", `Đã thay đổi trạng thái key ${key} sang ${newStatus === 'locked' ? 'Khóa' : 'Hoạt động'}.`, "success");
-            window.taiDanhSachKeysAdmin();
-        } catch (e) {
-            console.error("Lỗi cập nhật key:", e);
-        }
-    };
-
-    // Xóa vĩnh viễn Key thuê khỏi trạm
-    window.xoaKeyAdmin = async function (key) {
-        const c = confirm(`❌ XÓA KEY THUÊ TRẠM VĨNH VIỄN:\nBạn có chắc chắn muốn xóa Key ${key}? Toàn bộ lịch sử ca chơi của Host sử dụng key này sẽ bị ảnh hưởng.`);
-        if (!c) return;
-
-        try {
-            await window.dbEngine.xoa("keys", { key: key });
-            window.hienToast("Đã xóa key", "Key thuê trạm đã được rút ra khỏi cơ sở dữ liệu hệ thống.", "success");
-            window.taiDanhSachKeysAdmin();
-        } catch (e) {
-            console.error("Lỗi xóa key admin:", e);
-        }
-    };
-
-    // =========================================================================
-    // 👥 TAB 2: LƯU TRỮ HỒ SƠ DANH SÁCH USER (KHÁCH VÀNG LAI) LÀM DATA
-    // =========================================================================
-    
-    window.taiDanhSachKhachChoiAdmin = async function () {
-        try {
-            const users = await window.dbEngine.doc("users");
-            const tbody = document.querySelector("#adminPlayersTable tbody");
-            if (!tbody) return;
-
-            tbody.innerHTML = "";
-
-            if (users.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #94a3b8; padding:20px;">Chưa có cầu thủ vãng lai nào lưu hồ sơ.</td></tr>';
+            keys.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+            if (keys.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px;color:#64748b;">Chưa có Key. Tạo Key đầu tiên!</td></tr>`;
                 return;
             }
-
-            users.forEach(u => {
+            tbody.innerHTML = "";
+            keys.forEach(k => {
+                const keyVal = k.key || k.ma_key || "--";
+                const status = k.status || k.trang_thai || "inactive";
+                const expDate = k.expires_at || k.ngay_het_han;
+                const isExpired = expDate && new Date(expDate) < new Date();
+                const sClass = status === "active" ? "status-active" : status === "locked" ? "status-closed" : "status-pending";
+                const sText = status === "active" ? "Đang chạy" : status === "locked" ? "Bị khóa" : "Chưa kích hoạt";
+                const hasDevice = !!(k.id_thiet_bi || k.device_id);
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-                    <td><b style="color:#fff;">${u.name}</b></td>
-                    <td><b>${u.phone}</b></td>
-                    <td>${new Date(u.created_at || Date.now()).toLocaleDateString("vi-VN")}</td>
-                    <td><b class="text-mint">${u.registered_slots || 0} Buổi ca</b></td>
-                    <td><b class="text-gold">${Number(u.total_spent || 0).toLocaleString()}đ</b></td>
-                `;
+                <td><code style="font-size:0.75rem;color:hsl(var(--neon-mint));background:rgba(0,255,157,0.08);padding:3px 7px;border-radius:4px;">${keyVal}</code></td>
+                <td style="font-size:0.82rem;font-weight:600;">${k.ten_host || k.note || "--"}</td>
+                <td style="font-size:0.78rem;color:#94a3b8;">${k.sdt_host || k.phone || "--"}</td>
+                <td><span class="status-badge ${sClass}">${sText}</span>${isExpired ? '<br><span class="status-badge status-closed" style="margin-top:2px;font-size:0.65rem;">Hết hạn</span>' : ""}</td>
+                <td style="font-size:0.78rem;">${expDate ? new Date(expDate).toLocaleDateString("vi-VN") : "--"}</td>
+                <td style="font-size:0.75rem;">${hasDevice ? '<span style="color:hsl(var(--neon-mint))">🔗 Liên kết</span>' : '<span style="color:#374151;">⬜ Trống</span>'}</td>
+                <td style="font-size:0.78rem;color:#94a3b8;">${k.so_ngay_duoc_xai || k.days || 30} ngày</td>
+                <td>
+                    <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                        <button class="btn-mini btn-mini-gold" onclick="window.moModalSuaKey('${keyVal}')" title="Sửa"><i class="fa-solid fa-pen"></i></button>
+                        ${status !== "locked" ? `<button class="btn-mini btn-mini-red" onclick="window.khoaKeyAdmin('${keyVal}')" title="Khóa"><i class="fa-solid fa-lock"></i></button>`
+                            : `<button class="btn-mini btn-mini-green" onclick="window.moKhoaKeyAdmin('${keyVal}')" title="Mở khóa"><i class="fa-solid fa-lock-open"></i></button>`}
+                        ${hasDevice ? `<button class="btn-mini btn-mini-cyan" onclick="window.resetThietBiAdmin('${keyVal}')" title="Reset thiết bị"><i class="fa-solid fa-rotate-right"></i></button>` : ""}
+                        <button class="btn-mini btn-mini-red" onclick="window.xoaKeyAdmin('${keyVal}')" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </td>`;
                 tbody.appendChild(tr);
             });
         } catch (e) {
-            console.error("Lỗi tải danh sách users admin:", e);
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:red;padding:16px;">Lỗi tải dữ liệu.</td></tr>`;
+        }
+    }
+
+    // Sinh mã TVL-XXXXX-XXXX
+    function _sinhMaKey() {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        const rand = (n) => Array.from({ length: n }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
+        return `TVL-${rand(5)}-${rand(4)}`;
+    }
+
+    window.moModalTaoKey = function () {
+        _editingKeyId = null;
+        const el = document.getElementById("keyFormMaKey");
+        if (el) { el.value = _sinhMaKey(); el.readOnly = false; }
+        _setVal("keyFormTenHost", "");
+        _setVal("keyFormSdtHost", "");
+        _setVal("keyFormSoNgay", "30");
+        _setVal("keyFormGoi", "basic");
+        _setVal("keyFormStatus", "active");
+        _st("modalKeyTitle", "Tạo Key Mới");
+        _setDisplay("modalKeyOverlay", "flex");
+    };
+
+    window.sinhLaiMaKey = function () {
+        const el = document.getElementById("keyFormMaKey");
+        if (el && !el.readOnly) el.value = _sinhMaKey();
+    };
+
+    window.moModalSuaKey = async function (keyVal) {
+        try {
+            const keys = await window.dbEngine.doc("keys");
+            const k = keys.find(x => (x.key || x.ma_key) === keyVal);
+            if (!k) { window.hienToast("Không tìm thấy", "Key không còn tồn tại.", "danger"); return; }
+            _editingKeyId = keyVal;
+            const el = document.getElementById("keyFormMaKey");
+            if (el) { el.value = k.key || k.ma_key || ""; el.readOnly = true; }
+            _setVal("keyFormTenHost", k.ten_host || k.note || "");
+            _setVal("keyFormSdtHost", k.sdt_host || k.phone || "");
+            _setVal("keyFormSoNgay", String(k.so_ngay_duoc_xai || k.days || 30));
+            _setVal("keyFormGoi", k.goi_dich_vu || k.plan || "basic");
+            _setVal("keyFormStatus", k.status || k.trang_thai || "active");
+            _st("modalKeyTitle", "Chỉnh Sửa Key");
+            _setDisplay("modalKeyOverlay", "flex");
+        } catch (e) { window.hienToast("Lỗi", "Không tải được key.", "danger"); }
+    };
+
+    function _setVal(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+    }
+
+    window.dongModalKey = function () {
+        _setDisplay("modalKeyOverlay", "none");
+        const el = document.getElementById("keyFormMaKey");
+        if (el) el.readOnly = false;
+        _editingKeyId = null;
+    };
+
+    window.luuKey = async function () {
+        const maKey = document.getElementById("keyFormMaKey")?.value?.trim().toUpperCase();
+        const tenHost = document.getElementById("keyFormTenHost")?.value?.trim();
+        const sdtHost = document.getElementById("keyFormSdtHost")?.value?.trim();
+        const soNgay = Number(document.getElementById("keyFormSoNgay")?.value) || 30;
+        const goi = document.getElementById("keyFormGoi")?.value || "basic";
+        const status = document.getElementById("keyFormStatus")?.value || "active";
+        if (!maKey || !tenHost) { window.hienToast("Thiếu thông tin", "Điền Mã Key và Tên Host.", "danger"); return; }
+
+        const btn = document.getElementById("btnLuuKey");
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
+        try {
+            const now = new Date();
+            const exp = new Date(now.getTime() + soNgay * 86400000);
+            const payload = {
+                key: maKey, ma_key: maKey,
+                ten_host: tenHost, note: tenHost,
+                sdt_host: sdtHost, phone: sdtHost,
+                so_ngay_duoc_xai: soNgay, days: soNgay,
+                goi_dich_vu: goi, plan: goi,
+                status, trang_thai: status === "active" ? "Đang chạy" : status === "locked" ? "Bị khóa" : "Chưa kích hoạt",
+                expires_at: exp.toISOString(), ngay_het_han: exp.toISOString()
+            };
+            if (_editingKeyId) {
+                await window.dbEngine.ghi("keys", payload, { key: _editingKeyId });
+                window.hienToast("Cập nhật Key ✅", `Key ${maKey} đã được chỉnh sửa.`, "success");
+            } else {
+                payload.created_at = now.toISOString();
+                await window.dbEngine.ghi("keys", payload);
+                window.hienToast("Tạo Key thành công! 🔑", `Key ${maKey} cho ${tenHost}.`, "success");
+            }
+            window.dongModalKey();
+            await _taiDanhSachKey();
+        } catch (e) {
+            window.hienToast("Lỗi", "Không thể lưu Key.", "danger");
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Key'; }
         }
     };
 
-    // =========================================================================
-    // ⭐ TAB 3: KIỂM DUYỆT ĐÁNH GIÁ 2 CHIỀU GIỮA HOST VÀ GUEST
-    // =========================================================================
-    
-    window.taiKhoDanhGiaAdmin = async function () {
+    window.khoaKeyAdmin = async function (k) {
+        if (!confirm(`Khóa Key ${k}?`)) return;
+        try {
+            await window.dbEngine.ghi("keys", { status: "locked", trang_thai: "Bị khóa" }, { key: k });
+            window.hienToast("Đã khóa 🔒", `Key ${k} bị khóa.`, "success");
+            await _taiDanhSachKey();
+        } catch (e) { window.hienToast("Lỗi", "Không khóa được.", "danger"); }
+    };
+
+    window.moKhoaKeyAdmin = async function (k) {
+        try {
+            await window.dbEngine.ghi("keys", { status: "active", trang_thai: "Đang chạy" }, { key: k });
+            window.hienToast("Đã mở khóa 🔓", `Key ${k} hoạt động trở lại.`, "success");
+            await _taiDanhSachKey();
+        } catch (e) { window.hienToast("Lỗi", "Không mở khóa được.", "danger"); }
+    };
+
+    window.resetThietBiAdmin = async function (k) {
+        if (!confirm(`Reset thiết bị cho Key ${k}?`)) return;
+        try {
+            await window.dbEngine.ghi("keys", { id_thiet_bi: null, device_id: null }, { key: k });
+            window.hienToast("Reset thiết bị ✅", `Key ${k} có thể kích hoạt thiết bị mới.`, "success");
+            await _taiDanhSachKey();
+        } catch (e) { window.hienToast("Lỗi", "Không reset được.", "danger"); }
+    };
+
+    window.xoaKeyAdmin = async function (k) {
+        if (!confirm(`XÓA VĨNH VIỄN Key ${k}?\nKHÔNG THỂ HOÀN TÁC!`)) return;
+        try {
+            await window.dbEngine.xoa("keys", { key: k });
+            window.hienToast("Đã xóa Key", `Key ${k} đã bị xóa.`, "info");
+            await _taiDanhSachKey();
+        } catch (e) { window.hienToast("Lỗi", "Không xóa được.", "danger"); }
+    };
+
+    window.locKeyAdmin = function () {
+        const q = document.getElementById("adminKeySearch")?.value?.toLowerCase() || "";
+        document.querySelectorAll("#adminKeysBody tr").forEach(r => {
+            r.style.display = !q || r.textContent.toLowerCase().includes(q) ? "" : "none";
+        });
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * 6. BIG DATA KHÁCH VÃNG LAI
+     * ═══════════════════════════════════════════════════ */
+    async function _taiDanhSachKhach() {
+        const tbody = document.getElementById("adminGuestsBody");
+        if (!tbody) return;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:16px;color:#64748b;"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>`;
+        try {
+            const [slots, users] = await Promise.all([window.dbEngine.doc("slots"), window.dbEngine.doc("users")]);
+            const map = new Map();
+            users.forEach(u => {
+                if (!map.has(u.phone)) map.set(u.phone, { name: u.name, phone: u.phone, joined: u.joined_at || u.created_at, sessions: 0, spent: 0, hosts: new Set() });
+            });
+            slots.forEach(slot => {
+                (slot.registered_guests || []).forEach(g => {
+                    const p = g.phone || g.sdt_khach || "";
+                    if (!p) return;
+                    if (!map.has(p)) map.set(p, { name: g.name || g.ten_khach || "Ẩn danh", phone: p, joined: g.registered_at || null, sessions: 0, spent: 0, hosts: new Set() });
+                    const info = map.get(p);
+                    if (g.attendance === "Đã tham gia" || g.attendance === "present") {
+                        info.sessions++;
+                        info.spent += slot.price_male || slot.price_female || 0;
+                        if (slot.host_key) info.hosts.add(slot.host_key);
+                    }
+                });
+            });
+            const list = Array.from(map.values()).sort((a, b) => b.sessions - a.sessions);
+            _st("adminGuestCount", `${list.length} thành viên`);
+            if (list.length === 0) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:#64748b;">Chưa có khách nào.</td></tr>`; return; }
+            tbody.innerHTML = "";
+            list.forEach((g, i) => {
+                const tr = document.createElement("tr");
+                const d = g.joined ? new Date(g.joined).toLocaleDateString("vi-VN") : "--";
+                tr.innerHTML = `
+                <td style="color:#64748b;font-size:0.8rem;">${i + 1}</td>
+                <td style="font-weight:700;font-size:0.85rem;">${g.name}</td>
+                <td><a href="https://zalo.me/${g.phone}" target="_blank" style="color:hsl(var(--neon-cyan));font-size:0.82rem;"><i class="fa-solid fa-comment"></i> ${g.phone}</a></td>
+                <td style="font-size:0.8rem;color:#94a3b8;">${d}</td>
+                <td style="font-weight:700;color:hsl(var(--neon-mint));">${g.sessions} ca</td>
+                <td>
+                    <span style="font-weight:700;color:hsl(var(--neon-gold));">${_fVND(g.spent)}</span>
+                    <br><span style="font-size:0.7rem;color:#64748b;">${g.hosts.size} host</span>
+                </td>`;
+                tbody.appendChild(tr);
+            });
+        } catch (e) { tbody.innerHTML = `<tr><td colspan="6" style="color:red;text-align:center;padding:16px;">Lỗi tải dữ liệu.</td></tr>`; }
+    }
+
+    window.locKhachAdmin = function () {
+        const q = document.getElementById("adminGuestSearch")?.value?.toLowerCase() || "";
+        document.querySelectorAll("#adminGuestsBody tr").forEach(r => {
+            r.style.display = !q || r.textContent.toLowerCase().includes(q) ? "" : "none";
+        });
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * 7. QUẢN LÝ ĐÁNH GIÁ
+     * ═══════════════════════════════════════════════════ */
+    async function _taiDanhSachDanhGia() {
+        const tbody = document.getElementById("adminReviewsBody");
+        if (!tbody) return;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:16px;color:#64748b;"><i class="fa-solid fa-spinner fa-spin"></i></td></tr>`;
         try {
             const reviews = await window.dbEngine.doc("reviews");
-            const tbody = document.querySelector("#adminReviewsTable tbody");
-            if (!tbody) return;
-
+            reviews.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            if (reviews.length === 0) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:#64748b;">Chưa có đánh giá nào.</td></tr>`; return; }
             tbody.innerHTML = "";
-
-            if (reviews.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #94a3b8; padding:20px;">Chưa có nhận xét hay bình chọn uy tín nào trên hệ thống.</td></tr>';
-                return;
-            }
-
             reviews.forEach(r => {
+                const stars = Array(5).fill(0).map((_, i) =>
+                    `<i class="fa-solid fa-star" style="color:${i < (r.so_sao || 0) ? "hsl(var(--neon-gold))" : "#374151"};font-size:0.8rem;"></i>`
+                ).join("");
+                const badge = r.loai === "GuestToHost"
+                    ? '<span class="status-badge status-active" style="font-size:0.65rem;">Guest→Host</span>'
+                    : '<span class="status-badge status-pending" style="font-size:0.65rem;">Host→Guest</span>';
                 const tr = document.createElement("tr");
-                const roleBadge = r.role === "host_rating" 
-                    ? '<span class="chip-item chip-item-mint">KHÁCH VOTE HOST</span>'
-                    : '<span class="chip-item" style="color:hsl(var(--neon-gold)); border-color:rgba(255,215,0,0.15);">HOST VOTE KHÁCH</span>';
-
                 tr.innerHTML = `
-                    <td>
-                        <b style="color:#fff;">${r.reviewer_name}</b>
-                        <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">📞 ${r.reviewer_phone}</div>
-                    </td>
-                    <td><span style="font-size:0.8rem; color:#cbd5e1;">${r.target_identity}</span></td>
-                    <td>${roleBadge}</td>
-                    <td><b class="text-gold"><i class="fa-solid fa-star"></i> ${r.stars} Sao</b></td>
-                    <td><span style="font-size:0.85rem; color:#e2e8f0; font-style:italic;">"${r.comment}"</span></td>
-                    <td>
-                        <button class="btn-hud-back" style="padding: 4px 8px; font-size:0.7rem; color:hsl(var(--danger)); border-color:rgba(239,68,68,0.15);" onclick="window.xoaDanhGiaAdmin('${r.id}')"><i class="fa-solid fa-ban"></i> Gỡ bỏ</button>
-                    </td>
-                `;
+                <td>${badge}</td>
+                <td style="font-size:0.78rem;color:#94a3b8;">${r.reviewer_phone || "--"}</td>
+                <td style="font-size:0.78rem;color:#94a3b8;">${r.reviewed_phone || "--"}</td>
+                <td>${stars}</td>
+                <td style="font-size:0.78rem;max-width:200px;">${r.nhan_xet || "<em style='color:#64748b'>Không nhận xét</em>"}</td>
+                <td style="font-size:0.72rem;color:#64748b;">
+                    ${r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : "--"}
+                    <br><button class="btn-mini btn-mini-red" onclick="window.xoaDanhGiaAdmin('${r.id}')"><i class="fa-solid fa-trash"></i> Xóa</button>
+                </td>`;
                 tbody.appendChild(tr);
             });
-        } catch (e) {
-            console.error("Lỗi tải đánh giá admin:", e);
-        }
-    };
+        } catch (e) { tbody.innerHTML = `<tr><td colspan="6" style="color:red;text-align:center;padding:16px;">Lỗi tải.</td></tr>`; }
+    }
 
-    window.xoaDanhGiaAdmin = async function (reviewId) {
-        const c = confirm("⚠️ KIỂM DUYỆT ĐÁNH GIÁ:\nBạn có chắc chắn muốn xóa đánh giá này khỏi hệ thống? Dữ liệu uy tín sẽ được cập nhật lại.");
-        if (!c) return;
-
+    window.xoaDanhGiaAdmin = async function (id) {
+        if (!confirm("Xóa đánh giá này?")) return;
         try {
-            await window.dbEngine.xoa("reviews", { id: reviewId });
-            window.hienToast("Đã gỡ nhận xét", "Nhận xét không phù hợp đã bị xóa bỏ khỏi máy chủ đám mây.", "success");
-            window.taiKhoDanhGiaAdmin();
-        } catch (e) {
-            console.error("Lỗi xóa review admin:", e);
-        }
+            await window.dbEngine.xoa("reviews", { id });
+            window.hienToast("Đã xóa đánh giá", "Bài đánh giá đã bị gỡ.", "info");
+            await _taiDanhSachDanhGia();
+        } catch (e) { window.hienToast("Lỗi", "Không xóa được.", "danger"); }
     };
 
-    // =========================================================================
-    // ⚙️ TAB 4: THIẾT LẬP CẤU HÌNH POPUP CHẠY CHỮ TRANG CHỦ
-    // =========================================================================
-    
-    window.taiConfigTrangChuAdmin = async function () {
+    /* ═══════════════════════════════════════════════════
+     * 8. CẤU HÌNH THÔNG BÁO TRANG CHỦ
+     * ═══════════════════════════════════════════════════ */
+    async function _taiThongBao() {
         try {
-            const config = await window.dbEngine.doc("cau_hinh_he_thong");
-            if (config && config.length > 0) {
-                const data = config[0];
-                const announceInput = document.getElementById("adminConfigAnnouncement");
-                const slotsInput = document.getElementById("adminConfigTotalSlots");
-                const playersInput = document.getElementById("adminConfigOnlinePlayers");
+            const configs = await window.dbEngine.doc("cau_hinh_he_thong");
+            const cfg = Array.isArray(configs) ? configs[0] : configs;
+            _setVal("adminAnnouncementContent", cfg?.noi_dung_thong_bao || cfg?.announcement || "");
+            _setVal("adminConfigTotalSlots", String(cfg?.total_slots || 45));
+            _setVal("adminConfigOnlinePlayers", String(cfg?.online_players || 1820));
+        } catch (e) { console.error("Lỗi tải thông báo:", e); }
+    }
 
-                if (announceInput) announceInput.value = data.announcement || "";
-                if (slotsInput) slotsInput.value = data.total_slots || 45;
-                if (playersInput) playersInput.value = data.online_players || 1820;
-            }
-        } catch (e) {
-            console.error("Lỗi tải cấu hình tin tức admin:", e);
-        }
-    };
-
-    window.luuCauHinhTrangChu = async function () {
-        const announce = document.getElementById("adminConfigAnnouncement")?.value.trim() || "";
-        const total = Number(document.getElementById("adminConfigTotalSlots")?.value) || 0;
-        const online = Number(document.getElementById("adminConfigOnlinePlayers")?.value) || 0;
-
-        const payload = {
-            id: "popup_chinh",
-            announcement: announce,
-            total_slots: total,
-            online_players: online
-        };
-
+    window.luuThongBaoAdmin = async function () {
+        const content = document.getElementById("adminAnnouncementContent")?.value?.trim() || "";
+        const total = Number(document.getElementById("adminConfigTotalSlots")?.value) || 45;
+        const online = Number(document.getElementById("adminConfigOnlinePlayers")?.value) || 1820;
+        const btn = document.getElementById("btnLuuThongBao");
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
         try {
-            await window.dbEngine.ghi("cau_hinh_he_thong", payload, { id: "popup_chinh" });
-            window.hienToast("Đồng bộ thành công", "Cấu hình tin tức trang chủ đã được lưu vĩnh viễn.", "success");
-            window.taiConfigTrangChuAdmin();
-        } catch (e) {
-            console.error("Lỗi đồng bộ cấu hình trang chủ:", e);
-            window.hienToast("Lỗi đồng bộ", "Không thể lưu cấu hình lên máy chủ đám mây.", "danger");
-        }
+            await window.dbEngine.ghi("cau_hinh_he_thong", {
+                id: "popup_chinh",
+                noi_dung_thong_bao: content, announcement: content,
+                total_slots: total, online_players: online,
+                updated_at: new Date().toISOString()
+            });
+            window.hienToast("Đã lưu thông báo ✅", "Thông báo trang chủ cập nhật thành công.", "success");
+        } catch (e) { window.hienToast("Lỗi", "Không lưu được.", "danger"); }
+        finally { if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Thông Báo'; } }
     };
 
-    // Tự động khởi chạy khi load trang admin.html
+    /* ═══════════════════════════════════════════════════
+     * 9. TIỆN ÍCH
+     * ═══════════════════════════════════════════════════ */
+    function _fVND(n) { return Number(n || 0).toLocaleString("vi-VN") + "đ"; }
+
+    // Khởi chạy khi load trang admin.html
     document.addEventListener("DOMContentLoaded", () => {
-        const checkDb = setInterval(() => {
-            if (window.dbEngine) {
-                clearInterval(checkDb);
+        const check = setInterval(() => {
+            if (window.khoiTaoTheme && window.khoiTaoHologramGlow && window.dbEngine) {
+                clearInterval(check);
+                window.khoiTaoTheme();
+                window.khoiTaoHologramGlow();
                 window.khoiTaoTrangAdmin();
             }
         }, 100);
     });
 
+    console.log("⚡ [Phân Hệ Admin]: Khởi động thành công.");
 })();

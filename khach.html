@@ -2,319 +2,298 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>Sàn Khách Vãng Lai | TUYENVANGLAI.IO.VN</title>
-    
-    <!-- SEO Meta Tags -->
-    <meta name="description" content="TUYENVANGLAI.IO.VN - Sàn khách chơi vãng lai môn Cầu Lông chuyên nghiệp. Kết nối nhanh chóng với các ca đấu trên toàn quốc. Đăng ký slot nhanh, xem chi tiêu và bình chọn uy tín.">
-    <meta name="keywords" content="tuyen vang lai, tuyenvanglai.io.vn, cau long, khach choi cau long, tim keo cau long, san cau long">
-    <meta name="author" content="TUYENVANGLAI.IO.VN">
-
-    <!-- Google Fonts -->
+    <meta name="description" content="Tìm kèo cầu lông vãng lai trên toàn quốc - đăng ký slot nhanh không cần tài khoản.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
-    
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
-    <!-- Custom Design CSS Style System -->
-    <link rel="stylesheet" href="giao-dien.css?v=3.0">
+    <link rel="stylesheet" href="giao-dien.css?v=5.0">
+    <link rel="stylesheet" href="components.css?v=5.0">
 </head>
 <body data-theme="dark">
 
-    <!-- Phong Thủy Mộc-Thủy Dương Liễu Decor -->
-    <div class="willow-decor willow-top-left"></div>
-    <div class="willow-decor willow-top-right"></div>
+<div class="willow-decor willow-top-left"></div>
+<div class="willow-decor willow-top-right"></div>
+<div class="ambient-glows">
+    <div class="glow-sphere glow-1"></div>
+    <div class="glow-sphere glow-2"></div>
+    <div class="glow-sphere glow-3"></div>
+    <div class="glow-particle particle-1"></div>
+    <div class="glow-particle particle-2"></div>
+    <div class="glow-particle particle-3"></div>
+</div>
 
-    <!-- Ambient Dynamic Glows -->
-    <div class="ambient-glows">
-        <div class="glow-sphere glow-1"></div>
-        <div class="glow-sphere glow-2"></div>
-        <div class="glow-sphere glow-3"></div>
-        <div class="glow-particle particle-1"></div>
-        <div class="glow-particle particle-2"></div>
-        <div class="glow-particle particle-3"></div>
-        <div class="glow-particle particle-4"></div>
-        <div class="glow-particle particle-5"></div>
-    </div>
+<div class="gateway-wrapper">
 
-    <!-- Gateway System Wrapper -->
-    <div class="gateway-wrapper">
-        
-        <!-- Header -->
-        <header class="gateway-header">
-            <a href="index.html" class="brand-logo" style="text-decoration: none; display: flex; align-items: center;">
-                <!-- SVG quả cầu lông quay nghiêng siêu chất thay cho icon fa-shuttlecock bị lỗi -->
-                <svg viewBox="0 0 24 24" width="28" height="28" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" class="shuttlecock-svg" style="color: hsl(var(--neon-mint)); transform: rotate(-45deg); display: inline-block; margin-right: 8px;">
-                    <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill="currentColor"></path>
-                    <path d="M9 6l-5 13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1L15 6"></path>
-                    <path d="M12 6v14"></path>
-                    <path d="M10.5 6l-2.5 14"></path>
-                    <path d="M13.5 6l2.5 14"></path>
-                    <path d="M6 13h12"></path>
-                    <path d="M5 16h14"></path>
-                </svg>
-                <span class="logo-text">TUYENVANGLAI.IO.VN</span>
-            </a>
-            
-            <button class="btn-theme-toggle" id="themeBtn" onclick="chuyenDoiTheme()" title="Đổi giao diện Sáng/Tối">
-                <div class="theme-toggle-icon-box">
-                    <i class="fa-solid fa-sun" id="themeIcon"></i>
-                </div>
-            </button>
-        </header>
+    <!-- HEADER -->
+    <header class="gateway-header">
+        <a href="index.html" class="brand-logo">
+            <svg viewBox="0 0 24 24" width="26" height="26" stroke="currentColor" stroke-width="2" fill="none" style="color:hsl(var(--neon-mint));transform:rotate(-45deg);flex-shrink:0;">
+                <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill="currentColor"/>
+                <path d="M9 6l-5 13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1L15 6"/>
+                <path d="M12 6v14"/><path d="M6 13h12"/>
+            </svg>
+            <span class="logo-text">TUYENVANGLAI.IO.VN</span>
+        </a>
+        <button class="btn-theme-toggle" onclick="chuyenDoiTheme()" title="Đổi giao diện">
+            <div class="theme-toggle-icon-box"><i class="fa-solid fa-sun" id="themeIcon"></i></div>
+        </button>
+    </header>
 
-        <!-- Main Container -->
-        <div class="gateway-container">
-            
-            <section class="panel-view active" id="guestView">
-                <div class="hud-panel">
-                    <div class="hud-panel-header">
-                        <h2 class="hud-panel-title">
-                            <i class="fa-solid fa-user-astronaut"></i> SÀN KHÁCH VÃNG LAI
-                        </h2>
-                        <a href="index.html" class="btn-hud-back" style="text-decoration: none; display: flex; align-items: center; gap: 5px;">
-                            <i class="fa-solid fa-angle-left"></i> Quay lại cổng
-                        </a>
-                    </div>
+    <div class="gateway-container">
+    <section class="panel-view active">
+    <div class="hud-panel">
 
-                    <!-- Guest Interactive Grid Dashboard -->
-                    <div id="guestDashboard">
-                        <div class="hud-grid">
-                            
-                            <!-- Left Column: Authentication OR Profile HUD (Dynamic Left Column) -->
-                            <div class="hud-column">
-                                
-                                <!-- 1. Guest Registration Panel (Shown when NOT logged in) -->
-                                <div id="guestAuthPanel">
-                                    <h3 class="hud-section-title">Ký Danh Khách Chơi Siêu Tốc</h3>
-                                    <div class="pricing-engine-wrapper" style="background: rgba(255,255,255,0.01);">
-                                        <p style="font-size: 0.85rem; color: #94a3b8; margin-bottom: 15px; line-height: 1.5;">Ký danh tức thì chỉ với Họ tên và SĐT để đặt slot tham gia các ca cầu lông trên toàn quốc.</p>
-                                        <div class="form-group">
-                                            <label class="form-label">Tên của bạn <span class="required">*</span></label>
-                                            <input type="text" class="form-control" id="guestInputName" placeholder="Ví dụ: Nguyễn Văn A">
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Số điện thoại <span class="required">*</span></label>
-                                            <input type="tel" class="form-control" id="guestInputPhone" placeholder="Ví dụ: 0987654321">
-                                        </div>
-                                        <button class="btn-cyber w-full mt-4" onclick="xacThucKhachChoi()">
-                                            <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập Sàn
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <!-- 2. Guest Profile HUD Block (Shown dynamically after login) -->
-                                <div class="d-none" id="guestProfileBlock">
-                                    <h3 class="hud-section-title">Hồ Sơ Cầu Thủ Cá Nhân</h3>
-                                    <div class="pricing-engine-wrapper">
-                                        <div class="flex justify-between align-center mb-4">
-                                            <div>
-                                                <h4 style="font-size: 1.2rem; font-weight: 800; color: #fff;" id="profileGuestName">Tên cầu thủ</h4>
-                                                <p style="font-size: 0.82rem; color: #94a3b8;" id="profileGuestPhone">SĐT: --</p>
-                                            </div>
-                                            <div class="flex flex-col gap-2 align-end">
-                                                <span class="chip-item chip-item-mint" id="profileGuestDate">Ngày gia nhập: --</span>
-                                                <button class="btn-cyber-danger" style="padding: 4px 8px; font-size: 0.7rem; border-radius: var(--radius-sm);" onclick="dangXuatKhach()">
-                                                    <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <hr style="border: none; border-top: 1px dashed rgba(255,255,255,0.06); margin: 15px 0;">
-                                        
-                                        <h4 style="font-size: 0.85rem; font-weight: 800; color: #94a3b8; margin-bottom: 12px; text-transform: uppercase;">Lịch sử & Chi tiêu</h4>
-                                        
-                                        <!-- Date range filter for stats -->
-                                        <div class="flex gap-2 mb-4 flex-wrap">
-                                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 120px;">
-                                                <label class="form-label" style="font-size: 0.65rem;">Từ ngày</label>
-                                                <input type="date" class="form-control" id="statsDateFrom" style="padding: 6px 10px; font-size: 0.8rem;" onchange="locThongKeKhach()">
-                                            </div>
-                                            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 120px;">
-                                                <label class="form-label" style="font-size: 0.65rem;">Đến ngày</label>
-                                                <input type="date" class="form-control" id="statsDateTo" style="padding: 6px 10px; font-size: 0.8rem;" onchange="locThongKeKhach()">
-                                            </div>
-                                        </div>
-
-                                        <div class="pricing-suggestions">
-                                            <div class="suggestion-box active" style="padding: 12px;">
-                                                <div class="suggestion-title">Đã Tham Gia</div>
-                                                <div class="suggestion-price" id="statsTotalSlots">0 Ca</div>
-                                            </div>
-                                            <div class="suggestion-box active" style="padding: 12px; border-color: hsl(var(--neon-gold));">
-                                                <div class="suggestion-title" style="color: hsl(var(--neon-gold));">Tổng Chi Tiêu</div>
-                                                <div class="suggestion-price text-gold" id="statsTotalCost">0đ</div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Review Host Section -->
-                                    <h3 class="hud-section-title" style="margin-top: 15px;">Đánh Giá Chủ Sân (Host)</h3>
-                                    <div class="pricing-engine-wrapper">
-                                        <p style="font-size: 0.82rem; color: #94a3b8; margin-bottom: 12px;">Đánh giá thái độ, chất lượng phục vụ và chi phí của chủ sân bạn đã từng tham gia.</p>
-                                        <div class="form-group">
-                                            <label class="form-label">Chọn Host Cần Đánh Giá</label>
-                                            <select class="form-control" id="guestReviewHostSelect">
-                                                <option value="">-- Chưa có dữ liệu ca đấu --</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Điểm đánh giá (1-5 sao)</label>
-                                            <div class="stars-container" id="guestRatingStars">
-                                                <i class="fa-solid fa-star" data-index="1"></i>
-                                                <i class="fa-solid fa-star" data-index="2"></i>
-                                                <i class="fa-solid fa-star" data-index="3"></i>
-                                                <i class="fa-solid fa-star" data-index="4"></i>
-                                                <i class="fa-solid fa-star" data-index="5"></i>
-                                            </div>
-                                        </div>
-                                        <div class="form-group">
-                                            <label class="form-label">Nhận xét thái độ & Cơ sở vật chất</label>
-                                            <textarea class="form-control" id="guestReviewComment" rows="2" placeholder="Ví dụ: Sân đẹp, host nhiệt tình chuẩn bị cầu tốt..."></textarea>
-                                        </div>
-                                        <button class="btn-cyber w-full" onclick="guiDanhGiaHost()">
-                                            <i class="fa-solid fa-paper-plane"></i> Gửi Đánh Giá Host
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Right Column: Badminton Slots Search, Filter & Results (Always displayed) -->
-                            <div class="hud-column">
-                                <h3 class="hud-section-title">Tìm Kiếm Ca Cầu Lông Vãng Lai</h3>
-                                
-                                <div class="slot-filter-bar">
-                                    <div class="hud-grid" style="gap: 15px; grid-template-columns: 1fr 1fr;">
-                                        <div class="form-group" style="margin-bottom: 0;">
-                                            <label class="form-label">Tỉnh / Thành Phố</label>
-                                            <select class="form-control" id="filterProvince" onchange="capNhatQuanHuyenLoc(); timKiemCaDau();">
-                                                <option value="">-- Toàn Quốc --</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group" style="margin-bottom: 0;">
-                                            <label class="form-label">Quận / Huyện</label>
-                                            <select class="form-control" id="filterDistrict" onchange="timKiemCaDau()">
-                                                <option value="">-- Tất cả Quận/Huyện --</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group" style="margin-bottom: 0;">
-                                            <label class="form-label">Giới Tính</label>
-                                            <select class="form-control" id="filterGender" onchange="timKiemCaDau()">
-                                                <option value="">-- Tất cả giới tính --</option>
-                                                <option value="male">Nam</option>
-                                                <option value="female">Nữ</option>
-                                                <option value="both">Cả nam & nữ</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group" style="margin-bottom: 0;">
-                                            <label class="form-label">Trình độ yêu cầu</label>
-                                            <select class="form-control" id="filterLevel" onchange="timKiemCaDau()">
-                                                <option value="">-- Tất cả trình độ --</option>
-                                                <option value="newbie">Newbie</option>
-                                                <option value="yếu">Yếu</option>
-                                                <option value="tby">Trung bình yếu (tby)</option>
-                                                <option value="tb-">Trung bình trừ (tb-)</option>
-                                                <option value="tb+">Trung bình cộng (tb+)</option>
-                                                <option value="tbk">Trung bình khá (tbk)</option>
-                                            </select>
-                                        </div>
-                                        <!-- MỚI: Bổ sung bộ lọc Ngày và bộ lọc Khung Giờ chơi -->
-                                        <div class="form-group" style="margin-bottom: 0;">
-                                            <label class="form-label">Ngày chơi cụ thể</label>
-                                            <input type="date" class="form-control" id="filterDate" onchange="timKiemCaDau()">
-                                        </div>
-                                        <div class="form-group" style="margin-bottom: 0;">
-                                            <label class="form-label">Khung giờ ca chơi</label>
-                                            <select class="form-control" id="filterTimeFrame" onchange="timKiemCaDau()">
-                                                <option value="">-- Tất cả khung giờ --</option>
-                                                <option value="morning">🌅 Sáng (5:00 - 12:00)</option>
-                                                <option value="afternoon">☀️ Chiều (12:00 - 17:00)</option>
-                                                <option value="evening">🌙 Tối (17:00 - 23:00)</option>
-                                            </select>
-                                        </div>
-                                        <div class="form-group" style="margin-bottom: 0;">
-                                            <label class="form-label">Giá tối đa mong muốn (đ)</label>
-                                            <input type="number" class="form-control" id="filterMaxPrice" placeholder="Ví dụ: 80000" onchange="timKiemCaDau()">
-                                        </div>
-                                        <div class="form-group" style="margin-bottom: 0;">
-                                            <label class="form-label">Tìm kiếm theo tên sân</label>
-                                            <input type="text" class="form-control" id="filterCourtName" placeholder="Tên sân cầu lông..." oninput="timKiemCaDau()">
-                                        </div>
-                                    </div>
-                                    <button class="btn-cyber-gold btn-filter-cyber w-full mt-4" onclick="timKiemCaDau()">
-                                        <i class="fa-solid fa-magnifying-glass"></i> 🏸 TÌM KÈO CẦU LÔNG PHÙ HỢP
-                                    </button>
-                                </div>
-
-                                <!-- Slots Grid Results -->
-                                <h4 style="font-size: 0.9rem; font-weight: 800; margin-top: 24px; margin-bottom: 16px; color: #fff;">
-                                    KẾT QUẢ TÌM KIẾM (<span id="countSearchResult">0</span> Ca đấu)
-                                </h4>
-                                <div class="slot-grid" id="slotsSearchResultContainer" style="grid-template-columns: 1fr;">
-                                    <p style="color: #94a3b8; text-align: center; font-size: 0.9rem;">Đang tải dữ liệu ca đấu cầu lông từ đám mây...</p>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-            </section>
-
+        <div class="hud-panel-header">
+            <h2 class="hud-panel-title"><i class="fa-solid fa-user-astronaut"></i> SÀN KHÁCH VÃNG LAI CẦU LÔNG</h2>
+            <a href="index.html" class="btn-hud-back"><i class="fa-solid fa-angle-left"></i> Cổng</a>
         </div>
 
-        <!-- Footer -->
-        <footer class="gateway-footer">
-            <p>&copy; 2026 TUYENVANGLAI.IO.VN. Hệ thống điều vận tuyển vãng lai Cầu Lông quy chuẩn quốc gia. Tốc độ, thẩm mỹ và bảo mật.</p>
-        </footer>
+        <div class="scrollable-y flex-grow-1" style="padding-bottom:32px;">
+            <div class="hud-grid">
+
+                <!-- ══ CỘT TRÁI: ĐĂNG NHẬP / HỒ SƠ ══ -->
+                <div class="hud-column">
+
+                    <!-- Panel đăng nhập (khi chưa login) -->
+                    <div id="guestAuthPanel">
+                        <h3 class="hud-section-title"><i class="fa-solid fa-right-to-bracket" style="margin-right:8px;"></i>Ký Danh Siêu Tốc</h3>
+                        <div class="pricing-engine-wrapper">
+                            <p style="font-size:0.85rem;color:#94a3b8;margin-bottom:20px;line-height:1.6;">
+                                Chỉ cần Họ tên và SĐT — không cần tạo tài khoản. Hệ thống tự nhận diện lần sau.
+                            </p>
+                            <div class="form-group">
+                                <label class="form-label">Tên / Biệt danh <span class="required">*</span></label>
+                                <input type="text" class="form-control" id="guestInputName" placeholder="Vd: Nguyễn Văn A"
+                                    onkeydown="if(event.key==='Enter') document.getElementById('guestInputPhone').focus()">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Số điện thoại Zalo <span class="required">*</span></label>
+                                <input type="tel" class="form-control" id="guestInputPhone" placeholder="Vd: 0987654321"
+                                    onkeydown="if(event.key==='Enter') xacThucKhachChoi()">
+                            </div>
+                            <button class="btn-cyber w-full" style="height:48px;margin-top:4px;" onclick="xacThucKhachChoi()">
+                                <i class="fa-solid fa-right-to-bracket"></i> Vào Sàn Tìm Kèo
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hồ sơ cá nhân (sau khi login) -->
+                    <div id="guestProfileBlock" style="display:none;">
+                        <h3 class="hud-section-title"><i class="fa-solid fa-user-circle" style="margin-right:8px;"></i>Hồ Sơ Cá Nhân</h3>
+
+                        <div class="pricing-engine-wrapper">
+                            <!-- Thông tin cơ bản -->
+                            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+                                <div>
+                                    <div id="profileGuestName" style="font-size:1.15rem;font-weight:800;color:#fff;">--</div>
+                                    <div id="profileGuestPhone" style="font-size:0.82rem;color:#94a3b8;margin-top:2px;">SĐT: --</div>
+                                    <div id="profileGuestDate" style="font-size:0.75rem;color:#64748b;margin-top:2px;">Gia nhập: --</div>
+                                </div>
+                                <button class="btn-cyber-danger" style="padding:5px 12px;font-size:0.75rem;" onclick="dangXuatKhach()">
+                                    <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+                                </button>
+                            </div>
+
+                            <hr style="border:none;border-top:1px dashed rgba(255,255,255,0.06);margin:12px 0;">
+
+                            <!-- Bộ lọc thời gian thống kê -->
+                            <div style="margin-bottom:12px;">
+                                <p style="font-size:0.72rem;color:#94a3b8;text-transform:uppercase;font-weight:700;margin-bottom:8px;">Bộ lọc thời gian</p>
+                                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+                                    <button class="btn-time-filter" onclick="locNhanhThoiGian('week', this)">Tuần này</button>
+                                    <button class="btn-time-filter" onclick="locNhanhThoiGian('month', this)">Tháng này</button>
+                                    <button class="btn-time-filter" onclick="locNhanhThoiGian('year', this)">Năm nay</button>
+                                    <button class="btn-time-filter" onclick="locNhanhThoiGian('all', this)">Tất cả</button>
+                                </div>
+                                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label class="form-label" style="font-size:0.65rem;">Từ ngày</label>
+                                        <input type="date" class="form-control" id="statsDateFrom" style="padding:6px 10px;font-size:0.8rem;" onchange="locThongKeKhach()">
+                                    </div>
+                                    <div class="form-group" style="margin-bottom:0;">
+                                        <label class="form-label" style="font-size:0.65rem;">Đến ngày</label>
+                                        <input type="date" class="form-control" id="statsDateTo" style="padding:6px 10px;font-size:0.8rem;" onchange="locThongKeKhach()">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Thống kê 4 ô -->
+                            <div class="stats-grid-4">
+                                <div class="stat-card">
+                                    <div class="stat-icon" style="color:hsl(var(--neon-mint));"><i class="fa-solid fa-flag-checkered"></i></div>
+                                    <div class="stat-value" id="statsTotalSlots">0</div>
+                                    <div class="stat-label">Đã tham gia</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon" style="color:hsl(var(--neon-gold));"><i class="fa-solid fa-wallet"></i></div>
+                                    <div class="stat-value" id="statsTotalCost" style="font-size:0.9rem;">0đ</div>
+                                    <div class="stat-label">Tổng chi tiêu</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon" style="color:hsl(var(--neon-cyan));"><i class="fa-solid fa-handshake"></i></div>
+                                    <div class="stat-value" id="statsTotalHosts">0</div>
+                                    <div class="stat-label">Host giao lưu</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-icon" style="color:hsl(var(--neon-pink));"><i class="fa-regular fa-clock"></i></div>
+                                    <div class="stat-value" id="statsPending">0</div>
+                                    <div class="stat-label">Chờ đánh</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Đánh giá Host -->
+                        <h3 class="hud-section-title" style="margin-top:20px;">
+                            <i class="fa-solid fa-star" style="margin-right:8px;color:hsl(var(--neon-gold));"></i>Đánh Giá Chủ Sân
+                        </h3>
+                        <div class="pricing-engine-wrapper">
+                            <p style="font-size:0.8rem;color:#94a3b8;margin-bottom:14px;line-height:1.5;">
+                                Bạn chỉ có thể đánh giá sau khi: Ca đã chốt + Host xác nhận bạn "Đã tham gia".
+                            </p>
+                            <div class="form-group">
+                                <label class="form-label">Chọn ca đấu cần đánh giá</label>
+                                <select class="form-control" id="guestReviewHostSelect">
+                                    <option value="">-- Đang tải danh sách... --</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Điểm đánh giá (1-5 sao)</label>
+                                <div class="stars-container" id="guestRatingStars" style="font-size:1.8rem;gap:8px;cursor:pointer;"></div>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Nhận xét (tuỳ chọn)</label>
+                                <textarea class="form-control" id="guestReviewComment" rows="3"
+                                    placeholder="Vd: Sân đẹp, host nhiệt tình, cầu tốt, đúng trình độ..."></textarea>
+                            </div>
+                            <button class="btn-cyber w-full" onclick="guiDanhGiaHost()">
+                                <i class="fa-solid fa-paper-plane"></i> Gửi Đánh Giá Host
+                            </button>
+                        </div>
+                    </div>
+
+                </div><!-- end left col -->
+
+                <!-- ══ CỘT PHẢI: TÌM KIẾM KÈO ══ -->
+                <div class="hud-column">
+                    <h3 class="hud-section-title">
+                        <i class="fa-solid fa-magnifying-glass" style="margin-right:8px;color:hsl(var(--neon-mint));"></i>Tìm Kèo Cầu Lông Vãng Lai
+                    </h3>
+
+                    <!-- Bộ lọc -->
+                    <div class="slot-filter-bar">
+                        <div class="form-grid-2" style="gap:10px;">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="font-size:0.72rem;">Tỉnh / Thành Phố</label>
+                                <select class="form-control" id="filterProvince" onchange="capNhatQuanHuyenLoc(); timKiemCaDau();">
+                                    <option value="">🇻🇳 Toàn Quốc</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="font-size:0.72rem;">Quận / Huyện</label>
+                                <select class="form-control" id="filterDistrict" onchange="timKiemCaDau()">
+                                    <option value="">-- Tất cả --</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="font-size:0.72rem;">Giới Tính</label>
+                                <select class="form-control" id="filterGender" onchange="timKiemCaDau()">
+                                    <option value="">Tất cả</option>
+                                    <option value="male">♂ Nam</option>
+                                    <option value="female">♀ Nữ</option>
+                                    <option value="both">⚥ Cả hai</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="font-size:0.72rem;">Trình Độ</label>
+                                <select class="form-control" id="filterLevel" onchange="timKiemCaDau()">
+                                    <option value="">Tất cả trình độ</option>
+                                    <option value="Newbie">Newbie</option>
+                                    <option value="Yếu">Yếu</option>
+                                    <option value="Trung bình yếu">Trung bình yếu</option>
+                                    <option value="Trung bình-">Trung bình-</option>
+                                    <option value="Trung bình+">Trung bình+</option>
+                                    <option value="Trung bình khá">Trung bình khá</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="font-size:0.72rem;">Ngày đánh</label>
+                                <input type="date" class="form-control" id="filterDate" onchange="timKiemCaDau()">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="font-size:0.72rem;">Khung giờ</label>
+                                <select class="form-control" id="filterTimeFrame" onchange="timKiemCaDau()">
+                                    <option value="">Tất cả</option>
+                                    <option value="morning">🌅 Sáng (5-12h)</option>
+                                    <option value="afternoon">☀️ Chiều (12-17h)</option>
+                                    <option value="evening">🌙 Tối (17-23h)</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="font-size:0.72rem;">Giá tối đa (đ)</label>
+                                <input type="number" class="form-control" id="filterMaxPrice" placeholder="Vd: 80000" onchange="timKiemCaDau()">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label" style="font-size:0.72rem;">Tên sân</label>
+                                <input type="text" class="form-control" id="filterCourtName" placeholder="Tìm theo tên sân..." oninput="timKiemCaDau()">
+                            </div>
+                        </div>
+                        <div style="display:flex;gap:8px;margin-top:12px;">
+                            <button class="btn-cyber-gold w-full" style="height:44px;" onclick="timKiemCaDau()">
+                                <i class="fa-solid fa-magnifying-glass"></i> TÌM KÈO PHÙ HỢP
+                            </button>
+                            <button class="btn-hud-back" style="padding:0 14px;white-space:nowrap;" onclick="xoaBoLoc()">
+                                <i class="fa-solid fa-rotate-left"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Kết quả -->
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin:20px 0 12px;flex-wrap:wrap;gap:8px;">
+                        <h4 style="font-size:0.88rem;font-weight:800;color:#fff;">
+                            KẾT QUẢ: <span id="countSearchResult" style="color:hsl(var(--neon-mint));">0</span> ca đấu
+                        </h4>
+                        <span style="font-size:0.75rem;color:#64748b;">Sắp xếp theo thời gian gần nhất</span>
+                    </div>
+
+                    <div id="slotsSearchResultContainer">
+                        <div style="text-align:center;padding:40px;color:#64748b;">
+                            <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;margin-bottom:10px;display:block;"></i>
+                            Đang tải danh sách kèo...
+                        </div>
+                    </div>
+
+                </div><!-- end right col -->
+
+            </div><!-- end hud-grid -->
+        </div>
 
     </div>
+    </section>
+    </div>
 
-    <!-- TOAST NOTIFICATION ENGINE -->
-    <div class="toast-container" id="toastContainer"></div>
+    <footer class="gateway-footer">
+        <p>&copy; 2026 TUYENVANGLAI.IO.VN — Nền tảng kết nối vãng lai Cầu Lông số 1 Việt Nam.</p>
+    </footer>
+</div>
 
-    <!-- Scripts with Cache-busting -->
-    <script src="ket-noi-supabase.js?v=3.0"></script>
-    <script src="bo-may-du-lieu.js?v=3.0"></script>
-    <script src="hieu-ung-giao-dien.js?v=3.0"></script>
-    <script src="phan-he-khach-choi.js?v=3.0"></script>
-    
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            // Kiểm tra và xóa data vl_slots cũ nếu có cấu trúc sai
-            try {
-                const rawSlots = localStorage.getItem("vl_slots");
-                if (rawSlots) {
-                    const parsed = JSON.parse(rawSlots);
-                    // Nếu không phải array hoặc có cấu trúc cũ → xóa để nạp lại mẫu
-                    if (!Array.isArray(parsed) || parsed.some(s => s.hasOwnProperty("price_per_slot"))) {
-                        localStorage.removeItem("vl_slots");
-                        console.log("[Init] Đã xóa data vl_slots cũ, sẽ nạp lại mẫu mới.");
-                    }
-                }
-            } catch (e) {
-                localStorage.removeItem("vl_slots");
-                console.warn("[Init] vl_slots bị lỗi JSON, đã reset.");
-            }
+<!-- TOAST -->
+<div class="toast-container" id="toastContainer"></div>
 
-            // Khởi chạy giao diện phong thủy theme và hologram
-            const checkTheme = setInterval(() => {
-                if (window.khoiTaoTheme && window.khoiTaoHologramGlow) {
-                    clearInterval(checkTheme);
-                    window.khoiTaoTheme();
-                    window.khoiTaoHologramGlow();
-                }
-            }, 100);
-            
-            // Tự động tìm kiếm tất cả ca đấu ngay khi dbEngine sẵn sàng
-            const checkDb = setInterval(() => {
-                if (window.dbEngine && window.timKiemCaDau) {
-                    clearInterval(checkDb);
-                    console.log("[Init] dbEngine sẵn sàng, tự động tải danh sách ca đấu...");
-                    window.timKiemCaDau();
-                }
-            }, 200);
-        });
-    </script>
+<script src="ket-noi-supabase.js?v=5.0"></script>
+<script src="bo-may-du-lieu.js?v=5.0"></script>
+<script src="hieu-ung-giao-dien.js?v=5.0"></script>
+<script src="phan-he-khach-choi.js?v=5.0"></script>
+
+<script>
+// Xóa bộ lọc
+function xoaBoLoc() {
+    ["filterProvince","filterDistrict","filterGender","filterLevel","filterDate","filterTimeFrame","filterMaxPrice","filterCourtName"]
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
+    window.timKiemCaDau();
+}
+</script>
 </body>
 </html>

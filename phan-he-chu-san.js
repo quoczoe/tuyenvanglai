@@ -1,908 +1,1198 @@
 /* =========================================================================
- * 🏟️ PHÂN HỆ CHỦ SÂN (HOST PORTAL & SMART ACCOUNTING ENGINE) - PHAN-HE-CHU-SAN.JS
+ * 🏟️ PHÂN HỆ CHỦ SÂN (HOST PORTAL) - PHAN-HE-CHU-SAN.JS
  * Dự án: TUYENVANGLAI.IO.VN
- * Chức năng: Quản lý kích hoạt Key thuê trạm, đăng ca chơi tự động đồng bộ đám mây,
- *            tích hợp bộ máy kế toán thông minh dự toán chi phí cầu tiêu thụ lẻ và tiền sân,
- *            định vị qua Google Maps API giả lập, đóng khóa chốt ca chơi vĩnh viễn và bình chọn 2 chiều.
+ * Chức năng: Quản lý kích hoạt Key, đăng ca đấu, kế toán thông minh,
+ *            quản lý danh sách khách, chốt ca, và hệ thống đánh giá 2 chiều.
  * =========================================================================
  */
 
 (function () {
-    // Biến trạng thái toàn cục của phân hệ Host
-    window.currentHostKey = null;
-    window.shuttlecocksList = []; // Mảng theo dõi các loại cầu tiêu dùng được Host khai báo
-    
-    let hostRatingIndex = 5; // Bình chọn thái độ khách mặc định
-    let suggestBreakEvenPrice = null;
-    let suggestSmallProfitPrice = null;
-    let suggestBigProfitPrice = null;
+    // ── Trạng thái toàn cục phân hệ Host ──
+    window.currentHostKey = null;      // Key hiện đang dùng
+    window.currentHostInfo = null;     // Thông tin key đầy đủ
+    window.shuttlecocksList = [];      // Danh sách ID các hàng cầu đã thêm
+    window.currentEditingSlotId = null; // ID ca đấu đang chỉnh sửa (null = tạo mới)
+    window.hostRatingStarIndex = 5;    // Số sao chọn cho đánh giá khách
 
-    // 1. Khởi tạo trang Host độc lập (cho host.html)
+    // Kết quả tính từ máy kế toán (lưu để áp dụng khi chọn phương án)
+    let _calcBreakEvenMale = 0, _calcBreakEvenFemale = 0;
+    let _calcSmallMale = 0, _calcSmallFemale = 0;
+    let _calcBigMale = 0, _calcBigFemale = 0;
+
+    /* ═══════════════════════════════════════════════════
+     * 1. KHỞI TẠO TRANG HOST
+     * ═══════════════════════════════════════════════════ */
     window.khoiTaoTrangHost = function () {
-        // Kiểm tra xem Host đã đăng nhập từ phiên làm việc trước chưa
-        const savedKey = localStorage.getItem("tvl_logged_host_key");
+        // Kiểm tra phiên đăng nhập cũ từ localStorage
+        const savedKey = localStorage.getItem("tvl_host_key");
         if (savedKey) {
             window.currentHostKey = savedKey;
-            window.hienThiDashboardHost();
+            _hienThiDashboard();
         } else {
-            window.currentHostKey = null;
-            window.hienThiGiaoDienChuaKichHoat();
+            _hienThiManKichHoat();
+        }
+        _khoiTaoStarRating();
+    };
+
+    function _hienThiManKichHoat() {
+        const auth = document.getElementById("hostAuthPanel");
+        const con = document.getElementById("hostConsole");
+        if (auth) auth.style.display = "block";
+        if (con) con.style.display = "none";
+    }
+
+    async function _hienThiDashboard() {
+        const auth = document.getElementById("hostAuthPanel");
+        const con = document.getElementById("hostConsole");
+        if (auth) auth.style.display = "none";
+        if (con) con.style.display = "block";
+
+        // Cập nhật tên host
+        try {
+            const keys = await window.dbEngine.doc("keys");
+            window.currentHostInfo = keys.find(k => k.key === window.currentHostKey);
+            const nameEl = document.getElementById("hostDisplayName");
+            const keyEl = document.getElementById("hostDisplayKey");
+            const expEl = document.getElementById("hostDisplayExpiry");
+            if (window.currentHostInfo) {
+                if (nameEl) nameEl.textContent = window.currentHostInfo.ten_host || window.currentHostInfo.note || "Chủ Sân";
+                if (keyEl) keyEl.textContent = window.currentHostKey;
+                if (expEl) {
+                    const exp = new Date(window.currentHostInfo.expires_at || window.currentHostInfo.ngay_het_han);
+                    expEl.textContent = `Hết hạn: ${exp.toLocaleDateString("vi-VN")}`;
+                }
+            }
+        } catch (e) { console.warn("Không tải được info host:", e); }
+
+        // Nạp dropdown tỉnh thành
+        _napDropdownTinhThanh("hostProvince", "hostDistrict");
+
+        // Đặt ngày tối thiểu và mặc định cho input ngày
+        const dateInput = document.getElementById("hostDatePlay");
+        if (dateInput) {
+            const today = new Date().toLocaleDateString("sv-SE");
+            dateInput.min = today;
+            if (!dateInput.value) dateInput.value = today;
         }
 
-        window.khoiTaoReviewStarsHost();
-    };
+        // Giờ mặc định
+        const ts = document.getElementById("hostTimeStart");
+        const te = document.getElementById("hostTimeEnd");
+        if (ts && !ts.value) ts.value = "18:00";
+        if (te && !te.value) te.value = "20:00";
 
-    // Hiển thị giao diện khi chưa kích hoạt key
-    window.hienThiGiaoDienChuaKichHoat = function () {
-        const authPanel = document.getElementById("hostAuthPanel");
-        const consolePanel = document.getElementById("hostConsole");
-        if (authPanel) authPanel.classList.remove("d-none");
-        if (consolePanel) consolePanel.classList.add("d-none");
+        // Khởi tạo danh sách cầu với 1 hàng mặc định
+        window.shuttlecocksList = [];
+        const ctr = document.getElementById("shuttlecockListContainer");
+        if (ctr) ctr.innerHTML = "";
+        _themHangCauMoi("Hải Yến", "12", 240000, 5);
 
-        const keyInput = document.getElementById("hostActivationKey");
-        if (keyInput) keyInput.value = "";
-    };
+        _tinhThoiGian();
+        await _taiLichSuCaDau();
+        _resetFormDangCa();
+    }
 
-    // 2. Xác thực Key thuê kích hoạt trạm quản trị
+    /* ═══════════════════════════════════════════════════
+     * 2. XÁC THỰC KEY KÍCH HOẠT
+     * ═══════════════════════════════════════════════════ */
     window.xacThucKeyHost = async function () {
-        const keyInput = document.getElementById("hostActivationKey");
-        if (!keyInput) return;
-
-        const key = keyInput.value.trim();
+        const inp = document.getElementById("hostActivationKey");
+        if (!inp) return;
+        const key = inp.value.trim().toUpperCase();
         if (!key) {
-            window.hienToast("Trống thông tin", "Vui lòng nhập Key thuê kích hoạt trạm.", "danger");
+            window.hienToast("Thiếu thông tin", "Vui lòng nhập mã Key kích hoạt.", "danger");
             return;
         }
 
+        const btn = document.querySelector("[onclick='xacThucKeyHost()']");
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang kiểm tra...'; }
+
         try {
             const keys = await window.dbEngine.doc("keys");
-            const matchedKey = keys.find(k => k.key === key);
+            const matched = keys.find(k => (k.key || k.ma_key) === key);
 
-            if (!matchedKey) {
-                window.hienToast("Mã Key không tồn tại", "Key này không có trên cơ sở dữ liệu hệ thống. Vui lòng kiểm tra lại.", "danger");
+            if (!matched) {
+                window.hienToast("Key không tồn tại", "Mã Key này không có trong hệ thống. Vui lòng kiểm tra lại.", "danger");
                 return;
             }
 
-            if (matchedKey.status !== "active") {
-                window.hienToast("Key bị khóa", "Key thuê trạm này đã bị Admin tạm thời khóa hiệu lực.", "danger");
+            const trangThai = matched.status || matched.trang_thai;
+            if (trangThai === "locked" || trangThai === "Bị khóa") {
+                window.hienToast("Key bị khóa", "Key này đã bị Admin khóa tạm thời. Liên hệ Admin để mở khóa.", "danger");
                 return;
             }
 
-            if (new Date(matchedKey.expires_at) < new Date()) {
-                window.hienToast("Key hết hạn thuê", "Key thuê trạm đã hết hạn. Vui lòng liên hệ Admin gia hạn thuê.", "danger");
+            const ngayHetHan = new Date(matched.expires_at || matched.ngay_het_han);
+            if (ngayHetHan < new Date()) {
+                window.hienToast("Key đã hết hạn", `Key hết hạn từ ${ngayHetHan.toLocaleDateString("vi-VN")}. Liên hệ Admin gia hạn.`, "danger");
                 return;
+            }
+
+            // Kiểm tra ràng buộc thiết bị
+            const deviceId = _layHoacTaoDeviceId();
+            const savedDevice = matched.id_thiet_bi || matched.device_id;
+            if (savedDevice && savedDevice !== deviceId) {
+                window.hienToast("Thiết bị không khớp", "Key này đã được kích hoạt trên thiết bị khác. Liên hệ Admin để reset.", "danger");
+                return;
+            }
+
+            // Nếu key chưa có device_id thì ghi vào
+            if (!savedDevice) {
+                try {
+                    await window.dbEngine.ghi("keys", { id_thiet_bi: deviceId, device_id: deviceId }, { key: key });
+                } catch (e) { console.warn("Không cập nhật được device_id:", e); }
             }
 
             window.currentHostKey = key;
-            localStorage.setItem("tvl_logged_host_key", key);
+            localStorage.setItem("tvl_host_key", key);
+            window.hienToast("Kích hoạt thành công! ✅", "Hệ thống đã xác nhận Key hợp lệ. Chào mừng Chủ Sân!", "success");
+            _hienThiDashboard();
 
-            window.hienToast("Kích hoạt thành công", "Hệ thống đã kích hoạt toàn quyền trạm cho Host.", "success");
-            window.hienThiDashboardHost();
         } catch (e) {
-            console.error("Lỗi xác thực key host:", e);
-            window.hienToast("Lỗi kết nối", "Không thể xác thực Key thuê lên máy chủ.", "danger");
+            console.error("Lỗi xác thực key:", e);
+            window.hienToast("Lỗi kết nối", "Không thể xác thực Key lên máy chủ. Vui lòng thử lại.", "danger");
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-key"></i> Kích Hoạt Quyền Quản Trị'; }
         }
     };
 
-    // Đăng xuất Host
     window.dangXuatHost = function () {
-        localStorage.removeItem("tvl_logged_host_key");
+        if (!confirm("Bạn có chắc muốn đăng xuất khỏi Trạm Quản Trị?")) return;
+        localStorage.removeItem("tvl_host_key");
         window.currentHostKey = null;
-        window.hienToast("Đã đăng xuất", "Phiên quản trị chủ sân đã kết thúc.", "info");
-        window.hienThiGiaoDienChuaKichHoat();
+        window.currentHostInfo = null;
+        window.hienToast("Đã đăng xuất", "Phiên quản trị đã kết thúc an toàn.", "info");
+        _hienThiManKichHoat();
     };
 
-    // 3. Tải bảng điều khiển điều hành chính của Chủ sân
-    window.hienThiDashboardHost = function () {
-        const authPanel = document.getElementById("hostAuthPanel");
-        const consolePanel = document.getElementById("hostConsole");
-        if (authPanel) authPanel.classList.add("d-none");
-        if (consolePanel) consolePanel.classList.remove("d-none");
-
-        // Nạp 63 tỉnh thành Việt Nam vào dropdown Đăng ca đấu
-        const provSelect = document.getElementById("hostProvince");
-        if (provSelect) {
-            provSelect.innerHTML = '<option value="">-- Chọn Tỉnh / Thành --</option>';
-            if (window.MOCK_PROVINCES) {
-                window.MOCK_PROVINCES.forEach(prov => {
-                    const opt = document.createElement("option");
-                    opt.value = prov.name;
-                    opt.innerText = prov.name;
-                    provSelect.appendChild(opt);
-                });
-            }
+    function _layHoacTaoDeviceId() {
+        let did = localStorage.getItem("tvl_device_id");
+        if (!did) {
+            did = "DV-" + Math.random().toString(36).slice(2, 10).toUpperCase() + "-" + Date.now().toString(36).toUpperCase();
+            localStorage.setItem("tvl_device_id", did);
         }
+        return did;
+    }
 
-        // Đặt giới hạn ngày đấu tối thiểu là hôm nay
-        const dateInput = document.getElementById("hostDatePlay");
-        if (dateInput) {
-            const todayStr = new Date().toLocaleDateString('sv-SE');
-            dateInput.value = todayStr;
-            dateInput.min = todayStr;
+    /* ═══════════════════════════════════════════════════
+     * 3. QUẢN LÝ DROPDOWN TỈNH/HUYỆN
+     * ═══════════════════════════════════════════════════ */
+    function _napDropdownTinhThanh(provId, distId) {
+        const provSel = document.getElementById(provId);
+        if (!provSel || !window.MOCK_PROVINCES) return;
+
+        provSel.innerHTML = '<option value="">-- Chọn Tỉnh/Thành --</option>';
+        window.MOCK_PROVINCES.forEach(p => {
+            const opt = document.createElement("option");
+            opt.value = p.name;
+            opt.textContent = p.name;
+            provSel.appendChild(opt);
+        });
+
+        provSel.addEventListener("change", () => _capNhatHuyen(provSel.value, distId));
+    }
+
+    function _capNhatHuyen(provName, distId) {
+        const distSel = document.getElementById(distId);
+        if (!distSel) return;
+        distSel.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
+        if (!provName || !window.MOCK_PROVINCES) return;
+        const prov = window.MOCK_PROVINCES.find(p => p.name === provName);
+        if (prov) {
+            prov.districts.forEach(d => {
+                const opt = document.createElement("option");
+                opt.value = d;
+                opt.textContent = d;
+                distSel.appendChild(opt);
+            });
         }
+    }
 
-        // Đặt mặc định giờ giấc ca chơi thông dụng
-        const timeStartInput = document.getElementById("hostTimeStart");
-        const timeEndInput = document.getElementById("hostTimeEnd");
-        if (timeStartInput) timeStartInput.value = "18:00";
-        if (timeEndInput) timeEndInput.value = "20:00";
-
-        // Khởi động mảng khai báo các hãng quả cầu
-        window.shuttlecocksList = [];
-        const shuttleContainer = document.getElementById("shuttlecockListContainer");
-        if (shuttleContainer) {
-            shuttleContainer.innerHTML = "";
-            // Đăng ký loại cầu phổ biến mặc định Hải Yến: Ống 12 quả, Giá 240k, Ca chơi dùng hết 5 quả lẻ
-            window.themLoaiCauMoi("Hải Yến", 12, 240000, 5); 
-        }
-
-        // Tự động tính toán tổng số giờ, gợi ý giá tiền, tải danh sách lịch sử ca đấu
-        window.tinhToanThoiGianHieuLuc();
-        window.loadLichSuCaDauHost();
-    };
-
-    // Cập nhật Quận/Huyện tương ứng bên phía Host
     window.capNhatQuanHuyenHost = function () {
-        const provSelect = document.getElementById("hostProvince");
-        const distSelect = document.getElementById("hostDistrict");
-        if (!provSelect || !distSelect) return;
-
-        const provName = provSelect.value;
-        distSelect.innerHTML = '<option value="">-- Chọn Quận/Huyện --</option>';
-
-        if (window.MOCK_PROVINCES) {
-            const matched = window.MOCK_PROVINCES.find(p => p.name === provName);
-            if (matched) {
-                matched.districts.forEach(dist => {
-                    const opt = document.createElement("option");
-                    opt.value = dist;
-                    opt.innerText = dist;
-                    distSelect.appendChild(opt);
-                });
-            }
-        }
+        const provVal = document.getElementById("hostProvince")?.value;
+        _capNhatHuyen(provVal, "hostDistrict");
     };
 
-    // 4. Tính toán thời lượng ca chơi (tính cả ca xuyên đêm sang ngày hôm sau)
-    window.tinhToanThoiGianHieuLuc = function () {
+    /* ═══════════════════════════════════════════════════
+     * 4. TÍNH THỜI GIAN CA CHƠI
+     * ═══════════════════════════════════════════════════ */
+    window.tinhToanThoiGianHieuLuc = _tinhThoiGian;
+
+    function _tinhThoiGian() {
         const dateStr = document.getElementById("hostDatePlay")?.value;
         const startStr = document.getElementById("hostTimeStart")?.value;
         const endStr = document.getElementById("hostTimeEnd")?.value;
-        const durationInput = document.getElementById("hostTotalDuration");
+        const durEl = document.getElementById("hostTotalDuration");
+        if (!dateStr || !startStr || !endStr || !durEl) return;
 
-        if (!dateStr || !startStr || !endStr || !durationInput) return;
+        const tS = new Date(`${dateStr}T${startStr}`);
+        let tE = new Date(`${dateStr}T${endStr}`);
+        if (tE <= tS) tE = new Date(tE.getTime() + 86400000); // qua đêm
 
-        const tStart = new Date(`${dateStr}T${startStr}`);
-        let tEnd = new Date(`${dateStr}T${endStr}`);
+        const hours = (tE - tS) / 3600000;
+        durEl.value = `${hours.toFixed(1)} Giờ`;
+        _tinhGoiYGia();
+    }
 
-        // Nếu giờ kết thúc nhỏ hơn giờ bắt đầu, tự động cộng thêm 1 ngày chơi (xuyên đêm)
-        if (tEnd < tStart) {
-            tEnd = new Date(tEnd.getTime() + 24 * 60 * 60 * 1000);
+    /* ═══════════════════════════════════════════════════
+     * 5. QUẢN LÝ GIỚI TÍNH - TRÌNH ĐỘ LIÊN KẾT
+     * ═══════════════════════════════════════════════════ */
+    window.chuyenTrangThaiLienKetGioiTinh = function () {
+        const val = document.querySelector('input[name="hostGenderSelect"]:checked')?.value || "male";
+        const maleBlock = document.getElementById("linkedMaleLevelBlock");
+        const femaleBlock = document.getElementById("linkedFemaleLevelBlock");
+
+        if (val === "male") {
+            if (maleBlock) maleBlock.style.display = "block";
+            if (femaleBlock) femaleBlock.style.display = "none";
+        } else if (val === "female") {
+            if (maleBlock) maleBlock.style.display = "none";
+            if (femaleBlock) femaleBlock.style.display = "block";
+        } else { // both
+            if (maleBlock) maleBlock.style.display = "block";
+            if (femaleBlock) femaleBlock.style.display = "block";
         }
-
-        const diffHours = (tEnd - tStart) / (1000 * 60 * 60);
-        durationInput.value = `${diffHours.toFixed(1)} Giờ`;
-
-        window.tinhToanPricingGoiY();
     };
 
-    // 5. Thêm/Xóa/Khai báo nhiều loại quả cầu tiêu dùng của ca đấu
-    window.themLoaiCauMoi = function (macDinhTen = "", macDinhQua = 12, macDinhGia = 240000, macDinhDaDung = 0) {
-        const container = document.getElementById("shuttlecockListContainer");
-        if (!container) return;
+    /* ═══════════════════════════════════════════════════
+     * 6. QUẢN LÝ CẦU LÔN - THÊM/XÓA/ĐỒNG BỘ GIÁ
+     * ═══════════════════════════════════════════════════ */
+    window.themLoaiCauMoi = function (ten = "", loai = "12", gia = 240000, daDung = 0) {
+        _themHangCauMoi(ten, loai, gia, daDung);
+    };
 
-        const randId = Math.random().toString(36).substr(2, 9);
-        const row = document.createElement("div");
-        row.className = "shuttlecock-row";
-        row.id = `shuttleRow_${randId}`;
-        
-        row.innerHTML = `
-            <div style="position: relative;">
-                <input type="text" class="form-control" id="shuttleName_${randId}" placeholder="Loại cầu (Vd: Hải Yến)" value="${macDinhTen}" oninput="window.goiYTenCau('${randId}')">
-                <div id="shuttleSuggests_${randId}" style="position:absolute; width:100%; max-height:120px; overflow-y:auto; background: #080a0f; border:1px solid var(--border); z-index:30; display:none; border-radius:4px;"></div>
+    function _themHangCauMoi(ten = "", loai = "12", gia = 240000, daDung = 0) {
+        const ctr = document.getElementById("shuttlecockListContainer");
+        if (!ctr) return;
+
+        const id = "sc_" + Math.random().toString(36).slice(2, 10);
+        const div = document.createElement("div");
+        div.className = "shuttlecock-row";
+        div.id = `row_${id}`;
+
+        const giaLe = loai === "12" ? Math.round(gia / 12) : loai === "6" ? Math.round(gia / 6) : gia;
+
+        div.innerHTML = `
+        <div class="sc-row-grid">
+            <div class="form-group" style="margin-bottom:0; position:relative;">
+                <label class="form-label" style="font-size:0.7rem;">Tên cầu</label>
+                <input type="text" class="form-control" id="scName_${id}" value="${ten}"
+                    placeholder="Hải Yến, Victor..." oninput="window._goiYCau('${id}')">
+                <div id="scSuggest_${id}" style="position:absolute;top:100%;left:0;right:0;background:hsl(var(--card));border:1px solid var(--border);border-radius:var(--radius-sm);max-height:140px;overflow-y:auto;z-index:50;display:none;"></div>
             </div>
-            <select class="form-control" id="shuttleQtyType_${randId}" onchange="window.quyDoiLeTuDong('${randId}')">
-                <option value="12" ${macDinhQua === 12 ? 'selected' : ''}>Ống 12 quả</option>
-                <option value="6" ${macDinhQua === 6 ? 'selected' : ''}>Ống 6 quả</option>
-                <option value="1" ${macDinhQua === 1 ? 'selected' : ''}>Quả lẻ</option>
-            </select>
-            <input type="number" class="form-control" id="shuttlePrice_${randId}" placeholder="Giá bán" value="${macDinhGia}" onchange="window.quyDoiLeTuDong('${randId}'); window.tinhToanPricingGoiY();">
-            <input type="number" class="form-control" id="shuttleUsed_${randId}" placeholder="Đã dùng" value="${macDinhDaDung}" onchange="window.tinhToanPricingGoiY()" style="width: 70px;">
-            <button class="btn-hud-back" type="button" style="padding: 10px; color:hsl(var(--danger)); border-color:rgba(239,68,68,0.15);" onclick="window.xoaLoaiCau('${randId}')"><i class="fa-solid fa-trash-can"></i></button>
-        `;
-        
-        container.appendChild(row);
-        window.shuttlecocksList.push(randId);
-        window.tinhToanPricingGoiY();
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.7rem;">Loại mua</label>
+                <select class="form-control" id="scLoai_${id}" onchange="window._dongBoGia('${id}','loai')">
+                    <option value="12" ${loai==="12"?"selected":""}>Ống 12 quả</option>
+                    <option value="6" ${loai==="6"?"selected":""}>Ống 6 quả</option>
+                    <option value="1" ${loai==="1"?"selected":""}>Quả lẻ</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.7rem;">Giá/Ống hoặc /Quả lẻ</label>
+                <input type="number" class="form-control" id="scGiaOng_${id}" value="${gia}"
+                    placeholder="Giá ống" onchange="window._dongBoGia('${id}','ong')">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.7rem;">Giá 1 quả lẻ</label>
+                <input type="number" class="form-control" id="scGiaLe_${id}" value="${giaLe}"
+                    placeholder="Auto tính" onchange="window._dongBoGia('${id}','le')">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+                <label class="form-label" style="font-size:0.7rem;">Đã dùng (quả)</label>
+                <input type="number" class="form-control" id="scDaDung_${id}" value="${daDung}"
+                    min="0" placeholder="0" oninput="_tinhGoiYGia()">
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+                <button type="button" class="btn-remove-sc" onclick="window.xoaLoaiCau('${id}')" title="Xóa loại cầu này">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+            </div>
+        </div>`;
+
+        ctr.appendChild(div);
+        window.shuttlecocksList.push(id);
+        _tinhGoiYGia();
+    }
+
+    // Đồng bộ 2 chiều giữa giá ống và giá lẻ
+    window._dongBoGia = function (id, nguon) {
+        const loaiEl = document.getElementById(`scLoai_${id}`);
+        const giOngEl = document.getElementById(`scGiaOng_${id}`);
+        const giLeEl = document.getElementById(`scGiaLe_${id}`);
+        if (!loaiEl || !giOngEl || !giLeEl) return;
+
+        const loai = Number(loaiEl.value);
+        if (nguon === "ong" || nguon === "loai") {
+            const giOng = Number(giOngEl.value) || 0;
+            if (loai > 1) {
+                giLeEl.value = Math.round(giOng / loai);
+            }
+        } else if (nguon === "le") {
+            const giLe = Number(giLeEl.value) || 0;
+            if (loai > 1) {
+                giOngEl.value = Math.round(giLe * loai);
+            }
+        }
+        _tinhGoiYGia();
     };
 
     window.xoaLoaiCau = function (id) {
         if (window.shuttlecocksList.length <= 1) {
-            window.hienToast("Không thể xóa", "Phải khai báo ít nhất một loại cầu được sử dụng ca đấu.", "warning");
+            window.hienToast("Không được xóa", "Cần ít nhất 1 loại cầu.", "warning");
             return;
         }
-        const row = document.getElementById(`shuttleRow_${id}`);
-        if (row) row.remove();
-        window.shuttlecocksList = window.shuttlecocksList.filter(item => item !== id);
-        window.tinhToanPricingGoiY();
+        document.getElementById(`row_${id}`)?.remove();
+        window.shuttlecocksList = window.shuttlecocksList.filter(x => x !== id);
+        _tinhGoiYGia();
     };
 
-    window.quyDoiLeTuDong = function (id) {
-        window.tinhToanPricingGoiY();
-    };
-
-    window.goiYTenCau = function (id) {
-        const input = document.getElementById(`shuttleName_${id}`);
-        const box = document.getElementById(`shuttleSuggests_${id}`);
-        if (!input || !box) return;
-
-        const query = input.value.trim().toLowerCase();
+    window._goiYCau = function (id) {
+        const inp = document.getElementById(`scName_${id}`);
+        const box = document.getElementById(`scSuggest_${id}`);
+        if (!inp || !box) return;
+        const q = inp.value.toLowerCase().trim();
         box.innerHTML = "";
+        if (!q) { box.style.display = "none"; return; }
+        const brands = window.SHUTTLECOCK_BRANDS || [];
+        const matched = brands.filter(b => b.toLowerCase().includes(q));
+        if (matched.length === 0) { box.style.display = "none"; return; }
+        box.style.display = "block";
+        matched.forEach(b => {
+            const d = document.createElement("div");
+            d.style.cssText = "padding:8px 12px;cursor:pointer;font-size:0.82rem;border-bottom:1px solid var(--border);";
+            d.textContent = b;
+            d.onmouseenter = () => d.style.background = "rgba(255,255,255,0.05)";
+            d.onmouseleave = () => d.style.background = "";
+            d.onclick = () => {
+                inp.value = b;
+                box.style.display = "none";
+                _tinhGoiYGia();
+            };
+            box.appendChild(d);
+        });
+    };
 
-        if (!query) {
-            box.style.display = "none";
+    /* ═══════════════════════════════════════════════════
+     * 7. BỘ MÁY KẾ TOÁN - TÍNH GỢI Ý GIÁ THU
+     * ═══════════════════════════════════════════════════ */
+    window.tinhToanPricingGoiY = _tinhGoiYGia;
+
+    function _tinhGoiYGia() {
+        const dur = parseFloat(document.getElementById("hostTotalDuration")?.value) || 0;
+        const soSan = Number(document.getElementById("hostCourtQuantity")?.value) || 1;
+        const giaSanH = Number(document.getElementById("hostAccountingCourtPrice")?.value) || 0;
+        const tienNuoc = Number(document.getElementById("hostAccountingWaterCost")?.value) || 0;
+        const soNam = Number(document.getElementById("hostAccountingEstMale")?.value) || 0;
+        const soNu = Number(document.getElementById("hostAccountingEstFemale")?.value) || 0;
+        const chenh = Number(document.getElementById("hostAccountingGap")?.value) || 0;
+
+        // Tổng tiền sân
+        const tienSan = giaSanH * dur * soSan;
+
+        // Tổng tiền cầu
+        let tienCau = 0;
+        window.shuttlecocksList.forEach(id => {
+            const loai = Number(document.getElementById(`scLoai_${id}`)?.value) || 12;
+            const giaOng = Number(document.getElementById(`scGiaOng_${id}`)?.value) || 0;
+            const daDung = Number(document.getElementById(`scDaDung_${id}`)?.value) || 0;
+            const giaLe = loai > 1 ? giaOng / loai : giaOng;
+            tienCau += giaLe * daDung;
+        });
+
+        const tongCP = tienSan + tienCau + tienNuoc;
+        const tongNguoi = soNam + soNu;
+
+        // Hiển thị tổng chi phí
+        const tongCPEl = document.getElementById("hostTotalCost");
+        if (tongCPEl) tongCPEl.textContent = _formatVND(tongCP);
+
+        if (tongNguoi === 0) {
+            ["sugValBreakEven","sugValSmall","sugValBig"].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = "--";
+            });
             return;
         }
 
-        if (window.SHUTTLECOCK_BRANDS) {
-            const matched = window.SHUTTLECOCK_BRANDS.filter(b => b.toLowerCase().includes(query));
-            if (matched.length > 0) {
-                box.style.display = "block";
-                matched.forEach(brand => {
-                    const opt = document.createElement("div");
-                    opt.style.padding = "6px 12px";
-                    opt.style.cursor = "pointer";
-                    opt.style.fontSize = "0.8rem";
-                    opt.innerText = brand;
-                    opt.addEventListener("click", () => {
-                        input.value = brand;
-                        box.style.display = "none";
-                        window.tinhToanPricingGoiY();
-                    });
-                    box.appendChild(opt);
-                });
-            } else {
-                box.style.display = "none";
-            }
+        // Hàm tính giá Nam và Nữ từ tổng doanh thu mong muốn
+        function tinhGiaNamNu(tongDoanhThu) {
+            // tongDoanhThu = soNam * giaNam + soNu * giaNu
+            // giaNam = giaNu + chenh
+            // => tongDoanhThu = soNam * (giaNu + chenh) + soNu * giaNu
+            // => tongDoanhThu = giaNu * (soNam + soNu) + soNam * chenh
+            // => giaNu = (tongDoanhThu - soNam * chenh) / (soNam + soNu)
+            const giaNu = Math.round((tongDoanhThu - soNam * chenh) / tongNguoi / 1000) * 1000;
+            const giaNam = giaNu + chenh;
+            return { giaNam: Math.max(0, giaNam), giaNu: Math.max(0, giaNu) };
+        }
+
+        // 3 phương án
+        const beBreak = tinhGiaNamNu(tongCP);
+        const beSmall = tinhGiaNamNu(tongCP * 1.12);
+        const beBig = tinhGiaNamNu(tongCP * 1.32);
+
+        _calcBreakEvenMale = beBreak.giaNam; _calcBreakEvenFemale = beBreak.giaNu;
+        _calcSmallMale = beSmall.giaNam; _calcSmallFemale = beSmall.giaNu;
+        _calcBigMale = beBig.giaNam; _calcBigFemale = beBig.giaNu;
+
+        const tinhTongThu = (nam, nu) => soNam * nam + soNu * nu;
+
+        // Cập nhật UI gợi ý
+        const elBreakNam = document.getElementById("sugBreakNam");
+        const elBreakNu = document.getElementById("sugBreakNu");
+        const elBreakLai = document.getElementById("sugBreakLai");
+        if (elBreakNam) elBreakNam.textContent = `Nam: ${_formatVND(beBreak.giaNam)}`;
+        if (elBreakNu) elBreakNu.textContent = `Nữ: ${_formatVND(beBreak.giaNu)}`;
+        if (elBreakLai) elBreakLai.textContent = `Thu: ${_formatVND(tinhTongThu(beBreak.giaNam, beBreak.giaNu))} | Lãi: 0đ`;
+
+        const elSmallNam = document.getElementById("sugSmallNam");
+        const elSmallNu = document.getElementById("sugSmallNu");
+        const elSmallLai = document.getElementById("sugSmallLai");
+        const thuSmall = tinhTongThu(beSmall.giaNam, beSmall.giaNu);
+        if (elSmallNam) elSmallNam.textContent = `Nam: ${_formatVND(beSmall.giaNam)}`;
+        if (elSmallNu) elSmallNu.textContent = `Nữ: ${_formatVND(beSmall.giaNu)}`;
+        if (elSmallLai) elSmallLai.textContent = `Thu: ${_formatVND(thuSmall)} | Lãi ~${_formatVND(thuSmall - tongCP)}`;
+
+        const elBigNam = document.getElementById("sugBigNam");
+        const elBigNu = document.getElementById("sugBigNu");
+        const elBigLai = document.getElementById("sugBigLai");
+        const thuBig = tinhTongThu(beBig.giaNam, beBig.giaNu);
+        if (elBigNam) elBigNam.textContent = `Nam: ${_formatVND(beBig.giaNam)}`;
+        if (elBigNu) elBigNu.textContent = `Nữ: ${_formatVND(beBig.giaNu)}`;
+        if (elBigLai) elBigLai.textContent = `Thu: ${_formatVND(thuBig)} | Lãi ~${_formatVND(thuBig - tongCP)}`;
+    }
+
+    // Áp dụng phương án gợi ý vào ô công khai
+    window.apDungGoiYGia = function (phuongAn) {
+        let giaNam = 0, giaNu = 0;
+        if (phuongAn === "breakeven") { giaNam = _calcBreakEvenMale; giaNu = _calcBreakEvenFemale; }
+        else if (phuongAn === "small") { giaNam = _calcSmallMale; giaNu = _calcSmallFemale; }
+        else if (phuongAn === "big") { giaNam = _calcBigMale; giaNu = _calcBigFemale; }
+
+        const inpNam = document.getElementById("hostPublicPriceMale");
+        const inpNu = document.getElementById("hostPublicPriceFemale");
+        if (inpNam) inpNam.value = giaNam;
+        if (inpNu) inpNu.value = giaNu;
+
+        // Nổi bật phương án được chọn
+        ["sugBoxBreak","sugBoxSmall","sugBoxBig"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove("selected");
+        });
+        const selectedBox = document.getElementById(`sugBox${phuongAn === "breakeven" ? "Break" : phuongAn === "small" ? "Small" : "Big"}`);
+        if (selectedBox) selectedBox.classList.add("selected");
+
+        window.hienToast("Đã áp dụng giá ✅", `Giá Nam: ${_formatVND(giaNam)} | Giá Nữ: ${_formatVND(giaNu)}`, "success");
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * 8. GOOGLE MAPS INTEGRATION
+     * ═══════════════════════════════════════════════════ */
+    let _mapsTimeout = null;
+
+    window.giaLapTimGoogleMaps = function () {
+        const overlay = document.getElementById("mapsMockModalOverlay");
+        if (overlay) {
+            overlay.style.display = "flex";
+            const inp = document.getElementById("mapsSearchInput");
+            if (inp) { inp.value = ""; inp.focus(); }
+            document.getElementById("mapsSuggestionsContainer").innerHTML = "";
         }
     };
 
-    // 6. BỘ MÁY KẾ TOÁN TƯ DOANH THÔNG MINH (PRICING ESTIMATION ENGINE)
-    window.tinhToanPricingGoiY = function () {
-        const dur = parseFloat(document.getElementById("hostTotalDuration")?.value) || 0;
-        const qty = Number(document.getElementById("hostCourtQuantity")?.value) || 1;
-        const courtPerHour = Number(document.getElementById("hostAccountingCourtPrice")?.value) || 0;
-        const water = Number(document.getElementById("hostAccountingWaterCost")?.value) || 0;
+    window.dongMapsMockModal = function () {
+        const overlay = document.getElementById("mapsMockModalOverlay");
+        if (overlay) overlay.style.display = "none";
+    };
 
+    window.goiYDiaChiMaps = function () {
+        clearTimeout(_mapsTimeout);
+        _mapsTimeout = setTimeout(() => {
+            const q = document.getElementById("mapsSearchInput")?.value?.trim();
+            const ctr = document.getElementById("mapsSuggestionsContainer");
+            if (!ctr || !q || q.length < 2) { if (ctr) ctr.innerHTML = ""; return; }
+
+            // Lọc từ danh sách sân mẫu
+            const filtered = (window.MOCK_COURTS || []).filter(c =>
+                c.name.toLowerCase().includes(q.toLowerCase()) ||
+                c.address.toLowerCase().includes(q.toLowerCase())
+            );
+
+            ctr.innerHTML = "";
+            if (filtered.length === 0) {
+                ctr.innerHTML = `<div style="padding:10px;color:#64748b;font-size:0.82rem;">Không tìm thấy. Bạn có thể điền địa chỉ tự do.</div>`;
+                const useText = document.createElement("div");
+                useText.className = "maps-suggestion-item";
+                useText.innerHTML = `<i class="fa-solid fa-pencil" style="color:hsl(var(--neon-mint));margin-right:8px;"></i> Dùng "${q}" làm địa chỉ`;
+                useText.onclick = () => {
+                    document.getElementById("hostCourtAddress").value = q;
+                    document.getElementById("hostMapLinkState").innerHTML = `<i class='fa-solid fa-circle-check' style='color:hsl(var(--neon-mint));'></i> Địa chỉ tự nhập`;
+                    window.dongMapsMockModal();
+                };
+                ctr.appendChild(useText);
+                return;
+            }
+
+            filtered.forEach(c => {
+                const item = document.createElement("div");
+                item.className = "maps-suggestion-item";
+                item.innerHTML = `
+                    <i class="fa-solid fa-location-dot" style="color:hsl(var(--neon-mint));margin-right:8px;flex-shrink:0;"></i>
+                    <div>
+                        <div style="font-weight:700;font-size:0.85rem;">${c.name}</div>
+                        <div style="font-size:0.72rem;color:#94a3b8;">${c.address}</div>
+                    </div>`;
+                item.onclick = () => {
+                    document.getElementById("hostCourtAddress").value = c.address;
+                    document.getElementById("hostCourtName").value = c.name;
+                    document.getElementById("hostMapLinkState").innerHTML = `<i class='fa-solid fa-circle-check' style='color:hsl(var(--neon-mint));'></i> Đã xác định vị trí: ${c.name}`;
+                    window.dongMapsMockModal();
+                };
+                ctr.appendChild(item);
+            });
+        }, 300);
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * 9. ĐĂNG / CHỈNH SỬA CA ĐẤU
+     * ═══════════════════════════════════════════════════ */
+    window.dangCaDauCuaHost = async function () {
+        if (!window.currentHostKey) {
+            window.hienToast("Chưa kích hoạt", "Bạn cần kích hoạt Key trước.", "danger");
+            return;
+        }
+
+        // Thu thập dữ liệu từ form
+        const province = document.getElementById("hostProvince")?.value;
+        const district = document.getElementById("hostDistrict")?.value;
+        const courtName = document.getElementById("hostCourtName")?.value?.trim();
+        const courtAddress = document.getElementById("hostCourtAddress")?.value?.trim();
+        const courtQty = Number(document.getElementById("hostCourtQuantity")?.value) || 1;
+        const courtNum = document.getElementById("hostCourtNumber")?.value?.trim();
+        const datePlay = document.getElementById("hostDatePlay")?.value;
+        const timeStart = document.getElementById("hostTimeStart")?.value;
+        const timeEnd = document.getElementById("hostTimeEnd")?.value;
+        const durStr = document.getElementById("hostTotalDuration")?.value;
+        const priceMale = Number(document.getElementById("hostPublicPriceMale")?.value) || 0;
+        const priceFemale = Number(document.getElementById("hostPublicPriceFemale")?.value) || 0;
+
+        // Validate
+        if (!province || !district || !courtName || !courtAddress || !datePlay || !timeStart || !timeEnd) {
+            window.hienToast("Thiếu thông tin", "Vui lòng điền đầy đủ: Tỉnh/Thành, Quận/Huyện, Tên sân, Địa chỉ, Ngày giờ.", "danger");
+            return;
+        }
+
+        // Giới tính được chọn
+        const genderVal = document.querySelector('input[name="hostGenderSelect"]:checked')?.value || "male";
+
+        // Trình độ Nam
+        let mLevels = [];
+        if (genderVal === "male" || genderVal === "both") {
+            ["newbie","yeu","tby","tb_minus","tb_plus","tbk"].forEach(lv => {
+                const cb = document.getElementById(`m_lvl_${lv}`);
+                if (cb?.checked) mLevels.push(cb.value);
+            });
+            const custom = document.getElementById("hostMaleCustomLevel")?.value?.trim();
+            if (custom) mLevels.push(custom);
+        }
+
+        // Trình độ Nữ
+        let fLevels = [];
+        if (genderVal === "female" || genderVal === "both") {
+            ["newbie","yeu","tby","tb_minus","tb_plus","tbk"].forEach(lv => {
+                const cb = document.getElementById(`f_lvl_${lv}`);
+                if (cb?.checked) fLevels.push(cb.value);
+            });
+            const custom = document.getElementById("hostFemaleCustomLevel")?.value?.trim();
+            if (custom) fLevels.push(custom);
+        }
+
+        // Tiện ích
+        const incSan = document.getElementById("inc_san")?.checked;
+        const incCau = document.getElementById("inc_cau")?.checked;
+        const incNuoc = document.getElementById("inc_nuoc")?.checked;
+        const incXe = document.getElementById("inc_xe")?.checked;
+
+        // Kế toán nội bộ
+        const durHours = parseFloat(durStr) || 0;
+        const courtPriceH = Number(document.getElementById("hostAccountingCourtPrice")?.value) || 0;
+        const waterCost = Number(document.getElementById("hostAccountingWaterCost")?.value) || 0;
         const estMale = Number(document.getElementById("hostAccountingEstMale")?.value) || 0;
         const estFemale = Number(document.getElementById("hostAccountingEstFemale")?.value) || 0;
         const gap = Number(document.getElementById("hostAccountingGap")?.value) || 0;
 
-        // Tổng chi phí tiền thuê sân bãi
-        const totalCourtCost = courtPerHour * dur * qty;
-
-        // Tính tổng tiền cầu tiêu thụ thực tế
-        let totalShuttleCost = 0;
-        window.shuttlecocksList.forEach(id => {
-            const qtyType = Number(document.getElementById(`shuttleQtyType_${id}`)?.value) || 12;
-            const price = Number(document.getElementById(`shuttlePrice_${id}`)?.value) || 0;
-            const used = Number(document.getElementById(`shuttleUsed_${id}`)?.value) || 0;
-
-            const pricePerPiece = price / qtyType;
-            totalShuttleCost += pricePerPiece * used;
+        // Thu thập thông tin cầu
+        const shutList = window.shuttlecocksList.map(id => {
+            const loai = Number(document.getElementById(`scLoai_${id}`)?.value) || 12;
+            const giaOng = Number(document.getElementById(`scGiaOng_${id}`)?.value) || 0;
+            const daDung = Number(document.getElementById(`scDaDung_${id}`)?.value) || 0;
+            const ten = document.getElementById(`scName_${id}`)?.value || "";
+            return { ten, loai, gia_ong: giaOng, gia_le: loai > 1 ? Math.round(giaOng / loai) : giaOng, da_dung: daDung };
         });
 
-        // Tổng chi phí vận hành cho cả ca chơi hôm đó
-        const totalSessionCost = totalCourtCost + totalShuttleCost + water;
-        const totalPlayersCount = estMale + estFemale;
+        // Thông tin host
+        const hostInfo = window.currentHostInfo || {};
+        const hostName = hostInfo.ten_host || hostInfo.note || "Chủ Sân";
+        const hostPhone = hostInfo.sdt_host || hostInfo.phone || "";
 
-        const breakevenVal = document.getElementById("sugValBreakEven");
-        const smallVal = document.getElementById("sugValSmallProfit");
-        const bigVal = document.getElementById("sugValBigProfit");
-
-        if (totalPlayersCount === 0) {
-            if (breakevenVal) breakevenVal.innerText = "--";
-            if (smallVal) smallVal.innerText = "--";
-            if (bigVal) bigVal.innerText = "--";
-            return;
-        }
-
-        // Thuật toán chia đều tài chính có sự ưu đãi chênh lệch gap Nam/Nữ
-        function phanBoChiPhi(targetRevenue) {
-            const femalePrice = (targetRevenue - (gap * estMale)) / totalPlayersCount;
-            const malePrice = femalePrice + gap;
-            return {
-                male: Math.round(malePrice / 5000) * 5000, // Làm tròn chốt số đẹp hàng 5 nghìn
-                female: Math.round(femalePrice / 5000) * 5000
-            };
-        }
-
-        // A. Huề Vốn
-        const breakevenRes = phanBoChiPhi(totalSessionCost);
-        suggestBreakEvenPrice = breakevenRes;
-        if (breakevenVal) breakevenVal.innerText = `${breakevenRes.male.toLocaleString()}/${breakevenRes.female.toLocaleString()}`;
-        
-        const breakevenProfit = document.getElementById("sugProfitBreakEven");
-        if (breakevenProfit) breakevenProfit.innerText = `Lãi: 0đ`;
-
-        // B. Lãi Ít (Target 15% lợi nhuận làm quỹ nước)
-        const smallRes = phanBoChiPhi(totalSessionCost * 1.15);
-        suggestSmallProfitPrice = smallRes;
-        if (smallVal) smallVal.innerText = `${smallRes.male.toLocaleString()}/${smallRes.female.toLocaleString()}`;
-        
-        const profitSmall = (smallRes.male * estMale + smallRes.female * estFemale) - totalSessionCost;
-        const smallProfitText = document.getElementById("sugProfitSmallProfit");
-        if (smallProfitText) smallProfitText.innerText = `Lãi: +${Math.round(profitSmall).toLocaleString()}đ`;
-
-        // C. Lãi Nhiều (Target 30% lợi nhuận thu hồi vốn dụng cụ)
-        const bigRes = phanBoChiPhi(totalSessionCost * 1.30);
-        suggestBigProfitPrice = bigRes;
-        if (bigVal) bigVal.innerText = `${bigRes.male.toLocaleString()}/${bigRes.female.toLocaleString()}`;
-        
-        const profitBig = (bigRes.male * estMale + bigRes.female * estFemale) - totalSessionCost;
-        const bigProfitText = document.getElementById("sugProfitBigProfit");
-        if (bigProfitText) bigProfitText.innerText = `Lãi: +${Math.round(profitBig).toLocaleString()}đ`;
-    };
-
-    // Áp dụng đề xuất giá trị gợi ý thu tiền khách lên Form Đăng ca
-    window.apDungGoiYThuTien = function (type) {
-        let target = null;
-        
-        const breakEvenBox = document.getElementById("sugBoxBreakEven");
-        const smallBox = document.getElementById("sugBoxSmallProfit");
-        const bigBox = document.getElementById("sugBoxBigProfit");
-
-        if (breakEvenBox) breakEvenBox.classList.remove("active");
-        if (smallBox) smallBox.classList.remove("active");
-        if (bigBox) bigBox.classList.remove("active");
-
-        if (type === "breakeven") {
-            target = suggestBreakEvenPrice;
-            if (breakEvenBox) breakEvenBox.classList.add("active");
-        } else if (type === "small") {
-            target = suggestSmallProfitPrice;
-            if (smallBox) smallBox.classList.add("active");
-        } else if (type === "big") {
-            target = suggestBigProfitPrice;
-            if (bigBox) bigBox.classList.add("active");
-        }
-
-        if (target) {
-            const malePriceInput = document.getElementById("hostPublicPriceMale");
-            const femalePriceInput = document.getElementById("hostPublicPriceFemale");
-            if (malePriceInput) malePriceInput.value = target.male;
-            if (femalePriceInput) femalePriceInput.value = target.female;
-
-            window.hienToast("Áp dụng kế toán", `Đã thiết lập chi phí vãng lai: Nam ${target.male.toLocaleString()}đ, Nữ ${target.female.toLocaleString()}đ.`, "success");
-        }
-    };
-
-    // 7. Logic liên kết hiển thị trình độ phù hợp giới tính
-    window.chuyenTrangThaiLienKetGioiTinh = function () {
-        const isMale = document.getElementById("genderMale")?.checked;
-        const isFemale = document.getElementById("genderFemale")?.checked;
-        const isBoth = document.getElementById("genderBoth")?.checked;
-
-        const maleBlock = document.getElementById("linkedMaleLevelBlock");
-        const femaleBlock = document.getElementById("linkedFemaleLevelBlock");
-
-        if (isMale) {
-            if (maleBlock) maleBlock.classList.remove("d-none");
-            if (femaleBlock) femaleBlock.classList.add("d-none");
-        } else if (isFemale) {
-            if (maleBlock) maleBlock.classList.add("d-none");
-            if (femaleBlock) femaleBlock.classList.remove("d-none");
-        } else {
-            if (maleBlock) maleBlock.classList.remove("d-none");
-            if (femaleBlock) femaleBlock.classList.remove("d-none");
-        }
-    };
-
-    // 8. Tích hợp định vị sân đấu qua API giả lập Google Maps
-    window.giaLapTimGoogleMaps = function () {
-        const searchInput = document.getElementById("mapsSearchInput");
-        const courtNameInput = document.getElementById("hostCourtName");
-        const modalOverlay = document.getElementById("mapsMockModalOverlay");
-
-        if (searchInput && courtNameInput) {
-            searchInput.value = courtNameInput.value;
-        }
-
-        window.goiYDiaChiMaps();
-        if (modalOverlay) modalOverlay.classList.add("active");
-    };
-
-    window.dongMapsMockModal = function () {
-        const modalOverlay = document.getElementById("mapsMockModalOverlay");
-        if (modalOverlay) modalOverlay.classList.remove("active");
-    };
-
-    window.goiYDiaChiMaps = function () {
-        const searchInput = document.getElementById("mapsSearchInput");
-        const container = document.getElementById("mapsSuggestionsContainer");
-        if (!searchInput || !container) return;
-
-        const query = searchInput.value.trim().toLowerCase();
-        container.innerHTML = "";
-
-        if (!query || query.length < 2) {
-            container.innerHTML = '<p style="color:#64748b; font-size:0.8rem; text-align:center; padding:10px;">Nhập ít nhất 2 ký tự để tìm kiếm địa chỉ sân...</p>';
-            return;
-        }
-
-        // Tìm trong danh sách sân mẫu + xây dựng gợi ý thông minh từ query
-        const allCourts = window.MOCK_COURTS || [];
-        const matched = allCourts.filter(c => 
-            c.name.toLowerCase().includes(query) || 
-            c.address.toLowerCase().includes(query)
-        );
-
-        // Tạo thêm gợi ý thông minh từ tỉnh thành đang chọn
-        const provSelect = document.getElementById("hostProvince");
-        const distSelect = document.getElementById("hostDistrict");
-        const selectedProv = provSelect?.value || "";
-        const selectedDist = distSelect?.value || "";
-
-        // Tổng hợp kết quả
-        const smartSuggestions = [];
-
-        if (matched.length > 0) {
-            matched.forEach(c => smartSuggestions.push(c));
-        }
-
-        // Nếu ít kết quả, bổ sung gợi ý từ tỉnh thành đang chọn
-        if (smartSuggestions.length < 3 && selectedProv) {
-            const locationHint = selectedDist ? `${selectedDist}, ${selectedProv}` : selectedProv;
-            const templates = [
-                { name: `Sân Cầu Lông ${query.charAt(0).toUpperCase() + query.slice(1)} Sport`, address: `Đường ${query.charAt(0).toUpperCase() + query.slice(1)}, ${locationHint}` },
-                { name: `Trung Tâm Thể Thao ${locationHint}`, address: `Khu vực trung tâm, ${locationHint}` },
-                { name: `Sân Cầu Lông ${locationHint}`, address: `${query}, ${locationHint}` }
-            ];
-            templates.forEach(t => {
-                if (!smartSuggestions.find(s => s.name === t.name)) {
-                    smartSuggestions.push(t);
-                }
-            });
-        }
-
-        if (smartSuggestions.length > 0) {
-            smartSuggestions.slice(0, 5).forEach(c => {
-                const div = document.createElement("div");
-                div.style.padding = "10px";
-                div.style.background = "rgba(255,255,255,0.02)";
-                div.style.border = "1px solid hsl(var(--border))";
-                div.style.borderRadius = "6px";
-                div.style.cursor = "pointer";
-                div.style.transition = "background 0.2s ease";
-                div.innerHTML = `
-                    <h5 style="font-size:0.85rem; font-weight:800; color:hsl(var(--foreground));"><i class="fa-solid fa-map-pin text-mint" style="margin-right:6px;"></i>${c.name}</h5>
-                    <p style="font-size:0.75rem; color:hsl(var(--muted-foreground)); margin-top:2px;"><i class="fa-solid fa-location-dot" style="margin-right:4px; opacity:0.6;"></i>${c.address}</p>
-                `;
-                div.addEventListener("mouseenter", () => div.style.background = "rgba(0,255,157,0.03)");
-                div.addEventListener("mouseleave", () => div.style.background = "rgba(255,255,255,0.02)");
-                div.addEventListener("click", () => {
-                    const courtName = document.getElementById("hostCourtName");
-                    const courtAddr = document.getElementById("hostCourtAddress");
-                    const mapState = document.getElementById("hostMapLinkState");
-
-                    if (courtName) courtName.value = c.name;
-                    if (courtAddr) courtAddr.value = c.address;
-                    
-                    if (mapState) {
-                        mapState.innerHTML = `<i class="fa-solid fa-circle-check text-mint"></i> Đã chọn địa chỉ: <b>${c.name}</b>`;
-                    }
-
-                    window.dongMapsMockModal();
-                    window.hienToast("Đã chọn địa chỉ", `Đã điền địa chỉ sân: ${c.name}`, "success");
-                });
-                container.appendChild(div);
-            });
-        } else {
-            // Cho phép nhập địa chỉ tự do
-            const div = document.createElement("div");
-            div.style.padding = "12px";
-            div.style.border = "1px dashed hsl(var(--border))";
-            div.style.borderRadius = "6px";
-            div.style.cursor = "pointer";
-            div.innerHTML = `
-                <h5 style="font-size:0.82rem; color:hsl(var(--foreground));"><i class="fa-solid fa-keyboard text-mint" style="margin-right:6px;"></i>Dùng địa chỉ tùy chỉnh: "${query}"</h5>
-                <p style="font-size:0.75rem; color:hsl(var(--muted-foreground)); margin-top:2px;">Bấm để điền địa chỉ bạn đang nhập vào ô địa chỉ sân.</p>
-            `;
-            div.addEventListener("click", () => {
-                const courtAddr = document.getElementById("hostCourtAddress");
-                const mapState = document.getElementById("hostMapLinkState");
-                if (courtAddr && !courtAddr.value) courtAddr.value = searchInput.value;
-                if (mapState) {
-                    mapState.innerHTML = `<i class="fa-solid fa-circle-info"></i> Địa chỉ tự nhập tay - kiểm tra lại cho chính xác`;
-                }
-                window.dongMapsMockModal();
-            });
-            container.appendChild(div);
-        }
-    };
-
-    // Hàm chuẩn hóa số sân phía Host: "1,2" hoặc "1.2" → "Sân 1, Sân 2"
-    function chuanHoaSoSanHost(courtNumber) {
-        if (!courtNumber) return "";
-        // Nếu đã có dạng "Sân X" thì trả về nguyên
-        if (/sân/i.test(courtNumber)) return courtNumber;
-        // Tách bằng dấu phẩy hoặc dấu chấm
-        const parts = courtNumber.split(/[,\.]+/).map(s => s.trim()).filter(Boolean);
-        if (parts.length === 0) return courtNumber;
-        if (parts.length === 1) return `Sân ${parts[0]}`;
-        return parts.map(p => `Sân ${p}`).join(", ");
-    }
-
-    // 9. Chủ sân đăng kèo cầu lông vãng lai công khai
-    window.dangCaDauCuaHost = async function () {
-        const prov = document.getElementById("hostProvince")?.value;
-        const dist = document.getElementById("hostDistrict")?.value;
-        const datePlay = document.getElementById("hostDatePlay")?.value;
-        const start = document.getElementById("hostTimeStart")?.value;
-        const end = document.getElementById("hostTimeEnd")?.value;
-        const court = document.getElementById("hostCourtName")?.value.trim();
-        const addr = document.getElementById("hostCourtAddress")?.value.trim();
-        const qty = Number(document.getElementById("hostCourtQuantity")?.value) || 1;
-        const courtNumRaw = document.getElementById("hostCourtNumber")?.value.trim();
-        // Chuẩn hóa số sân: "1,2" hoặc "1.2" → "Sân 1, Sân 2"
-        const courtNum = chuanHoaSoSanHost(courtNumRaw);
-
-        const priceM = Number(document.getElementById("hostPublicPriceMale")?.value) || 0;
-        const priceF = Number(document.getElementById("hostPublicPriceFemale")?.value) || 0;
-
-        if (!prov || !dist || !datePlay || !start || !end || !court || !addr || !courtNum) {
-            window.hienToast("Trống thông tin", "Vui lòng điền đầy đủ biểu mẫu tuyển vãng lai công khai.", "danger");
-            return;
-        }
-
-        // Thu thập kỹ thuật trình độ
-        const levels = [];
-        const isMale = document.getElementById("genderMale")?.checked;
-        const isFemale = document.getElementById("genderFemale")?.checked;
-        const isBoth = document.getElementById("genderBoth")?.checked;
-
-        if (isMale || isBoth) {
-            if (document.getElementById("m_lvl_newbie")?.checked) levels.push("newbie");
-            if (document.getElementById("m_lvl_yếu")?.checked) levels.push("yếu");
-            if (document.getElementById("m_lvl_tby")?.checked) levels.push("tby");
-            if (document.getElementById("m_lvl_tb_minus")?.checked) levels.push("tb-");
-            if (document.getElementById("m_lvl_tb_plus")?.checked) levels.push("tb+");
-            if (document.getElementById("m_lvl_tbk")?.checked) levels.push("tbk");
-            
-            const customVal = document.getElementById("hostMaleCustomLevel")?.value.trim();
-            if (customVal) levels.push(customVal);
-        }
-        if (isFemale || isBoth) {
-            if (document.getElementById("f_lvl_newbie")?.checked) levels.push("newbie (nữ)");
-            if (document.getElementById("f_lvl_yếu")?.checked) levels.push("yếu (nữ)");
-            if (document.getElementById("f_lvl_tby")?.checked) levels.push("tby (nữ)");
-            if (document.getElementById("f_lvl_tb_minus")?.checked) levels.push("tb- (nữ)");
-            if (document.getElementById("f_lvl_tb_plus")?.checked) levels.push("tb+ (nữ)");
-            if (document.getElementById("f_lvl_tbk")?.checked) levels.push("tbk (nữ)");
-            
-            const customVal = document.getElementById("hostFemaleCustomLevel")?.value.trim();
-            if (customVal) levels.push(customVal + " (nữ)");
-        }
-
-        const activeGenderStr = isBoth ? "both" : (isMale ? "male" : "female");
-
-        // Thu thập các vật liệu quả cầu đã khai báo kế toán
-        const shuttlecocksData = window.shuttlecocksList.map(id => {
-            const name = document.getElementById(`shuttleName_${id}`)?.value || "Chưa đặt tên";
-            const qtyType = document.getElementById(`shuttleQtyType_${id}`)?.value || "12";
-            const price = Number(document.getElementById(`shuttlePrice_${id}`)?.value) || 0;
-            const used = Number(document.getElementById(`shuttleUsed_${id}`)?.value) || 0;
-            return { name, qty_type: qtyType, price, used };
-        });
-
-        const slotPayload = {
+        const payload = {
+            id: window.currentEditingSlotId || ("slot-" + Date.now() + "-" + Math.random().toString(36).slice(2, 7)),
             host_key: window.currentHostKey,
-            province: prov,
-            district: dist,
-            date_play: datePlay,
-            time_start: start,
-            time_end: end,
-            duration: parseFloat(document.getElementById("hostTotalDuration")?.value) || 0,
-            court_name: court,
-            court_address: addr,
-            court_quantity: qty,
-            court_number: courtNum,
-            gender: activeGenderStr,
-            levels: levels,
-            price_male: priceM,
-            price_female: priceF,
-            inc_court: document.getElementById("inc_san")?.checked,
-            inc_shuttle: document.getElementById("inc_cau")?.checked,
-            inc_water: document.getElementById("inc_nuoc")?.checked,
-            inc_parking: document.getElementById("inc_xe")?.checked,
-            // Dữ liệu kế toán bảo mật
-            accounting_court_price: Number(document.getElementById("hostAccountingCourtPrice")?.value) || 0,
-            accounting_water_cost: Number(document.getElementById("hostAccountingWaterCost")?.value) || 0,
-            accounting_shuttlecocks: shuttlecocksData,
+            host_name: hostName,
+            host_phone: hostPhone,
+            province, district, court_name: courtName, court_address: courtAddress,
+            court_quantity: courtQty, court_number: courtNum,
+            date_play: datePlay, time_start: timeStart, time_end: timeEnd, duration: durHours,
+            gender: genderVal,
+            levels_male: mLevels, levels_female: fLevels,
+            price_male: priceMale, price_female: priceFemale,
+            inc_court: !!incSan, inc_shuttle: !!incCau, inc_water: !!incNuoc, inc_parking: !!incXe,
+            accounting_court_price: courtPriceH,
+            accounting_water_cost: waterCost,
+            accounting_est_male: estMale, accounting_est_female: estFemale,
+            accounting_gap: gap,
+            accounting_shuttlecocks: shutList,
             status: "active",
-            registered_guests: []
+            da_chot_ca: false,
+            registered_guests: [],
+            created_at: new Date().toISOString()
         };
 
+        const btn = document.getElementById("btnDangCa");
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang đăng...'; }
+
         try {
-            await window.dbEngine.ghi("slots", slotPayload);
-            window.hienToast("Đăng ca thành công", "Ca tuyển vãng lai của bạn đã được công khai trên hệ thống đám mây.", "success");
-            
-            // Xóa form trống để chuẩn bị cho ca tiếp theo
-            const courtNumInput = document.getElementById("hostCourtNumber");
-            if (courtNumInput) courtNumInput.value = "";
-            
-            window.loadLichSuCaDauHost();
+            if (window.currentEditingSlotId) {
+                await window.dbEngine.ghi("slots", payload, { id: window.currentEditingSlotId });
+                window.hienToast("Đã cập nhật! ✅", "Thông tin ca đấu đã được chỉnh sửa thành công.", "success");
+                window.currentEditingSlotId = null;
+            } else {
+                await window.dbEngine.ghi("slots", payload);
+                window.hienToast("Đăng tuyển thành công! 🏸", "Ca đấu đã lên hệ thống, khách sẽ thấy ngay!", "success");
+            }
+
+            _resetFormDangCa();
+            await _taiLichSuCaDau();
         } catch (e) {
-            console.error("Lỗi khi đăng ca đấu cầu lông:", e);
-            window.hienToast("Lỗi hệ thống", "Không thể xuất bản ca đấu lên đám mây.", "danger");
+            console.error("Lỗi đăng ca đấu:", e);
+            window.hienToast("Lỗi lưu dữ liệu", "Không thể lưu ca đấu. Vui lòng thử lại.", "danger");
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> XÁC NHẬN ĐĂNG TUYỂN'; }
         }
     };
 
-    // 10. Tải danh sách lịch sử các ca tuyển vãng lai do Host này quản lý
-    window.loadLichSuCaDauHost = async function () {
-        if (!window.currentHostKey) return;
+    function _resetFormDangCa() {
+        window.currentEditingSlotId = null;
+        // Reset form
+        const ids = ["hostProvince","hostDistrict","hostCourtName","hostCourtAddress","hostCourtNumber",
+                     "hostPublicPriceMale","hostPublicPriceFemale","hostMaleCustomLevel","hostFemaleCustomLevel",
+                     "hostAccountingCourtPrice","hostAccountingWaterCost"];
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = el.type === "number" ? (id === "hostAccountingCourtPrice" ? 80000 : id === "hostAccountingWaterCost" ? 30000 : 0) : "";
+        });
+        document.getElementById("hostAccountingEstMale").value = 6;
+        document.getElementById("hostAccountingEstFemale").value = 4;
+        document.getElementById("hostAccountingGap").value = 5000;
+
+        // Reset ngày về hôm nay
+        const today = new Date().toLocaleDateString("sv-SE");
+        const dateEl = document.getElementById("hostDatePlay");
+        if (dateEl) dateEl.value = today;
+
+        // Reset shuttlecocks
+        window.shuttlecocksList = [];
+        const ctr = document.getElementById("shuttlecockListContainer");
+        if (ctr) ctr.innerHTML = "";
+        _themHangCauMoi("Hải Yến", "12", 240000, 5);
+
+        // Reset gender
+        const genderMale = document.getElementById("genderMale");
+        if (genderMale) { genderMale.checked = true; window.chuyenTrangThaiLienKetGioiTinh(); }
+
+        // Reset checkboxes dịch vụ
+        ["inc_san","inc_cau","inc_nuoc","inc_xe"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.checked = id === "inc_san" || id === "inc_cau";
+        });
+
+        const btnEl = document.getElementById("btnDangCa");
+        if (btnEl) btnEl.innerHTML = '<i class="fa-solid fa-circle-check"></i> XÁC NHẬN ĐĂNG TUYỂN';
+        const cancelBtn = document.getElementById("btnHuyChinhSua");
+        if (cancelBtn) cancelBtn.style.display = "none";
+
+        _tinhThoiGian();
+    }
+
+    /* ═══════════════════════════════════════════════════
+     * 10. TẢI & HIỂN THỊ LỊCH SỬ CA ĐẤU
+     * ═══════════════════════════════════════════════════ */
+    window.loadLichSuCaDauHost = _taiLichSuCaDau;
+
+    async function _taiLichSuCaDau() {
+        const tbody = document.getElementById("hostSlotsBody");
+        if (!tbody) return;
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#64748b;padding:20px;">
+            <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>`;
 
         try {
-            const slots = await window.dbEngine.doc("slots", {
-                eq: { host_key: window.currentHostKey },
-                order: "date_play.desc"
-            });
+            const all = await window.dbEngine.doc("slots");
+            const mySlots = all.filter(s => s.host_key === window.currentHostKey);
+            // Sắp xếp mới nhất trước
+            mySlots.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-            const tbody = document.querySelector("#hostSlotsTable tbody");
-            if (!tbody) return;
-
-            tbody.innerHTML = "";
-
-            if (slots.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #94a3b8; padding:20px;">Bạn chưa đăng ca tuyển vãng lai nào trên trạm này.</td></tr>';
+            if (mySlots.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#64748b;padding:20px;">
+                    Chưa có ca đấu nào. Đăng kèo đầu tiên ngay!</td></tr>`;
                 return;
             }
 
-            slots.forEach(slot => {
-                const regCount = (slot.registered_guests || []).length;
-                const statusHtml = slot.status === "locked" 
-                    ? '<span class="status-badge status-closed"><i class="fa-solid fa-lock" style="margin-right:4px;"></i> ĐÃ KHÓA SỐ</span>'
-                    : '<span class="status-badge status-active"><i class="fa-solid fa-circle-play" style="margin-right:4px;"></i> ĐON KHÁCH</span>';
+            tbody.innerHTML = "";
+            mySlots.forEach(slot => {
+                const guests = slot.registered_guests || [];
+                const daDen = guests.filter(g => g.attendance === "present" || g.trang_thai === "Đã tham gia").length;
+                const tongKhach = guests.length;
+                const daChot = slot.da_chot_ca || slot.status === "closed";
+                const isEditable = !daChot;
 
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-                    <td>
-                        <b class="text-mint">${new Date(slot.date_play).toLocaleDateString("vi-VN")}</b>
-                        <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">🕰️ ${slot.time_start} - ${slot.time_end}</div>
-                    </td>
-                    <td>
-                        <b style="color:#fff;">${slot.court_name}</b>
-                        <div style="font-size:0.75rem; color:#64748b; margin-top:2px;">📍 Số sân: ${slot.court_number} (${slot.court_quantity} sân)</div>
-                    </td>
-                    <td>
-                        <span style="font-size:0.82rem;">${slot.gender === "both" ? "Cả Nam & Nữ" : (slot.gender === "male" ? "Chỉ Nam" : "Chỉ Nữ")}</span>
-                        <div style="font-size:0.75rem; color:hsl(var(--neon-gold)); margin-top:2px; font-weight:800;">👥 Đã ĐK: ${regCount} người</div>
-                    </td>
-                    <td style="font-size:0.78rem; color:#64748b;">${slot.host_key.substring(0, 10)}...</td>
-                    <td>
-                        <span style="font-size:0.8rem;">♂️ ${Number(slot.price_male).toLocaleString("vi-VN")}đ / ♀️ ${Number(slot.price_female || slot.price_male).toLocaleString("vi-VN")}đ</span>
-                        <div style="font-size:0.72rem; color:#64748b; margin-top:2px;">Sân thuê: ${Number(slot.accounting_court_price).toLocaleString("vi-VN")}đ/h</div>
-                    </td>
-                    <td>${statusHtml}</td>
-                    <td>
-                        <div class="flex gap-2">
-                            ${slot.status === "locked" 
-                                ? `<button class="btn-hud-back" style="padding: 4px 8px; font-size:0.7rem;" onclick="window.xemBieuToanHost('${slot.id}')"><i class="fa-solid fa-eye"></i> Xem báo biểu</button>`
-                                : `
-                                    <button class="btn-hud-back" style="padding: 4px 8px; font-size:0.7rem; color:hsl(var(--neon-mint)); border-color:rgba(0,255,157,0.15);" onclick="window.chotVaKhoaCa('${slot.id}')"><i class="fa-solid fa-check-double"></i> Chốt sổ</button>
-                                    <button class="btn-hud-back" style="padding: 4px 8px; font-size:0.7rem; color:hsl(var(--danger)); border-color:rgba(239,68,68,0.15);" onclick="window.xoaCaDauHost('${slot.id}')"><i class="fa-solid fa-xmark"></i> Hủy</button>
-                                `
-                            }
-                        </div>
-                    </td>
-                `;
+                <td>
+                    <div style="font-weight:700;font-size:0.85rem;">${_formatDate(slot.date_play)}</div>
+                    <div style="font-size:0.75rem;color:#94a3b8;">${slot.time_start || ""} – ${slot.time_end || ""}</div>
+                </td>
+                <td>
+                    <div style="font-weight:600;font-size:0.82rem;">${slot.court_name || "--"}</div>
+                    <div style="font-size:0.72rem;color:#94a3b8;">${slot.district || ""}, ${slot.province || ""}</div>
+                    <div style="font-size:0.7rem;color:#64748b;">${slot.court_number ? "Sân: " + slot.court_number : ""}</div>
+                </td>
+                <td>
+                    <div style="font-size:0.78rem;">
+                        ${_hienThiGioiTinh(slot.gender)}
+                        <br>
+                        <span style="color:#94a3b8;font-size:0.7rem;">${_hienThiTrinhDo(slot)}</span>
+                    </div>
+                </td>
+                <td>
+                    <div style="font-size:0.82rem;font-weight:700;color:hsl(var(--neon-mint));">${_formatVND(slot.price_male || 0)}</div>
+                    <div style="font-size:0.72rem;color:#94a3b8;">Nam</div>
+                    <div style="font-size:0.82rem;font-weight:700;color:hsl(var(--neon-pink));">${_formatVND(slot.price_female || 0)}</div>
+                    <div style="font-size:0.72rem;color:#94a3b8;">Nữ</div>
+                </td>
+                <td>
+                    <div class="badge-slot-count">
+                        <i class="fa-solid fa-users" style="font-size:0.7rem;"></i>
+                        ${daDen}/${tongKhach} khách
+                    </div>
+                    <button class="btn-mini btn-mini-cyan" style="margin-top:6px;width:100%;"
+                        onclick="window.moModalDanhSachKhach('${slot.id}')">
+                        <i class="fa-solid fa-list-check"></i> DS Khách
+                    </button>
+                </td>
+                <td>
+                    ${daChot
+                        ? `<span class="status-badge status-closed"><i class="fa-solid fa-lock"></i> Đã chốt</span>`
+                        : `<span class="status-badge status-active"><i class="fa-solid fa-circle"></i> Đang mở</span>`
+                    }
+                </td>
+                <td>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        ${isEditable ? `
+                        <button class="btn-mini btn-mini-gold" onclick="window.chinhSuaCaDau('${slot.id}')">
+                            <i class="fa-solid fa-pen"></i> Sửa
+                        </button>
+                        <button class="btn-mini btn-mini-green" onclick="window.chotCaDau('${slot.id}')">
+                            <i class="fa-solid fa-flag-checkered"></i> Chốt Ca
+                        </button>` : `
+                        <button class="btn-mini btn-mini-cyan" onclick="window.moModalDanhGiaKhach('${slot.id}')">
+                            <i class="fa-solid fa-star"></i> Đánh giá
+                        </button>`}
+                        <button class="btn-mini btn-mini-red" onclick="window.xoaCaDau('${slot.id}')" ${daChot ? "disabled" : ""}>
+                            <i class="fa-solid fa-trash"></i> Xóa
+                        </button>
+                    </div>
+                </td>`;
                 tbody.appendChild(tr);
             });
         } catch (e) {
-            console.error("Lỗi khi tải lịch sử ca đấu của Host:", e);
+            console.error("Lỗi tải lịch sử:", e);
+            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:hsl(var(--danger));padding:20px;">
+                Lỗi tải dữ liệu. Kiểm tra kết nối.</td></tr>`;
         }
-    };
+    }
 
-    // 11. Chốt và Khóa số liệu kế toán ca đấu vĩnh viễn
-    window.chotVaKhoaCa = async function (slotId) {
+    /* ═══════════════════════════════════════════════════
+     * 11. CHỈNH SỬA CA ĐẤU
+     * ═══════════════════════════════════════════════════ */
+    window.chinhSuaCaDau = async function (id) {
         try {
-            const slots = await window.dbEngine.doc("slots");
-            const slot = slots.find(s => s.id === slotId);
-            if (!slot) return;
+            const all = await window.dbEngine.doc("slots");
+            const slot = all.find(s => s.id === id);
+            if (!slot) { window.hienToast("Không tìm thấy", "Ca đấu này không còn tồn tại.", "danger"); return; }
+            if (slot.da_chot_ca) { window.hienToast("Đã chốt", "Không thể sửa ca đã chốt.", "danger"); return; }
 
-            const c = confirm("⚠️ CẢNH BÁO KẾ TOÁN TRẠM CHỦ SÂN:\nBạn có chắc chắn muốn CHỐT ca chơi cầu lông này?\nHệ thống sẽ khóa vĩnh viễn số liệu chi phí sân, chi phí cầu tiêu thụ thực tế để lưu hồ sơ lịch sử, không cho phép sửa đổi hay hủy bỏ nữa.");
-            if (!c) return;
+            window.currentEditingSlotId = id;
 
-            slot.status = "locked";
-            await window.dbEngine.ghi("slots", slot, { id: slot.id });
+            // Điền dữ liệu vào form
+            const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ""; };
+            set("hostProvince", slot.province);
+            _capNhatHuyen(slot.province, "hostDistrict");
+            setTimeout(() => set("hostDistrict", slot.district), 100);
+            set("hostCourtName", slot.court_name);
+            set("hostCourtAddress", slot.court_address);
+            set("hostCourtNumber", slot.court_number);
+            set("hostCourtQuantity", slot.court_quantity || 1);
+            set("hostDatePlay", slot.date_play);
+            set("hostTimeStart", slot.time_start);
+            set("hostTimeEnd", slot.time_end);
+            set("hostPublicPriceMale", slot.price_male || 0);
+            set("hostPublicPriceFemale", slot.price_female || 0);
+            set("hostAccountingCourtPrice", slot.accounting_court_price || 0);
+            set("hostAccountingWaterCost", slot.accounting_water_cost || 0);
+            set("hostAccountingEstMale", slot.accounting_est_male || 0);
+            set("hostAccountingEstFemale", slot.accounting_est_female || 0);
+            set("hostAccountingGap", slot.accounting_gap || 0);
 
-            window.hienToast("Đã chốt & khóa số", "Hệ thống đã kết toán và khóa vĩnh viễn dữ liệu ca chơi thành công.", "success");
-            
-            // Tự động mở phân hệ đánh giá khách hàng vãng lai sau ca đấu
-            window.moHostReviewGuestPanel(slot);
-            window.loadLichSuCaDauHost();
-        } catch (e) {
-            console.error("Lỗi khi chốt khóa ca chơi:", e);
-            window.hienToast("Lỗi chốt ca", "Không thể hoàn thành kết toán ca chơi.", "danger");
-        }
-    };
+            // Giới tính
+            const gEl = document.querySelector(`input[name="hostGenderSelect"][value="${slot.gender}"]`);
+            if (gEl) { gEl.checked = true; window.chuyenTrangThaiLienKetGioiTinh(); }
 
-    // Mở ô đánh giá cầu thủ vãng lai
-    window.moHostReviewGuestPanel = function (slot) {
-        const select = document.getElementById("hostReviewGuestSelect");
-        const panel = document.getElementById("hostReviewGuestPanel");
-        if (!select || !panel) return;
+            // Checkboxes dịch vụ
+            if (document.getElementById("inc_san")) document.getElementById("inc_san").checked = !!slot.inc_court;
+            if (document.getElementById("inc_cau")) document.getElementById("inc_cau").checked = !!slot.inc_shuttle;
+            if (document.getElementById("inc_nuoc")) document.getElementById("inc_nuoc").checked = !!slot.inc_water;
+            if (document.getElementById("inc_xe")) document.getElementById("inc_xe").checked = !!slot.inc_parking;
 
-        select.innerHTML = '<option value="">-- Chọn khách chơi đã tham gia --</option>';
-
-        const regGuests = slot.registered_guests || [];
-        if (regGuests.length === 0) {
-            window.hienToast("Không có khách vãng lai", "Ca đấu không có khách vãng lai đăng ký nên không cần đánh giá.", "warning");
-            return;
-        }
-
-        regGuests.forEach(g => {
-            const opt = document.createElement("option");
-            opt.value = g.phone;
-            opt.innerText = `${g.name} (${g.phone})`;
-            select.appendChild(opt);
-        });
-
-        panel.classList.remove("d-none");
-        panel.scrollIntoView({ behavior: "smooth" });
-    };
-
-    window.dongHostReviewGuestPanel = function () {
-        const panel = document.getElementById("hostReviewGuestPanel");
-        if (panel) panel.classList.add("d-none");
-    };
-
-    // Đánh giá thái độ của khách hàng vãng lai
-    window.guiDanhGiaKhach = async function () {
-        const guestPhoneSelect = document.getElementById("hostReviewGuestSelect");
-        const commentInput = document.getElementById("hostReviewComment");
-        if (!guestPhoneSelect || !commentInput || !window.currentHostKey) return;
-
-        const guestPhone = guestPhoneSelect.value;
-        const comment = commentInput.value.trim();
-
-        if (!guestPhone) {
-            window.hienToast("Dữ liệu trống", "Vui lòng chọn khách chơi cần đánh giá.", "danger");
-            return;
-        }
-
-        if (!comment) {
-            window.hienToast("Nhận xét trống", "Vui lòng viết nhận xét thái độ chơi của khách vãng lai.", "danger");
-            return;
-        }
-
-        try {
-            await window.dbEngine.ghi("reviews", {
-                reviewer_name: `Chủ Sân Trạm Key: ${window.currentHostKey.substring(0, 10)}...`,
-                reviewer_phone: "host",
-                target_identity: guestPhone,
-                role: "guest_rating", // Host đánh giá khách hàng
-                stars: hostRatingIndex,
-                comment: comment
+            // Nạp lại cầu
+            window.shuttlecocksList = [];
+            const ctr = document.getElementById("shuttlecockListContainer");
+            if (ctr) ctr.innerHTML = "";
+            (slot.accounting_shuttlecocks || []).forEach(sc => {
+                _themHangCauMoi(sc.ten || "", String(sc.loai || 12), sc.gia_ong || 0, sc.da_dung || 0);
             });
+            if (window.shuttlecocksList.length === 0) _themHangCauMoi("Hải Yến", "12", 240000, 0);
 
-            commentInput.value = "";
-            window.dongHostReviewGuestPanel();
-            window.hienToast("Đã lưu đánh giá", "Nhận xét chất lượng và thái độ của khách chơi đã gửi lên hệ thống.", "success");
+            _tinhThoiGian();
+
+            // Cập nhật nút
+            const btn = document.getElementById("btnDangCa");
+            if (btn) btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> LƯU CHỈNH SỬA CA';
+            const cancelBtn = document.getElementById("btnHuyChinhSua");
+            if (cancelBtn) cancelBtn.style.display = "inline-flex";
+
+            // Scroll lên form
+            document.getElementById("hostFormSection")?.scrollIntoView({ behavior: "smooth" });
+            window.hienToast("Đang chỉnh sửa", "Điều chỉnh thông tin rồi bấm 'Lưu Chỉnh Sửa'.", "info");
         } catch (e) {
-            console.error("Lỗi khi gửi nhận xét khách hàng:", e);
-            window.hienToast("Lỗi đám mây", "Không thể gửi dữ liệu bình chọn sao.", "danger");
+            console.error("Lỗi load ca chỉnh sửa:", e);
         }
     };
 
-    // Hủy bỏ ca chơi chưa khóa số
-    window.xoaCaDauHost = async function (slotId) {
-        const c = confirm("❌ HỦY BỎ CA TUYỂN VÃNG LAI:\nBạn có chắc chắn muốn hủy bỏ ca chơi cầu lông này? Hệ thống sẽ thu hồi hiển thị kèo đấu ngay lập tức.");
-        if (!c) return;
+    window.huyChinhSuaCaDau = function () {
+        _resetFormDangCa();
+        window.hienToast("Đã hủy", "Thao tác chỉnh sửa đã bị hủy.", "info");
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * 12. CHỐT CA ĐẤU (KHÔNG ĐẢO NGƯỢC)
+     * ═══════════════════════════════════════════════════ */
+    window.chotCaDau = async function (id) {
+        if (!confirm("⚠️ CHỐT CA - THAO TÁC KHÔNG THỂ ĐẢO NGƯỢC!\n\nSau khi chốt, bạn KHÔNG thể sửa hay xóa ca này.\nDữ liệu sẽ lưu vĩnh viễn.\n\nBạn chắc chắn muốn chốt ca này?")) return;
 
         try {
-            await window.dbEngine.xoa("slots", { id: slotId });
-            window.hienToast("Đã hủy ca đấu", "Đã gỡ ca vãng lai khỏi bản đồ hiển thị thành công.", "success");
-            window.loadLichSuCaDauHost();
+            const all = await window.dbEngine.doc("slots");
+            const slot = all.find(s => s.id === id);
+            if (!slot) { window.hienToast("Lỗi", "Không tìm thấy ca đấu.", "danger"); return; }
+
+            await window.dbEngine.ghi("slots", { ...slot, da_chot_ca: true, status: "closed", chot_at: new Date().toISOString() }, { id });
+            window.hienToast("Đã chốt ca! 🔒", "Ca đấu đã được khóa vĩnh viễn. Bạn có thể đánh giá khách đã tham gia.", "success");
+            await _taiLichSuCaDau();
         } catch (e) {
-            console.error("Lỗi khi hủy ca đấu:", e);
+            console.error("Lỗi chốt ca:", e);
+            window.hienToast("Lỗi", "Không thể chốt ca. Thử lại.", "danger");
         }
     };
 
-    // Xem chi tiết biểu toán của ca đã kết toán
-    window.xemBieuToanHost = async function (slotId) {
+    /* ═══════════════════════════════════════════════════
+     * 13. XÓA CA ĐẤU
+     * ═══════════════════════════════════════════════════ */
+    window.xoaCaDau = async function (id) {
+        if (!confirm("Bạn có chắc muốn xóa ca đấu này?")) return;
         try {
-            const slots = await window.dbEngine.doc("slots");
-            const slot = slots.find(s => s.id === slotId);
+            await window.dbEngine.xoa("slots", { id });
+            window.hienToast("Đã xóa", "Ca đấu đã bị xóa khỏi hệ thống.", "info");
+            await _taiLichSuCaDau();
+        } catch (e) {
+            window.hienToast("Lỗi", "Không thể xóa ca đấu.", "danger");
+        }
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * 14. MODAL DANH SÁCH KHÁCH ĐĂNG KÝ
+     * ═══════════════════════════════════════════════════ */
+    window.moModalDanhSachKhach = async function (slotId) {
+        const overlay = document.getElementById("modalDanhSachKhachOverlay");
+        const tbody = document.getElementById("danhSachKhachBody");
+        if (!overlay || !tbody) return;
+
+        overlay.dataset.slotId = slotId;
+        overlay.style.display = "flex";
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:#64748b;">Đang tải...</td></tr>`;
+
+        try {
+            const all = await window.dbEngine.doc("slots");
+            const slot = all.find(s => s.id === slotId);
+            if (!slot) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;">Không tìm thấy ca.</td></tr>`; return; }
+
+            const guests = slot.registered_guests || [];
+            const isChot = slot.da_chot_ca || slot.status === "closed";
+
+            // Header modal
+            const header = document.getElementById("modalKhachHeader");
+            if (header) header.textContent = `${slot.court_name} | ${_formatDate(slot.date_play)} ${slot.time_start} – ${slot.time_end}`;
+
+            if (guests.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:#64748b;">Chưa có khách đăng ký.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = "";
+            guests.forEach((g, idx) => {
+                const att = g.attendance || g.trang_thai || "Chờ đánh";
+                const statusClass = att === "Đã tham gia" || att === "present" ? "status-active" : att === "Bùng kèo" || att === "absent" ? "status-closed" : "status-pending";
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                <td style="font-size:0.82rem;font-weight:700;">${g.name || g.ten_khach || "--"}</td>
+                <td style="font-size:0.8rem;color:#94a3b8;">${g.phone || g.sdt_khach || "--"}</td>
+                <td><span class="slot-code">${g.slot_code || g.ma_slot || "--"}</span></td>
+                <td>
+                    <span class="status-badge ${statusClass}">
+                        ${att === "present" ? "Đã tham gia" : att === "absent" ? "Bùng kèo" : att}
+                    </span>
+                </td>
+                <td>
+                    ${!isChot ? `
+                    <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                        <button class="btn-mini btn-mini-green" onclick="window.capNhatTrangThaiKhach('${slotId}', ${idx}, 'Đã tham gia')">✅ Đã đến</button>
+                        <button class="btn-mini btn-mini-red" onclick="window.capNhatTrangThaiKhach('${slotId}', ${idx}, 'Bùng kèo')">❌ Bùng</button>
+                    </div>` : "<span style='color:#64748b;font-size:0.72rem;'>Đã chốt</span>"}
+                </td>`;
+                tbody.appendChild(tr);
+            });
+        } catch (e) {
+            console.error("Lỗi tải danh sách khách:", e);
+            tbody.innerHTML = `<tr><td colspan="5" style="color:red;padding:20px;">Lỗi tải dữ liệu.</td></tr>`;
+        }
+    };
+
+    window.dongModalDanhSachKhach = function () {
+        const overlay = document.getElementById("modalDanhSachKhachOverlay");
+        if (overlay) overlay.style.display = "none";
+    };
+
+    window.capNhatTrangThaiKhach = async function (slotId, guestIdx, newStatus) {
+        try {
+            const all = await window.dbEngine.doc("slots");
+            const slot = all.find(s => s.id === slotId);
             if (!slot) return;
 
-            // Tính toán tài chính thực tế ca chơi
-            const courtCost = slot.accounting_court_price * slot.duration * slot.court_quantity;
-            let shuttleCost = 0;
-            let shuttleDetail = "";
-            
-            if (slot.accounting_shuttlecocks) {
-                slot.accounting_shuttlecocks.forEach(s => {
-                    const pricePerPiece = s.price / Number(s.qty_type);
-                    const cost = pricePerPiece * s.used;
-                    shuttleCost += cost;
-                    shuttleDetail += `\n- Cầu ${s.name}: Dùng ${s.used} quả lẻ (${Number(pricePerPiece.toFixed(0))}đ/quả) => Chi phí: ${cost.toLocaleString()}đ`;
+            const guests = [...(slot.registered_guests || [])];
+            if (!guests[guestIdx]) return;
+
+            guests[guestIdx] = { ...guests[guestIdx], attendance: newStatus, trang_thai: newStatus };
+            await window.dbEngine.ghi("slots", { ...slot, registered_guests: guests }, { id: slotId });
+            window.hienToast("Cập nhật thành công", `${guests[guestIdx].name || "Khách"} → ${newStatus}`, "success");
+            await window.moModalDanhSachKhach(slotId);
+            await _taiLichSuCaDau();
+        } catch (e) {
+            window.hienToast("Lỗi", "Không thể cập nhật trạng thái.", "danger");
+        }
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * 15. HỆ THỐNG ĐÁNH GIÁ KHÁCH (SAU KHI CHỐT CA)
+     * ═══════════════════════════════════════════════════ */
+    window.moModalDanhGiaKhach = async function (slotId) {
+        const overlay = document.getElementById("modalDanhGiaKhachOverlay");
+        if (!overlay) return;
+
+        try {
+            const all = await window.dbEngine.doc("slots");
+            const slot = all.find(s => s.id === slotId);
+            if (!slot) return;
+
+            // Điều kiện 1: Đã chốt ca
+            if (!slot.da_chot_ca && slot.status !== "closed") {
+                window.hienToast("Chưa chốt ca", "Bạn cần chốt ca trước khi đánh giá khách.", "warning");
+                return;
+            }
+
+            // Lọc khách Đã tham gia
+            const duKienGuests = (slot.registered_guests || []).filter(
+                g => g.attendance === "Đã tham gia" || g.attendance === "present"
+            );
+
+            if (duKienGuests.length === 0) {
+                window.hienToast("Không có khách đủ điều kiện", "Chưa có khách nào được xác nhận 'Đã tham gia'.", "warning");
+                return;
+            }
+
+            overlay.dataset.slotId = slotId;
+            overlay.style.display = "flex";
+
+            const sel = document.getElementById("hostReviewGuestSelect");
+            if (sel) {
+                sel.innerHTML = '<option value="">-- Chọn khách để đánh giá --</option>';
+                duKienGuests.forEach((g, idx) => {
+                    const opt = document.createElement("option");
+                    opt.value = idx;
+                    const reviewed = g.host_review_sent;
+                    opt.textContent = `${g.name || g.ten_khach} (${g.phone || g.sdt_khach}) ${reviewed ? "✅ Đã đánh giá" : ""}`;
+                    if (reviewed) opt.disabled = true;
+                    sel.appendChild(opt);
                 });
             }
 
-            const waterCost = slot.accounting_water_cost || 0;
-            const totalCost = courtCost + shuttleCost + waterCost;
-
-            // Doanh thu thực tế thu từ khách đã đặt slot
-            let totalRevenue = 0;
-            const guestsList = slot.registered_guests || [];
-            guestsList.forEach(g => {
-                const price = g.gender === "female" ? (slot.price_female || slot.price_male) : slot.price_male;
-                totalRevenue += Number(price);
-            });
-
-            const netProfit = totalRevenue - totalCost;
-
-            alert(`📊 --- BÁO BIỂU CHI TIẾT TÀI CHÍNH CA ĐẤU ---
-Sân chơi: ${slot.court_name} (${slot.court_number})
-Thời gian: ${new Date(slot.date_play).toLocaleDateString("vi-VN")} (${slot.time_start} - ${slot.time_end})
-
-💸 CHI PHÍ VẬN HÀNH CA ĐẤU:
-1. Tiền sân: ${courtCost.toLocaleString()}đ (${slot.duration} giờ x ${slot.court_quantity} sân x ${slot.accounting_court_price.toLocaleString()}đ/giờ)
-2. Quả cầu dùng thực tế: ${shuttleCost.toLocaleString()}đ${shuttleDetail}
-3. Nước uống / Chi khác: ${waterCost.toLocaleString()}đ
-==> TỔNG CHI PHÍ THỰC TẾ: ${totalCost.toLocaleString()}đ
-
-💰 DOANH THU GHI NHẬN TỪ KHÁCH:
-- Đã đăng ký chơi: ${guestsList.length} khách vãng lai
-==> TỔNG DOANH THU THU VỀ: ${totalRevenue.toLocaleString()}đ
-
-📈 KẾT QUẢ ĐẠT ĐƯỢC:
-- Lợi nhuận ròng: ${netProfit >= 0 ? '+' : ''}${netProfit.toLocaleString()}đ (${netProfit >= 0 ? 'Có Lãi' : 'Lỗ ca chơi'})
------------------------------------------
-Trạng thái: CA ĐẤU ĐÃ KẾT TOÁN VÀ KHÓA DỮ LIỆU.`);
+            window.hostRatingStarIndex = 5;
+            _capNhatStarUIHost(5);
+            const commentEl = document.getElementById("hostReviewComment");
+            if (commentEl) commentEl.value = "";
         } catch (e) {
-            console.error("Lỗi khi kết xuất biểu toán:", e);
+            console.error("Lỗi mở modal đánh giá:", e);
         }
     };
 
-    // Khởi tạo các sự kiện Click đánh giá sao Host dành cho Khách hàng vãng lai
-    window.khoiTaoReviewStarsHost = function () {
-        const stars = document.querySelectorAll("#hostRatingStars i");
-        stars.forEach(star => {
-            // Dọn dẹp listener cũ
-            const newStar = star.cloneNode(true);
-            star.parentNode.replaceChild(newStar, star);
-
-            newStar.addEventListener("click", () => {
-                const idx = newStar.getAttribute("data-index");
-                hostRatingIndex = Number(idx);
-                capNhatGiaoDienStarsHost(hostRatingIndex);
-            });
-        });
+    window.dongModalDanhGiaKhach = function () {
+        const overlay = document.getElementById("modalDanhGiaKhachOverlay");
+        if (overlay) overlay.style.display = "none";
     };
 
-    function capNhatGiaoDienStarsHost(index) {
-        const stars = document.querySelectorAll("#hostRatingStars i");
-        stars.forEach(s => {
-            const i = Number(s.getAttribute("data-index"));
-            if (i <= index) {
-                s.classList.add("active");
-            } else {
-                s.classList.remove("active");
+    window.guiDanhGiaKhach = async function () {
+        const overlay = document.getElementById("modalDanhGiaKhachOverlay");
+        const slotId = overlay?.dataset.slotId;
+        const sel = document.getElementById("hostReviewGuestSelect");
+        const comment = document.getElementById("hostReviewComment")?.value?.trim();
+
+        if (!slotId || !sel?.value) {
+            window.hienToast("Chưa chọn khách", "Vui lòng chọn khách để đánh giá.", "warning");
+            return;
+        }
+
+        const guestIdx = Number(sel.value);
+
+        try {
+            const all = await window.dbEngine.doc("slots");
+            const slot = all.find(s => s.id === slotId);
+            const guests = [...(slot.registered_guests || [])];
+            const guest = guests[guestIdx];
+
+            if (guest.host_review_sent) {
+                window.hienToast("Đã đánh giá", "Bạn đã gửi đánh giá cho khách này rồi.", "warning");
+                return;
             }
+
+            // Ghi đánh giá
+            await window.dbEngine.ghi("reviews", {
+                slot_id: slotId,
+                reviewer_phone: window.currentHostInfo?.sdt_host || window.currentHostKey,
+                reviewed_phone: guest.phone || guest.sdt_khach,
+                loai: "HostToGuest",
+                so_sao: window.hostRatingStarIndex,
+                nhan_xet: comment,
+                created_at: new Date().toISOString()
+            });
+
+            // Đánh dấu đã đánh giá trong danh sách guest
+            guests[guestIdx] = { ...guest, host_review_sent: true, host_rating: window.hostRatingStarIndex };
+            await window.dbEngine.ghi("slots", { ...slot, registered_guests: guests }, { id: slotId });
+
+            window.hienToast("Đánh giá thành công! ⭐", `Đã gửi ${window.hostRatingStarIndex} sao cho ${guest.name || "khách"}.`, "success");
+            window.dongModalDanhGiaKhach();
+        } catch (e) {
+            console.error("Lỗi gửi đánh giá:", e);
+            window.hienToast("Lỗi", "Không gửi được đánh giá.", "danger");
+        }
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * 16. HỆ THỐNG SAO ĐÁNH GIÁ HOST
+     * ═══════════════════════════════════════════════════ */
+    function _khoiTaoStarRating() {
+        _initStarContainer("hostRatingStars", (n) => { window.hostRatingStarIndex = n; });
+    }
+
+    function _initStarContainer(containerId, onSelect) {
+        const ctr = document.getElementById(containerId);
+        if (!ctr) return;
+        ctr.innerHTML = "";
+        for (let i = 1; i <= 5; i++) {
+            const star = document.createElement("i");
+            star.className = "fa-solid fa-star star-item";
+            star.dataset.val = i;
+            star.addEventListener("click", () => {
+                onSelect(i);
+                _capNhatStarUI(ctr, i);
+            });
+            star.addEventListener("mouseenter", () => _capNhatStarUI(ctr, i, true));
+            star.addEventListener("mouseleave", () => _capNhatStarUI(ctr, ctr.dataset.selected || 5));
+            ctr.appendChild(star);
+        }
+        ctr.dataset.selected = 5;
+        _capNhatStarUI(ctr, 5);
+    }
+
+    function _capNhatStarUI(ctr, val, isHover = false) {
+        if (!isHover) ctr.dataset.selected = val;
+        ctr.querySelectorAll(".star-item").forEach((s, i) => {
+            s.style.color = i < val ? "hsl(var(--neon-gold))" : "#374151";
         });
     }
 
-    // Tự động khởi chạy khi load trang host.html
+    function _capNhatStarUIHost(val) {
+        const ctr = document.getElementById("hostRatingStars");
+        if (ctr) _capNhatStarUI(ctr, val);
+    }
+
+    /* ═══════════════════════════════════════════════════
+     * 17. TIỆN ÍCH
+     * ═══════════════════════════════════════════════════ */
+    function _formatVND(n) {
+        return Number(n || 0).toLocaleString("vi-VN") + "đ";
+    }
+
+    function _formatDate(str) {
+        if (!str) return "--";
+        const d = new Date(str);
+        if (isNaN(d)) return str;
+        return d.toLocaleDateString("vi-VN", { weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" });
+    }
+
+    function _hienThiGioiTinh(g) {
+        if (g === "male") return '<span style="color:hsl(var(--neon-cyan))"><i class="fa-solid fa-mars"></i> Nam</span>';
+        if (g === "female") return '<span style="color:hsl(var(--neon-pink))"><i class="fa-solid fa-venus"></i> Nữ</span>';
+        return '<span style="color:hsl(var(--neon-mint))"><i class="fa-solid fa-venus-mars"></i> Cả hai</span>';
+    }
+
+    function _hienThiTrinhDo(slot) {
+        const ml = (slot.levels_male || slot.levels || []).join(", ");
+        const fl = (slot.levels_female || []).join(", ");
+        if (slot.gender === "both") return `Nam: ${ml || "--"} | Nữ: ${fl || "--"}`;
+        if (slot.gender === "female") return fl || "--";
+        return ml || "--";
+    }
+
+    // Expose init cho trang host.html
     document.addEventListener("DOMContentLoaded", () => {
-        const checkDb = setInterval(() => {
-            if (window.dbEngine) {
-                clearInterval(checkDb);
+        const checkReady = setInterval(() => {
+            if (window.khoiTaoTheme && window.khoiTaoHologramGlow && window.dbEngine) {
+                clearInterval(checkReady);
+                window.khoiTaoTheme();
+                window.khoiTaoHologramGlow();
                 window.khoiTaoTrangHost();
             }
         }, 100);
     });
 
-    console.log("⚡ [Phân hệ chủ sân]: Bộ máy kế toán & Quản trị trạm Host đã khởi động độc lập.");
+    console.log("⚡ [Phân Hệ Chủ Sân]: Khởi động thành công.");
 })();
