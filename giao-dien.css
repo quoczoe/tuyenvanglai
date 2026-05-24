@@ -2609,3 +2609,159 @@ body::before {
     .profile-host-badge { flex-direction: column; align-items: flex-start; }
     .btn-go-host { margin-left: 0; width: 100%; text-align: center; }
 }
+
+/* ══════════════════════════════════════════════════════════════
+ * FIX 1 — TABLE SCROLL WRAP (dùng trong admin.html + tương lai)
+ * Bọc <table> để cuộn ngang nội bộ, không kéo giãn layout
+ * ══════════════════════════════════════════════════════════════ */
+.table-scroll-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch; /* Cuộn mượt iOS */
+    border-radius: 8px;
+}
+/* Scrollbar mỏng cho bảng */
+.table-scroll-wrap::-webkit-scrollbar { height: 4px; }
+.table-scroll-wrap::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); }
+.table-scroll-wrap::-webkit-scrollbar-thumb {
+    background: var(--accent-green, #00ff88);
+    border-radius: 2px;
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * FIX 9 — ẨN ICON LỊCH NATIVE CỦA TRÌNH DUYỆT TRONG .hs-picker-wrap
+ * Giữ lại emoji 📅 làm icon duy nhất, native icon trong suốt
+ * nhưng vẫn clickable để bật date picker
+ * ══════════════════════════════════════════════════════════════ */
+.hs-picker-wrap input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;        /* Trong suốt — không thấy nhưng vẫn clickable */
+    cursor: pointer;
+    width: 2.4rem;     /* Phủ khu vực icon emoji để click anywhere bật picker */
+    height: 100%;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * FIX 6 — NAVBAR LAYOUT (khach.html .ks-header)
+ * Đảm bảo logo và phần phải không nhảy layout khi resize
+ * ══════════════════════════════════════════════════════════════ */
+.ks-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 0 20px !important;
+    gap: 12px;
+}
+.ks-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    text-decoration: none;
+}
+.ks-brand-text {
+    font-size: 1rem !important;
+    font-weight: 800 !important;
+    white-space: nowrap;
+}
+.ks-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * FIX 7 — FILTER PANEL Z-INDEX (khach.html)
+ * Filter sticky không đè lên card content
+ * ══════════════════════════════════════════════════════════════ */
+.kh-filter-bar,
+.filter-section {
+    position: relative;
+    z-index: 10;
+}
+.kh-keo-list,
+.kh-sidebar {
+    position: relative;
+    z-index: 1;
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * FIX 10A — MOBILE GRID ORDER (khach.html)
+ * Trên mobile: danh sách kèo hiện trước, sidebar sau
+ * ══════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+    .kh-layout {
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    .kh-right  { order: 1; } /* Khu vực filter + kèo: hiện trước */
+    .kh-sidebar { order: 2; } /* Sidebar: hiện sau */
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * FIX 10B — NÚT "TÌM KÈO NGAY" MOBILE FIXED BOTTOM
+ * Chỉ hiện trên mobile, ẩn trên desktop
+ * ══════════════════════════════════════════════════════════════ */
+#btnTimKeoMobile {
+    display: none; /* Ẩn mặc định */
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 500;
+    background: linear-gradient(135deg, #00d97a, #00a855);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 0.88rem;
+    text-decoration: none;
+    box-shadow: 0 4px 20px rgba(0,212,122,0.4);
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+#btnTimKeoMobile:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 28px rgba(0,212,122,0.55);
+}
+@media (max-width: 900px) {
+    #btnTimKeoMobile { display: flex !important; }
+}
+@media (min-width: 901px) {
+    #btnTimKeoMobile { display: none !important; }
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * FIX 12 — ACCORDION CARDS (khach.html)
+ * 4 card phụ thu gọn mặc định, click header để mở/đóng
+ * ══════════════════════════════════════════════════════════════ */
+.acc-header {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.acc-header:hover { color: var(--accent-green, #00ff88); }
+.acc-arrow {
+    transition: transform 0.3s ease;
+    font-size: 0.75rem;
+    margin-left: 8px;
+    flex-shrink: 0;
+}
+.acc-body {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.38s ease, opacity 0.3s;
+    opacity: 0;
+}
+.acc-body.open {
+    max-height: 2400px; /* Đủ lớn cho nội dung dài nhất */
+    opacity: 1;
+}
+.acc-arrow.open { transform: rotate(180deg); }

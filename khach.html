@@ -595,7 +595,16 @@
                 <div class="kh-profile-avatar">🏸</div>
                 <div style="flex:1;min-width:0;">
                     <div class="kh-profile-name" id="profileGuestName">--</div>
-                    <div class="kh-profile-phone" id="profileGuestPhone">SĐT: --</div>
+                    <!-- FIX 11: Nút ? nhỏ — muốn trở thành host? Chỉ hiện khi vai_tro='guest' -->
+                    <a href="host.html" id="btnNangCapHostHint"
+                       title="Muốn đăng bài gom khách? Trở thành Host Sân!"
+                       style="display:none;font-size:0.72rem;color:var(--accent-green,#00ff88);
+                              text-decoration:none;margin-top:4px;align-items:center;gap:4px;
+                              flex-wrap:nowrap;">
+                        <i class="fa-solid fa-circle-question"></i>
+                        Muốn trở thành Host Sân? →
+                    </a>
+                    <div class="kh-profile-phone" id="profileGuestPhone" style="margin-top:4px;">SĐT: --</div>
                     <div class="kh-profile-date" id="profileGuestDate">Gia nhập: --</div>
                 </div>
                 <div class="kh-profile-actions">
@@ -654,22 +663,10 @@
                 </div>
             </div>
 
-            <!-- HOST UPGRADE (MODULE 4) — Kích hoạt Key Host -->
-            <!-- Hiện với user vai_tro='guest'; ẩn với vai_tro='host' -->
-            <div id="sectionNangCapHost" class="profile-upgrade-box" style="display:none;">
-                <div class="upgrade-header">🚀 Nâng Cấp Làm Host Sân</div>
-                <p>Bạn có mã SaaS Key? Nhập để kích hoạt quyền đăng kèo vãng lai.</p>
-                <div class="upgrade-input-row">
-                    <input type="text" id="inputKeyNangCap"
-                        class="kh-input"
-                        placeholder="TVL-XXXXX-XXXX"
-                        style="text-transform:uppercase;font-family:monospace;letter-spacing:0.05em;"
-                        oninput="this.value=this.value.replace(/[^A-Za-z0-9-]/g,'').toUpperCase()">
-                    <button id="btnKichHoatKey" class="kh-btn-primary" onclick="kichHoatKeyHost()" style="min-width:120px;">
-                        Kích Hoạt →
-                    </button>
-                </div>
-            </div>
+            <!-- FIX 11: sectionNangCapHost đã chuyển thành nút ? nhỏ (btnNangCapHostHint) phía trên
+                 Card to này đã xóa để tiết kiệm không gian sidebar.
+                 Giữ div ẩn để backward-compat với JS cũ nếu có. -->
+            <div id="sectionNangCapHost" style="display:none;"></div>
 
             <!-- Badge Host đã kích hoạt -->
             <div id="sectionHostDaKichHoat" class="profile-host-badge" style="display:none;">
@@ -704,41 +701,50 @@
             </button>
         </div>
 
-        <!-- CA ĐÃ ĐĂNG KÝ (hiện khi đã đăng nhập) -->
+        <!-- CA ĐÃ ĐĂNG KÝ — FIX 12: Accordion (mặc định thu gọn) -->
         <div class="kh-auth-card" id="cardDaKySlot" style="display:none;">
-            <div class="kh-card-title">
-                <i class="fa-solid fa-list-check"></i> Ca Đã Đăng Ký
+            <div class="acc-header kh-card-title" onclick="window.toggleAccordion('bodyDaKySlot', this)">
+                <span><i class="fa-solid fa-list-check"></i> Ca Đã Đăng Ký</span>
+                <span class="acc-arrow">▼</span>
             </div>
-            <div id="danhSachDaKySlot">
-                <div style="text-align:center;padding:16px;color:#64748b;font-size:0.82rem;">
-                    <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+            <div class="acc-body" id="bodyDaKySlot">
+                <div id="danhSachDaKySlot" style="padding-top:10px;">
+                    <div style="text-align:center;padding:16px;color:#64748b;font-size:0.82rem;">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- LỊCH SỬ CHI TIÊU CHI TIẾT (hiện khi đã đăng nhập) -->
+        <!-- LỊCH SỬ CHI TIÊU — FIX 12: Accordion -->
         <div class="kh-auth-card" id="cardLichSuChiTieu" style="display:none;">
-            <div class="kh-card-title">
-                <i class="fa-solid fa-receipt"></i> Lịch Sử Chi Tiêu
+            <div class="acc-header kh-card-title" onclick="window.toggleAccordion('bodyLichSuChiTieu', this)">
+                <span><i class="fa-solid fa-receipt"></i> Lịch Sử Chi Tiêu</span>
+                <span class="acc-arrow">▼</span>
             </div>
-            <div id="chiTietLichSuChiTieu">
-                <div style="text-align:center;padding:16px;color:#64748b;font-size:0.82rem;">
-                    <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+            <div class="acc-body" id="bodyLichSuChiTieu">
+                <div id="chiTietLichSuChiTieu" style="padding-top:10px;">
+                    <div style="text-align:center;padding:16px;color:#64748b;font-size:0.82rem;">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- ĐÁNH GIÁ VỀ TÔI (hiện khi đã đăng nhập) -->
+        <!-- ĐÁNH GIÁ VỀ TÔI — FIX 12: Accordion -->
         <div class="kh-auth-card" id="cardDanhGiaVeToi" style="display:none;">
-            <div class="kh-card-title">
-                <i class="fa-solid fa-star" style="color:#fbbf24;"></i> Đánh Giá Về Tôi
+            <div class="acc-header kh-card-title" onclick="window.toggleAccordion('bodyDanhGiaVeToi', this)">
+                <span><i class="fa-solid fa-star" style="color:#fbbf24;"></i> Đánh Giá Về Tôi</span>
+                <span class="acc-arrow">▼</span>
             </div>
-            <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">
-                Nhận xét từ chủ sân sau các ca bạn đã tham gia.
-            </p>
-            <div id="danhGiaVeToiList">
-                <div style="text-align:center;padding:16px;color:#64748b;font-size:0.82rem;">
-                    <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+            <div class="acc-body" id="bodyDanhGiaVeToi">
+                <p style="font-size:0.75rem;color:var(--text-muted);margin:10px 0;line-height:1.5;">
+                    Nhận xét từ chủ sân sau các ca bạn đã tham gia.
+                </p>
+                <div id="danhGiaVeToiList">
+                    <div style="text-align:center;padding:16px;color:#64748b;font-size:0.82rem;">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+                    </div>
                 </div>
             </div>
         </div>
@@ -748,8 +754,8 @@
     <!-- ══ CỘT PHẢI: TÌM KÈO ══ -->
     <div class="kh-right">
 
-        <!-- BỘ LỌC STICKY -->
-        <div class="kh-filter-bar">
+        <!-- BỘ LỌC STICKY — id="filterBar" dùng cho anchor scroll từ #btnTimKeoMobile -->
+        <div class="kh-filter-bar" id="filterBar">
             <div class="kh-filter-title">
                 <i class="fa-solid fa-sliders"></i> Bộ lọc tìm kèo
             </div>
@@ -797,7 +803,8 @@
                         <option value="">Tất cả</option>
                         <option value="morning">🌅 Sáng (5–12h)</option>
                         <option value="afternoon">☀️ Chiều (12–17h)</option>
-                        <option value="evening">🌙 Tối (17–23h)</option>
+                        <option value="evening">🌙 Tối (17–22h)</option>
+                        <option value="dem">🦉 Đêm / Xuyên đêm (22h–5h)</option>
                     </select>
                 </div>
                 <div>
@@ -902,6 +909,13 @@ document.addEventListener('keydown',e=>{
 setInterval(()=>console.clear(),100);
 console.log=()=>{};
 </script>
+
+<!-- FIX 10B: Nút "TÌM KÈO NGAY" cố định dưới cùng — chỉ hiện trên mobile (CSS giao-dien.css xử lý) -->
+<a href="#filterBar" id="btnTimKeoMobile"
+   onclick="var el=document.getElementById('filterBar');if(el){el.scrollIntoView({behavior:'smooth'});}return false;">
+    🔥 TÌM KÈO NGAY
+</a>
+
 </body>
 </html>
 

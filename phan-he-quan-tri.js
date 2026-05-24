@@ -392,7 +392,10 @@
             window.dongModalKey();
             await _taiDanhSachKey();
         } catch (e) {
-            window.hienToast("Lỗi", "Không thể lưu Key. Vui lòng thử lại.", "danger");
+            // FIX 2: Hiển thị chi tiết lỗi (thường do Supabase RLS chặn anon INSERT)
+            const detail = (e.message || String(e)).slice(0, 120);
+            console.error("[luuKey] Chi tiết lỗi:", e);
+            window.hienToast("Lỗi lưu Key", detail || "Không thể lưu Key. Kiểm tra kết nối hoặc RLS Supabase.", "danger");
         } finally {
             if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Key'; }
         }

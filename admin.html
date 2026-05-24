@@ -10,8 +10,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="giao-dien.css?v=5.0">
-    <link rel="stylesheet" href="components.css?v=5.0">
+    <link rel="stylesheet" href="giao-dien.css?v=6.0">
+    <link rel="stylesheet" href="components.css?v=6.0">
     <style>
         /* ══ DESIGN SYSTEM ══ */
         :root {
@@ -44,8 +44,21 @@
          *     triệt tiêu 100% hiện tượng chiều rộng bị co hẹp khi đổi tab.
          * ══════════════════════════════════════════════════════════════
          */
+        /*
+         * ══════════════════════════════════════════════════════════════
+         * CRITICAL FIX (PC BLANK): giao-dien.css áp dụng toàn cục:
+         *   body { display:flex; flex-direction:column; height:100vh;
+         *          height:100dvh; overflow:hidden; }
+         * Trên PC điều này khiến toàn bộ nội dung admin bị collapse /
+         * bị cắt bởi overflow:hidden → trang trắng.
+         * Mobile không bị vì 100dvh co theo status bar, nội dung vừa vặn.
+         * Fix: override tất cả property nguy hiểm bằng !important.
+         * ══════════════════════════════════════════════════════════════
+         */
         html {
             scrollbar-gutter: stable; /* Dành sẵn vị trí thanh cuộn */
+            height: auto !important;
+            overflow: auto !important;
         }
         html, body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -53,6 +66,12 @@
             color: var(--text-main);
             min-height: 100vh;
             overflow-y: scroll; /* Luôn giữ scrollbar — tránh nhảy chiều rộng khi đổi tab */
+        }
+        body {
+            /* Override giao-dien.css: display:flex → block, height:100vh → auto */
+            display: block !important;
+            height: auto !important;
+            flex-direction: unset !important;
         }
         .gateway-wrapper { height: auto; min-height: 100vh; overflow: visible; }
         .gateway-container { overflow: visible; height: auto; }

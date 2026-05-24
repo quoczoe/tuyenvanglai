@@ -82,18 +82,22 @@
 
         // MODULE 4: Routing theo vai_tro
         const isHost = g.vai_tro === "host";
-        const sectionGuest = document.getElementById("sectionNangCapHost");
+        // FIX 11: dùng btnNangCapHostHint (nút ? nhỏ) thay vì sectionNangCapHost (card to)
+        const hintBtn      = document.getElementById("btnNangCapHostHint");
+        const sectionGuest = document.getElementById("sectionNangCapHost"); // giữ backward compat
         const sectionHost  = document.getElementById("sectionHostDaKichHoat");
         const keyDisplay   = document.getElementById("profileHostKey");
 
         if (isHost) {
-            // Đã là Host → ẩn ô nhập key, hiện badge host
+            // Đã là Host → ẩn hint, ẩn card nâng cấp, hiện badge host
+            if (hintBtn)      hintBtn.style.display      = "none";
             if (sectionGuest) sectionGuest.style.display = "none";
             if (sectionHost)  sectionHost.style.display  = "flex";
             if (keyDisplay)   keyDisplay.textContent      = g.ma_key_host || "";
         } else {
-            // Còn là guest → hiện ô kích hoạt key
-            if (sectionGuest) sectionGuest.style.display = "block";
+            // Còn là guest → hiện nút hint ?, ẩn badge host
+            if (hintBtn)      hintBtn.style.display      = "flex";
+            if (sectionGuest) sectionGuest.style.display = "none"; // card to đã xóa khỏi HTML
             if (sectionHost)  sectionHost.style.display  = "none";
         }
 
@@ -1016,6 +1020,19 @@
     }
 
     window.locNhanhThoiGian = function (loai, btnEl) {
+        // FIX 4 — TOGGLE: nếu tag này đang active → click lại → tắt, reset về "Tất cả"
+        const isAlreadyActive = btnEl && btnEl.classList.contains("active");
+        if (isAlreadyActive) {
+            document.querySelectorAll(".btn-time-filter").forEach(b => b.classList.remove("active"));
+            const fromEl = document.getElementById("statsDateFrom");
+            const toEl   = document.getElementById("statsDateTo");
+            if (fromEl) fromEl.value = "";
+            if (toEl)   toEl.value   = "";
+            _taiThongKeKhach();
+            _taiLichSuChiTieu();
+            return;
+        }
+
         const now   = new Date();
         const fromEl = document.getElementById("statsDateFrom");
         const toEl  = document.getElementById("statsDateTo");
@@ -1654,5 +1671,17 @@
         }, 100);
     });
 
-    console.log("⚡ [Phân Hệ Khách Chơi v4.0]: 1-Click Auth ✅ | Telegram polling ✅ | Host Upgrade ✅ | nguoi_dung ✅");
+    /* ═══════════════════════════════════════════════════
+     * FIX 12 — ACCORDION TOGGLE cho 4 card phụ sidebar
+     * ═══════════════════════════════════════════════════ */
+    window.toggleAccordion = function (bodyId, headerEl) {
+        const body  = document.getElementById(bodyId);
+        const arrow = headerEl ? headerEl.querySelector(".acc-arrow") : null;
+        if (!body) return;
+        const isOpen = body.classList.contains("open");
+        body.classList.toggle("open", !isOpen);
+        if (arrow) arrow.classList.toggle("open", !isOpen);
+    };
+
+    console.log("⚡ [Phân Hệ Khách Chơi v4.1]: FIX4-toggle ✅ | FIX11-hostHint ✅ | FIX12-accordion ✅");
 })();
