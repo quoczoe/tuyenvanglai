@@ -1,17 +1,28 @@
 /* =========================================================================
- * ⚙️ BỘ MÁY DỮ LIỆU ĐỊA PHƯƠNG & VIRTUAL DATABASE - BO-MAY-DU-LIEU.JS
+ * ⚙️ BỘ MÁY DỮ LIỆU — BO-MAY-DU-LIEU.JS (v2.0)
  * Dự án: TUYENVANGLAI.IO.VN
- * Chức năng: Quản lý các mảng dữ liệu tĩnh (tỉnh thành, sân bãi) và cung cấp
- *            đối tượng điều vận window.dbEngine tự động đồng bộ đám mây Supabase
- *            hoặc dự phòng LocalStorage Sandbox thông minh.
+ *
+ * THAY ĐỔI v2.0 (2026-05-24):
+ * - XÓA HOÀN TOÀN localStorage fallback cho dữ liệu nghiệp vụ
+ * - localStorage CHỈ dùng để lưu 2 loại định danh:
+ *     + tvl_host_key  → Mã Key Host kích hoạt
+ *     + tvl_guest     → { ten, sdt } đăng nhập nhanh Khách
+ * - Toàn bộ I/O ca đấu / đặt slot / đánh giá → Supabase REST API
+ * - Mất mạng → thông báo lỗi trực quan, KHÔNG dùng data local
  * =========================================================================
  */
 
 (function () {
-    // 1. Dữ liệu tĩnh tỉnh thành quy chuẩn đầy đủ 100% 63 tỉnh thành Việt Nam
+
+    /* ═══════════════════════════════════════════════════════════════
+     * 1. DỮ LIỆU TĨnh ĐỊA LÝ — 63 TỈNH THÀNH VIỆT NAM
+     * Dùng cho dropdown Tỉnh/Thành + Quận/Huyện trên form
+     * ═══════════════════════════════════════════════════════════════ */
     window.MOCK_PROVINCES = [
+        // ── ƯU TIÊN ĐẦU: HCM & HÀ NỘI ──
         { name: "TP. Hồ Chí Minh", districts: ["Quận 1", "Quận 3", "Quận 4", "Quận 5", "Quận 6", "Quận 7", "Quận 8", "Quận 10", "Quận 11", "Quận 12", "Tân Bình", "Bình Thạnh", "Gò Vấp", "Thủ Đức", "Phú Nhuận", "Tân Phú", "Bình Tân", "Hóc Môn", "Củ Chi", "Nhà Bè", "Bình Chánh", "Cần Giờ"] },
         { name: "Hà Nội", districts: ["Ba Đình", "Hoàn Kiếm", "Tây Hồ", "Long Biên", "Cầu Giấy", "Đống Đa", "Hai Bà Trưng", "Hoàng Mai", "Thanh Xuân", "Sóc Sơn", "Đông Anh", "Gia Lâm", "Nam Từ Liêm", "Thanh Trì", "Bắc Từ Liêm", "Mê Linh", "Hà Đông", "Sơn Tây", "Ba Vì", "Chương Mỹ", "Đan Phượng", "Hoài Đức", "Mỹ Đức", "Phú Xuyên", "Quốc Oai", "Thạch Thất", "Thanh Oai", "Thường Tín", "Ứng Hòa"] },
+        // ── TIẾP THEO: CÁC TỈNH THÀNH KHÁC ──
         { name: "Đà Nẵng", districts: ["Hải Châu", "Thanh Khê", "Sơn Trà", "Ngũ Hành Sơn", "Liên Chiểu", "Cẩm Lệ", "Hòa Vang", "Hoàng Sa"] },
         { name: "Bình Dương", districts: ["Thủ Dầu Một", "Thuận An", "Dĩ An", "Bến Cát", "Tân Uyên", "Bàu Bàng", "Dầu Tiếng", "Phú Giáo", "Bắc Tân Uyên"] },
         { name: "Đồng Nai", districts: ["Biên Hòa", "Long Khánh", "Cẩm Mỹ", "Định Quán", "Long Thành", "Nhơn Trạch", "Tân Phú", "Thống Nhất", "Trảng Bom", "Vĩnh Cửu", "Xuân Lộc"] },
@@ -62,7 +73,7 @@
         { name: "Quảng Trị", districts: ["Đông Hà", "Quảng Trị", "Vĩnh Linh", "Hướng Hóa", "Gio Linh", "Đakrông", "Cam Lộ", "Triệu Phong", "Hải Lăng", "Cồn Cỏ"] },
         { name: "Sóc Trăng", districts: ["Sóc Trăng", "Ngã Năm", "Vĩnh Châu", "Châu Thành", "Mỹ Xuyên", "Trần Đề", "Long Phú", "Mỹ Tú", "Thạnh Trị", "Cù Lao Dung", "Kế Sách"] },
         { name: "Sơn La", districts: ["Sơn La", "Quỳnh Nhai", "Thuận Châu", "Mường La", "Bắc Yên", "Phù Yên", "Mộc Châu", "Yên Châu", "Mai Sơn", "Sông Mã", "Sốp Cộp", "Vân Hồ"] },
-        { name: "Tây Tây Ninh", districts: ["Tây Ninh", "Trảng Bàng", "Hòa Thành", "Tân Biên", "Tân Châu", "Dương Minh Châu", "Châu Thành", "Bến Cầu", "Gò Dầu"] },
+        { name: "Tây Ninh", districts: ["Tây Ninh", "Trảng Bàng", "Hòa Thành", "Tân Biên", "Tân Châu", "Dương Minh Châu", "Châu Thành", "Bến Cầu", "Gò Dầu"] },
         { name: "Thái Bình", districts: ["Thái Bình", "Quỳnh Phụ", "Hưng Hà", "Đông Hưng", "Thái Thụy", "Tiền Hải", "Kiến Xương", "Vũ Thư"] },
         { name: "Thái Nguyên", districts: ["Thái Nguyên", "Sông Công", "Phổ Yên", "Định Hóa", "Phú Lương", "Đồng Hỷ", "Võ Nhai", "Đại Từ", "Phú Bình"] },
         { name: "Thanh Hóa", districts: ["Thanh Hóa", "Sầm Sơn", "Bỉm Sơn", "Nghi Sơn", "Mường Lát", "Quan Hóa", "Quan Sơn", "Bá Thước", "Lang Chánh", "Thường Xuân", "Như Xuân", "Như Thanh", "Thạch Thành", "Hà Trung", "Vĩnh Lộc", "Yên Định", "Thọ Xuân", "Triệu Sơn", "Thiệu Hóa", "Hoằng Hóa", "Hậu Lộc", "Quảng Xương", "Nông Cống", "Đông Sơn"] },
@@ -75,308 +86,105 @@
         { name: "Yên Bái", districts: ["Yên Bái", "Nghĩa Lộ", "Lục Yên", "Văn Yên", "Mù Căng Chải", "Trạm Tấu", "Trấn Yên", "Yên Bình", "Văn Chấn"] }
     ];
 
-    // Sửa lỗi chính tả "Tây Tây Ninh" thành "Tây Ninh"
-    window.MOCK_PROVINCES = window.MOCK_PROVINCES.map(p => {
-        if (p.name === "Tây Tây Ninh") p.name = "Tây Ninh";
-        return p;
-    });
-
+    /* ═══════════════════════════════════════════════════════════════
+     * 2. DỮ LIỆU TĨnh: THƯƠNG HIỆU CẦU — dùng cho autocomplete
+     * ═══════════════════════════════════════════════════════════════ */
     window.SHUTTLECOCK_BRANDS = [
-        "Hải Yến", "Victor", "Yonex", "Ba Sao", "Thành Công", "Vina Star", "Kumpoo", "Pro Kennex", "Lining", "RSL", "Bubadu"
+        "Hải Yến", "Victor", "Yonex", "Ba Sao", "Thành Công",
+        "Vina Star", "Kumpoo", "Pro Kennex", "Lining", "RSL", "Bubadu"
     ];
 
-    window.MOCK_COURTS = [
-        { name: "Sân Cầu Lông Viettel Quận 10", address: "Hẻm 285 Cách Mạng Tháng Tám, Quận 10, TP. HCM" },
-        { name: "Sân Cầu Lông Tân Sơn Gò Vấp", address: "Đường Tân Sơn, Quận Gò Vấp, TP. HCM" },
-        { name: "Sân Cầu Lông Kỳ Hòa", address: "Đường Sư Vạn Hạnh, Quận 10, TP. HCM" },
-        { name: "Sân Cầu Lông Cầu Giấy Hà Nội", address: "Đường Nguyễn Phong Sắc, Cầu Giấy, Hà Nội" },
-        { name: "Sân Cầu Lông Đại học Bách Khoa", address: "Đại Cồ Việt, Hai Bà Trưng, Hà Nội" },
-        { name: "Sân Cầu Lông Chu Văn An Bình Thạnh", address: "Đường Chu Văn An, Quận Bình Thạnh, TP. HCM" },
-        { name: "Sân Cầu Lông Gia Định Phú Nhuận", address: "Đường Hoàng Minh Giám, Quận Phú Nhuận, TP. HCM" },
-        { name: "Sân Cầu Lông T&T", address: "Số 120 Dương Quảng Hàm, Quận Gò Vấp, TP. HCM" },
-        { name: "Sân Cầu Lông Bình Minh", address: "Đường Bùi Đình Túy, Quận Bình Thạnh, TP. HCM" },
-        { name: "Sân Cầu Lông Sky", address: "Đường số 9, Phường Linh Tây, TP. Thủ Đức, TP. HCM" }
-    ];
-
-    // 2. Khởi tạo cấu trúc Virtual Tables trong LocalStorage nếu chưa tồn tại
-    window.khoiTaoSandbox = function () {
-        if (!localStorage.getItem("vl_keys")) {
-            localStorage.setItem("vl_keys", JSON.stringify([
-                { key: "KEY-EMERALD-ADMIN-TEST", note: "Key Quản Trị Hệ Thống", expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(), status: "active" },
-                { key: "KEY-EMERALD-TEST-GUEST", note: "Key Thử Nghiệm Ngắn Hạn", expires_at: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString(), status: "active" }
-            ]));
-        }
-        
-        // Nạp ca đấu mẫu có hiệu lực nếu chưa có ca đấu nào hoặc vl_slots chứa dữ liệu cấu trúc cũ
-        const rawSlots = localStorage.getItem("vl_slots");
-        let activeSlots = rawSlots ? JSON.parse(rawSlots) : [];
-        const homNay = new Date().toLocaleDateString('sv-SE');
-        const ngayMai = new Date(Date.now() + 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE');
-        const ngayKia = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('sv-SE');
-        
-        // Force nạp lại data mẫu nếu vl_slots rỗng hoặc có cấu trúc cũ
-        const canNhapLai = activeSlots.length === 0 || activeSlots.some(s => s.hasOwnProperty("price_per_slot")) || !activeSlots.some(s => s.status === "active");
-        
-        if (canNhapLai) {
-            console.log("[Sandbox] Nạp dữ liệu mẫu 3 ca đấu cầu lông vào LocalStorage...");
-            activeSlots = [
-                {
-                    id: "slot-demo-1",
-                    created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-                    host_key: "KEY-EMERALD-ADMIN-TEST",
-                    host_name: "CLB Cầu Lông Kỳ Hòa",
-                    host_phone: "0901234567",
-                    title: "Kèo Giao Lưu Tối Nay - Sân Kỳ Hòa Q10",
-                    province: "TP. Hồ Chí Minh",
-                    district: "Quận 10",
-                    court_name: "Sân Cầu Lông Kỳ Hòa",
-                    court_address: "Đường Sư Vạn Hạnh, Quận 10, TP. HCM",
-                    court_number: "Sân 1, Sân 2",
-                    court_quantity: 2,
-                    date_play: homNay,
-                    time_start: "18:00",
-                    time_end: "20:00",
-                    duration: 2.0,
-                    gender: "both",
-                    levels: ["tby", "tb-", "tb+"],
-                    price_male: 60000,
-                    price_female: 50000,
-                    inc_court: true,
-                    inc_shuttle: true,
-                    inc_water: true,
-                    inc_parking: false,
-                    accounting_court_price: 80000,
-                    accounting_water_cost: 20000,
-                    accounting_shuttlecocks: [
-                        { name: "Hải Yến", qty_type: "12", price: 240000, used: 12 }
-                    ],
-                    status: "active",
-                    registered_guests: [
-                        { name: "Nguyễn Văn Hùng", phone: "0912345678", gender: "male", registered_at: new Date(Date.now() - 50 * 60 * 1000).toISOString(), attendance: "present", review_score_by_host: 5, review_comment_by_host: "Đánh tốt, vui vẻ và đúng giờ!" },
-                        { name: "Lê Minh Tuấn", phone: "0987654321", gender: "male", registered_at: new Date(Date.now() - 40 * 60 * 1000).toISOString(), attendance: "registered", review_score_by_host: null, review_comment_by_host: null },
-                        { name: "Phạm Thanh Hà", phone: "0966778899", gender: "female", registered_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(), attendance: "registered", review_score_by_host: null, review_comment_by_host: null }
-                    ]
-                },
-                {
-                    id: "slot-demo-2",
-                    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-                    host_key: "KEY-EMERALD-ADMIN-TEST",
-                    host_name: "CLB Gò Vấp Sport",
-                    host_phone: "0934567890",
-                    title: "Tuyển Vãng Lai Chiều Mai - Sân Tân Sơn Gò Vấp",
-                    province: "TP. Hồ Chí Minh",
-                    district: "Gò Vấp",
-                    court_name: "Sân Cầu Lông Tân Sơn Gò Vấp",
-                    court_address: "Đường Tân Sơn, Quận Gò Vấp, TP. HCM",
-                    court_number: "Sân 3",
-                    court_quantity: 1,
-                    date_play: ngayMai,
-                    time_start: "15:00",
-                    time_end: "17:00",
-                    duration: 2.0,
-                    gender: "both",
-                    levels: ["newbie", "yếu", "tby"],
-                    price_male: 50000,
-                    price_female: 40000,
-                    inc_court: true,
-                    inc_shuttle: true,
-                    inc_water: false,
-                    inc_parking: false,
-                    accounting_court_price: 70000,
-                    accounting_water_cost: 0,
-                    accounting_shuttlecocks: [
-                        { name: "Victor", qty_type: "12", price: 280000, used: 8 }
-                    ],
-                    status: "active",
-                    registered_guests: [
-                        { name: "Trần Thế Anh", phone: "0944556677", gender: "male", registered_at: new Date(Date.now() - 100 * 60 * 1000).toISOString(), attendance: "registered", review_score_by_host: null, review_comment_by_host: null }
-                    ]
-                },
-                {
-                    id: "slot-demo-3",
-                    created_at: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
-                    host_key: "KEY-EMERALD-ADMIN-TEST",
-                    host_name: "Lông Thủ Cầu Giấy",
-                    host_phone: "0909998887",
-                    title: "Ca Cầu Giao Lưu Thân Thiện - Sân Cầu Giấy Hà Nội",
-                    province: "Hà Nội",
-                    district: "Cầu Giấy",
-                    court_name: "Sân Cầu Lông Cầu Giấy Hà Nội",
-                    court_address: "Đường Nguyễn Phong Sắc, Cầu Giấy, Hà Nội",
-                    court_number: "Sân 1, Sân 2",
-                    court_quantity: 2,
-                    date_play: homNay,
-                    time_start: "19:00",
-                    time_end: "21:00",
-                    duration: 2.0,
-                    gender: "both",
-                    levels: ["tb-", "tb+", "tbk"],
-                    price_male: 70000,
-                    price_female: 60000,
-                    inc_court: true,
-                    inc_shuttle: true,
-                    inc_water: true,
-                    inc_parking: true,
-                    accounting_court_price: 90000,
-                    accounting_water_cost: 30000,
-                    accounting_shuttlecocks: [
-                        { name: "Yonex", qty_type: "12", price: 320000, used: 10 }
-                    ],
-                    status: "active",
-                    registered_guests: []
-                }
-            ];
-            localStorage.setItem("vl_slots", JSON.stringify(activeSlots));
-            console.log(`[Sandbox] Đã nạp ${activeSlots.length} ca đấu mẫu. Slots IDs:`, activeSlots.map(s => s.id));
+    /* ═══════════════════════════════════════════════════════════════
+     * 3. HÀM TIỆN ÍCH — THÔNG BÁO LỖI MẠNG TRỰC QUAN
+     * Gọi khi Supabase không kết nối được
+     * ═══════════════════════════════════════════════════════════════ */
+    function hienLoiMang(tenTacVu) {
+        const msg = `Không thể kết nối máy chủ khi thực hiện: ${tenTacVu}. Vui lòng kiểm tra kết nối Internet và thử lại.`;
+        // Dùng hienToast nếu đã load hieu-ung-giao-dien.js
+        if (typeof window.hienToast === "function") {
+            window.hienToast("Mất kết nối", msg, "error");
         } else {
-            console.log(`[Sandbox] LocalStorage đã có ${activeSlots.length} ca đấu, giữ nguyên.`);
+            // Fallback: alert đơn giản
+            alert("⚠️ " + msg);
         }
+        console.error(`[dbEngine] Lỗi mạng — ${tenTacVu}`);
+    }
 
-        if (!localStorage.getItem("vl_users")) {
-            localStorage.setItem("vl_users", JSON.stringify([]));
-        }
-        if (!localStorage.getItem("vl_reviews")) {
-            localStorage.setItem("vl_reviews", JSON.stringify([]));
-        }
-        if (!localStorage.getItem("vl_config")) {
-            localStorage.setItem("vl_config", JSON.stringify({
-                announcement: "Chào mừng quý khách đến với TUYENVANGLAI.IO.VN! Cổng tuyển vãng lai môn cầu lông quy chuẩn công nghệ cao số 1 Việt Nam. Chúc các lông thủ có những ca cầu đầy năng lượng!",
-                total_slots: 45,
-                online_players: 1820
-            }));
-        }
-    };
-
-    // 3. Đối tượng điều vận toàn cục window.dbEngine tích hợp đám mây Supabase
+    /* ═══════════════════════════════════════════════════════════════
+     * 4. WINDOW.DBENGINE — PROXY THẲNG LÊN SUPABASE
+     *
+     * NGUYÊN TẮC:
+     * - Mọi I/O nghiệp vụ đều qua window.khoDuLieuVinhVien
+     * - Không có localStorage fallback cho dữ liệu ca đấu / slot / đánh giá
+     * - Mất mạng → hiện lỗi → throw để caller xử lý
+     * ═══════════════════════════════════════════════════════════════ */
     window.dbEngine = {
+
+        /**
+         * Đọc dữ liệu từ Supabase.
+         * @param {string} tenBang - Tên bảng Supabase (đúng tên schema)
+         * @param {object} boLoc   - Bộ lọc tùy chọn { eq: {col:val}, order: "col.asc", limit: N }
+         * @returns {Array} Mảng các bản ghi
+         */
         async doc(tenBang, boLoc = {}) {
+            if (!window.khoDuLieuVinhVien) {
+                throw new Error("window.khoDuLieuVinhVien chưa sẵn sàng — kiểm tra ket-noi-supabase.js đã load chưa");
+            }
             try {
-                if (window.khoDuLieuVinhVien) {
-                    const data = await window.khoDuLieuVinhVien.docData(tenBang, boLoc);
-                    if (data && data.length > 0) {
-                        console.log(`[Supabase OK] Bảng ${tenBang}: ${data.length} dòng`);
-                        return data;
-                    }
-                    console.log(`[Supabase Rỗng] Bảng ${tenBang} không có data, chuyển sang LocalStorage Sandbox.`);
-                }
+                const data = await window.khoDuLieuVinhVien.docData(tenBang, boLoc);
+                return Array.isArray(data) ? data : [];
             } catch (e) {
-                console.warn(`[Supabase Lỗi] Chuyển sang LocalStorage Sandbox cho bảng: ${tenBang}`, e.message || e);
-            }
-            
-            // Sandbox LocalStorage fallback
-            const keyMapping = { "cau_hinh_he_thong": "vl_config", "keys": "vl_keys", "slots": "vl_slots", "users": "vl_users", "reviews": "vl_reviews" };
-            const localKey = keyMapping[tenBang] || tenBang;
-            const raw = localStorage.getItem(localKey);
-            let parsed = raw ? JSON.parse(raw) : [];
-            
-            if (tenBang === "cau_hinh_he_thong") {
-                return [parsed];
-            }
-            
-            if (boLoc.eq) {
-                parsed = parsed.filter(item => {
-                    for (const [k, v] of Object.entries(boLoc.eq)) {
-                        if (item[k] !== v) return false;
-                    }
-                    return true;
-                });
-            }
-            if (boLoc.order) {
-                const [c, dir] = boLoc.order.split(".");
-                parsed.sort((a, b) => {
-                    if (dir === "desc") {
-                        return (b[c] > a[c]) ? 1 : -1;
-                    } else {
-                        return (a[c] > b[c]) ? 1 : -1;
-                    }
-                });
-            }
-            if (boLoc.limit) {
-                parsed = parsed.slice(0, boLoc.limit);
-            }
-            return parsed;
-        },
-
-        async ghi(tenBang, payload, boLocMatch = null) {
-            try {
-                if (window.khoDuLieuVinhVien) {
-                    return await window.khoDuLieuVinhVien.ghiData(tenBang, payload, boLocMatch);
-                }
-            } catch (e) {
-                console.warn(`[Supabase Không Khả Dụng] Chuyển đổi ghi Sandbox cho bảng: ${tenBang}`, e);
-            }
-
-            // Sandbox LocalStorage fallback
-            const keyMapping = { "cau_hinh_he_thong": "vl_config", "keys": "vl_keys", "slots": "vl_slots", "users": "vl_users", "reviews": "vl_reviews" };
-            const localKey = keyMapping[tenBang] || tenBang;
-            
-            if (tenBang === "cau_hinh_he_thong") {
-                localStorage.setItem(localKey, JSON.stringify(payload));
-                return [payload];
-            }
-
-            const raw = localStorage.getItem(localKey);
-            let list = raw ? JSON.parse(raw) : [];
-            
-            if (boLocMatch) {
-                // UPDATE dòng khớp điều kiện
-                list = list.map(item => {
-                    let matches = true;
-                    for (const [k, v] of Object.entries(boLocMatch)) {
-                        if (item[k] !== v) matches = false;
-                    }
-                    return matches ? { ...item, ...payload } : item;
-                });
-                localStorage.setItem(localKey, JSON.stringify(list));
-                return [payload];
-            } else {
-                // INSERT dòng mới
-                const newRow = { 
-                    id: Math.random().toString(36).substr(2, 9), 
-                    created_at: new Date().toISOString(), 
-                    ...payload 
-                };
-                list.push(newRow);
-                localStorage.setItem(localKey, JSON.stringify(list));
-                return [newRow];
+                hienLoiMang(`Đọc bảng "${tenBang}"`);
+                throw e; // Ném tiếp để caller biết thao tác thất bại
             }
         },
 
-        async xoa(tenBang, boLocMatch) {
-            try {
-                if (window.khoDuLieuVinhVien) {
-                    return await window.khoDuLieuVinhVien.xoaData(tenBang, boLocMatch);
-                }
-            } catch (e) {
-                console.warn(`[Supabase Không Khả Dụng] Chuyển đổi xóa Sandbox cho bảng: ${tenBang}`, e);
+        /**
+         * Ghi / cập nhật dữ liệu lên Supabase.
+         * @param {string} tenBang    - Tên bảng
+         * @param {object} payload    - Dữ liệu cần ghi
+         * @param {object|null} match - Điều kiện match để UPSERT (null = INSERT mới)
+         * @returns {Array} Bản ghi sau khi ghi
+         */
+        async ghi(tenBang, payload, match = null) {
+            if (!window.khoDuLieuVinhVien) {
+                throw new Error("window.khoDuLieuVinhVien chưa sẵn sàng");
             }
+            try {
+                return await window.khoDuLieuVinhVien.ghiData(tenBang, payload, match);
+            } catch (e) {
+                hienLoiMang(`Ghi vào bảng "${tenBang}"`);
+                throw e;
+            }
+        },
 
-            const keyMapping = { "keys": "vl_keys", "slots": "vl_slots", "users": "vl_users", "reviews": "vl_reviews" };
-            const localKey = keyMapping[tenBang] || tenBang;
-            const raw = localStorage.getItem(localKey);
-            let list = raw ? JSON.parse(raw) : [];
-            
-            const deleted = list.filter(item => {
-                for (const [k, v] of Object.entries(boLocMatch)) {
-                    if (item[k] === v) return true;
-                }
-                return false;
-            });
-
-            list = list.filter(item => {
-                for (const [k, v] of Object.entries(boLocMatch)) {
-                    if (item[k] === v) return false;
-                }
-                return true;
-            });
-
-            localStorage.setItem(localKey, JSON.stringify(list));
-            return deleted;
+        /**
+         * Xóa dữ liệu khỏi Supabase.
+         * @param {string} tenBang  - Tên bảng
+         * @param {object} match    - Điều kiện để xác định dòng cần xóa
+         * @returns {Array} Bản ghi đã xóa
+         */
+        async xoa(tenBang, match) {
+            if (!window.khoDuLieuVinhVien) {
+                throw new Error("window.khoDuLieuVinhVien chưa sẵn sàng");
+            }
+            try {
+                return await window.khoDuLieuVinhVien.xoaData(tenBang, match);
+            } catch (e) {
+                hienLoiMang(`Xóa khỏi bảng "${tenBang}"`);
+                throw e;
+            }
         }
     };
 
-    // Đảm bảo chạy khởi tạo sandbox ngay lập tức để nạp dữ liệu mẫu
-    window.khoiTaoSandbox();
+    /* ═══════════════════════════════════════════════════════════════
+     * 5. GIỮ TƯƠNG THÍCH — Stub hàm sandbox cũ để tránh lỗi runtime
+     * Nếu code cũ nào đó vẫn gọi khoiTaoSandbox() sẽ không crash
+     * ═══════════════════════════════════════════════════════════════ */
+    window.khoiTaoSandbox = function () {
+        console.info("[bo-may-du-lieu v2.0] Sandbox đã bị vô hiệu hóa — hệ thống dùng Supabase thật.");
+    };
 
-    console.log("⚡ [Bộ máy dữ liệu]: Khởi động Sandbox & dbEngine thành công và nạp đầy đủ 63 tỉnh thành & ca đấu mẫu.");
+    console.log("⚡ [bo-may-du-lieu v2.0] Khởi động: 63 tỉnh thành ✅ | dbEngine → Supabase trực tiếp ✅ | localStorage sandbox ❌ đã tắt");
+
 })();

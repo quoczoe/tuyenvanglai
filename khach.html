@@ -14,17 +14,18 @@
     <style>
         /* ══ DESIGN SYSTEM — ĐỒNG BỘ VỚI INDEX ══ */
         :root {
-            --bg-base:    #0a1628;
-            --bg-card:    #1a2332;
-            --bg-card2:   #151e2b;
+            /* Palette: Xanh đêm vừa phải — không quá tối, không quá sáng */
+            --bg-base:      #0f1e35;
+            --bg-card:      #1a2844;
+            --bg-card2:     #162039;
             --accent-green: #00ff88;
             --accent-blue:  #1a73e8;
-            --text-main:  #f0f0f0;
-            --text-muted: #9ca3af;
-            --border:     #2a3f5f;
-            --radius-lg:  16px;
-            --radius-md:  12px;
-            --radius-sm:  8px;
+            --text-main:    #e2e8f0;
+            --text-muted:   #9ca3af;
+            --border:       #1e3a5f;
+            --radius-lg:    16px;
+            --radius-md:    12px;
+            --radius-sm:    8px;
         }
         html, body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -45,7 +46,7 @@
             justify-content: space-between;
             padding: 0 2rem;
             height: 60px;
-            background: rgba(10,22,40,0.95);
+            background: rgba(15,30,53,0.95);
             border-bottom: 1px solid var(--border);
             position: sticky;
             top: 0;
@@ -334,6 +335,110 @@
         @media (max-width: 900px) {
             .kh-filter-bar { position: relative; top: 0; }
         }
+
+        /* ══ MODAL CHI TIẾT KÈO ══ */
+        .kh-modal-overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,0.72); backdrop-filter: blur(5px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 1000; padding: 1rem;
+        }
+        .kh-modal-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            width: 100%; max-width: 580px;
+            max-height: 90vh; overflow-y: auto;
+            position: relative; box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+        }
+        .kh-modal-head {
+            padding: 1.1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+            position: sticky; top: 0; background: var(--bg-card); z-index: 1;
+        }
+        .kh-modal-title { font-size: 1rem; font-weight: 700; color: var(--text-main); }
+        .kh-modal-close {
+            background: transparent; border: none; color: var(--text-muted);
+            font-size: 1.1rem; cursor: pointer; padding: 4px 6px; line-height: 1;
+            border-radius: 6px; transition: all 0.2s; flex-shrink: 0;
+        }
+        .kh-modal-close:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
+        .kh-modal-body { padding: 1.2rem 1.5rem; }
+        .kh-modal-section { margin-bottom: 1.1rem; }
+        .kh-modal-section-title {
+            font-size: 0.7rem; font-weight: 700; color: var(--text-muted);
+            text-transform: uppercase; letter-spacing: 0.06em;
+            margin-bottom: 8px; display: flex; align-items: center; gap: 5px;
+        }
+        .kh-modal-section-title i { color: var(--accent-green); }
+        .kh-modal-info-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+        }
+        .kh-modal-info-item {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+            border-radius: var(--radius-sm); padding: 8px 10px;
+        }
+        .kh-modal-info-lbl { font-size: 0.65rem; color: #64748b; font-weight: 600; text-transform: uppercase; }
+        .kh-modal-info-val { font-size: 0.82rem; font-weight: 600; color: var(--text-main); margin-top: 2px; }
+        .kh-modal-guest-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 0.78rem;
+        }
+        .kh-modal-guest-row:last-child { border-bottom: none; }
+
+        /* ══ SLOT ĐÃ ĐĂNG KÝ ══ */
+        .kh-slot-row {
+            padding: 8px 10px; background: rgba(255,255,255,0.02);
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; gap: 8px;
+        }
+        .kh-slot-info { flex: 1; min-width: 0; }
+        .kh-slot-san { font-size: 0.78rem; font-weight: 600; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .kh-slot-meta { font-size: 0.68rem; color: var(--text-muted); margin-top: 2px; }
+        .kh-btn-huy {
+            padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700;
+            border: 1px solid rgba(239,68,68,0.5); background: rgba(239,68,68,0.06);
+            color: #ef4444; cursor: pointer; transition: all 0.2s; white-space: nowrap; font-family: inherit;
+        }
+        .kh-btn-huy:hover { background: rgba(239,68,68,0.16); }
+
+        /* ══ LỊCH SỬ CHI TIÊU ══ */
+        .kh-history-item {
+            display: grid; grid-template-columns: 1fr auto;
+            gap: 4px; padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 0.78rem;
+        }
+        .kh-history-item:last-child { border-bottom: none; }
+        .kh-history-san { font-weight: 600; color: var(--text-main); }
+        .kh-history-date { font-size: 0.68rem; color: var(--text-muted); margin-top: 1px; }
+        .kh-history-price { font-weight: 700; color: var(--accent-green); text-align: right; align-self: start; }
+        .kh-badge-tt {
+            font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 10px;
+            display: inline-block; margin-top: 3px;
+        }
+        .kh-badge-cho { background: rgba(251,191,36,0.1); color: #fbbf24; border: 1px solid rgba(251,191,36,0.3); }
+        .kh-badge-huy { background: rgba(239,68,68,0.08); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+        .kh-badge-ok  { background: rgba(0,255,136,0.08); color: var(--accent-green); border: 1px solid rgba(0,255,136,0.3); }
+        .kh-badge-bung { background: rgba(156,163,175,0.08); color: #9ca3af; border: 1px solid rgba(156,163,175,0.3); }
+
+        /* ══ ĐÁNH GIÁ VỀ TÔI ══ */
+        .kh-review-about {
+            padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+        }
+        .kh-review-about:last-child { border-bottom: none; }
+        .kh-review-stars { display: flex; gap: 3px; margin-bottom: 4px; }
+
+        /* ══ NÚT XEM CHI TIẾT TRÊN CARD ══ */
+        .kh-btn-detail {
+            padding: 8px 14px; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); background: rgba(255,255,255,0.03);
+            color: var(--text-muted); font-size: 0.78rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; font-family: inherit;
+            display: flex; align-items: center; gap: 5px; white-space: nowrap;
+        }
+        .kh-btn-detail:hover { border-color: #60a5fa; color: #60a5fa; background: rgba(96,165,250,0.08); }
     </style>
 </head>
 <body data-theme="dark">
@@ -466,6 +571,45 @@
             </button>
         </div>
 
+        <!-- CA ĐÃ ĐĂNG KÝ (hiện khi đã đăng nhập) -->
+        <div class="kh-auth-card" id="cardDaKySlot" style="display:none;">
+            <div class="kh-card-title">
+                <i class="fa-solid fa-list-check"></i> Ca Đã Đăng Ký
+            </div>
+            <div id="danhSachDaKySlot">
+                <div style="text-align:center;padding:16px;color:#64748b;font-size:0.82rem;">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+                </div>
+            </div>
+        </div>
+
+        <!-- LỊCH SỬ CHI TIÊU CHI TIẾT (hiện khi đã đăng nhập) -->
+        <div class="kh-auth-card" id="cardLichSuChiTieu" style="display:none;">
+            <div class="kh-card-title">
+                <i class="fa-solid fa-receipt"></i> Lịch Sử Chi Tiêu
+            </div>
+            <div id="chiTietLichSuChiTieu">
+                <div style="text-align:center;padding:16px;color:#64748b;font-size:0.82rem;">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+                </div>
+            </div>
+        </div>
+
+        <!-- ĐÁNH GIÁ VỀ TÔI (hiện khi đã đăng nhập) -->
+        <div class="kh-auth-card" id="cardDanhGiaVeToi" style="display:none;">
+            <div class="kh-card-title">
+                <i class="fa-solid fa-star" style="color:#fbbf24;"></i> Đánh Giá Về Tôi
+            </div>
+            <p style="font-size:0.75rem;color:var(--text-muted);margin-bottom:10px;line-height:1.5;">
+                Nhận xét từ chủ sân sau các ca bạn đã tham gia.
+            </p>
+            <div id="danhGiaVeToiList">
+                <div style="text-align:center;padding:16px;color:#64748b;font-size:0.82rem;">
+                    <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+                </div>
+            </div>
+        </div>
+
     </aside>
 
     <!-- ══ CỘT PHẢI: TÌM KÈO ══ -->
@@ -566,6 +710,27 @@
 
 <!-- TOAST -->
 <div class="toast-container" id="toastContainer"></div>
+
+<!-- MODAL CHI TIẾT KÈO -->
+<div id="modalChiTietKeoOverlay" class="kh-modal-overlay" style="display:none;"
+    onclick="if(event.target===this)window.dongModalChiTietKeo()">
+    <div class="kh-modal-box">
+        <div class="kh-modal-head">
+            <div class="kh-modal-title" id="modalKeoTitle">
+                <i class="fa-solid fa-circle-info" style="color:#00ff88;margin-right:6px;"></i>Chi Tiết Ca Đấu
+            </div>
+            <button class="kh-modal-close" onclick="window.dongModalChiTietKeo()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="kh-modal-body" id="modalKeoBody">
+            <div style="text-align:center;padding:30px;color:#64748b;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px;"></i>
+                Đang tải thông tin ca đấu...
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="ket-noi-supabase.js?v=5.0"></script>
 <script src="bo-may-du-lieu.js?v=5.0"></script>

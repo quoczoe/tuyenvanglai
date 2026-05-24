@@ -15,14 +15,15 @@
     <style>
         /* ══ DESIGN SYSTEM ══ */
         :root {
-            --bg-base:      #0a1628;
-            --bg-card:      #1a2332;
-            --bg-card2:     #151e2b;
+            /* Palette: Xanh đêm vừa phải — không quá tối, không quá sáng */
+            --bg-base:      #0f1e35;
+            --bg-card:      #1a2844;
+            --bg-card2:     #162039;
             --accent-green: #00ff88;
             --accent-blue:  #1a73e8;
-            --text-main:    #f0f0f0;
+            --text-main:    #e2e8f0;
             --text-muted:   #9ca3af;
-            --border:       #2a3f5f;
+            --border:       #1e3a5f;
             --radius-lg:    16px;
             --radius-md:    12px;
             --radius-sm:    8px;
@@ -60,7 +61,7 @@
         .ad-header {
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 1rem; height: 60px;
-            background: rgba(10,22,40,0.95);
+            background: rgba(15,30,53,0.95);
             border-bottom: 1px solid rgba(0,255,136,0.15);
             position: sticky; top: 0; z-index: 200; backdrop-filter: blur(12px);
         }
@@ -867,19 +868,11 @@
             </select>
         </div>
         <div class="ad-form-group">
-            <label class="ad-label">Cấp Độ Gói</label>
-            <select class="ad-select" id="keyFormGoi">
-                <option value="basic">🥉 Basic — Cơ bản</option>
-                <option value="pro">🥈 Pro — Chuyên nghiệp</option>
-                <option value="vip">🥇 VIP — Cao cấp</option>
-            </select>
-        </div>
-        <div class="ad-form-group">
             <label class="ad-label">Trạng Thái Key</label>
             <select class="ad-select" id="keyFormStatus">
-                <option value="inactive">⏳ Chưa kích hoạt</option>
-                <option value="active">✅ Đang chạy</option>
-                <option value="locked">🔒 Bị khóa</option>
+                <option value="Chưa kích hoạt">⏳ Chưa kích hoạt</option>
+                <option value="Đang chạy">✅ Đang chạy</option>
+                <option value="Bị khóa">🔒 Bị khóa</option>
             </select>
         </div>
 

@@ -10,7 +10,7 @@
 (function () {
     // 1. Cấu hình thông số bảo mật Supabase cố định từ Bản đặc tả
     const SUPABASE_URL = "https://kyidswbpfafsoqsdhfpu.supabase.co";
-    const SUPABASE_ANON_KEY = "sb_publishable_3Cb5pwmj_zzz88iNiVNmow_JGUWmDzI";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5aWRzd2JwZmFmc29xc2RoZnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNDI1ODksImV4cCI6MjA5NDkxODU4OX0.ustQ0xaRQqxyCWid1dkC-1YuhX0yA0wQJ5JOyq98TRY";
 
     // 2. Thiết lập Headers tiêu chuẩn để xác thực với Supabase REST API
     const LAY_HEADERS_CHUAN = () => {
