@@ -910,6 +910,13 @@ function xoaBoLoc() {
 <style>/* Bảo vệ: disable text selection */
 *{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none}
 input,textarea,[contenteditable]{user-select:text;-webkit-user-select:text}
+/* ── 2B: Gender pill — không bị highlight khi tap mobile ── */
+.gender-pill-group label,
+.gender-pill-group span {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
 </style>
 <script>
 // ── BẢO VỆ MÃ NGUỒN ──

@@ -623,7 +623,7 @@
                 <i class="fa-solid fa-key"></i> Quản Lý Key
             </button>
             <button class="ad-tab-btn" data-tab="guests" onclick="chuyenTabAdmin('guests')">
-                <i class="fa-solid fa-users"></i> Big Data Khách
+                <i class="fa-solid fa-users"></i> Quản Lý Thành Viên
             </button>
             <button class="ad-tab-btn" data-tab="reviews" onclick="chuyenTabAdmin('reviews')">
                 <i class="fa-solid fa-star-half-stroke"></i> Kiểm Duyệt Đánh Giá
@@ -698,16 +698,16 @@
         </div>
 
         <!-- ════════════════════════════════════════════
-             TAB 2: BIG DATA KHÁCH VÃNG LAI
+             TAB 2: QUẢN LÝ THÀNH VIÊN
              ════════════════════════════════════════════ -->
         <div class="ad-tab-content" id="adminTab_guests">
             <div class="ad-guests-header">
                 <div>
                     <div style="font-size:1rem;font-weight:700;color:var(--text-main);margin-bottom:4px;">
-                        Cơ Sở Dữ Liệu Khách Vãng Lai Toàn Quốc
+                        Quản Lý Thành Viên Toàn Hệ Thống
                     </div>
                     <p style="font-size:0.78rem;color:#64748b;">
-                        Thu thập tự động từ tất cả Host — phục vụ chiến dịch marketing.
+                        Xem thông tin, sửa, khóa, xóa tài khoản thành viên và xem đánh giá.
                     </p>
                 </div>
                 <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -733,11 +733,13 @@
                             <!-- 2 cột riêng biệt thay cho cột gộp "Tổng Chi / Host" cũ -->
                             <th>Tổng Chi Tiêu (VNĐ)</th>
                             <th>Số Host Giao Lưu</th>
+                            <th>⭐ Sao TB</th>
+                            <th>Hành động</th>
                         </tr>
                     </thead>
                     <tbody id="adminGuestsBody">
                         <tr>
-                            <td colspan="7" style="text-align:center;padding:28px;color:#64748b;">
+                            <td colspan="9" style="text-align:center;padding:28px;color:#64748b;">
                                 <i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...
                             </td>
                         </tr>
@@ -1297,5 +1299,21 @@ input, textarea, [contenteditable] { user-select: text; -webkit-user-select: tex
 
 })();
 </script>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL THÀNH VIÊN — dùng chung cho: Sửa thông tin, Xem đánh giá
+     ══════════════════════════════════════════════════════════ -->
+<div id="modalThanhVienOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:2000;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#1a2844;border:1px solid #2d4a6e;border-radius:12px;width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #2d4a6e;flex-shrink:0;">
+            <span id="modalThanhVienTitle" style="font-size:1rem;font-weight:700;color:#e2e8f0;">Sửa Thành Viên</span>
+            <button onclick="window.dongModalThanhVien()" style="background:none;border:none;color:#64748b;font-size:1.3rem;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;" title="Đóng">✕</button>
+        </div>
+        <!-- Body (nội dung inject bởi JS) -->
+        <div id="modalThanhVienBody" style="padding:20px;overflow-y:auto;flex:1;">
+        </div>
+    </div>
+</div>
 </body>
 </html>

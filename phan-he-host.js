@@ -1197,6 +1197,27 @@
         return Number(n || 0).toLocaleString("vi-VN") + "đ";
     }
 
+    /**
+     * 3G — Format input tiền tệ realtime (dấu chấm nghìn kiểu Việt Nam).
+     * Dùng cho input type="text" (KHÔNG dùng cho type="number").
+     * Lưu giá trị thô vào dataset.rawValue để ghi DB.
+     */
+    window._formatInputTienTe = function(input) {
+        const raw = input.value.replace(/\./g, "").replace(/[^0-9]/g, "");
+        const num = parseInt(raw, 10);
+        if (!isNaN(num) && raw !== "") {
+            input.value = num.toLocaleString("vi-VN"); // "150.000"
+        }
+        input.dataset.rawValue = raw || "0";
+    };
+
+    /**
+     * Lấy giá trị số thô từ input đã format (bỏ dấu chấm nghìn).
+     */
+    window._layGiaTriThoInput = function(input) {
+        return parseInt(input.dataset.rawValue || input.value.replace(/\./g, "") || "0", 10);
+    };
+
     function _formatDate(str) {
         if (!str) return "--";
         const d = new Date(str);
@@ -1617,12 +1638,14 @@
                 }
 
                 if (!dropdownEl) return;
-                dropdownEl.innerHTML = data.map((d, i) =>
-                    `<div class="nominatim-item" data-idx="${i}"
-                        onclick="window.chonDiaChi('${d.display_name.replace(/'/g, "\\'").replace(/\n/g,"")}', ${d.lat}, ${d.lon})">
+                dropdownEl.innerHTML = data.map((d, i) => {
+                    // Truyền boundingbox để minimap zoom chính xác
+                    const bb = JSON.stringify(d.boundingbox || []).replace(/"/g, "'");
+                    return `<div class="nominatim-item" data-idx="${i}"
+                        onclick="window.chonDiaChi('${d.display_name.replace(/'/g, "\\'").replace(/\n/g,"")}', ${d.lat}, ${d.lon}, ${bb})">
                         📍 ${d.display_name}
-                    </div>`
-                ).join("");
+                    </div>`;
+                }).join("");
                 dropdownEl.style.display = "block";
             } catch (err) {
                 console.warn("Nominatim lỗi:", err);
@@ -1631,7 +1654,7 @@
         }, 400); // Debounce 400ms
     };
 
-    window.chonDiaChi = function (name, lat, lon) {
+    window.chonDiaChi = function (name, lat, lon, boundingbox) {
         // Điền địa chỉ vào ô input
         const diaChi = document.getElementById("hostCourtAddress");
         if (diaChi) diaChi.value = name;
@@ -1646,14 +1669,23 @@
         const dropdown = document.getElementById("nominatimDropdown");
         if (dropdown) dropdown.style.display = "none";
 
-        // Hiện minimap preview
+        // Hiện minimap preview — dùng boundingbox từ Nominatim nếu có (chính xác hơn)
         const iframe = document.getElementById("minimapPreview");
         if (iframe) {
-            const bboxW  = Number(lon) - 0.008;
-            const bboxE  = Number(lon) + 0.008;
-            const bboxS  = Number(lat) - 0.005;
-            const bboxN  = Number(lat) + 0.005;
-            iframe.src   = `https://www.openstreetmap.org/export/embed.html?bbox=${bboxW},${bboxS},${bboxE},${bboxN}&layer=mapnik&marker=${lat},${lon}`;
+            let bboxStr;
+            if (boundingbox && boundingbox.length === 4) {
+                // Nominatim trả về [lat_min, lat_max, lon_min, lon_max]
+                const bboxS = parseFloat(boundingbox[0]);
+                const bboxN = parseFloat(boundingbox[1]);
+                const bboxW = parseFloat(boundingbox[2]);
+                const bboxE = parseFloat(boundingbox[3]);
+                bboxStr = `${bboxW},${bboxS},${bboxE},${bboxN}`;
+            } else {
+                // Fallback: tính thủ công với delta nhỏ hơn để zoom gần hơn
+                const delta = 0.005;
+                bboxStr = `${Number(lon)-delta},${Number(lat)-delta},${Number(lon)+delta},${Number(lat)+delta}`;
+            }
+            iframe.src   = `https://www.openstreetmap.org/export/embed.html?bbox=${bboxStr}&layer=mapnik&marker=${lat},${lon}`;
             iframe.style.display = "block";
         }
 

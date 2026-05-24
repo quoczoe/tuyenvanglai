@@ -101,6 +101,9 @@
             if (sectionHost)  sectionHost.style.display  = "none";
         }
 
+        // 2F: Auto-fill ngày mặc định sau khi đăng nhập
+        _dinhNgayMacDinh();
+
         _taiThongKeKhach();
         _taiDanhSachHostChoGuestDanhGia();
 
@@ -112,6 +115,23 @@
         _taiDaKySlot();
         _taiLichSuChiTieu();
         _taiDanhGiaVeToi();
+    }
+
+    /**
+     * 2F — Tự động điền ngày mặc định vào các ô date khi dashboard mở.
+     * statsDateFrom = đầu tháng hiện tại, statsDateTo = hôm nay, filterDate = hôm nay
+     */
+    function _dinhNgayMacDinh() {
+        const homNay = new Date().toISOString().split("T")[0]; // "YYYY-MM-DD"
+        const dauThang = homNay.substring(0, 7) + "-01";       // "YYYY-MM-01"
+
+        const fromEl   = document.getElementById("statsDateFrom");
+        const toEl     = document.getElementById("statsDateTo");
+        const filterEl = document.getElementById("filterDate");
+
+        if (fromEl   && !fromEl.value)   fromEl.value   = dauThang;
+        if (toEl     && !toEl.value)     toEl.value     = homNay;
+        if (filterEl && !filterEl.value) filterEl.value = homNay;
     }
 
     /* ═══════════════════════════════════════════════════
@@ -249,6 +269,16 @@
             const user = users[0] || null;
 
             if (user) {
+                // ── 5B: Kiểm tra tài khoản bị khóa ──
+                if (user.trang_thai_tai_khoan === false) {
+                    window.hienToast(
+                        "Tài khoản bị khóa",
+                        "Tài khoản của bạn đã bị Admin tạm khóa. Liên hệ Admin để biết thêm.",
+                        "danger"
+                    );
+                    return;
+                }
+
                 // ── KỊCH BẢN A: SĐT ĐÃ TỒN TẠI → ĐĂNG NHẬP ──
                 if (!user.mat_khau_hash) {
                     // Edge case: user cũ chưa có mật khẩu → modal đặt pass lần đầu
@@ -696,11 +726,22 @@
         const timeFrame  = document.getElementById("filterTimeFrame")?.value || "";
 
         try {
-            // Tải ca_dau và dat_slot song song để đếm khách
+            // Tải ca_dau và dat_slot song song để đếm khách + kiểm tra đã đặt chưa
             const [allCaDau, allDatSlot] = await Promise.all([
                 window.dbEngine.doc("ca_dau"),
                 window.dbEngine.doc("dat_slot").catch(() => [])
             ]);
+
+            // Set các ca_dau mà user hiện tại đã đặt slot (không bị hủy)
+            const daDatSet = new Set();
+            if (window.currentGuest) {
+                const myPhone = window.currentGuest.sdt_khach;
+                allDatSlot.forEach(s => {
+                    if (s.sdt_khach === myPhone && s.trang_thai_di_danh !== "Khách hủy") {
+                        daDatSet.add(s.id_ca_dau);
+                    }
+                });
+            }
 
             // Nhóm dat_slot theo id_ca_dau để đếm
             const datSlotMap = {};
@@ -784,7 +825,7 @@
 
             results.forEach(slot => {
                 const soKhach = (datSlotMap[slot.id] || []).length;
-                const card = _taoCaCard(slot, soKhach);
+                const card = _taoCaCard(slot, soKhach, daDatSet);
                 container.appendChild(card);
             });
         } catch (e) {
@@ -795,9 +836,10 @@
         }
     }
 
-    function _taoCaCard(slot, soKhach = 0) {
+    function _taoCaCard(slot, soKhach = 0, daDatSet = new Set()) {
         const card = document.createElement("div");
         card.className = "slot-card";
+        card.dataset.caId = slot.id; // Để query nút sau khi đặt slot thành công
 
         const isToday = slot.ngay_danh === new Date().toLocaleDateString("sv-SE");
 
@@ -891,9 +933,13 @@
                     <i class="fa-solid fa-circle-info"></i> Chi tiết
                 </button>
                 ${window.currentGuest
-                    ? `<button class="btn-dat-slot" style="flex:1;" onclick="window.datSlot('${slot.id}')">
-                        <i class="fa-solid fa-ticket"></i> ĐẶT SLOT
-                       </button>`
+                    ? (daDatSet.has(slot.id)
+                        ? `<button class="btn-da-dat" style="flex:1;" disabled>
+                            <i class="fa-solid fa-circle-check"></i> ĐÃ ĐẶT
+                           </button>`
+                        : `<button class="btn-dat-slot" style="flex:1;" onclick="window.datSlot('${slot.id}')">
+                            <i class="fa-solid fa-ticket"></i> ĐẶT SLOT
+                           </button>`)
                     : `<button class="btn-dat-slot btn-dat-slot-disabled" style="flex:1;"
                         onclick="window.hienToast('Cần đăng nhập','Đăng nhập để đặt slot.','warning')">
                         <i class="fa-solid fa-lock"></i> ĐẶT SLOT
@@ -948,8 +994,21 @@
             });
 
             window.hienToast("Đặt slot thành công! 🎉", `Mã của bạn: ${maSlot}. Liên hệ host qua Zalo để xác nhận.`, "success");
+
+            // Cập nhật nút ngay lập tức — không reload toàn bộ danh sách
+            const cardEl = document.querySelector(`[data-ca-id="${caDauId}"]`);
+            if (cardEl) {
+                const nutDatSlot = cardEl.querySelector(".btn-dat-slot");
+                if (nutDatSlot) {
+                    nutDatSlot.className = "btn-da-dat";
+                    nutDatSlot.disabled = true;
+                    nutDatSlot.innerHTML = '<i class="fa-solid fa-circle-check"></i> ĐÃ ĐẶT';
+                    nutDatSlot.style.flex = "1";
+                    nutDatSlot.onclick = null;
+                }
+            }
+            // Cập nhật thống kê sidebar
             _taiThongKeKhach();
-            window.timKiemCaDau();
         } catch (e) {
             console.error("Lỗi đặt slot:", e);
             window.hienToast("Lỗi", "Không thể đặt slot. Thử lại sau.", "danger");

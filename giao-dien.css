@@ -2789,3 +2789,203 @@ body::before {
     box-sizing: border-box;
     font-size: 0.75rem;    /* Thu nhỏ font để vừa ô hẹp */
 }
+
+/* ═══════════════════════════════════════════════════════════
+ * ĐẠI TU — RESPONSIVE PC/MOBILE + BUG UI/UX
+ * Thêm vào: 2026-05-24
+ * ═══════════════════════════════════════════════════════════ */
+
+/* ── 2A: Mobile overflow khach.html ── */
+@media (max-width: 900px) {
+    html, body { overflow-x: hidden; max-width: 100vw; }
+    .kh-layout, .kh-right, .kh-sidebar { max-width: 100%; overflow-x: hidden; }
+    .kh-filter-bar { max-width: 100%; overflow: visible; }
+    .kh-keo-card, .slot-card {
+        max-width: 100%;
+        box-sizing: border-box;
+        word-break: break-word;
+    }
+    .slot-card-inner, .slot-card-footer, .slot-price-row, .slot-details-row {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+/* ── 2C: Nút ĐÃ ĐẶT ── */
+.btn-da-dat {
+    background: rgba(0,255,136,0.08);
+    border: 1.5px solid rgba(0,255,136,0.5);
+    color: #00ff88;
+    cursor: not-allowed;
+    opacity: 0.8;
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    pointer-events: none;
+}
+
+/* ── 2D: Card kèo PC — cùng chiều cao, action row dính đáy ── */
+@media (min-width: 901px) {
+    #slotsSearchResultContainer { align-items: stretch; }
+    .slot-card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .slot-card-inner {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .slot-card-body { flex: 1; }
+    .slot-card-footer {
+        margin-top: auto;
+        padding-top: 10px;
+        border-top: 1px solid rgba(255,255,255,0.06);
+    }
+}
+
+/* ── 2E: Mobile card — trình độ + badge dòng riêng ── */
+@media (max-width: 600px) {
+    .kh-trinh-do-row {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        font-size: 0.75rem;
+    }
+    .kh-da-dang-ky-badge {
+        display: block;
+        margin-top: 6px;
+        font-size: 0.75rem;
+        color: #9ca3af;
+    }
+    .slot-details-row {
+        flex-direction: column;
+        gap: 4px;
+    }
+}
+
+/* ── 3A: Mobile overflow host.html ── */
+@media (max-width: 900px) {
+    .hs-form-section, .hs-form-row, .shuttlecock-card {
+        max-width: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+    }
+    .hs-form-row {
+        flex-wrap: wrap;
+    }
+    .hs-form-row > div, .hs-form-row > label {
+        min-width: 0;
+        box-sizing: border-box;
+    }
+}
+
+/* ── 3B: Ẩn icon native date/time picker, giữ emoji ── */
+.hs-picker-wrap input[type="time"]::-webkit-calendar-picker-indicator,
+.hs-picker-wrap input[type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    cursor: pointer;
+    width: 2.4rem;
+    height: 100%;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+/* ── 3E: Bảng cầu — header không bị cắt ── */
+.shuttlecock-card .sc-row-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+.shuttlecock-card label {
+    font-size: 0.72rem;
+    overflow: visible;
+}
+@media (max-width: 480px) {
+    .shuttlecock-card .sc-row-2col { grid-template-columns: 1fr; }
+}
+
+/* ── 4B: Dropdown hành động thành viên ── */
+.ad-action-dropdown-wrap {
+    position: relative;
+    display: inline-block;
+}
+.ad-action-dropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    z-index: 200;
+    background: #1a2844;
+    border: 1px solid #2d4a6e;
+    border-radius: 8px;
+    min-width: 190px;
+    padding: 6px 0;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.ad-action-dropdown button {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 8px 14px;
+    background: none;
+    border: none;
+    color: #e2e8f0;
+    font-size: 0.82rem;
+    cursor: pointer;
+    font-family: inherit;
+}
+.ad-action-dropdown button:hover { background: rgba(255,255,255,0.07); }
+.ad-action-dropdown button.danger { color: #ef4444; }
+
+/* ── 4E: Badge sao + danh sách đánh giá ── */
+.sao-badge {
+    display: inline-block;
+    background: rgba(251,191,36,0.15);
+    border: 1px solid rgba(251,191,36,0.4);
+    color: #fbbf24;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.dg-item {
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.03);
+}
+.dg-item-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+}
+.dg-loai-badge {
+    font-size: 0.72rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+.dg-loai-badge.guest {
+    background: rgba(99,102,241,0.15);
+    color: #818cf8;
+    border: 1px solid rgba(99,102,241,0.3);
+}
+.dg-loai-badge.host {
+    background: rgba(0,255,136,0.1);
+    color: #00ff88;
+    border: 1px solid rgba(0,255,136,0.25);
+}
+.dg-item-noi-dung {
+    font-size: 0.85rem;
+    color: #e2e8f0;
+    line-height: 1.5;
+}

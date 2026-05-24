@@ -780,9 +780,22 @@
             /* Tiêu đề giảm thêm 20% so với 768px breakpoint */
             .title-brand { font-size: clamp(1.12rem, 7.2vw, 1.6rem) !important; }
             .btn-cta-hero { padding: 12px 28px; font-size: 0.95rem; }
-            .hud-metrics { width: 100%; justify-content: space-around; }
+            /* HUD mobile: flex-wrap để không overlap, label xuống dòng */
+            .hud-metrics {
+                width: 100%;
+                justify-content: space-around;
+                flex-wrap: wrap;
+                gap: 10px;
+                padding: 10px;
+            }
             .metric-divider { display: none; }
-            .metric-item { min-width: unset; }
+            .metric-item {
+                min-width: unset;
+                flex: 1 1 40%;
+                text-align: center;
+            }
+            .metric-value { font-size: clamp(1.3rem, 5.5vw, 1.8rem); }
+            .metric-label { font-size: 0.65rem; white-space: normal; line-height: 1.3; }
 
             /* Fix HOST WORKSTATION badge overflow */
             .badge-gold {
@@ -1218,8 +1231,11 @@
             // ── Bước 3: Hiển thị popup thông báo nếu có ──
             try {
                 const cfgList = await window.dbEngine.doc("cau_hinh_he_thong");
-                const cfg = (cfgList || [])[0] || {};
-                const msg = cfg.announcement || cfg.noi_dung_thong_bao || "";
+                // Tìm đúng row "popup_chinh" (không dùng cfgList[0] vì thứ tự có thể khác)
+                const popupRow = (cfgList || []).find(function(c) { return c.id === "popup_chinh"; })
+                              || (cfgList || [])[0]
+                              || {};
+                const msg = popupRow.noi_dung_thong_bao || popupRow.announcement || "";
                 if (msg.trim()) {
                     const overlay  = document.getElementById("systemPopupOverlay");
                     const content  = document.getElementById("systemPopupContent");

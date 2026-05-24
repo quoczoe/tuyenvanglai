@@ -25,6 +25,8 @@
     const MAT_MAU_ADMIN = "TVL@2026";
 
     let _editingKeyId = null; // ma_key đang được chỉnh sửa
+    // reviewMap — module-level để xemDanhGiaThanhVien() và xoaDanhGia() truy cập sau _taiDanhSachKhach()
+    let reviewMap = {};
 
     /* ═══════════════════════════════════════════════════
      * 1. KHỞI TẠO TRANG ADMIN
@@ -444,22 +446,41 @@
     };
 
     /* ═══════════════════════════════════════════════════
-     * 6. BIG DATA KHÁCH VÃNG LAI
-     * Tải song song: dat_slot + nguoi_dung + ca_dau
+     * 6. QUẢN LÝ THÀNH VIÊN
+     * Tải song song: dat_slot + nguoi_dung + ca_dau + danh_gia_tin_dung
      * Tổng hợp: chỉ đếm ca + tính tiền khi da_chot_ca = true
+     * reviewMap: sdt → { saoArr[], danhGia[] } — module-level để các hàm khác dùng
      * ═══════════════════════════════════════════════════ */
     async function _taiDanhSachKhach() {
         const tbody = document.getElementById("adminGuestsBody");
         if (!tbody) return;
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:16px;color:#64748b;">
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:16px;color:#64748b;">
             <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>`;
         try {
-            // Tải song song 3 bảng để tổng hợp dữ liệu khách
-            const [datSlots, khachVL, caDau] = await Promise.all([
+            // Tải song song 4 bảng để tổng hợp dữ liệu thành viên
+            const [datSlots, khachVL, caDau, allDanhGia] = await Promise.all([
                 window.dbEngine.doc("dat_slot"),
                 window.dbEngine.doc("nguoi_dung"),
-                window.dbEngine.doc("ca_dau")
+                window.dbEngine.doc("ca_dau"),
+                window.dbEngine.doc("danh_gia_tin_dung")
             ]);
+
+            // Xây dựng reviewMap module-level: sdt → { saoArr, danhGia }
+            reviewMap = {};
+            (allDanhGia || []).forEach(r => {
+                const sdt = r.sdt_nguoi_bi_danh_gia;
+                if (!sdt) return;
+                if (!reviewMap[sdt]) reviewMap[sdt] = { saoArr: [], danhGia: [] };
+                reviewMap[sdt].saoArr.push(r.so_sao);
+                reviewMap[sdt].danhGia.push(r);
+            });
+
+            // Hàm tính sao trung bình
+            function _tbSao(sdt) {
+                const data = reviewMap[sdt];
+                if (!data || data.saoArr.length === 0) return null;
+                return (data.saoArr.reduce((a, b) => a + b, 0) / data.saoArr.length).toFixed(1);
+            }
 
             // Bản đồ id ca_dau → thông tin ca (da_chot_ca, gia_nam, gia_nu, ma_key_host)
             const mapCaDau = new Map();
@@ -468,7 +489,7 @@
             // Bản đồ sdt_khach → thông tin tổng hợp của khách
             const map = new Map();
 
-            // Khởi tạo từ bảng nguoi_dung
+            // Khởi tạo từ bảng nguoi_dung — lưu thêm vai_tro, trang_thai_tai_khoan
             khachVL.forEach(u => {
                 const sdt = u.sdt_khach || "";
                 if (!sdt) return;
@@ -479,7 +500,9 @@
                         ngayTG:    u.created_at || u.ngay_tham_gia || null,
                         soBuiloi:  0,
                         tongChi:   0,
-                        hosts:     new Set()
+                        hosts:     new Set(),
+                        vai_tro:   u.vai_tro || "guest",
+                        trang_thai_tai_khoan: u.trang_thai_tai_khoan !== false
                     });
                 }
             });
@@ -498,7 +521,9 @@
                         ngayTG:   slot.thoi_gian_dat || null,
                         soBuiloi: 0,
                         tongChi:  0,
-                        hosts:    new Set()
+                        hosts:    new Set(),
+                        vai_tro:  "guest",
+                        trang_thai_tai_khoan: true
                     });
                 }
                 const info = map.get(sdt);
@@ -517,14 +542,45 @@
             _st("adminGuestCount", `${list.length} thành viên`);
 
             if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:#64748b;">
-                    Chưa có khách nào trong hệ thống.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:20px;color:#64748b;">
+                    Chưa có thành viên nào trong hệ thống.</td></tr>`;
                 return;
             }
 
             tbody.innerHTML = "";
             list.forEach((g, i) => {
                 const d  = g.ngayTG ? new Date(g.ngayTG).toLocaleDateString("vi-VN") : "--";
+                const tb = _tbSao(g.sdt);
+                const soLuotDG = reviewMap[g.sdt]?.saoArr.length || 0;
+
+                // Cell ⭐ Sao TB
+                const saoCellHTML = tb
+                    ? `<span class="sao-badge">${tb} ⭐</span>
+                       <span style="font-size:0.72rem;color:#9ca3af;display:block;margin-top:2px;">(${soLuotDG} lượt)</span>
+                       <button class="btn-mini" style="margin-top:4px;"
+                           onclick="window.xemDanhGiaThanhVien('${g.sdt}', '${(g.ten||"").replace(/'/g,"\\'")}')">
+                           📋 Chi tiết
+                       </button>`
+                    : `<span style="color:#6b7280;font-size:0.78rem;">Chưa có</span>`;
+
+                // Cell Hành động — dropdown
+                const trangThaiTK = g.trang_thai_tai_khoan !== false;
+                const hanhDongHTML = `
+                    <div class="ad-action-dropdown-wrap">
+                        <button class="btn-mini" onclick="window.moHanhDongThanhVien('${g.sdt}', this)">
+                            ⚙️ Hành động ▾
+                        </button>
+                        <div class="ad-action-dropdown" id="dropdown_${g.sdt.replace(/\+/g,'plus')}" style="display:none;">
+                            <button onclick="window.moModalSuaThanhVien('${g.sdt}')">✏️ Sửa thông tin</button>
+                            <button onclick="window.doiVaiTroThanhVien('${g.sdt}', '${g.vai_tro}')">🔄 Đổi vai trò</button>
+                            <button onclick="window.capLaiMatKhau('${g.sdt}')">🔑 Cấp lại mật khẩu</button>
+                            <button onclick="window.khoaMoTaiKhoan('${g.sdt}', ${trangThaiTK})">
+                                ${trangThaiTK ? '🔒 Khóa TK' : '🔓 Mở khóa'}
+                            </button>
+                            <button class="danger" onclick="window.xoaTaiKhoan('${g.sdt}')">🗑️ Xóa TK</button>
+                        </div>
+                    </div>`;
+
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
                 <td style="color:#64748b;font-size:0.8rem;">${i + 1}</td>
@@ -538,12 +594,14 @@
                 <td style="font-size:0.8rem;color:#94a3b8;">${d}</td>
                 <td style="font-weight:700;color:#00ff88;">${g.soBuiloi} ca</td>
                 <td style="font-weight:700;color:#00ff88;">${_fVND(g.tongChi)}</td>
-                <td style="font-weight:700;color:#a78bfa;text-align:center;">${g.hosts.size}</td>`;
+                <td style="font-weight:700;color:#a78bfa;text-align:center;">${g.hosts.size}</td>
+                <td style="text-align:center;">${saoCellHTML}</td>
+                <td>${hanhDongHTML}</td>`;
                 tbody.appendChild(tr);
             });
         } catch (e) {
-            console.error("[Admin] Lỗi tải khách:", e);
-            tbody.innerHTML = `<tr><td colspan="7" style="color:#ef4444;text-align:center;padding:16px;">
+            console.error("[Admin] Lỗi tải thành viên:", e);
+            tbody.innerHTML = `<tr><td colspan="9" style="color:#ef4444;text-align:center;padding:16px;">
                 Lỗi tải dữ liệu: ${e.message || e}</td></tr>`;
         }
     }
@@ -553,6 +611,260 @@
         document.querySelectorAll("#adminGuestsBody tr").forEach(r => {
             r.style.display = !q || r.textContent.toLowerCase().includes(q) ? "" : "none";
         });
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * 6B. CRUD THÀNH VIÊN — Dropdown hành động, Modal sửa, Xóa, Khóa/Mở
+     * ═══════════════════════════════════════════════════ */
+
+    // Toggle dropdown hành động — đóng tất cả dropdown khác trước khi mở cái này
+    window.moHanhDongThanhVien = function (sdt, btnEl) {
+        const safeSdt = sdt.replace(/\+/g, "plus");
+        document.querySelectorAll(".ad-action-dropdown").forEach(d => {
+            if (d.id !== "dropdown_" + safeSdt) d.style.display = "none";
+        });
+        const dd = document.getElementById("dropdown_" + safeSdt);
+        if (dd) dd.style.display = (dd.style.display === "none" ? "block" : "none");
+    };
+
+    // Click ngoài vùng dropdown → đóng tất cả
+    document.addEventListener("click", function (e) {
+        if (!e.target.closest(".ad-action-dropdown-wrap")) {
+            document.querySelectorAll(".ad-action-dropdown").forEach(d => {
+                d.style.display = "none";
+            });
+        }
+    });
+
+    // Mở modal sửa thông tin thành viên với dữ liệu pre-filled
+    window.moModalSuaThanhVien = async function (sdt) {
+        try {
+            const users = await window.dbEngine.doc("nguoi_dung");
+            const u = (users || []).find(x => x.sdt_khach === sdt);
+            if (!u) {
+                window.hienToast("Lỗi", "Không tìm thấy thành viên.", "danger");
+                return;
+            }
+            document.getElementById("modalThanhVienTitle").textContent = "Sửa Thành Viên: " + sdt;
+            document.getElementById("modalThanhVienBody").innerHTML = `
+                <div style="display:flex;flex-direction:column;gap:14px;">
+                    <div>
+                        <label style="font-size:0.78rem;color:#94a3b8;display:block;margin-bottom:4px;">Họ tên</label>
+                        <input type="text" id="editTenKhach" value="${(u.ten_khach||'').replace(/"/g,'&quot;')}"
+                            placeholder="Họ tên"
+                            style="width:100%;padding:9px 12px;background:#0f1e35;border:1px solid #2d4a6e;
+                                   border-radius:8px;color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.78rem;color:#94a3b8;display:block;margin-bottom:4px;">SĐT Zalo</label>
+                        <input type="tel" id="editSdtZalo" value="${u.sdt_zalo||''}"
+                            placeholder="SĐT Zalo"
+                            style="width:100%;padding:9px 12px;background:#0f1e35;border:1px solid #2d4a6e;
+                                   border-radius:8px;color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.78rem;color:#94a3b8;display:block;margin-bottom:4px;">Facebook</label>
+                        <input type="url" id="editFacebook" value="${u.facebook_link||''}"
+                            placeholder="Link Facebook"
+                            style="width:100%;padding:9px 12px;background:#0f1e35;border:1px solid #2d4a6e;
+                                   border-radius:8px;color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;">
+                    </div>
+                    <div>
+                        <label style="font-size:0.78rem;color:#94a3b8;display:block;margin-bottom:4px;">Vai trò</label>
+                        <select id="editVaiTro"
+                            style="width:100%;padding:9px 12px;background:#0f1e35;border:1px solid #2d4a6e;
+                                   border-radius:8px;color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;">
+                            <option value="guest" ${u.vai_tro==='guest'||!u.vai_tro ? 'selected':''}>Guest (Khách)</option>
+                            <option value="host"  ${u.vai_tro==='host' ? 'selected':''}>Host (Chủ sân)</option>
+                        </select>
+                    </div>
+                    <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:6px;">
+                        <button onclick="window.dongModalThanhVien()"
+                            style="padding:9px 20px;background:rgba(255,255,255,0.06);border:1px solid #2d4a6e;
+                                   border-radius:8px;color:#94a3b8;cursor:pointer;font-size:0.9rem;">
+                            Hủy
+                        </button>
+                        <button onclick="window.luuSuaThanhVien('${sdt}')"
+                            style="padding:9px 20px;background:linear-gradient(135deg,#00d4ff,#00ff88);
+                                   border:none;border-radius:8px;color:#0f1e35;font-weight:700;cursor:pointer;font-size:0.9rem;">
+                            💾 Lưu thay đổi
+                        </button>
+                    </div>
+                </div>`;
+            document.getElementById("modalThanhVienOverlay").style.display = "flex";
+        } catch (e) {
+            window.hienToast("Lỗi", "Không thể tải dữ liệu thành viên.", "danger");
+        }
+    };
+
+    // Lưu thay đổi thông tin thành viên vào Supabase
+    window.luuSuaThanhVien = async function (sdt) {
+        const payload = {};
+        const ten   = document.getElementById("editTenKhach")?.value?.trim();
+        const zalo  = document.getElementById("editSdtZalo")?.value?.trim();
+        const fb    = document.getElementById("editFacebook")?.value?.trim();
+        const role  = document.getElementById("editVaiTro")?.value;
+        if (ten  !== undefined && ten  !== "") payload.ten_khach     = ten;
+        if (zalo !== undefined)                payload.sdt_zalo      = zalo  || null;
+        if (fb   !== undefined)                payload.facebook_link = fb    || null;
+        if (role)                              payload.vai_tro       = role;
+
+        try {
+            await window.dbEngine.ghi("nguoi_dung", payload, { sdt_khach: sdt });
+            window.hienToast("Thành công ✅", "Đã cập nhật thông tin thành viên.", "success");
+            window.dongModalThanhVien();
+            _taiDanhSachKhach(); // Reload bảng
+        } catch (e) {
+            window.hienToast("Lỗi", "Không thể lưu: " + (e.message || "").slice(0, 80), "danger");
+        }
+    };
+
+    // Đổi vai trò guest ↔ host
+    window.doiVaiTroThanhVien = async function (sdt, vaiTroHienTai) {
+        const moi = vaiTroHienTai === "guest" ? "host" : "guest";
+        if (!confirm(`Đổi vai trò của ${sdt}\ntừ "${vaiTroHienTai}" → "${moi}"?`)) return;
+        try {
+            await window.dbEngine.ghi("nguoi_dung", { vai_tro: moi }, { sdt_khach: sdt });
+            window.hienToast("Đã đổi vai trò ✅", `${sdt} giờ là: ${moi}`, "success");
+            _taiDanhSachKhach();
+        } catch (e) {
+            window.hienToast("Lỗi", "Không thể đổi vai trò.", "danger");
+        }
+    };
+
+    // Cấp lại mật khẩu — xóa hash, user đặt lại khi đăng nhập kế tiếp
+    window.capLaiMatKhau = async function (sdt) {
+        if (!confirm(`Reset mật khẩu cho ${sdt}?\nLần đăng nhập kế tiếp họ sẽ được đặt mật khẩu mới.`)) return;
+        try {
+            await window.dbEngine.ghi("nguoi_dung", { mat_khau_hash: null }, { sdt_khach: sdt });
+            window.hienToast("Đã reset ✅", "Mật khẩu đã bị xóa. User đặt mới khi đăng nhập.", "success");
+        } catch (e) {
+            window.hienToast("Lỗi", "Không thể reset mật khẩu.", "danger");
+        }
+    };
+
+    // Khóa hoặc mở khóa tài khoản (toggle trang_thai_tai_khoan)
+    window.khoaMoTaiKhoan = async function (sdt, trangThaiHienTai) {
+        const moiLaActive = !trangThaiHienTai; // Toggle: true → false hoặc ngược lại
+        const label = moiLaActive ? "Mở khóa" : "Khóa";
+        if (!confirm(`${label} tài khoản ${sdt}?`)) return;
+        try {
+            await window.dbEngine.ghi("nguoi_dung", { trang_thai_tai_khoan: moiLaActive }, { sdt_khach: sdt });
+            window.hienToast(
+                label + " thành công ✅",
+                `Tài khoản ${sdt} đã ${moiLaActive ? "được mở khóa" : "bị khóa"}.`,
+                moiLaActive ? "success" : "warning"
+            );
+            _taiDanhSachKhach();
+        } catch (e) {
+            window.hienToast("Lỗi", `Không thể ${label.toLowerCase()} tài khoản.`, "danger");
+        }
+    };
+
+    // Xóa tài khoản — double confirm, chỉ xóa nguoi_dung (giữ lịch sử dat_slot)
+    window.xoaTaiKhoan = async function (sdt) {
+        if (!confirm(`⚠️ XÓA VĨNH VIỄN tài khoản ${sdt}?\nHành động này KHÔNG thể hoàn tác!`)) return;
+        if (!confirm(`Xác nhận lần 2: Xóa tài khoản ${sdt}?`)) return;
+        try {
+            await window.dbEngine.xoa("nguoi_dung", { sdt_khach: sdt });
+            window.hienToast("Đã xóa ✅", `Tài khoản ${sdt} đã bị xóa vĩnh viễn.`, "warning");
+            _taiDanhSachKhach();
+        } catch (e) {
+            window.hienToast("Lỗi", "Không thể xóa tài khoản.", "danger");
+        }
+    };
+
+    // Đóng modal thành viên
+    window.dongModalThanhVien = function () {
+        const overlay = document.getElementById("modalThanhVienOverlay");
+        if (overlay) overlay.style.display = "none";
+    };
+
+    // Click outside modal → đóng
+    document.addEventListener("click", function (e) {
+        const overlay = document.getElementById("modalThanhVienOverlay");
+        if (overlay && e.target === overlay) window.dongModalThanhVien();
+    });
+
+    /* ═══════════════════════════════════════════════════
+     * 6C. XEM CHI TIẾT ĐÁNH GIÁ CỦA THÀNH VIÊN (modal)
+     * Dùng reviewMap đã được build trong _taiDanhSachKhach()
+     * ═══════════════════════════════════════════════════ */
+
+    window.xemDanhGiaThanhVien = function (sdt, tenHienThi) {
+        const data    = reviewMap[sdt];
+        const dsList  = data?.danhGia || [];
+        const tbSao   = dsList.length
+            ? (dsList.reduce((s, r) => s + (r.so_sao || 0), 0) / dsList.length).toFixed(1)
+            : "—";
+
+        const rowsHTML = dsList.length === 0
+            ? `<p style="color:#9ca3af;text-align:center;padding:20px 0;">Chưa có đánh giá nào.</p>`
+            : dsList.map(r => {
+                const ngay = r.created_at
+                    ? new Date(r.created_at).toLocaleDateString("vi-VN")
+                    : "--";
+                const loaiClass   = r.loai_danh_gia === "GuestToHost" ? "host" : "guest";
+                const loaiLabel   = r.loai_danh_gia === "GuestToHost"
+                    ? "🏟️→👤 Khách đánh Host"
+                    : "👤→🏟️ Host đánh Khách";
+                const noiDung = r.nhan_xet
+                    ? r.nhan_xet.replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                    : "<em style='color:#6b7280'>Không có nhận xét</em>";
+                return `
+                <div class="dg-item">
+                    <div class="dg-item-header">
+                        <span class="sao-badge">${r.so_sao || "?"} ⭐</span>
+                        <span class="dg-loai-badge ${loaiClass}">${loaiLabel}</span>
+                        <span style="font-size:0.72rem;color:#6b7280;margin-left:auto;">${ngay}</span>
+                    </div>
+                    <div class="dg-item-noi-dung">${noiDung}</div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;">
+                        <span style="font-size:0.72rem;color:#9ca3af;">Người viết: ${r.sdt_nguoi_viet || "?"}</span>
+                        <button onclick="window.xoaDanhGia('${r.id}','${sdt}','${(tenHienThi||sdt).replace(/'/g,"\\'")}')"
+                            style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);
+                                   color:#ef4444;padding:3px 10px;border-radius:6px;font-size:0.72rem;cursor:pointer;">
+                            🗑️ Xóa
+                        </button>
+                    </div>
+                </div>`;
+            }).join("");
+
+        const tenRut = (tenHienThi || sdt).replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        document.getElementById("modalThanhVienTitle").textContent =
+            `Đánh giá về: ${tenRut} — TB: ${tbSao} ⭐ (${dsList.length} lượt)`;
+        document.getElementById("modalThanhVienBody").innerHTML = `
+            <div class="dg-list" style="max-height:55vh;overflow-y:auto;padding-right:4px;">
+                ${rowsHTML}
+            </div>
+            <div style="text-align:right;margin-top:14px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.06);">
+                <button onclick="window.dongModalThanhVien()"
+                    style="padding:9px 20px;background:rgba(255,255,255,0.06);border:1px solid #2d4a6e;
+                           border-radius:8px;color:#94a3b8;cursor:pointer;font-size:0.9rem;">
+                    Đóng
+                </button>
+            </div>`;
+        document.getElementById("modalThanhVienOverlay").style.display = "flex";
+    };
+
+    // Xóa một bài đánh giá khỏi DB + cập nhật reviewMap + reload modal
+    window.xoaDanhGia = async function (idDanhGia, sdt, tenHienThi) {
+        if (!confirm("Xóa bài đánh giá này?\nHành động không thể hoàn tác.")) return;
+        try {
+            await window.dbEngine.xoa("danh_gia_tin_dung", { id: idDanhGia });
+            // Cập nhật reviewMap local (không cần reload toàn bộ từ server)
+            if (reviewMap[sdt]) {
+                reviewMap[sdt].danhGia = reviewMap[sdt].danhGia.filter(r => r.id !== idDanhGia);
+                reviewMap[sdt].saoArr  = reviewMap[sdt].danhGia.map(r => r.so_sao);
+            }
+            window.hienToast("Đã xóa ✅", "Bài đánh giá đã bị xóa.", "warning");
+            // Mở lại modal để refresh nội dung
+            window.xemDanhGiaThanhVien(sdt, tenHienThi);
+            // Reload bảng thành viên để cập nhật cột sao TB
+            _taiDanhSachKhach();
+        } catch (e) {
+            window.hienToast("Lỗi", "Không thể xóa đánh giá.", "danger");
+        }
     };
 
     /* ═══════════════════════════════════════════════════

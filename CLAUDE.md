@@ -679,6 +679,53 @@ input, textarea, [contenteditable] {
 **Kiểm tra chất lượng:**
 - [x] Syntax check `node --check` tất cả 4 file JS → ✅ 0 lỗi
 
+#### ✅ Hoàn thành TRONG phiên này (phiên 4 — 2026-05-24): ĐẠI TU Responsive + Bug UI/UX + Admin Nâng Cấp
+
+**Phân hệ 1 — index.html:**
+- [x] Fix popup logic: dùng `.find(c => c.id === "popup_chinh")` thay vì `cfgList[0]` (order không đảm bảo)
+- [x] Fix mobile HUD ≤480px: `flex-wrap:wrap`, `flex:1 1 40%`, `clamp` font-size cho value/label
+
+**Phân hệ 2 — khach.html + phan-he-khach-choi.js:**
+- [x] `giao-dien.css`: Mobile overflow fix (`overflow-x:hidden`, `max-width:100%`, `word-break:break-word`)
+- [x] `giao-dien.css`: `.btn-da-dat` CSS, PC card height equalize (`.slot-card{display:flex;flex-direction:column}`)
+- [x] `khach.html`: Gender pill `-webkit-user-select:none; -webkit-tap-highlight-color:transparent`
+- [x] `phan-he-khach-choi.js`: `daDatSet` — check slot đã đặt khi render, truyền vào `_taoCaCard()`
+- [x] `phan-he-khach-choi.js`: Button "ĐÃ ĐẶT" inline update sau đặt slot thành công (không reload trang)
+- [x] `phan-he-khach-choi.js`: `_dinhNgayMacDinh()` — auto-fill đầu tháng / hôm nay khi mở dashboard
+- [x] `phan-he-khach-choi.js`: Block đăng nhập khi `trang_thai_tai_khoan === false` → toast + return
+
+**Phân hệ 3 — host.html + phan-he-host.js:**
+- [x] `giao-dien.css`: Mobile overflow host, ẩn native time/date picker icon (`::-webkit-calendar-picker-indicator`)
+- [x] `host.html`: Tăng max-width 1280px → 1600px (2-col layout đã sẵn)
+- [x] `host.html`: SVG shuttlecock inline thay Font Awesome feather icon cho checkbox "Cầu"
+- [x] `phan-he-host.js`: Fix Nominatim bbox — dùng `d.boundingbox` từ API, fallback `±0.005`
+- [x] `phan-he-host.js`: `_formatInputTienTe()` + `_layGiaTriThoInput()` helpers (utility, không gắn oninput vào type=number)
+
+**Phân hệ 4 — admin.html + phan-he-quan-tri.js:**
+- [x] `admin.html`: Đổi tab "Big Data Khách" → "Quản Lý Thành Viên" + cập nhật title/description
+- [x] `admin.html`: Thêm `<th>⭐ Sao TB</th>` + `<th>Hành động</th>`, colspan 7→9
+- [x] `admin.html`: Modal `#modalThanhVienOverlay` + `#modalThanhVienBody` trước `</body>`
+- [x] `phan-he-quan-tri.js`: `let reviewMap = {}` module-level
+- [x] `phan-he-quan-tri.js`: `_taiDanhSachKhach()` — load `danh_gia_tin_dung` song song, build `reviewMap`, render cell Sao TB + Hành động dropdown (9 cột)
+- [x] `phan-he-quan-tri.js`: `moHanhDongThanhVien()` + click-outside listener
+- [x] `phan-he-quan-tri.js`: `moModalSuaThanhVien()` — pre-filled form, show modal
+- [x] `phan-he-quan-tri.js`: `luuSuaThanhVien()` — PATCH nguoi_dung, reload table
+- [x] `phan-he-quan-tri.js`: `doiVaiTroThanhVien()` — toggle guest↔host
+- [x] `phan-he-quan-tri.js`: `capLaiMatKhau()` — set `mat_khau_hash = null`
+- [x] `phan-he-quan-tri.js`: `khoaMoTaiKhoan()` — toggle `trang_thai_tai_khoan`
+- [x] `phan-he-quan-tri.js`: `xoaTaiKhoan()` — double confirm + DELETE (giữ dat_slot)
+- [x] `phan-he-quan-tri.js`: `dongModalThanhVien()` + click-outside-modal listener
+- [x] `phan-he-quan-tri.js`: `xemDanhGiaThanhVien()` — modal chi tiết đánh giá, phân màu Host(green)/Guest(purple)
+- [x] `phan-he-quan-tri.js`: `xoaDanhGia()` — xóa bài đánh giá, cập nhật reviewMap local, reload modal + bảng
+
+**Kiểm tra chất lượng phiên 4:**
+- [x] Syntax check `node --check` tất cả 5 file JS → ✅ 0 lỗi
+
+**SQL cần user chạy thủ công (Phân hệ 5 — Supabase Dashboard):**
+- [ ] `ALTER TABLE nguoi_dung ADD COLUMN IF NOT EXISTS trang_thai_tai_khoan BOOLEAN NOT NULL DEFAULT TRUE`
+- [ ] RLS policies đủ cho 6 bảng (xem hướng dẫn trong plan file)
+- [ ] INSERT cấu hình rows với ON CONFLICT DO NOTHING
+
 ---
 
 ### 2️⃣ KIẾN TRÚC HIỆN TẠI
