@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="components.css?v=6.0">
+    <!-- components.css không dùng trong admin.html — đã tháo để tránh xung đột -->
     <style>
         /* ══ DESIGN SYSTEM ══ */
         :root {
@@ -437,19 +437,52 @@
 
         /* Auth: adminConsole ẩn theo mặc định — adminAuthPanel hiện ngay (không phụ thuộc JS) */
         #adminConsole   { display: none; }
+
+        /* ═══════════════════════════════════════════════════════════════════
+         * EMERGENCY FALLBACK: Đảm bảo nội dung luôn hiển thị
+         * Áp dụng màu text rõ ràng, background rõ ràng, không transparent
+         * ═══════════════════════════════════════════════════════════════════ */
+        .ad-header { color: var(--accent-green) !important; }
+        .ad-brand-text { color: var(--accent-green) !important; }
+        .ad-auth-card { background: #1a2844 !important; color: #e2e8f0 !important; }
+        .ad-auth-title { color: #00ff88 !important; }
+        .ad-auth-sub { color: #9ca3af !important; }
+        .ad-auth-badge { border-color: #00ff88 !important; }
+
     </style>
 </head>
 <body data-theme="dark">
 
-<div class="willow-decor willow-top-left"></div>
-<div class="willow-decor willow-top-right"></div>
-<div class="ambient-glows">
-    <div class="glow-sphere glow-1"></div>
-    <div class="glow-sphere glow-2"></div>
-    <div class="glow-sphere glow-3"></div>
-    <div class="glow-particle particle-1"></div>
-    <div class="glow-particle particle-2"></div>
+<!-- DẢI CẢNH BÁO KHẨN — luôn hiện, không phụ thuộc JS/CSS class -->
+<div id="adminLoadingBanner" style="
+    position:fixed; top:0; left:0; right:0; z-index:99999;
+    background:#1a2844; border-bottom:2px solid #00ff88;
+    color:#e2e8f0; font-family:Inter,sans-serif; font-size:0.82rem;
+    padding:8px 16px; display:flex; align-items:center;
+    justify-content:space-between; gap:12px;">
+    <span>
+        <span style="color:#00ff88;font-weight:700;">ADMIN</span>
+        — Nếu trang trắng / không hiện form đăng nhập:
+    </span>
+    <button onclick="
+        sessionStorage.clear();
+        localStorage.removeItem('tvl_admin');
+        this.parentElement.style.display='none';
+        location.reload();
+    " style="background:#00ff88;color:#0a1628;border:none;border-radius:6px;
+              padding:5px 12px;font-weight:700;font-size:0.8rem;cursor:pointer;
+              font-family:inherit;white-space:nowrap;">
+        🔄 Xóa Cache & Tải Lại
+    </button>
+    <button onclick="this.parentElement.style.display='none';"
+            style="background:transparent;border:1px solid #4b5563;color:#9ca3af;
+                   border-radius:4px;padding:4px 8px;cursor:pointer;font-size:0.75rem;
+                   font-family:inherit;">
+        ✕ Đóng
+    </button>
 </div>
+<!-- Đẩy content xuống để không bị banner che -->
+<div style="height:44px;"></div>
 
 <!-- ══ HEADER ══ -->
 <header class="ad-header">
@@ -930,7 +963,6 @@
 (function () {
 
     document.addEventListener("DOMContentLoaded", function () {
-        /* FIX D: Bọc toàn bộ trong try/catch — crash tại đây không làm trắng trang */
         try {
             /* Hiện auth panel ngay — null-safe để tránh TypeError */
             var ap = document.getElementById("adminAuthPanel");
@@ -941,8 +973,25 @@
             if (mo) mo.addEventListener("click", function (e) {
                 if (e.target === this && typeof dongModalKey === "function") dongModalKey();
             });
+
+            /* Ẩn banner cảnh báo khi trang load thành công và có form đăng nhập hiện */
+            setTimeout(function () {
+                try {
+                    var banner = document.getElementById("adminLoadingBanner");
+                    var spacer = banner && banner.nextElementSibling;
+                    /* Chỉ ẩn banner nếu auth panel hoặc console đang visible */
+                    var ap = document.getElementById("adminAuthPanel");
+                    var co = document.getElementById("adminConsole");
+                    var authOk = ap && ap.offsetHeight > 0;
+                    var consoleOk = co && co.style.display === "block" && co.offsetHeight > 0;
+                    if ((authOk || consoleOk) && banner) {
+                        banner.style.display = "none";
+                        if (spacer) spacer.style.display = "none";
+                    }
+                } catch (_) {}
+            }, 2000);
+
         } catch (err) {
-            /* Nếu có lỗi bất ngờ, vẫn cố gắng hiện auth panel */
             console.warn("[admin] DOMContentLoaded lỗi:", err);
             try {
                 var fb = document.getElementById("adminAuthPanel") ||
