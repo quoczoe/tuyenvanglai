@@ -10,7 +10,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="giao-dien.css?v=6.0">
     <link rel="stylesheet" href="components.css?v=6.0">
     <style>
         /* ══ DESIGN SYSTEM ══ */
@@ -29,63 +28,63 @@
             --radius-sm:    8px;
         }
 
-        /*
-         * ══════════════════════════════════════════════════════════════
-         * FIX LAYOUT SHIFT — NGUYÊN NHÂN GỐC RỄ:
-         *
-         * Khi nội dung tab thay đổi chiều cao (ví dụ bảng Keys dài →
-         * chuyển sang tab Config ngắn), thanh cuộn dọc biến mất → trang
-         * hẹp lại 15px → toàn bộ layout bị đẩy ngang.
-         *
-         * Giải pháp kép:
-         *  1. `html { scrollbar-gutter: stable }` — trình duyệt dành sẵn
-         *     không gian cho scrollbar dù có hay không có nội dung dài.
-         *  2. `body { overflow-y: scroll }` — luôn hiển thị scrollbar dọc,
-         *     triệt tiêu 100% hiện tượng chiều rộng bị co hẹp khi đổi tab.
-         * ══════════════════════════════════════════════════════════════
-         */
-        /*
-         * ═══════════════════════════════════════════════════════════════════
-         * FIX TRANG TRẮNG TRÊN PC (root cause: giao-dien.css global body rule)
-         *
-         * giao-dien.css áp dụng toàn cục lên MỌI trang:
-         *   body { display:flex; flex-direction:column;
-         *          height:100dvh; overflow:hidden; }
-         *
-         * Trên PC: 100dvh = 100vh (không có address bar), flex + overflow:hidden
-         * làm nội dung bị collapse / clipped → chỉ thấy background màu tối.
-         * Trên Mobile: 100dvh co theo status bar nên nội dung vừa vặn.
-         *
-         * FIX: override tất cả các property nguy hiểm bằng !important.
-         * overflow:auto !important là property quan trọng nhất — nếu thiếu
-         * thì overflow:hidden vẫn clip content dù height đã là auto.
-         *
-         * Ngoài ra, <body> element được gắn style="" trực tiếp như lớp bảo vệ
-         * cuối cùng — inline style attr KHÔNG thể bị override bởi bất kỳ
-         * stylesheet rule nào (kể cả !important trong external CSS).
-         * ═══════════════════════════════════════════════════════════════════
-         */
-        html {
-            height: auto !important;
-            overflow-x: hidden !important;
-            overflow-y: auto !important;
-            scrollbar-gutter: stable;
-        }
+        /* Body: cuộn bình thường — giao-dien.css đã được tháo, không còn xung đột */
+        html { scrollbar-gutter: stable; }
         body {
-            display: block !important;            /* tắt flex layout */
-            height: auto !important;              /* body tự co theo nội dung */
-            min-height: 100vh !important;         /* đủ cao trên màn PC lớn */
-            max-height: none !important;          /* không bị giới hạn từ trên */
-            overflow: auto !important;            /* ← MISSING trước đây — bật cuộn */
-            overflow-x: hidden !important;        /* không cuộn ngang */
-            overflow-y: auto !important;          /* cuộn dọc khi cần */
-            flex-direction: unset !important;     /* triệt tiêu flex-direction */
-            align-items: unset !important;        /* triệt tiêu flex align */
-            justify-content: unset !important;    /* triệt tiêu flex justify */
+            display: block;
+            height: auto;
+            min-height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-base);
             color: var(--text-main);
         }
+
+        /* ══ TOAST NOTIFICATIONS (inline — không phụ thuộc giao-dien.css) ══ */
+        .toast-container {
+            position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 12px; pointer-events: none;
+        }
+        .toast {
+            pointer-events: auto;
+            background: rgba(8,10,15,0.95);
+            border-left: 4px solid #00ff9d;
+            border-top: 1px solid rgba(30,58,95,0.6);
+            border-right: 1px solid rgba(30,58,95,0.6);
+            border-bottom: 1px solid rgba(30,58,95,0.6);
+            color: #e2e8f0; padding: 14px 20px; border-radius: 12px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.55);
+            display: flex; align-items: center; gap: 14px;
+            min-width: 300px; max-width: 380px;
+            transform: translateX(130%);
+            transition: transform 0.45s cubic-bezier(0.175,0.885,0.32,1.275);
+            backdrop-filter: blur(10px);
+        }
+        .toast.active { transform: translateX(0); }
+        .toast-success { border-left-color: #00ff9d; }
+        .toast-success i { color: #00ff9d; text-shadow: 0 0 8px rgba(0,255,157,0.3); }
+        .toast-danger  { border-left-color: #ef4444; }
+        .toast-danger  i { color: #ef4444; }
+        .toast-warning { border-left-color: #f59e0b; }
+        .toast-warning i { color: #f59e0b; }
+        .toast-info    { border-left-color: #3b82f6; }
+        .toast-info    i { color: #3b82f6; }
+        .toast-icon  { font-size: 1.2rem; flex-shrink: 0; }
+        .toast-content h4 { font-size: 0.9rem; font-weight: 800; margin: 0 0 2px; color: #f1f5f9; }
+        .toast-content p  { font-size: 0.78rem; color: #94a3b8; margin: 0; }
+        @media (max-width: 600px) {
+            .toast-container { bottom: 14px; right: 10px; left: 10px; }
+            .toast { min-width: auto; width: 100%; }
+        }
+
+        /* ══ TABLE SCROLL WRAPPER ══ */
+        .table-scroll-wrap {
+            width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px;
+        }
+        .table-scroll-wrap::-webkit-scrollbar { height: 4px; }
+        .table-scroll-wrap::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); }
+        .table-scroll-wrap::-webkit-scrollbar-thumb { background: var(--accent-green); border-radius: 2px; }
 
         /* ══ HEADER ══ */
         .ad-header {
@@ -440,7 +439,7 @@
         #adminConsole   { display: none; }
     </style>
 </head>
-<body data-theme="dark" style="display:block;height:auto;min-height:100vh;overflow:auto;overflow-x:hidden;overflow-y:auto;">
+<body data-theme="dark">
 
 <div class="willow-decor willow-top-left"></div>
 <div class="willow-decor willow-top-right"></div>
@@ -918,10 +917,10 @@
 </div>
 
 <!-- ══ SCRIPTS ══ -->
-<script src="ket-noi-supabase.js?v=5.0"></script>
-<script src="bo-may-du-lieu.js?v=5.0"></script>
-<script src="hieu-ung-giao-dien.js?v=5.0"></script>
-<script src="phan-he-quan-tri.js?v=5.0"></script>
+<script src="ket-noi-supabase.js?v=6.0"></script>
+<script src="bo-may-du-lieu.js?v=6.0"></script>
+<script src="hieu-ung-giao-dien.js?v=6.0"></script>
+<script src="phan-he-quan-tri.js?v=6.0"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════
