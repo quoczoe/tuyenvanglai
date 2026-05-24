@@ -1,9 +1,21 @@
 /* =========================================================================
- * 🏸 PHÂN HỆ KHÁCH CHƠI VÃNG LAI - PHAN-HE-KHACH-CHOI.JS (v2.0)
+ * 🏸 PHÂN HỆ KHÁCH CHƠI VÃNG LAI - PHAN-HE-KHACH-CHOI.JS (v4.0)
  * Dự án: TUYENVANGLAI.IO.VN
- * v2.0: Đồng bộ field mapping với Supabase schema thật
- *       khach_vang_lai / ca_dau / dat_slot / danh_gia_tin_dung
- *       Bỏ hoàn toàn registered_guests[] — đặt slot → INSERT dat_slot
+ *
+ * v4.0 (Phiên 4 — 2026-05-24):
+ *   - MODULE 2: 1-Click Auth thay thế đăng nhập không mật khẩu cũ
+ *       + SHA-256 hash phía client (Web Crypto API)
+ *       + Form phân bước: SĐT+Pass+GT → slide-down thông tin bổ sung
+ *       + Kịch bản A: đăng nhập (SĐT tồn tại) — Kịch bản B: đăng ký (SĐT mới)
+ *       + Edge case: user cũ chưa có hash → modal đặt pass lần đầu
+ *   - MODULE 3: Telegram integration (frontend polling) + Quên mật khẩu
+ *   - MODULE 4: Host Upgrade — kích hoạt Key Host từ trang Profile
+ *   - Đổi tên bảng: nguoi_dung (từ khach_vang_lai)
+ *   - Fix bug: dat_slot.gioi_tinh lấy từ currentGuest thay vì hardcode "male"
+ *   - Tất cả validate input dùng window.VALIDATE từ bo-may-du-lieu.js
+ *
+ * v3.0: GĐ3A modal, GĐ3B huỷ slot, GĐ3C lịch sử chi tiêu, GĐ3D đánh giá
+ * v2.0: Đồng bộ field mapping Supabase (nguoi_dung / ca_dau / dat_slot)
  * =========================================================================
  */
 
@@ -55,7 +67,7 @@
         const g = window.currentGuest;
         if (!g) return;
 
-        const nameEl = document.getElementById("profileGuestName");
+        const nameEl  = document.getElementById("profileGuestName");
         const phoneEl = document.getElementById("profileGuestPhone");
         const dateEl  = document.getElementById("profileGuestDate");
         if (nameEl)  nameEl.textContent  = g.ten_khach || "Lông thủ ẩn danh";
@@ -64,6 +76,24 @@
             const joined = g.ngay_tham_gia ? new Date(g.ngay_tham_gia).toLocaleDateString("vi-VN") : "--";
             dateEl.textContent = `Gia nhập: ${joined}`;
         }
+
+        // MODULE 4: Routing theo vai_tro
+        const isHost = g.vai_tro === "host";
+        const sectionGuest = document.getElementById("sectionNangCapHost");
+        const sectionHost  = document.getElementById("sectionHostDaKichHoat");
+        const keyDisplay   = document.getElementById("profileHostKey");
+
+        if (isHost) {
+            // Đã là Host → ẩn ô nhập key, hiện badge host
+            if (sectionGuest) sectionGuest.style.display = "none";
+            if (sectionHost)  sectionHost.style.display  = "flex";
+            if (keyDisplay)   keyDisplay.textContent      = g.ma_key_host || "";
+        } else {
+            // Còn là guest → hiện ô kích hoạt key
+            if (sectionGuest) sectionGuest.style.display = "block";
+            if (sectionHost)  sectionHost.style.display  = "none";
+        }
+
         _taiThongKeKhach();
         _taiDanhSachHostChoGuestDanhGia();
 
@@ -78,59 +108,486 @@
     }
 
     /* ═══════════════════════════════════════════════════
-     * 2. ĐĂNG NHẬP NHANH → khach_vang_lai
+     * 2. 1-CLICK AUTH — MODULE 2 (Phiên 4)
+     *    Form phân bước: SĐT + Pass + GT → Đăng nhập / Đăng ký
      * ═══════════════════════════════════════════════════ */
-    window.xacThucKhachChoi = async function () {
-        const nameEl  = document.getElementById("guestInputName");
-        const phoneEl = document.getElementById("guestInputPhone");
-        if (!nameEl || !phoneEl) return;
 
-        const name  = nameEl.value.trim();
-        const phone = phoneEl.value.trim().replace(/\D/g, "");
+    /**
+     * SHA-256 hash phía client dùng Web Crypto API (không cần thư viện bên ngoài).
+     * Salt tĩnh "tvl_pepper_2026" — thay bằng giá trị thực trước production.
+     */
+    async function _hashMatKhau(pass) {
+        const data = new TextEncoder().encode(pass + "tvl_pepper_2026");
+        const buf  = await crypto.subtle.digest("SHA-256", data);
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
 
-        if (!name)  { window.hienToast("Thiếu tên", "Vui lòng nhập tên hoặc biệt danh.", "danger"); return; }
-        if (!phone || !/^[0-9]{9,11}$/.test(phone)) {
-            window.hienToast("SĐT không hợp lệ", "Vui lòng nhập số điện thoại đúng (9-11 số).", "danger"); return;
+    /**
+     * Lưu session và chuyển sang dashboard.
+     * localStorage lưu toàn bộ thông tin cần thiết cho routing.
+     */
+    function _luuSessionVaDangNhap(user) {
+        window.currentGuest = user;
+        // Lưu đủ field để host routing và display hoạt động không cần fetch lại
+        localStorage.setItem("tvl_guest", JSON.stringify({
+            ten_khach:     user.ten_khach || "",
+            sdt_khach:     user.sdt_khach || "",
+            gioi_tinh:     user.gioi_tinh || "male",
+            vai_tro:       user.vai_tro || "guest",
+            ma_key_host:   user.ma_key_host || null,
+            telegram_id:   user.telegram_id || null,
+            ngay_tham_gia: user.ngay_tham_gia || null
+        }));
+        const ten = user.ten_khach || "Lông thủ";
+        window.hienToast(`🏸 Chào ${ten}!`, "Đã vào sàn vãng lai. Chúc bạn tìm được kèo ưng ý!", "success");
+        _hienThiDashboardKhach();
+    }
+
+    /**
+     * Hiện modal đặt mật khẩu lần đầu cho user cũ (chưa có mat_khau_hash).
+     */
+    function _hienModalDatPassLanDau(phone, pass, user) {
+        const existingModal = document.getElementById("modalDatPassLanDau");
+        if (existingModal) existingModal.remove();
+
+        const modal = document.createElement("div");
+        modal.id = "modalDatPassLanDau";
+        modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;";
+        modal.innerHTML = `
+            <div style="background:#1a2844;border:1px solid #00ff88;border-radius:16px;padding:28px 24px;max-width:420px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+                <h3 style="color:#00ff88;margin:0 0 10px;font-size:1.15rem;">🔑 Lần đầu dùng hệ thống mới</h3>
+                <p style="color:#9ca3af;font-size:0.9rem;margin:0 0 20px;line-height:1.5;">
+                    Tài khoản <strong style="color:#e2e8f0;">${phone}</strong> đã tồn tại nhưng chưa có mật khẩu.<br>
+                    Mật khẩu bạn vừa nhập sẽ được đặt cho tài khoản này.
+                </p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <button id="btnXacNhanDatPass" style="flex:1;min-width:140px;padding:10px;background:#00ff88;color:#0a1628;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:0.95rem;">
+                        ✅ Xác nhận đặt mật khẩu
+                    </button>
+                    <button onclick="document.getElementById('modalDatPassLanDau').remove()" style="padding:10px 16px;background:transparent;color:#9ca3af;border:1px solid #374151;border-radius:8px;cursor:pointer;">
+                        Hủy
+                    </button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+
+        document.getElementById("btnXacNhanDatPass").addEventListener("click", async () => {
+            try {
+                const hash = await _hashMatKhau(pass);
+                await window.dbEngine.ghi("nguoi_dung",
+                    { mat_khau_hash: hash, gioi_tinh: user.gioi_tinh || "male" },
+                    { sdt_khach: phone }
+                );
+                modal.remove();
+                const updatedUser = { ...user, mat_khau_hash: hash };
+                _luuSessionVaDangNhap(updatedUser);
+            } catch (e) {
+                window.hienToast("Lỗi", "Không thể đặt mật khẩu. Thử lại sau.", "danger");
+            }
+        });
+    }
+
+    /**
+     * Mở rộng form phụ đăng ký (slide-down) khi SĐT chưa tồn tại.
+     */
+    function _xoFormPhu(phone, pass, gender) {
+        const extraFields = document.getElementById("authExtraFields");
+        if (!extraFields) return;
+        // Lưu tạm giá trị để dùng khi submit
+        extraFields.dataset.phone  = phone;
+        extraFields.dataset.pass   = pass;
+        extraFields.dataset.gender = gender;
+        extraFields.classList.add("is-open");
+        // Cuộn xuống để thấy form phụ
+        extraFields.scrollIntoView({ behavior: "smooth", block: "start" });
+
+        // Cập nhật label nút chính
+        const btnMain = document.getElementById("btnXacNhan");
+        if (btnMain) btnMain.textContent = "→ Xem thêm thông tin bổ sung...";
+    }
+
+    /**
+     * Hàm chính — gọi khi bấm "XÁC NHẬN" (Bước 1).
+     */
+    window.xacThucNguoiDung = async function () {
+        const phone  = (document.getElementById("inputPhone")?.value || "").replace(/\D/g, "");
+        const pass   = document.getElementById("inputPass")?.value || "";
+        const gender = document.querySelector('input[name="gioiTinh"]:checked')?.value || "male";
+
+        // Validate đầu vào bước 1
+        if (!window.VALIDATE.sdt(phone)) {
+            window.hienToast("SĐT không hợp lệ", "Nhập đúng 10 số, đầu 03/05/07/08/09.", "danger"); return;
+        }
+        if (!window.VALIDATE.pass(pass)) {
+            window.hienToast("Mật khẩu quá ngắn", "Tối thiểu 6 ký tự.", "danger"); return;
         }
 
-        const btn = document.querySelector("[onclick='xacThucKhachChoi()']");
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang kết nối...'; }
+        const btn = document.getElementById("btnXacNhan");
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang kiểm tra...'; }
 
         try {
-            // Tra cứu theo sdt_khach (UNIQUE trong schema)
-            const users = await window.dbEngine.doc("khach_vang_lai", { eq: { sdt_khach: phone } });
-            let guest = users[0] || null;
+            // Kiểm tra SĐT trong bảng nguoi_dung
+            const users = await window.dbEngine.doc("nguoi_dung", { eq: { sdt_khach: phone } });
+            const user  = users[0] || null;
 
-            if (!guest) {
-                // Tạo hồ sơ mới — ngay_tham_gia auto-set bởi DEFAULT now()
-                const results = await window.dbEngine.ghi("khach_vang_lai", {
-                    ten_khach: name,
-                    sdt_khach: phone
-                });
-                guest = results[0] || { ten_khach: name, sdt_khach: phone };
-            } else if (guest.ten_khach !== name) {
-                // Cập nhật tên nếu đổi
-                await window.dbEngine.ghi("khach_vang_lai", { ten_khach: name }, { sdt_khach: phone });
-                guest.ten_khach = name;
+            if (user) {
+                // ── KỊCH BẢN A: SĐT ĐÃ TỒN TẠI → ĐĂNG NHẬP ──
+                if (!user.mat_khau_hash) {
+                    // Edge case: user cũ chưa có mật khẩu → modal đặt pass lần đầu
+                    _hienModalDatPassLanDau(phone, pass, user);
+                    return;
+                }
+                const hashInput = await _hashMatKhau(pass);
+                if (hashInput !== user.mat_khau_hash) {
+                    window.hienToast("Sai mật khẩu", "Nhập lại hoặc bấm 'Quên mật khẩu'.", "danger");
+                    return;
+                }
+                _luuSessionVaDangNhap(user);
+            } else {
+                // ── KỊCH BẢN B: SĐT CHƯA TỒN TẠI → MỞ FORM ĐĂNG KÝ ──
+                _xoFormPhu(phone, pass, gender);
             }
-
-            window.currentGuest = guest;
-            // localStorage chỉ lưu định danh tối thiểu
-            localStorage.setItem("tvl_guest", JSON.stringify({
-                ten_khach: guest.ten_khach,
-                sdt_khach: guest.sdt_khach,
-                ngay_tham_gia: guest.ngay_tham_gia || null
-            }));
-
-            window.hienToast(`🏸 Chào ${name}!`, "Đã vào sàn vãng lai. Chúc bạn tìm được kèo ưng ý!", "success");
-            _hienThiDashboardKhach();
         } catch (e) {
-            console.error("Lỗi đăng nhập khách:", e);
+            console.error("Lỗi xác thực:", e);
             window.hienToast("Lỗi kết nối", "Không thể xác thực. Thử lại sau.", "danger");
         } finally {
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập Sàn'; }
+            if (btn) { btn.disabled = false; btn.innerHTML = 'XÁC NHẬN →'; }
         }
     };
+
+    /**
+     * Hoàn tất đăng ký — gọi khi bấm "TẠO TÀI KHOẢN" trong form phụ.
+     */
+    window.hoanTatDangKy = async function () {
+        const extraFields = document.getElementById("authExtraFields");
+        if (!extraFields) return;
+
+        const phone  = extraFields.dataset.phone;
+        const pass   = extraFields.dataset.pass;
+        const gender = extraFields.dataset.gender || "male";
+
+        // Lấy thông tin bổ sung
+        const ten      = (document.getElementById("inputTenKhach")?.value || "").trim();
+        const zaloCk   = document.getElementById("checkZaloTrungSDT")?.checked !== false; // default ON
+        const sdtZaloEl = document.getElementById("inputSdtZalo");
+        const sdtZalo  = zaloCk ? null : (sdtZaloEl?.value?.replace(/\D/g, "") || null);
+        const facebook = (document.getElementById("inputFacebook")?.value || "").trim();
+        const maGT     = (document.getElementById("inputMaGioiThieu")?.value || "").trim();
+        const telegramId = null; // Sẽ kết nối riêng qua poll
+
+        // Validate
+        if (!window.VALIDATE.ten(ten)) {
+            window.hienToast("Tên không hợp lệ", "Tên chỉ được chứa chữ cái tiếng Việt (2-50 ký tự).", "danger"); return;
+        }
+        if (!zaloCk && sdtZalo && !window.VALIDATE.sdt(sdtZalo)) {
+            window.hienToast("SĐT Zalo không hợp lệ", "Nhập đúng 10 số, đầu 03/05/07/08/09.", "danger"); return;
+        }
+        if (facebook && !window.VALIDATE.facebook(facebook)) {
+            window.hienToast("Link Facebook không hợp lệ", "Phải bắt đầu bằng https://facebook.com hoặc fb.com.", "danger"); return;
+        }
+
+        const btnDK = document.getElementById("btnHoanTatDangKy");
+        if (btnDK) { btnDK.disabled = true; btnDK.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tạo...'; }
+
+        try {
+            const hash = await _hashMatKhau(pass);
+            const payload = {
+                ten_khach:    ten,
+                sdt_khach:    phone,
+                gioi_tinh:    gender,
+                mat_khau_hash: hash,
+                vai_tro:      "guest",
+                sdt_zalo:     sdtZalo,
+                facebook_link: facebook || null,
+                ma_gioi_thieu: maGT || null
+            };
+
+            const results = await window.dbEngine.ghi("nguoi_dung", payload);
+            const newUser = results[0] || payload;
+
+            window.hienToast("Tạo tài khoản thành công! 🎉", `Chào ${ten}! Tài khoản đã được tạo.`, "success");
+            _luuSessionVaDangNhap(newUser);
+        } catch (e) {
+            console.error("Lỗi đăng ký:", e);
+            window.hienToast("Lỗi đăng ký", "Không thể tạo tài khoản. Thử lại sau.", "danger");
+        } finally {
+            if (btnDK) { btnDK.disabled = false; btnDK.innerHTML = 'TẠO TÀI KHOẢN & ĐĂNG NHẬP'; }
+        }
+    };
+
+    /**
+     * Toggle hiển thị ô SĐT Zalo riêng khi bỏ chọn "trùng SĐT đăng nhập".
+     */
+    window.toggleZaloRieng = function () {
+        const checked = document.getElementById("checkZaloTrungSDT")?.checked;
+        const row = document.getElementById("rowSdtZaloRieng");
+        if (row) row.style.display = checked ? "none" : "block";
+    };
+
+    /**
+     * Quên mật khẩu — phân nhánh theo telegram_id có tồn tại không.
+     */
+    window.quenMatKhau = async function () {
+        const phone = (document.getElementById("inputPhone")?.value || "").replace(/\D/g, "");
+        if (!window.VALIDATE.sdt(phone)) {
+            window.hienToast("Nhập SĐT trước", "Vui lòng nhập SĐT ở ô trên, sau đó bấm 'Quên mật khẩu'.", "info");
+            return;
+        }
+
+        try {
+            const users = await window.dbEngine.doc("nguoi_dung", { eq: { sdt_khach: phone } });
+            const user  = users[0] || null;
+
+            if (!user) {
+                window.hienToast("SĐT chưa đăng ký", "Số điện thoại này chưa có tài khoản trên hệ thống.", "warning");
+                return;
+            }
+
+            if (user.telegram_id) {
+                // Có telegram → hướng dẫn mở Bot nhận mã
+                _hienModalQuenPassTelegram(phone, user.telegram_id);
+            } else {
+                // Không có telegram → liên hệ Admin
+                _hienModalQuenPassAdmin(phone);
+            }
+        } catch (e) {
+            window.hienToast("Lỗi kiểm tra", "Không thể kiểm tra tài khoản. Thử lại sau.", "danger");
+        }
+    };
+
+    function _hienModalQuenPassTelegram(phone) {
+        const modal = document.createElement("div");
+        modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;";
+        modal.innerHTML = `
+            <div style="background:#1a2844;border:1px solid #00ff88;border-radius:16px;padding:28px 24px;max-width:400px;width:100%;">
+                <h3 style="color:#00ff88;margin:0 0 10px;">🔐 Khôi phục mật khẩu</h3>
+                <p style="color:#9ca3af;font-size:0.9rem;margin:0 0 20px;line-height:1.5;">
+                    Mở Telegram Bot để nhận mã khôi phục mật khẩu mới.
+                </p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <button onclick="window.ketNoiTelegramQuenPass('${phone}');this.closest('[style*=fixed]').remove()"
+                        style="flex:1;padding:10px;background:#00ff88;color:#0a1628;border:none;border-radius:8px;font-weight:700;cursor:pointer;">
+                        📲 Mở Telegram Bot →
+                    </button>
+                    <button onclick="this.closest('[style*=fixed]').remove()"
+                        style="padding:10px 16px;background:transparent;color:#9ca3af;border:1px solid #374151;border-radius:8px;cursor:pointer;">
+                        Hủy
+                    </button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+    }
+
+    function _hienModalQuenPassAdmin(phone) {
+        const modal = document.createElement("div");
+        modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;";
+        modal.innerHTML = `
+            <div style="background:#1a2844;border:1px solid #ef4444;border-radius:16px;padding:28px 24px;max-width:400px;width:100%;">
+                <h3 style="color:#ef4444;margin:0 0 10px;">⚠️ Chưa liên kết Telegram</h3>
+                <p style="color:#9ca3af;font-size:0.9rem;margin:0 0 20px;line-height:1.5;">
+                    Tài khoản <strong style="color:#e2e8f0;">${phone}</strong> chưa liên kết Telegram.<br>
+                    Vui lòng liên hệ Admin để reset mật khẩu.
+                </p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <a href="tel:0901234567" style="flex:1;text-align:center;padding:10px;background:#00ff88;color:#0a1628;border-radius:8px;font-weight:700;text-decoration:none;font-size:0.95rem;">
+                        📞 Gọi Admin
+                    </a>
+                    <button onclick="this.closest('[style*=fixed]').remove()"
+                        style="padding:10px 16px;background:transparent;color:#9ca3af;border:1px solid #374151;border-radius:8px;cursor:pointer;">
+                        Đóng
+                    </button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+    }
+
+    /* ═══════════════════════════════════════════════════
+     * MODULE 3 — TELEGRAM INTEGRATION
+     * ═══════════════════════════════════════════════════ */
+    const TELEGRAM_BOT_NAME = "TVLVangLaiBot"; // Placeholder — admin thay trước deploy
+
+    /**
+     * Kết nối Telegram khi đăng ký mới (từ form phụ).
+     */
+    window.ketNoiTelegram = function () {
+        const phone = document.getElementById("authExtraFields")?.dataset?.phone;
+        if (!phone) return;
+        const link = `https://t.me/${TELEGRAM_BOT_NAME}?start=verify_${phone}`;
+        window.open(link, "_blank", "noopener,noreferrer");
+        _batDauPollTelegramId(phone, "inputTelegramStatus");
+        window.hienToast("Đang chờ kết nối...", "Mở Telegram, bấm Start trên Bot.", "info");
+    };
+
+    /**
+     * Kết nối Telegram khi quên mật khẩu.
+     */
+    window.ketNoiTelegramQuenPass = function (phone) {
+        const link = `https://t.me/${TELEGRAM_BOT_NAME}?start=verify_${phone}`;
+        window.open(link, "_blank", "noopener,noreferrer");
+        _batDauPollMatKhauMoi(phone);
+        window.hienToast("Đang chờ...", "Bot sẽ gửi mật khẩu mới về Telegram của bạn.", "info");
+    };
+
+    /**
+     * Poll mỗi 3 giây, tối đa 60 giây để kiểm tra telegram_id đã được ghi chưa.
+     */
+    async function _batDauPollTelegramId(phone, statusElId, maxTries = 20) {
+        let attempts = 0;
+        const poll = setInterval(async () => {
+            attempts++;
+            if (attempts > maxTries) {
+                clearInterval(poll);
+                window.hienToast("Hết giờ chờ", "Chưa kết nối được. Có thể bỏ qua và kết nối sau.", "warning");
+                return;
+            }
+            try {
+                const result = await window.dbEngine.doc("nguoi_dung", { eq: { sdt_khach: phone } });
+                if (result[0]?.telegram_id) {
+                    clearInterval(poll);
+                    // Cập nhật UI
+                    const statusEl = statusElId ? document.getElementById(statusElId) : null;
+                    if (statusEl) {
+                        statusEl.innerHTML = '<span style="color:#00ff88;">✅ Đã kết nối Telegram</span>';
+                    }
+                    window.hienToast("Thành công! 🎉", "Đã kết nối Telegram.", "success");
+                }
+            } catch {
+                // Ignore lỗi khi poll
+            }
+        }, 3000);
+    }
+
+    /**
+     * Poll mỗi 3 giây để kiểm tra bot đã reset mat_khau_hash chưa.
+     */
+    async function _batDauPollMatKhauMoi(phone, maxTries = 20) {
+        window.hienToast("Đang chờ Bot...", "Vui lòng chờ Telegram Bot xử lý.", "info");
+        let attempts = 0;
+        const oldHash = window.currentGuest?.mat_khau_hash || null;
+        const poll = setInterval(async () => {
+            attempts++;
+            if (attempts > maxTries) {
+                clearInterval(poll);
+                window.hienToast("Hết giờ chờ", "Bot chưa phản hồi. Liên hệ Admin để hỗ trợ.", "warning");
+                return;
+            }
+            try {
+                const result = await window.dbEngine.doc("nguoi_dung", { eq: { sdt_khach: phone } });
+                const newHash = result[0]?.mat_khau_hash;
+                if (newHash && newHash !== oldHash) {
+                    clearInterval(poll);
+                    window.hienToast("✅ Mật khẩu đã được reset", "Mật khẩu mới đã gửi về Telegram. Đăng nhập lại.", "success");
+                }
+            } catch {
+                // Ignore
+            }
+        }, 3000);
+    }
+
+    /* ═══════════════════════════════════════════════════
+     * MODULE 4 — HOST UPGRADE (Kích hoạt Key từ Profile)
+     * ═══════════════════════════════════════════════════ */
+
+    /**
+     * Tạo fingerprint UUID cho thiết bị (dựa trên localStorage).
+     * Lần đầu tạo mới, các lần sau đọc từ localStorage.
+     */
+    function _layHoacTaoDeviceId() {
+        let deviceId = localStorage.getItem("tvl_device_id");
+        if (!deviceId) {
+            // Sinh UUID v4 đơn giản
+            deviceId = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, c => {
+                const r = Math.random() * 16 | 0;
+                return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+            localStorage.setItem("tvl_device_id", deviceId);
+        }
+        return deviceId;
+    }
+
+    /**
+     * Kích hoạt Key Host từ trang Profile.
+     */
+    window.kichHoatKeyHost = async function () {
+        const key = (document.getElementById("inputKeyNangCap")?.value || "").trim().toUpperCase();
+
+        if (!window.VALIDATE.keyHost(key)) {
+            window.hienToast("Sai định dạng Key", "Mã Key phải theo dạng TVL-XXXXX-XXXX.", "danger"); return;
+        }
+
+        const btn = document.getElementById("btnKichHoatKey");
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
+
+        try {
+            // 1. Kiểm tra key trong quan_ly_key
+            const keys = await window.dbEngine.doc("quan_ly_key", { eq: { ma_key: key } });
+            const keyData = keys[0];
+
+            if (!keyData) {
+                window.hienToast("Key không tồn tại", "Mã Key không hợp lệ hoặc chưa được tạo.", "danger"); return;
+            }
+            if (keyData.trang_thai === "Bị khóa") {
+                window.hienToast("Key bị khóa", "Mã Key này đã bị Admin khóa.", "danger"); return;
+            }
+            if (keyData.ngay_het_han && new Date(keyData.ngay_het_han) < new Date()) {
+                window.hienToast("Key hết hạn", "Mã Key đã hết hạn sử dụng.", "danger"); return;
+            }
+
+            // 2. Kiểm tra device binding
+            const deviceId = _layHoacTaoDeviceId();
+            if (keyData.id_thiet_bi && keyData.id_thiet_bi !== deviceId) {
+                window.hienToast("Sai thiết bị", "Key đã được kích hoạt trên thiết bị khác. Liên hệ Admin để reset.", "danger"); return;
+            }
+
+            // 3. Nâng cấp vai_tro trong nguoi_dung
+            const phone = window.currentGuest?.sdt_khach;
+            if (!phone) {
+                window.hienToast("Chưa đăng nhập", "Vui lòng đăng nhập trước.", "danger"); return;
+            }
+            await window.dbEngine.ghi("nguoi_dung",
+                { vai_tro: "host", ma_key_host: key },
+                { sdt_khach: phone }
+            );
+
+            // 4. Cập nhật quan_ly_key: kích hoạt + ghi device binding
+            const ngayKichHoat = new Date().toISOString();
+            const soNgay = keyData.so_ngay_duoc_xai || 30;
+            const ngayHetHan = new Date(Date.now() + soNgay * 86400000).toISOString();
+            await window.dbEngine.ghi("quan_ly_key",
+                { trang_thai: "Đang chạy", id_thiet_bi: deviceId, ngay_kich_hoat: ngayKichHoat, ngay_het_han: ngayHetHan },
+                { ma_key: key }
+            );
+
+            // 5. Cập nhật local session + UI
+            window.currentGuest.vai_tro    = "host";
+            window.currentGuest.ma_key_host = key;
+            localStorage.setItem("tvl_guest", JSON.stringify(window.currentGuest));
+            _capNhatUIHostDaKichHoat(key);
+            window.hienToast("Thành công! 🏟️", "Tài khoản đã được nâng cấp thành Host Sân.", "success");
+        } catch (e) {
+            console.error("Lỗi kích hoạt key:", e);
+            window.hienToast("Lỗi", "Không thể kích hoạt Key. Thử lại sau.", "danger");
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = 'Kích Hoạt →'; }
+        }
+    };
+
+    /**
+     * Cập nhật UI sau khi kích hoạt Key thành công.
+     */
+    function _capNhatUIHostDaKichHoat(key) {
+        const sectionGuest = document.getElementById("sectionNangCapHost");
+        const sectionHost  = document.getElementById("sectionHostDaKichHoat");
+        const keyDisplay   = document.getElementById("profileHostKey");
+        if (sectionGuest) sectionGuest.style.display = "none";
+        if (sectionHost)  sectionHost.style.display  = "flex";
+        if (keyDisplay)   keyDisplay.textContent      = key;
+    }
+
+    /**
+     * Alias cũ cho backward compat (một số file HTML còn dùng)
+     */
+    window.xacThucKhachChoi = window.xacThucNguoiDung;
 
     window.dangXuatKhach = function () {
         localStorage.removeItem("tvl_guest");
@@ -443,13 +900,13 @@
             // Sinh mã SLOT-XXXXX
             const maSlot = "SLOT-" + Math.random().toString(36).slice(2, 7).toUpperCase();
 
-            // INSERT vào bảng dat_slot
+            // INSERT vào bảng dat_slot — gioi_tinh lấy từ currentGuest (fix bug hardcode "male")
             await window.dbEngine.ghi("dat_slot", {
                 id_ca_dau:         caDauId,
                 ten_khach:         window.currentGuest.ten_khach,
                 sdt_khach:         window.currentGuest.sdt_khach,
                 ma_slot:           maSlot,
-                gioi_tinh:         "male", // Mặc định, có thể cải tiến sau
+                gioi_tinh:         window.currentGuest.gioi_tinh || "male",
                 trang_thai_di_danh: "Chờ đánh"
             });
 
@@ -1164,5 +1621,5 @@
         }, 100);
     });
 
-    console.log("⚡ [Phân Hệ Khách Chơi v2.0]: Đồng bộ Supabase schema thật ✅");
+    console.log("⚡ [Phân Hệ Khách Chơi v4.0]: 1-Click Auth ✅ | Telegram polling ✅ | Host Upgrade ✅ | nguoi_dung ✅");
 })();

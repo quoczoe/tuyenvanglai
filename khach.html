@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="giao-dien.css?v=5.0">
-    <link rel="stylesheet" href="components.css?v=5.0">
+    <link rel="stylesheet" href="giao-dien.css?v=5.1">
+    <link rel="stylesheet" href="components.css?v=5.1">
     <style>
         /* ══ DESIGN SYSTEM — ĐỒNG BỘ VỚI INDEX ══ */
         :root {
@@ -472,23 +472,121 @@
     <!-- ══ CỘT TRÁI: HỒ SƠ ══ -->
     <aside class="kh-sidebar">
 
-        <!-- PANEL ĐĂNG NHẬP -->
+        <!-- PANEL ĐĂNG NHẬP / ĐĂNG KÝ — 1-CLICK AUTH (MODULE 2) -->
         <div class="kh-auth-card" id="guestAuthPanel">
             <div class="kh-card-title">
-                <i class="fa-solid fa-right-to-bracket"></i> Ký Danh Siêu Tốc
+                <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập / Đăng Ký
             </div>
             <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:14px;line-height:1.6;">
-                Chỉ cần Tên và SĐT — không cần tạo tài khoản. Hệ thống tự nhận diện lần sau.
+                Nhập SĐT và mật khẩu. Hệ thống tự phân biệt đăng nhập hay đăng ký.
             </p>
-            <label class="kh-label">Tên / Biệt danh <span style="color:#ef4444;">*</span></label>
-            <input type="text" class="kh-input" id="guestInputName" placeholder="Vd: Nguyễn Văn A"
-                onkeydown="if(event.key==='Enter') document.getElementById('guestInputPhone').focus()">
-            <label class="kh-label">Số điện thoại Zalo <span style="color:#ef4444;">*</span></label>
-            <input type="tel" class="kh-input" id="guestInputPhone" placeholder="Vd: 0987654321"
-                onkeydown="if(event.key==='Enter') xacThucKhachChoi()">
-            <button class="kh-btn-primary" onclick="xacThucKhachChoi()">
-                <i class="fa-solid fa-right-to-bracket"></i> Vào Sàn Tìm Kèo
+
+            <!-- Ô SĐT — chỉ nhận số, khóa cứng -->
+            <label class="kh-label">📱 Số điện thoại <span style="color:#ef4444;">*</span></label>
+            <input type="tel" class="kh-input" id="inputPhone"
+                inputmode="numeric" maxlength="10"
+                placeholder="Vd: 0987654321"
+                oninput="this.value=this.value.replace(/[^0-9]/g,''); validateRealtime(this,'sdt','SĐT không hợp lệ (10 số, đầu 03/05/07/08/09)');"
+                onkeydown="if(event.key==='Enter') document.getElementById('inputPass').focus()">
+            <span class="input-hint"></span>
+
+            <!-- Ô mật khẩu -->
+            <label class="kh-label" style="margin-top:10px;">🔒 Mật khẩu <span style="color:#ef4444;">*</span></label>
+            <input type="password" class="kh-input" id="inputPass"
+                placeholder="Tối thiểu 6 ký tự"
+                oninput="validateRealtime(this,'pass','Mật khẩu tối thiểu 6 ký tự');"
+                onkeydown="if(event.key==='Enter') xacThucNguoiDung()">
+            <span class="input-hint"></span>
+
+            <!-- Giới tính — Radio pill -->
+            <label class="kh-label" style="margin-top:10px;">Giới tính</label>
+            <div class="gender-pill-group" style="margin-bottom:14px;">
+                <label>
+                    <input type="radio" name="gioiTinh" value="male" checked>
+                    <span>👨 Nam</span>
+                </label>
+                <label>
+                    <input type="radio" name="gioiTinh" value="female">
+                    <span>👩 Nữ</span>
+                </label>
+            </div>
+
+            <!-- Nút chính -->
+            <button class="kh-btn-primary" id="btnXacNhan" onclick="xacThucNguoiDung()">
+                XÁC NHẬN →
             </button>
+            <div style="text-align:center;margin-top:10px;">
+                <a href="#" onclick="quenMatKhau();return false;" style="font-size:0.78rem;color:var(--text-muted);text-decoration:underline;">
+                    Quên mật khẩu?
+                </a>
+            </div>
+
+            <!-- FORM PHỤ ĐĂNG KÝ — slide-down khi SĐT mới -->
+            <div class="auth-extra-fields" id="authExtraFields">
+                <div class="extra-divider">Thông tin bổ sung</div>
+
+                <!-- Họ tên -->
+                <label class="kh-label">👤 Họ tên <span style="color:#ef4444;">*</span></label>
+                <input type="text" class="kh-input" id="inputTenKhach"
+                    placeholder="Vd: Nguyễn Văn A"
+                    oninput="validateRealtime(this,'ten','Tên chỉ được chứa chữ cái tiếng Việt (2-50 ký tự)')">
+                <span class="input-hint"></span>
+
+                <!-- Zalo -->
+                <label class="kh-label" style="margin-top:10px;">📱 Zalo</label>
+                <div style="margin-bottom:6px;">
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.85rem;color:var(--text-muted);">
+                        <input type="checkbox" id="checkZaloTrungSDT" checked
+                            style="accent-color:var(--accent-green);" onchange="toggleZaloRieng()">
+                        Trùng với SĐT đăng nhập
+                    </label>
+                </div>
+                <div id="rowSdtZaloRieng" style="display:none;">
+                    <input type="tel" class="kh-input" id="inputSdtZalo"
+                        inputmode="numeric" maxlength="10"
+                        placeholder="Nhập SĐT Zalo khác..."
+                        oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                </div>
+                <button type="button" onclick="document.getElementById('checkZaloTrungSDT').checked=false;document.getElementById('inputSdtZalo').value='';toggleZaloRieng();"
+                    style="font-size:0.76rem;color:var(--text-muted);background:none;border:none;cursor:pointer;padding:2px 0;text-decoration:underline;margin-bottom:8px;">
+                    Bỏ qua Zalo
+                </button>
+
+                <!-- Facebook (tùy chọn) -->
+                <label class="kh-label">🔗 Link Facebook (tùy chọn)</label>
+                <input type="url" class="kh-input" id="inputFacebook"
+                    placeholder="https://facebook.com/..."
+                    oninput="validateRealtime(this,'facebook','Phải bắt đầu bằng https://facebook.com hoặc fb.com')">
+                <span class="input-hint"></span>
+
+                <!-- Mã giới thiệu (tùy chọn) -->
+                <label class="kh-label" style="margin-top:10px;">🎁 Mã giới thiệu (tùy chọn)</label>
+                <input type="text" class="kh-input" id="inputMaGioiThieu"
+                    placeholder="Nhập mã nếu được giới thiệu...">
+
+                <!-- Kết nối Telegram (tùy chọn) -->
+                <label class="kh-label" style="margin-top:10px;">🤖 Telegram (tùy chọn)</label>
+                <div id="inputTelegramStatus" style="margin-bottom:8px;">
+                    <span style="font-size:0.82rem;color:var(--text-muted);">
+                        Liên kết để nhận thông báo và khôi phục mật khẩu.
+                    </span>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+                    <button type="button" onclick="ketNoiTelegram()"
+                        style="flex:1;min-width:120px;padding:8px 12px;background:rgba(0,255,136,0.1);border:1px solid var(--accent-green);color:var(--accent-green);border-radius:8px;cursor:pointer;font-size:0.85rem;">
+                        📲 Kết nối Telegram
+                    </button>
+                    <button type="button" id="btnBoQuaTelegram" onclick="hoanTatDangKy()"
+                        style="padding:8px 14px;background:transparent;border:1px solid var(--border);color:var(--text-muted);border-radius:8px;cursor:pointer;font-size:0.85rem;">
+                        Bỏ qua →
+                    </button>
+                </div>
+
+                <!-- Nút tạo tài khoản -->
+                <button class="kh-btn-primary" id="btnHoanTatDangKy" onclick="hoanTatDangKy()">
+                    TẠO TÀI KHOẢN & ĐĂNG NHẬP
+                </button>
+            </div>
         </div>
 
         <!-- HỒ SƠ CÁ NHÂN -->
@@ -522,11 +620,17 @@
             <div class="kh-date-range" style="margin-bottom:12px;">
                 <div>
                     <label class="kh-label">Từ ngày</label>
-                    <input type="date" class="kh-input-sm" id="statsDateFrom" onchange="locThongKeKhach()" style="width:100%;">
+                    <div class="hs-picker-wrap">
+                        <input type="date" class="kh-input-sm" id="statsDateFrom" onchange="locThongKeKhach()" style="width:100%;">
+                        <span class="hs-picker-icon">📅</span>
+                    </div>
                 </div>
                 <div>
                     <label class="kh-label">Đến ngày</label>
-                    <input type="date" class="kh-input-sm" id="statsDateTo" onchange="locThongKeKhach()" style="width:100%;">
+                    <div class="hs-picker-wrap">
+                        <input type="date" class="kh-input-sm" id="statsDateTo" onchange="locThongKeKhach()" style="width:100%;">
+                        <span class="hs-picker-icon">📅</span>
+                    </div>
                 </div>
             </div>
 
@@ -550,9 +654,38 @@
                 </div>
             </div>
 
+            <!-- HOST UPGRADE (MODULE 4) — Kích hoạt Key Host -->
+            <!-- Hiện với user vai_tro='guest'; ẩn với vai_tro='host' -->
+            <div id="sectionNangCapHost" class="profile-upgrade-box" style="display:none;">
+                <div class="upgrade-header">🚀 Nâng Cấp Làm Host Sân</div>
+                <p>Bạn có mã SaaS Key? Nhập để kích hoạt quyền đăng kèo vãng lai.</p>
+                <div class="upgrade-input-row">
+                    <input type="text" id="inputKeyNangCap"
+                        class="kh-input"
+                        placeholder="TVL-XXXXX-XXXX"
+                        style="text-transform:uppercase;font-family:monospace;letter-spacing:0.05em;"
+                        oninput="this.value=this.value.replace(/[^A-Za-z0-9-]/g,'').toUpperCase()">
+                    <button id="btnKichHoatKey" class="kh-btn-primary" onclick="kichHoatKeyHost()" style="min-width:120px;">
+                        Kích Hoạt →
+                    </button>
+                </div>
+            </div>
+
+            <!-- Badge Host đã kích hoạt -->
+            <div id="sectionHostDaKichHoat" class="profile-host-badge" style="display:none;">
+                <span style="color:var(--accent-green);font-size:1.2rem;">🏟️</span>
+                <div>
+                    <div style="font-weight:700;color:var(--accent-green);">Đã là Host Sân</div>
+                    <div id="profileHostKey" style="font-family:monospace;font-size:0.82rem;color:var(--text-muted);"></div>
+                </div>
+                <a href="host.html" class="btn-go-host">Vào Trang Host →</a>
+            </div>
+
+            <hr class="kh-divider" style="margin:14px 0;">
+
             <!-- Đánh giá Host -->
             <div class="kh-section-title">
-                <i class="fa-solid fa-star" style="color:#fbbf24;"></i> Đánh Giá Chủ Sân
+                <i class="fa-solid fa-star" style="color:#fbbf24;"></i> Đánh Giá Host Sân
             </div>
             <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">
                 Chỉ được đánh giá sau khi ca chốt & Host xác nhận "Đã tham gia".
@@ -733,9 +866,9 @@
 </div>
 
 <script src="ket-noi-supabase.js?v=5.0"></script>
-<script src="bo-may-du-lieu.js?v=5.0"></script>
+<script src="bo-may-du-lieu.js?v=5.1"></script>
 <script src="hieu-ung-giao-dien.js?v=5.0"></script>
-<script src="phan-he-khach-choi.js?v=5.0"></script>
+<script src="phan-he-khach-choi.js?v=5.1"></script>
 
 <script>
 // Xóa bộ lọc
@@ -771,3 +904,4 @@ console.log=()=>{};
 </script>
 </body>
 </html>
+

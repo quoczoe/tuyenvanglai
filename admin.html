@@ -1010,21 +1010,34 @@ document.addEventListener('keydown', function (e) {
         return false;
     }
 });
+// Phát hiện DevTools qua chênh lệch kích thước cửa sổ
+// Ngưỡng 300px — an toàn, tránh false positive trên Windows Chrome (~190px khi bình thường)
+// Dùng overlay không phá nội dung thay vì xoá body (tránh trang trắng)
 (function () {
-    // Phát hiện DevTools qua chênh lệch kích thước cửa sổ → xoá nội dung trang
-    var NGUONG = 160;
+    var _devOverlay = null;
     setInterval(function () {
-        if (window.outerWidth  - window.innerWidth  > NGUONG ||
-            window.outerHeight - window.innerHeight > NGUONG) {
-            document.body.innerHTML =
-                '<h1 style="color:#00c96e;text-align:center;padding-top:200px;font-family:sans-serif">' +
-                'Vui lòng đóng DevTools</h1>';
+        var devOpen = (window.outerWidth  - window.innerWidth  > 300 ||
+                       window.outerHeight - window.innerHeight > 300);
+        if (devOpen && !_devOverlay) {
+            _devOverlay = document.createElement("div");
+            _devOverlay.style.cssText =
+                "position:fixed;inset:0;background:#0a1628;z-index:99999;" +
+                "display:flex;align-items:center;justify-content:center;";
+            _devOverlay.innerHTML =
+                '<div style="text-align:center;color:#00ff88;">' +
+                '<div style="font-size:3rem;margin-bottom:12px;">🛡️</div>' +
+                '<h2 style="font-family:Inter,sans-serif;margin:0 0 8px">Vui lòng đóng DevTools</h2>' +
+                '<p style="color:#9ca3af;font-size:0.9rem;margin:0">Hệ thống bảo mật phát hiện công cụ phát triển đang mở.</p>' +
+                '</div>';
+            document.body.appendChild(_devOverlay);
+        } else if (!devOpen && _devOverlay) {
+            _devOverlay.remove();
+            _devOverlay = null;
         }
     }, 1000);
 })();
-// Xóa console định kỳ + vô hiệu hóa console.log để bảo vệ thông tin debug
-setInterval(function () { console.clear(); }, 100);
-console.log = function () {};
+// Xóa console định kỳ — 2000ms (đồng bộ với các file khác)
+setInterval(function () { console.clear(); }, 2000);
 </script>
 </body>
 </html>

@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-    <title>Trạm Quản Trị Chủ Sân | TUYENVANGLAI.IO.VN</title>
-    <meta name="description" content="Trạm quản trị chủ sân cầu lông - kích hoạt key, đăng kèo vãng lai, kế toán thông minh.">
+    <title>Trạm Quản Trị Host Sân | TUYENVANGLAI.IO.VN</title>
+    <meta name="description" content="Trạm quản trị host sân cầu lông - đăng kèo vãng lai, kế toán thông minh, dashboard doanh thu.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="giao-dien.css?v=5.0">
-    <link rel="stylesheet" href="components.css?v=5.0">
+    <link rel="stylesheet" href="giao-dien.css?v=5.1">
+    <link rel="stylesheet" href="components.css?v=5.1">
     <style>
         /* ══ DESIGN SYSTEM — ĐỒNG BỘ VỚI INDEX ══ */
         :root {
@@ -255,6 +255,18 @@
         .hs-sug-profit { font-size: 0.82rem; font-weight: 700; margin-top: 6px; }
         .hs-sug-apply { font-size: 0.7rem; color: var(--accent-green); margin-top: 8px; font-weight: 600; }
 
+        /* ══ CONSOLE MAIN TABS (Ca Đấu / Doanh Thu) ══ */
+        .hs-tab-btn {
+            padding: 8px 18px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+            border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+            cursor: pointer; transition: all 0.2s; font-family: inherit; display: flex; align-items: center; gap: 6px;
+        }
+        .hs-tab-btn.active {
+            border-color: var(--accent-green); color: var(--accent-green);
+            background: rgba(0,255,136,0.1); box-shadow: 0 0 8px rgba(0,255,136,0.15);
+        }
+        .hs-tab-btn:hover:not(.active) { border-color: var(--text-muted); color: var(--text-main); }
+
         /* ══ DANH SÁCH KÈO — Filter tabs ══ */
         .hs-filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
         .hs-tab-pill {
@@ -361,25 +373,20 @@
 
 <div class="hs-main">
 
-    <!-- ══════════ MÀN KÍCH HOẠT KEY ══════════ -->
-    <div id="hostAuthPanel">
+    <!-- ══════════ MÀN CHỜ ĐĂNG NHẬP (v3.0 — Session-based auth) ══════════ -->
+    <!-- Không còn nhập key tại đây — kichHoatKey được thực hiện trong Profile của khach.html -->
+    <div id="hostAuthPanel" style="display:none;">
         <div class="hs-auth-wrap">
             <div class="hs-auth-card">
-                <span class="hs-auth-icon">🔑</span>
-                <div class="hs-auth-title">Kích Hoạt Key Thuê Trạm</div>
+                <span class="hs-auth-icon">🏟️</span>
+                <div class="hs-auth-title">Đang Kiểm Tra Phiên Đăng Nhập...</div>
                 <p class="hs-auth-sub">
-                    Nhập mã Key được Admin cấp để mở khóa toàn bộ chức năng quản trị và đăng kèo cầu lông.
+                    Vui lòng đăng nhập vào trang Khách và kích hoạt Key Host trong phần Hồ Sơ của bạn.
                 </p>
-                <label class="hs-label">Mã Key kích hoạt</label>
-                <input type="text" class="hs-input hs-key-input" id="hostActivationKey"
-                    placeholder="TVL-XXXXX-XXXX"
-                    oninput="this.value=this.value.toUpperCase()"
-                    onkeydown="if(event.key==='Enter') xacThucKeyHost()"
-                    style="margin-bottom:16px;">
-                <button class="hs-btn-primary" style="width:100%;justify-content:center;" onclick="xacThucKeyHost()">
-                    <i class="fa-solid fa-key"></i> Kích Hoạt Quyền Quản Trị
-                </button>
-                <div style="margin-top:16px;">
+                <a href="khach.html" class="hs-btn-primary" style="width:100%;justify-content:center;display:flex;text-decoration:none;margin-bottom:12px;">
+                    <i class="fa-solid fa-arrow-right"></i> Về Trang Khách Để Đăng Nhập
+                </a>
+                <div style="margin-top:4px;">
                     <a href="index.html" style="font-size:0.8rem;color:#64748b;text-decoration:none;">
                         <i class="fa-solid fa-arrow-left"></i> Quay lại trang chủ
                     </a>
@@ -396,7 +403,7 @@
             <div class="hs-status-left">
                 <div class="hs-status-dot"></div>
                 <div>
-                    <div class="hs-host-name" id="hostDisplayName">Chủ Sân</div>
+                    <div class="hs-host-name" id="hostDisplayName">Host Sân</div>
                     <div class="hs-host-meta">
                         <span class="hs-host-key" id="hostDisplayKey"></span>
                         <span class="hs-host-expiry" id="hostDisplayExpiry"></span>
@@ -436,7 +443,10 @@
                     <!-- Thời gian -->
                     <div class="hs-form-group">
                         <label class="hs-label">Ngày đánh <span class="req">*</span></label>
-                        <input type="date" class="hs-input" id="hostDatePlay" onchange="tinhToanThoiGianHieuLuc()">
+                        <div class="hs-picker-wrap">
+                            <input type="date" class="hs-input" id="hostDatePlay" onchange="tinhToanThoiGianHieuLuc()">
+                            <span class="hs-picker-icon">📅</span>
+                        </div>
                     </div>
                     <div class="hs-form-group">
                         <label class="hs-label">Tổng giờ chơi</label>
@@ -444,11 +454,17 @@
                     </div>
                     <div class="hs-form-group">
                         <label class="hs-label">Giờ bắt đầu <span class="req">*</span></label>
-                        <input type="time" class="hs-input" id="hostTimeStart" onchange="tinhToanThoiGianHieuLuc()">
+                        <div class="hs-picker-wrap">
+                            <input type="time" class="hs-input" id="hostTimeStart" onchange="tinhToanThoiGianHieuLuc()">
+                            <span class="hs-picker-icon">🕐</span>
+                        </div>
                     </div>
                     <div class="hs-form-group">
                         <label class="hs-label">Giờ kết thúc <span class="req">*</span></label>
-                        <input type="time" class="hs-input" id="hostTimeEnd" onchange="tinhToanThoiGianHieuLuc()">
+                        <div class="hs-picker-wrap">
+                            <input type="time" class="hs-input" id="hostTimeEnd" onchange="tinhToanThoiGianHieuLuc()">
+                            <span class="hs-picker-icon">🕐</span>
+                        </div>
                     </div>
 
                     <!-- Sân -->
@@ -470,18 +486,27 @@
                         <input type="text" class="hs-input" id="hostCourtNumber" placeholder="Vd: Sân 1, 2 hoặc 1.2">
                     </div>
 
-                    <!-- Địa chỉ + Maps -->
+                    <!-- Địa chỉ + Nominatim Inline Maps (F3) -->
                     <div class="hs-form-group full">
                         <label class="hs-label">Địa chỉ sân <span class="req">*</span></label>
-                        <div style="display:flex;gap:8px;">
+                        <div style="position:relative;">
                             <input type="text" class="hs-input" id="hostCourtAddress"
-                                placeholder="Nhập địa chỉ hoặc tìm trên Maps..." style="flex:1;">
-                            <button class="hs-btn-maps" type="button" onclick="giaLapTimGoogleMaps()">
-                                <i class="fa-solid fa-map-location-dot"></i> Maps
-                            </button>
+                                placeholder="Nhập địa chỉ để tìm... (gõ ≥ 3 ký tự)"
+                                autocomplete="off"
+                                oninput="window.timDiaChiNominatim(this, document.getElementById('nominatimDropdown'))">
+                            <div id="nominatimDropdown" class="nominatim-dropdown" style="display:none;"></div>
                         </div>
-                        <span class="hs-hint" id="hostMapLinkState">
-                            <i class="fa-solid fa-circle-info"></i> Tìm địa chỉ qua Google Maps hoặc điền tự do
+                        <input type="hidden" id="hiddenLat">
+                        <input type="hidden" id="hiddenLon">
+                        <!-- Minimap preview -->
+                        <iframe id="minimapPreview" style="display:none;width:100%;height:180px;border-radius:8px;margin-top:8px;border:1px solid var(--accent-green,#00ff88);" loading="lazy"></iframe>
+                        <!-- Link Google Maps (hiện khi đã chọn địa chỉ) -->
+                        <a id="hostMapsLink" href="#" target="_blank" rel="noopener"
+                            style="display:none;font-size:0.78rem;color:var(--accent-green,#00ff88);margin-top:4px;text-decoration:none;">
+                            🗺 Xem bản đồ
+                        </a>
+                        <span class="hs-hint" style="margin-top:4px;">
+                            <i class="fa-solid fa-circle-info"></i> Gõ tên sân hoặc địa chỉ để tìm trên OpenStreetMap
                         </span>
                     </div>
 
@@ -650,49 +675,68 @@
 
         </div><!-- end form-layout -->
 
-        <!-- ══ DANH SÁCH KÈO ĐÃ ĐĂNG ══ -->
+        <!-- ══ MAIN CONSOLE TABS (Ca Đấu / Doanh Thu) ══ -->
         <div class="hs-card" style="margin-top:0;">
+            <!-- Tab Navigation -->
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px;">
-                <div class="hs-section-title" style="margin-bottom:0;">
-                    <i class="fa-solid fa-clock-rotate-left"></i> Danh Sách Kèo Đã Đăng
+                <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                    <button id="tabBtnCaDau" class="hs-tab-btn active"
+                        onclick="document.querySelectorAll('.hs-tab-btn').forEach(b=>b.classList.remove('active'));this.classList.add('active');document.querySelectorAll('.hs-tab-panel').forEach(p=>p.style.display='none');document.getElementById('tabCaDau').style.display='block';">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Danh Sách Ca Đấu
+                    </button>
+                    <button id="tabBtnDoanhThu" class="hs-tab-btn"
+                        onclick="window.chuyenTabDoanhThu()">
+                        <i class="fa-solid fa-chart-line"></i> 📊 Doanh Thu
+                    </button>
                 </div>
                 <button class="hs-btn-ghost" onclick="loadLichSuCaDauHost()" style="font-size:0.8rem;padding:6px 12px;">
                     <i class="fa-solid fa-rotate-right"></i> Làm mới
                 </button>
             </div>
 
-            <!-- Filter tabs -->
-            <div class="hs-filter-tabs">
-                <button class="hs-tab-pill active" onclick="locDanhSachKeo('all', this)">
-                    <i class="fa-solid fa-list"></i> Tất cả
-                </button>
-                <button class="hs-tab-pill" onclick="locDanhSachKeo('running', this)">
-                    <i class="fa-solid fa-circle" style="color:var(--accent-green);font-size:0.6em;"></i> Đang chạy
-                </button>
-                <button class="hs-tab-pill" onclick="locDanhSachKeo('closed', this)">
-                    <i class="fa-solid fa-circle" style="color:#64748b;font-size:0.6em;"></i> Đã đóng
-                </button>
+            <!-- Tab: Danh Sách Ca Đấu -->
+            <div id="tabCaDau" class="hs-tab-panel">
+                <!-- Filter tabs -->
+                <div class="hs-filter-tabs">
+                    <button class="hs-tab-pill active" onclick="locDanhSachKeo('all', this)">
+                        <i class="fa-solid fa-list"></i> Tất cả
+                    </button>
+                    <button class="hs-tab-pill" onclick="locDanhSachKeo('running', this)">
+                        <i class="fa-solid fa-circle" style="color:var(--accent-green);font-size:0.6em;"></i> Đang chạy
+                    </button>
+                    <button class="hs-tab-pill" onclick="locDanhSachKeo('closed', this)">
+                        <i class="fa-solid fa-circle" style="color:#64748b;font-size:0.6em;"></i> Đã đóng
+                    </button>
+                </div>
+
+                <div class="hs-table-wrap">
+                    <table class="hs-table">
+                        <thead>
+                            <tr>
+                                <th>Ngày / Giờ</th>
+                                <th>Thông tin Sân</th>
+                                <th class="col-hide-sm">Giới tính / Trình độ</th>
+                                <th class="col-hide-sm">Giá công khai</th>
+                                <th>Khách đăng ký</th>
+                                <th>Trạng thái</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hostSlotsBody">
+                            <tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b;">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Đang tải lịch sử...
+                            </td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
-            <div class="hs-table-wrap">
-                <table class="hs-table">
-                    <thead>
-                        <tr>
-                            <th>Ngày / Giờ</th>
-                            <th>Thông tin Sân</th>
-                            <th class="col-hide-sm">Giới tính / Trình độ</th>
-                            <th class="col-hide-sm">Giá công khai</th>
-                            <th>Khách đăng ký</th>
-                            <th>Trạng thái</th>
-                            <th>Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody id="hostSlotsBody">
-                        <tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b;">
-                            <i class="fa-solid fa-spinner fa-spin"></i> Đang tải lịch sử...
-                        </td></tr>
-                    </tbody>
-                </table>
+            <!-- Tab: Doanh Thu (GĐ4A) — rendered dynamically by JS -->
+            <div id="tabDoanhThu" class="hs-tab-panel" style="display:none;">
+                <div style="text-align:center;padding:32px;color:#64748b;">
+                    <i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>
+                    Đang tải dashboard doanh thu...
+                </div>
             </div>
         </div>
 
@@ -768,10 +812,10 @@
 <!-- Modal Google Maps đã được thay bằng link mở thẳng Google Maps Search -->
 <!-- Không cần modal giả lập nữa -->
 
-<script src="ket-noi-supabase.js?v=5.0"></script>
-<script src="bo-may-du-lieu.js?v=5.0"></script>
-<script src="hieu-ung-giao-dien.js?v=5.0"></script>
-<script src="phan-he-chu-san.js?v=5.0"></script>
+<script src="ket-noi-supabase.js?v=5.1"></script>
+<script src="bo-may-du-lieu.js?v=5.1"></script>
+<script src="hieu-ung-giao-dien.js?v=5.1"></script>
+<script src="phan-he-host.js?v=5.1"></script>
 
 <script>
 // Filter danh sách kèo theo tab

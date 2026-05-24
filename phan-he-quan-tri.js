@@ -1,5 +1,5 @@
 /* =========================================================================
- * 👑 PHÂN HỆ QUẢN TRỊ VIÊN TỐI CAO - PHAN-HE-QUAN-TRI.JS (v3.0 — Supabase chuẩn)
+ * 👑 PHÂN HỆ QUẢN TRỊ VIÊN TỐI CAO - PHAN-HE-QUAN-TRI.JS (v3.1 — Supabase chuẩn)
  * Dự án: TUYENVANGLAI.IO.VN
  * Chức năng: Xác thực admin, CRUD key host, xem big data khách vãng lai,
  *            kiểm duyệt đánh giá, cấu hình thông báo trang chủ.
@@ -8,13 +8,13 @@
  *   - Toàn bộ tên bảng đồng bộ với Supabase schema thật:
  *       "keys"    → "quan_ly_key"      (match: { ma_key })
  *       "slots"   → "ca_dau"
- *       "users"   → "khach_vang_lai"   (fields: sdt_khach, ten_khach)
+ *       "users"   → "nguoi_dung"   (fields: sdt_khach, ten_khach)
  *       "reviews" → "danh_gia_tin_dung"
  *       thêm mới: "dat_slot"
  *   - Xóa payload kép (key+ma_key, ten_host+note, ...)
  *   - Xóa goi_dich_vu / plan (không có trong schema)
  *   - Trạng thái Key lưu bằng tiếng Việt: "Chưa kích hoạt" / "Đang chạy" / "Bị khóa"
- *   - _taiDanhSachKhach: dùng dat_slot + khach_vang_lai (bỏ registered_guests[])
+ *   - _taiDanhSachKhach: dùng dat_slot + nguoi_dung (bỏ registered_guests[])
  *   - luuThongBaoAdmin: 3 PATCH call riêng biệt vào cau_hinh_he_thong
  * =========================================================================
  */
@@ -115,7 +115,7 @@
             const [keys, caDau, khachVL, danhGia] = await Promise.all([
                 window.dbEngine.doc("quan_ly_key"),
                 window.dbEngine.doc("ca_dau"),
-                window.dbEngine.doc("khach_vang_lai"),
+                window.dbEngine.doc("nguoi_dung"),
                 window.dbEngine.doc("danh_gia_tin_dung")
             ]);
 
@@ -442,7 +442,7 @@
 
     /* ═══════════════════════════════════════════════════
      * 6. BIG DATA KHÁCH VÃNG LAI
-     * Tải song song: dat_slot + khach_vang_lai + ca_dau
+     * Tải song song: dat_slot + nguoi_dung + ca_dau
      * Tổng hợp: chỉ đếm ca + tính tiền khi da_chot_ca = true
      * ═══════════════════════════════════════════════════ */
     async function _taiDanhSachKhach() {
@@ -454,7 +454,7 @@
             // Tải song song 3 bảng để tổng hợp dữ liệu khách
             const [datSlots, khachVL, caDau] = await Promise.all([
                 window.dbEngine.doc("dat_slot"),
-                window.dbEngine.doc("khach_vang_lai"),
+                window.dbEngine.doc("nguoi_dung"),
                 window.dbEngine.doc("ca_dau")
             ]);
 
@@ -465,7 +465,7 @@
             // Bản đồ sdt_khach → thông tin tổng hợp của khách
             const map = new Map();
 
-            // Khởi tạo từ bảng khach_vang_lai
+            // Khởi tạo từ bảng nguoi_dung
             khachVL.forEach(u => {
                 const sdt = u.sdt_khach || "";
                 if (!sdt) return;
@@ -487,7 +487,7 @@
                 const ca     = mapCaDau.get(slot.id_ca_dau);
                 if (!sdt || !ca) return;
 
-                // Đảm bảo khách có trong map (khách có thể chưa có trong khach_vang_lai)
+                // Đảm bảo khách có trong map (khách có thể chưa có trong nguoi_dung)
                 if (!map.has(sdt)) {
                     map.set(sdt, {
                         ten: slot.ten_khach || "Ẩn danh",
@@ -554,7 +554,7 @@
 
     /* ═══════════════════════════════════════════════════
      * 7. KIỂM DUYỆT ĐÁNH GIÁ
-     * Bảng dùng: danh_gia_tin_dung, khach_vang_lai, quan_ly_key, ca_dau
+     * Bảng dùng: danh_gia_tin_dung, nguoi_dung, quan_ly_key, ca_dau
      * ═══════════════════════════════════════════════════ */
     async function _taiDanhSachDanhGia() {
         const tbody = document.getElementById("adminReviewsBody");
@@ -565,12 +565,12 @@
             // Tải song song 4 bảng liên quan
             const [danhGia, khachVL, keys, caDau] = await Promise.all([
                 window.dbEngine.doc("danh_gia_tin_dung"),
-                window.dbEngine.doc("khach_vang_lai"),
+                window.dbEngine.doc("nguoi_dung"),
                 window.dbEngine.doc("quan_ly_key"),
                 window.dbEngine.doc("ca_dau")
             ]);
 
-            // Bản đồ sdt → tên (khách) — ưu tiên bảng khach_vang_lai
+            // Bản đồ sdt → tên (khách) — ưu tiên bảng nguoi_dung
             const mapKhach = new Map();
             khachVL.forEach(u => {
                 if (u.sdt_khach && !mapKhach.has(u.sdt_khach)) {
@@ -762,13 +762,23 @@
     }
 
     // Khởi chạy khi admin.html load xong
+    // Có fallback timeout 5 giây: nếu dbEngine chưa sẵn sàng vẫn hiện auth panel
     document.addEventListener("DOMContentLoaded", () => {
+        let attempts = 0;
         const check = setInterval(() => {
+            attempts++;
             if (window.khoiTaoTheme && window.khoiTaoHologramGlow && window.dbEngine) {
+                // Tất cả dependency sẵn sàng → khởi tạo bình thường
                 clearInterval(check);
                 window.khoiTaoTheme();
                 window.khoiTaoHologramGlow();
                 window.khoiTaoTrangAdmin();
+            } else if (attempts >= 50) {
+                // Sau 50×100ms = 5 giây vẫn chưa load được → hiện auth panel để tránh màn trắng
+                clearInterval(check);
+                console.warn("[Admin Init] Timeout 5s — dbEngine chưa sẵn sàng, hiện auth panel dự phòng.");
+                const ap = document.getElementById("adminAuthPanel");
+                if (ap) ap.style.display = "block";
             }
         }, 100);
     });

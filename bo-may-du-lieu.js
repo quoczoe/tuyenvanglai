@@ -90,8 +90,42 @@
      * 2. DỮ LIỆU TĨnh: THƯƠNG HIỆU CẦU — dùng cho autocomplete
      * ═══════════════════════════════════════════════════════════════ */
     window.SHUTTLECOCK_BRANDS = [
-        "Hải Yến", "Victor", "Yonex", "Ba Sao", "Thành Công",
-        "Vina Star", "Kumpoo", "Pro Kennex", "Lining", "RSL", "Bubadu"
+        // ── THƯƠNG HIỆU QUỐC TẾ ──
+        "Yonex Aerosensa 20", "Yonex Aerosensa 30", "Yonex Aerosensa 40", "Yonex Aerosensa 50",
+        "Yonex Mavis 350", "Yonex Mavis 2000",
+        "Victor Gold Champion", "Victor Gold 3", "Victor New Gold 1",
+        "RSL Classic 1", "RSL Classic 2", "RSL Tourney 1", "RSL Silver 2",
+        "Li-Ning A+ 50", "Li-Ning A+ 30", "Li-Ning Champion No.1",
+        "Carlton Tour", "Carlton Heritage", "Carlton Vapour Trail",
+        "Babolat Feather Shuttle",
+        "Apacs Gold Champion", "Apacs Nano Feather",
+        "Fleet No.1", "Fleet Tournament",
+        "Kumpoo Gold 1", "Kumpoo Gold 2",
+        "Pro Kennex Gold", "Pro Kennex Silver",
+        // ── THƯƠNG HIỆU VIỆT NAM & PHỔ BIẾN ──
+        "Hải Yến Giải Đấu", "Hải Yến Vàng", "Hải Yến Bạc",
+        "Ba Sao Vàng", "Ba Sao Bạc", "Ba Sao Đồng",
+        "Lê Quang Giải Đấu", "Lê Quang Vàng", "Lê Quang Standard",
+        "Taro Vàng", "Taro Bạc", "Taro Training",
+        "Thủy Nguyên Vàng", "Thủy Nguyên Bạc",
+        "Đức Phát Vàng", "Đức Phát Training",
+        "Ngôi Sao Vàng", "Ngôi Sao Bạc",
+        "Kim Phát Vàng", "Kim Phát Training",
+        "Phú Hòa Vàng", "Phú Hòa Bạc",
+        "Thiên Lý Vàng", "Thiên Lý Standard",
+        "Toàn Phát No.1", "Toàn Phát No.2",
+        "Minh Châu Giải Đấu", "Minh Châu Training",
+        "Hùng Cường Vàng", "Hùng Cường Bạc",
+        "Thanh Long Vàng", "Thanh Long Training",
+        "Phát Đạt No.1", "Phát Đạt No.2",
+        "Nam Hưng Vàng", "Nam Hưng Bạc",
+        "Đồng Nai Vàng", "Đồng Nai Training",
+        "Thành Công Vàng", "Thành Công Standard",
+        "Vina Star Giải Đấu", "Vina Star Training",
+        "Bubadu Gold", "Bubadu Training",
+        // ── NHÃN GENERIC / TRAINING ──
+        "Cầu Tập 13 quả/ống", "Cầu Tập Nylon (Mavis)", "Cầu Lông Vũ Training",
+        "Cầu Giải Đấu Cao Cấp", "Cầu Thi Đấu Tiêu Chuẩn"
     ];
 
     /* ═══════════════════════════════════════════════════════════════
@@ -178,13 +212,82 @@
     };
 
     /* ═══════════════════════════════════════════════════════════════
-     * 5. GIỮ TƯƠNG THÍCH — Stub hàm sandbox cũ để tránh lỗi runtime
+     * 5. MODULE VALIDATE TẬP TRUNG — dùng chung toàn bộ project
+     * Tất cả rule kiểm tra đầu vào tập trung tại đây, tránh trùng lặp
+     * ═══════════════════════════════════════════════════════════════ */
+    window.VALIDATE = {
+        /**
+         * Kiểm tra tên người dùng tiếng Việt:
+         * Chỉ chữ cái (có dấu) + khoảng trắng, 2–50 ký tự.
+         */
+        ten: function (val) {
+            return /^[a-zA-ZÀ-ỹ\s]{2,50}$/u.test((val || "").trim());
+        },
+
+        /**
+         * Kiểm tra SĐT Việt Nam:
+         * 10 số, bắt đầu bằng 03x / 05x / 07x / 08x / 09x.
+         */
+        sdt: function (val) {
+            return /^(0[35789][0-9]{8})$/.test((val || "").replace(/\D/g, ""));
+        },
+
+        /**
+         * Kiểm tra mật khẩu: tối thiểu 6 ký tự.
+         */
+        pass: function (val) {
+            return val !== null && val !== undefined && String(val).length >= 6;
+        },
+
+        /**
+         * Kiểm tra link Facebook:
+         * Rỗng → hợp lệ (tùy chọn). Có nhập → phải bắt đầu bằng https://facebook.com hoặc fb.com.
+         */
+        facebook: function (val) {
+            if (!val || val.trim() === "") return true;
+            return /^https?:\/\/(www\.)?(facebook\.com|fb\.com)\//.test(val.trim());
+        },
+
+        /**
+         * Kiểm tra định dạng mã Key Host: TVL-XXXXX-XXXX (chữ hoa + số).
+         */
+        keyHost: function (val) {
+            return /^TVL-[A-Z0-9]{5}-[A-Z0-9]{4}$/.test((val || "").trim().toUpperCase());
+        }
+    };
+
+    /**
+     * Validate realtime — gắn vào sự kiện oninput của input.
+     * Tự động toggle class "input-error" và hiện hint lỗi trong .input-hint kế tiếp.
+     *
+     * @param {HTMLElement} inputEl  - Phần tử input cần validate
+     * @param {string}      ruleName - Tên rule trong window.VALIDATE
+     * @param {string}      errorMsg - Thông báo lỗi hiển thị khi không hợp lệ
+     * @returns {boolean} true nếu hợp lệ
+     */
+    window.validateRealtime = function (inputEl, ruleName, errorMsg) {
+        const val = inputEl.value;
+        const rule = window.VALIDATE[ruleName];
+        const ok   = rule ? rule(val) : true;
+        // Thêm/xóa class lỗi — chỉ bật khi đã có giá trị nhưng không hợp lệ
+        inputEl.classList.toggle("input-error", val.length > 0 && !ok);
+        // Hiện hint lỗi trong span.input-hint kế ngay sau input
+        const hint = inputEl.nextElementSibling;
+        if (hint && hint.classList.contains("input-hint")) {
+            hint.textContent = (val.length > 0 && !ok) ? errorMsg : "";
+            hint.style.color = "#ef4444";
+        }
+        return ok;
+    };
+
+    /* ═══════════════════════════════════════════════════════════════
+     * 6. GIỮ TƯƠNG THÍCH — Stub hàm sandbox cũ để tránh lỗi runtime
      * Nếu code cũ nào đó vẫn gọi khoiTaoSandbox() sẽ không crash
      * ═══════════════════════════════════════════════════════════════ */
     window.khoiTaoSandbox = function () {
-        console.info("[bo-may-du-lieu v2.0] Sandbox đã bị vô hiệu hóa — hệ thống dùng Supabase thật.");
+        console.info("[bo-may-du-lieu v3.0] Sandbox đã bị vô hiệu hóa — hệ thống dùng Supabase thật.");
     };
 
-    console.log("⚡ [bo-may-du-lieu v2.0] Khởi động: 63 tỉnh thành ✅ | dbEngine → Supabase trực tiếp ✅ | localStorage sandbox ❌ đã tắt");
+    console.log("⚡ [bo-may-du-lieu v3.0] Khởi động: 63 tỉnh thành ✅ | dbEngine → Supabase trực tiếp ✅ | VALIDATE module ✅ | ~70 thương hiệu cầu ✅");
 
 })();

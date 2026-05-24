@@ -2344,3 +2344,268 @@ body::before {
         border-radius: var(--radius-sm);
     }
 }
+
+/* ══════════════════════════════════════════════════════════════
+ * DATE / TIME PICKER — CYBERPUNK STYLE (F2)
+ * Áp dụng cho tất cả input[type=date] và input[type=time]
+ * trong toàn bộ dự án (host.html, khach.html)
+ * ══════════════════════════════════════════════════════════════ */
+.hs-picker-wrap {
+    position: relative;
+    display: block;
+}
+.hs-picker-wrap input[type="date"],
+.hs-picker-wrap input[type="time"] {
+    color-scheme: dark; /* Kích hoạt native dark UI cho picker popup */
+    cursor: pointer;
+    padding-right: 2.8rem; /* Nhường chỗ cho icon */
+    width: 100%;
+    box-sizing: border-box;
+}
+.hs-picker-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--accent-green, #00ff88);
+    pointer-events: none; /* Không chặn click vào input */
+    font-size: 1.05rem;
+    line-height: 1;
+}
+/* Viền sáng khi focus */
+.hs-picker-wrap:focus-within input[type="date"],
+.hs-picker-wrap:focus-within input[type="time"] {
+    border-color: var(--accent-green, #00ff88) !important;
+    box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.15);
+    outline: none;
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * NOMINATIM MAPS AUTOCOMPLETE DROPDOWN (F3)
+ * ══════════════════════════════════════════════════════════════ */
+.nominatim-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--bg-card, #1a2844);
+    border: 1px solid var(--accent-green, #00ff88);
+    border-radius: var(--radius-sm, 8px);
+    z-index: 1000;
+    max-height: 240px;
+    overflow-y: auto;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.nominatim-dropdown:empty { display: none !important; }
+
+.nominatim-item {
+    padding: 10px 14px;
+    font-size: 0.85rem;
+    color: var(--text-main, #e2e8f0);
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.15s;
+    line-height: 1.4;
+}
+.nominatim-item:last-child { border-bottom: none; }
+.nominatim-item:hover {
+    background: rgba(0, 255, 136, 0.12);
+    color: var(--accent-green, #00ff88);
+}
+
+/* Minimap preview (iframe OpenStreetMap) */
+#minimapPreview {
+    width: 100%;
+    height: 180px;
+    border-radius: var(--radius-sm, 8px);
+    border: 1px solid var(--accent-green, #00ff88);
+    margin-top: 8px;
+    display: none; /* Hiện bằng JS sau khi chọn địa chỉ */
+}
+
+/* ══════════════════════════════════════════════════════════════
+ * 1-CLICK AUTH FORM (MODULE 2) — CSS cho form đăng nhập/đăng ký
+ * ══════════════════════════════════════════════════════════════ */
+/* Radio pill gender selector */
+.gender-pill-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.gender-pill-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    background: var(--bg-card, #1a2844);
+    border: 1px solid var(--border, #1e3a5f);
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-muted, #9ca3af);
+    transition: all 0.2s;
+    user-select: none;
+}
+.gender-pill-group input[type="radio"] { display: none; }
+.gender-pill-group input[type="radio"]:checked + span,
+.gender-pill-group label:has(input[type="radio"]:checked) {
+    color: var(--accent-green, #00ff88);
+    border-color: var(--accent-green, #00ff88);
+    background: rgba(0, 255, 136, 0.08);
+}
+
+/* Slide-down animation cho form phụ đăng ký */
+.auth-extra-fields {
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.4s ease-out, opacity 0.3s;
+    opacity: 0;
+}
+.auth-extra-fields.is-open {
+    max-height: 800px;
+    opacity: 1;
+    transition: max-height 0.5s ease-in, opacity 0.3s 0.1s;
+}
+.auth-extra-fields .extra-divider {
+    text-align: center;
+    color: var(--text-muted, #9ca3af);
+    font-size: 0.8rem;
+    margin: 14px 0 12px;
+    position: relative;
+}
+.auth-extra-fields .extra-divider::before,
+.auth-extra-fields .extra-divider::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 38%;
+    height: 1px;
+    background: var(--border, #1e3a5f);
+}
+.auth-extra-fields .extra-divider::before { left: 0; }
+.auth-extra-fields .extra-divider::after  { right: 0; }
+
+/* Input với class input-error */
+.input-error {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+.input-hint {
+    display: block;
+    font-size: 0.78rem;
+    margin-top: 4px;
+    min-height: 1.1em;
+    color: #ef4444;
+}
+
+/* Profile upgrade box (MODULE 4) */
+.profile-upgrade-box {
+    background: var(--bg-card, #1a2844);
+    border: 1px solid var(--accent-green, #00ff88);
+    border-radius: var(--radius-md, 12px);
+    padding: 18px 20px;
+    margin-top: 16px;
+}
+.profile-upgrade-box .upgrade-header {
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--accent-green, #00ff88);
+    margin-bottom: 8px;
+}
+.profile-upgrade-box p {
+    font-size: 0.88rem;
+    color: var(--text-muted, #9ca3af);
+    margin: 0 0 12px;
+}
+.upgrade-input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.upgrade-input-row input {
+    flex: 1;
+    min-width: 180px;
+    font-family: monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.profile-host-badge {
+    background: linear-gradient(135deg, rgba(0,255,136,0.08), rgba(0,255,136,0.03));
+    border: 1px solid var(--accent-green, #00ff88);
+    border-radius: var(--radius-md, 12px);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+.btn-go-host {
+    margin-left: auto;
+    padding: 8px 18px;
+    background: var(--accent-green, #00ff88);
+    color: #0a1628;
+    border-radius: var(--radius-sm, 8px);
+    font-weight: 700;
+    font-size: 0.88rem;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+}
+.btn-go-host:hover { opacity: 0.85; }
+
+/* ══════════════════════════════════════════════════════════════
+ * SHUTTLECOCK CARD LAYOUT 2 CỘT (F5)
+ * ══════════════════════════════════════════════════════════════ */
+.shuttlecock-card {
+    background: var(--bg-card2, #162039);
+    border: 1px solid var(--border, #1e3a5f);
+    border-radius: var(--radius-sm, 8px);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    position: relative;
+}
+.sc-row-full { margin-bottom: 10px; }
+.sc-row-full label,
+.sc-row-2col label { font-size: 0.82rem; color: var(--text-muted, #9ca3af); margin-bottom: 4px; display: block; }
+.sc-row-full input { width: 100%; box-sizing: border-box; }
+.sc-row-2col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.sc-tong-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    background: rgba(0, 255, 136, 0.06);
+    border-radius: var(--radius-sm, 8px);
+    font-size: 0.9rem;
+    margin-top: 6px;
+}
+.sc-tong-tien { color: var(--accent-green, #00ff88); font-size: 1.05rem; }
+.btn-remove-sc {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-remove-sc:hover { background: rgba(239, 68, 68, 0.25); }
+
+@media (max-width: 480px) {
+    .sc-row-2col { grid-template-columns: 1fr; }
+    .upgrade-input-row { flex-direction: column; }
+    .upgrade-input-row input { width: 100%; min-width: unset; }
+    .profile-host-badge { flex-direction: column; align-items: flex-start; }
+    .btn-go-host { margin-left: 0; width: 100%; text-align: center; }
+}
