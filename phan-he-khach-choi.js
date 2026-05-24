@@ -24,6 +24,9 @@
     window.currentGuest = null;
     let _guestRatingVal = 5;
     let _filterTimeout  = null;
+    // Tên bảng người dùng đang dùng — tự động detect khi đăng nhập/đăng ký
+    // Mặc định "nguoi_dung" (sau migration), fallback "khach_vang_lai" (trước migration)
+    let _bangND = "nguoi_dung";
 
     /* ═══════════════════════════════════════════════════
      * 1. KHỞI TẠO TRANG KHÁCH
@@ -226,9 +229,20 @@
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang kiểm tra...'; }
 
         try {
-            // Kiểm tra SĐT trong bảng nguoi_dung
-            const users = await window.dbEngine.doc("nguoi_dung", { eq: { sdt_khach: phone } });
-            const user  = users[0] || null;
+            // Bước 1: Thử bảng "nguoi_dung" (schema mới — sau migration)
+            // Dùng docThu() để im lặng nếu bảng chưa tồn tại (không hiện toast lỗi)
+            let users = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: phone } });
+
+            if (users === null) {
+                // Bảng "nguoi_dung" chưa tồn tại → fallback sang "khach_vang_lai" (schema cũ)
+                console.info("[Auth] Bảng nguoi_dung chưa có → dùng khach_vang_lai (migration chưa chạy)");
+                _bangND = "khach_vang_lai";
+                users = await window.dbEngine.doc("khach_vang_lai", { eq: { sdt_khach: phone } });
+            } else {
+                _bangND = "nguoi_dung";
+            }
+
+            const user = users[0] || null;
 
             if (user) {
                 // ── KỊCH BẢN A: SĐT ĐÃ TỒN TẠI → ĐĂNG NHẬP ──
@@ -248,8 +262,9 @@
                 _xoFormPhu(phone, pass, gender);
             }
         } catch (e) {
+            // dbEngine đã hiện toast "Mất kết nối" rồi — không hiện thêm
             console.error("Lỗi xác thực:", e);
-            window.hienToast("Lỗi kết nối", "Không thể xác thực. Thử lại sau.", "danger");
+            // Chỉ reset nút, không toast lần 2
         } finally {
             if (btn) { btn.disabled = false; btn.innerHTML = 'XÁC NHẬN →'; }
         }
@@ -291,25 +306,43 @@
 
         try {
             const hash = await _hashMatKhau(pass);
-            const payload = {
-                ten_khach:    ten,
-                sdt_khach:    phone,
-                gioi_tinh:    gender,
-                mat_khau_hash: hash,
-                vai_tro:      "guest",
-                sdt_zalo:     sdtZalo,
-                facebook_link: facebook || null,
-                ma_gioi_thieu: maGT || null
-            };
 
-            const results = await window.dbEngine.ghi("nguoi_dung", payload);
-            const newUser = results[0] || payload;
+            // Xây payload theo schema của bảng đang dùng
+            let payload;
+            if (_bangND === "nguoi_dung") {
+                // Schema mới (sau migration) — ghi đầy đủ cột
+                payload = {
+                    ten_khach:    ten,
+                    sdt_khach:    phone,
+                    gioi_tinh:    gender,
+                    mat_khau_hash: hash,
+                    vai_tro:      "guest",
+                    sdt_zalo:     sdtZalo,
+                    facebook_link: facebook || null,
+                    ma_gioi_thieu: maGT || null
+                };
+            } else {
+                // Schema cũ "khach_vang_lai" — chỉ ghi các cột tồn tại
+                // Các cột mới (mat_khau_hash, vai_tro, gioi_tinh...) chưa có → bỏ qua
+                payload = {
+                    ten_khach: ten,
+                    sdt_khach: phone
+                    // ngay_tham_gia tự động ghi bởi DEFAULT now() trên Supabase
+                };
+            }
+
+            const results = await window.dbEngine.ghi(_bangND, payload);
+            const newUser = results[0] || { ...payload, vai_tro: "guest", gioi_tinh: gender };
 
             window.hienToast("Tạo tài khoản thành công! 🎉", `Chào ${ten}! Tài khoản đã được tạo.`, "success");
             _luuSessionVaDangNhap(newUser);
         } catch (e) {
+            // dbEngine đã hiện toast "Mất kết nối" nếu là lỗi mạng
             console.error("Lỗi đăng ký:", e);
-            window.hienToast("Lỗi đăng ký", "Không thể tạo tài khoản. Thử lại sau.", "danger");
+            // Chỉ hiện toast nếu là lỗi logic (không phải lỗi mạng)
+            if (!e.message?.includes("fetch") && !e.message?.includes("network")) {
+                window.hienToast("Lỗi đăng ký", "Không thể tạo tài khoản. Thử lại sau.", "danger");
+            }
         } finally {
             if (btnDK) { btnDK.disabled = false; btnDK.innerHTML = 'TẠO TÀI KHOẢN & ĐĂNG NHẬP'; }
         }

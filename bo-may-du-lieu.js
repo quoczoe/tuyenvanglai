@@ -133,14 +133,16 @@
      * Gọi khi Supabase không kết nối được
      * ═══════════════════════════════════════════════════════════════ */
     function hienLoiMang(tenTacVu) {
-        const msg = `Không thể kết nối máy chủ khi thực hiện: ${tenTacVu}. Vui lòng kiểm tra kết nối Internet và thử lại.`;
+        // Thông báo chung — KHÔNG lộ tên bảng nội bộ ra UI người dùng
+        const msg = "Không thể kết nối máy chủ. Vui lòng kiểm tra kết nối Internet và thử lại.";
         // Dùng hienToast nếu đã load hieu-ung-giao-dien.js
         if (typeof window.hienToast === "function") {
-            window.hienToast("Mất kết nối", msg, "error");
+            window.hienToast("Mất kết nối", msg, "danger");
         } else {
             // Fallback: alert đơn giản
             alert("⚠️ " + msg);
         }
+        // Ghi chi tiết ra console để developer debug (không hiện cho người dùng)
         console.error(`[dbEngine] Lỗi mạng — ${tenTacVu}`);
     }
 
@@ -170,6 +172,26 @@
             } catch (e) {
                 hienLoiMang(`Đọc bảng "${tenBang}"`);
                 throw e; // Ném tiếp để caller biết thao tác thất bại
+            }
+        },
+
+        /**
+         * "Thử đọc im lặng" — không hiện toast lỗi, trả về null nếu thất bại.
+         * Dùng để kiểm tra xem bảng có tồn tại không trước khi gọi doc() thật.
+         * Ví dụ: probe "nguoi_dung" → nếu null thì fallback sang "khach_vang_lai"
+         * @param {string} tenBang - Tên bảng cần kiểm tra
+         * @param {object} boLoc   - Bộ lọc tùy chọn
+         * @returns {Array|null} Mảng bản ghi nếu thành công, null nếu lỗi
+         */
+        async docThu(tenBang, boLoc = {}) {
+            if (!window.khoDuLieuVinhVien) return null;
+            try {
+                const data = await window.khoDuLieuVinhVien.docData(tenBang, boLoc);
+                return Array.isArray(data) ? data : [];
+            } catch (e) {
+                // Im lặng — không hiện toast, chỉ ghi console để debug
+                console.warn(`[dbEngine.docThu] "${tenBang}" không truy cập được:`, e.message);
+                return null;
             }
         },
 

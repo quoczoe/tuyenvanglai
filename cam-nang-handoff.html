@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bộ Prompt Handoff Vạn Năng - Quoczoe 2026</title>
+    <style>
+        :root {
+            --bg-main: #0f1e35;
+            --bg-card: #1a2844;
+            --border-line: #1e3a5f;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-neon: #00ff88;
+            --accent-neon-hover: #00cc6c;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+            border-bottom: 1px dashed var(--border-line);
+            padding-bottom: 1.5rem;
+        }
+
+        header h1 {
+            color: var(--accent-neon);
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 10px rgba(0, 255, 136, 0.3);
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-line);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            position: relative;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-neon);
+        }
+
+        .card-badge {
+            position: absolute;
+            top: -12px;
+            left: 1.5rem;
+            background: var(--bg-main);
+            border: 1px solid var(--accent-neon);
+            color: var(--accent-neon);
+            padding: 2px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            color: #fff;
+            margin-top: 0.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .context-box {
+            background: rgba(15, 30, 53, 0.6);
+            border-left: 3px solid var(--text-muted);
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .context-box strong {
+            color: var(--text-main);
+            display: block;
+            margin-bottom: 0.25rem;
+            font-size: 0.9rem;
+        }
+
+        .context-box p {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            line-height: 1.4;
+        }
+
+        .prompt-area {
+            position: relative;
+            background: #070f1a;
+            border: 1px solid var(--border-line);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .prompt-text {
+            color: #a5b4fc;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.92rem;
+            white-space: pre-wrap;
+            line-height: 1.5;
+            word-break: break-all;
+        }
+
+        .btn-copy {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: transparent;
+            border: 1px solid var(--border-line);
+            color: var(--text-muted);
+            padding: 5px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .btn-copy:hover {
+            border-color: var(--accent-neon);
+            color: var(--accent-neon);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .btn-copy.copied {
+            border-color: var(--accent-neon);
+            color: #070f1a;
+            background: var(--accent-neon);
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-line);
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        footer strong {
+            color: var(--accent-neon);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>Bộ Prompt Handoff Vạn Năng</h1>
+            <p>Khung quản lý ngữ cảnh dự án tối ưu tuyệt đối, áp dụng cho mọi ngôn ngữ và nền tảng</p>
+        </header>
+
+        <!-- BƯỚC 1 -->
+        <div class="card">
+            <span class="card-badge">Bước 1</span>
+            <div class="card-title">Kết Thúc Session Hiện Tại (Compact & Save Context)</div>
+            
+            <div class="context-box">
+                <strong>Khi nào cần dùng?</strong>
+                <p>Dùng ở cuối mỗi ca làm việc khi AI báo sắp hết dung lượng chat (Limit), hoặc khi mày chủ động muốn dừng tiến độ để hôm sau làm tiếp ở phòng chat mới.</p>
+            </div>
+
+            <div class="prompt-area">
+                <button class="btn-copy" onclick="copyPrompt(this)">Copy Prompt</button>
+                <div class="prompt-text">Trước khi kết thúc ca làm việc này, hãy cập nhật và đồng bộ lại toàn bộ trạng thái dự án vào file cấu trúc định danh (ví dụ: claude.md hoặc tương đương) với các mục sau:
+1. TIẾN ĐỘ CHI TIẾT: Liệt kê chính xác những file, hàm, component hoặc API nào ĐÃ HOÀN THÀNH trong phiên chat này.
+2. KIẾN TRÚC HIỆN TẠI: Tóm tắt cấu trúc cơ sở dữ liệu, luồng đi của biến số (State) hoặc sơ đồ kết nối hạ tầng tính đến thời điểm hiện tại.
+3. QUYẾT ĐỊNH CỐ ĐỊNH: Ghi lại các quyết định quan trọng về mặt UI/UX, logic nghiệp vụ cốt lõi, hoặc quy tắc bảo mật đã thống nhất và lý do tại sao chọn phương án đó.
+4. KẾ HOẠCH PHIÊN SAU: Chỉ ra chính xác các task cụ thể, các file cần chỉnh sửa hoặc viết mới ngay khi mở phiên làm việc tiếp theo.</div>
+            </div>
+        </div>
+
+        <!-- BƯỚC 2 -->
+        <div class="card">
+            <span class="card-badge">Bước 2</span>
+            <div class="card-title">Khởi Động Session Mới (Load Context)</div>
+            
+            <div class="context-box">
+                <strong>Khi nào cần dùng?</strong>
+                <p>Dùng ở câu lệnh đầu tiên ngay khi mở một ô chat mới. Nhớ đính kèm hoặc dán nội dung file cấu trúc định danh (nhật ký) của dự án vào cùng lệnh này.</p>
+            </div>
+
+            <div class="prompt-area">
+                <button class="btn-copy" onclick="copyPrompt(this)">Copy Prompt</button>
+                <div class="prompt-text">Hãy đọc kỹ file nhật ký dự án (claude.md / thông tin context) tao vừa cung cấp và phân tích ngắn gọn:
+1. Hiện trạng hệ thống đang dừng chính xác ở vị trí nào và mục tiêu tiếp theo cần xử lý là gì?
+2. Có quy tắc bọc thép, ràng buộc kỹ thuật hay kiến trúc bảo mật đặc biệt nào cần tuân thủ nghiêm ngặt để đéo làm hỏng hoặc triệt tiêu logic của các phần code cũ đã chạy ổn định không?
+
+YÊU CẦU ĐẦU RA: Khi viết code, bắt buộc phải xuất đầy đủ 100% cấu trúc và mã nguồn hoàn chỉnh qua Artifacts (hoặc khối code block sạch). Tuyệt đối nghiêm cấm viết tắt, nghiêm cấm dùng mã giả (placeholder) dạng "// code xử lý tại đây". Toàn bộ comment giải thích code phải sử dụng TIẾNG VIỆT 100%.</div>
+            </div>
+        </div>
+
+        <!-- BƯỚC 3 -->
+        <div class="card">
+            <span class="card-badge">Bước 3</span>
+            <div class="card-title">Kích Hoạt Plan Mode Cho Task Phức Tạp (Risk & Logic Analysis)</div>
+            
+            <div class="context-box">
+                <strong>Khi nào cần dùng?</strong>
+                <p>Dùng trước khi bắt đầu viết một tính năng khó, thuật toán phức tạp, hoặc khi phải liên kết xử lý dữ liệu giữa nhiều bảng/hệ thống với nhau nhằm né lỗi triệt tiêu công năng.</p>
+            </div>
+
+            <div class="prompt-area">
+                <button class="btn-copy" onclick="copyPrompt(this)">Copy Prompt</button>
+                <div class="prompt-text">Dựa trên cấu trúc toàn cục của dự án và trạng thái hiện tại, hãy kích hoạt "Plan Mode" để phân tích giải pháp cho tính năng lớn chuẩn bị triển khai:
+- Hãy bóc tách luồng xử lý dữ liệu (Data Flow) đầu vào và đầu ra của tính năng này.
+- Chỉ ra các điểm rủi ro kỹ thuật, lỗi bất đồng bộ hoặc xung đột logic có thể xảy ra với hệ thống hiện tại và đề xuất giải pháp xử lý triệt để.
+- Lập lộ trình triển khai chi tiết theo thứ tự ưu tiên (Task nào là điều kiện cần làm trước, task nào làm sau).
+
+CHÚ Ý: Nghiêm cấm viết code ngay lập tức. Hãy xuất bảng kế hoạch phân tích logic này bằng tiếng Việt rõ ràng để tao duyệt trước!</div>
+            </div>
+        </div>
+
+        <footer>
+            Bản Quyền Độc Quyền Thiết Kế Thuộc Về <strong>Quoczoe 2026</strong> © Toàn Quyền Bảo Lưu.
+        </footer>
+    </div>
+
+    <script>
+        function copyPrompt(button) {
+            const promptText = button.nextElementSibling.innerText;
+            
+            navigator.clipboard.writeText(promptText).then(() => {
+                button.innerText = "Copied!";
+                button.classList.add("copied");
+                
+                setTimeout(() => {
+                    button.innerText = "Copy Prompt";
+                    button.classList.remove("copied");
+                }, 2000);
+            }).catch(err => {
+                console.error("Lỗi copy: ", err);
+                alert("Không thể copy tự động, hãy bôi đen text để copy tay!");
+            });
+        }
+    </script>
+</body>
+</html>
