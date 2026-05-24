@@ -2765,3 +2765,27 @@ body::before {
     opacity: 1;
 }
 .acc-arrow.open { transform: rotate(180deg); }
+/* ══════════════════════════════════════════════════════════════
+ * FIX C — DATE RANGE KHÔNG TRÀN SIDEBAR (khach.html)
+ * Đảm bảo 2 ô input ngày nằm gọn bên trong card sidebar trên PC
+ * ══════════════════════════════════════════════════════════════ */
+.kh-date-range {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;       /* Chặn con tràn ra ngoài */
+}
+.kh-date-range > div {
+    min-width: 0;           /* Cho phép grid cell co lại khi cần */
+    overflow: hidden;
+}
+.kh-date-range .hs-picker-wrap { width: 100%; }
+.kh-date-range .hs-picker-wrap input[type="date"],
+.kh-date-range .kh-input-sm[type="date"] {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    font-size: 0.75rem;    /* Thu nhỏ font để vừa ô hẹp */
+}

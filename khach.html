@@ -65,14 +65,18 @@
         }
         .kh-back-btn:hover { border-color: var(--accent-green); color: var(--accent-green); }
 
-        /* ══ LAYOUT CHÍNH ══ */
+        /* ══ LAYOUT CHÍNH — FIX A: FULL-WIDTH PC ══ */
         .kh-layout {
             display: grid;
-            grid-template-columns: 300px 1fr;
+            /* Sidebar: tối thiểu 300px, tối đa 28% màn hình — tự co giãn thông minh */
+            grid-template-columns: minmax(300px, 28%) 1fr;
             gap: 1.5rem;
-            max-width: 1280px;
+            max-width: 1680px;   /* Tăng từ 1280 → 1680 để tận dụng màn PC rộng */
+            width: 100%;
             margin: 0 auto;
             padding: 1.5rem 2rem 3rem;
+            box-sizing: border-box;
+            align-items: start;  /* Sidebar và content cùng top, không kéo dài nhau */
         }
         @media (max-width: 900px) {
             .kh-layout { grid-template-columns: 1fr; padding: 1rem; }
@@ -179,14 +183,14 @@
         /* ══ CỘT PHẢI: TÌM KÈO ══ */
         .kh-right { display: flex; flex-direction: column; gap: 1rem; }
 
-        /* Bộ lọc sticky */
+        /* Bộ lọc — FIX A: không sticky, cuộn tự nhiên theo trang */
         .kh-filter-bar {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius-lg);
             padding: 1rem 1.25rem;
-            position: sticky;
-            top: 68px;
+            position: relative;  /* FIX A: đổi sticky → relative, không đè content */
+            top: auto;
             z-index: 100;
         }
         .kh-filter-title {
@@ -239,8 +243,20 @@
         .kh-result-count span { color: var(--accent-green); }
         .kh-result-sort { font-size: 0.75rem; color: #64748b; }
 
-        /* ══ CARD KÈO ══ */
-        .kh-card-list { display: flex; flex-direction: column; gap: 12px; }
+        /* ══ CARD KÈO — FIX A: Grid 2-3 cột trên PC ══ */
+        .kh-card-list {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 2 cột mặc định trên PC */
+            gap: 14px;
+        }
+        @media (min-width: 1400px) {
+            /* Màn hình rất rộng (1400px+): 3 cột */
+            .kh-card-list { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 900px) {
+            /* Mobile: 1 cột */
+            .kh-card-list { grid-template-columns: 1fr; }
+        }
         .kh-keo-card {
             background: var(--bg-card);
             border: 1px solid var(--border);
@@ -595,14 +611,19 @@
                 <div class="kh-profile-avatar">🏸</div>
                 <div style="flex:1;min-width:0;">
                     <div class="kh-profile-name" id="profileGuestName">--</div>
-                    <!-- FIX 11: Nút ? nhỏ — muốn trở thành host? Chỉ hiện khi vai_tro='guest' -->
+                    <!-- FIX B: Banner nút "Trở thành Host Sân" — nổi bật, 1 dòng, neon border -->
+                    <!-- Chỉ hiện khi vai_tro='guest'; ẩn khi là host -->
                     <a href="host.html" id="btnNangCapHostHint"
-                       title="Muốn đăng bài gom khách? Trở thành Host Sân!"
-                       style="display:none;font-size:0.72rem;color:var(--accent-green,#00ff88);
-                              text-decoration:none;margin-top:4px;align-items:center;gap:4px;
-                              flex-wrap:nowrap;">
-                        <i class="fa-solid fa-circle-question"></i>
-                        Muốn trở thành Host Sân? →
+                       title="Đăng bài gom khách? Trở thành Host Sân ngay!"
+                       style="display:none;width:100%;margin-top:12px;padding:10px 14px;
+                              border-radius:10px;border:1.5px solid var(--accent-green,#00ff88);
+                              color:var(--accent-green,#00ff88);background:rgba(0,255,136,0.06);
+                              font-size:0.82rem;font-weight:700;text-decoration:none;
+                              white-space:nowrap;align-items:center;justify-content:center;
+                              gap:8px;box-shadow:0 0 12px rgba(0,255,136,0.15);
+                              transition:background 0.2s,box-shadow 0.2s;">
+                        <i class="fa-solid fa-rocket"></i>
+                        🏟️ Muốn trở thành Host Sân? →
                     </a>
                     <div class="kh-profile-phone" id="profileGuestPhone" style="margin-top:4px;">SĐT: --</div>
                     <div class="kh-profile-date" id="profileGuestDate">Gia nhập: --</div>

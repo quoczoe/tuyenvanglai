@@ -920,13 +920,26 @@
 (function () {
 
     document.addEventListener("DOMContentLoaded", function () {
-        /* Hiện auth panel ngay để tránh flash màn hình trắng */
-        document.getElementById("adminAuthPanel").style.display = "block";
+        /* FIX D: Bọc toàn bộ trong try/catch — crash tại đây không làm trắng trang */
+        try {
+            /* Hiện auth panel ngay — null-safe để tránh TypeError */
+            var ap = document.getElementById("adminAuthPanel");
+            if (ap) ap.style.display = "block";
 
-        /* Đóng modal khi Admin click ra vùng overlay bên ngoài hộp modal */
-        document.getElementById("modalKeyOverlay").addEventListener("click", function (e) {
-            if (e.target === this) dongModalKey();
-        });
+            /* Đóng modal khi Admin click ra vùng overlay bên ngoài hộp modal */
+            var mo = document.getElementById("modalKeyOverlay");
+            if (mo) mo.addEventListener("click", function (e) {
+                if (e.target === this && typeof dongModalKey === "function") dongModalKey();
+            });
+        } catch (err) {
+            /* Nếu có lỗi bất ngờ, vẫn cố gắng hiện auth panel */
+            console.warn("[admin] DOMContentLoaded lỗi:", err);
+            try {
+                var fb = document.getElementById("adminAuthPanel") ||
+                         document.querySelector(".ad-auth-wrap");
+                if (fb) fb.style.display = "block";
+            } catch (_) {}
+        }
     });
 
     /* ──────────────────────────────────────────────────

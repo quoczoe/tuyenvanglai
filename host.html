@@ -373,22 +373,53 @@
 
 <div class="hs-main">
 
-    <!-- ══════════ MÀN CHỜ ĐĂNG NHẬP (v3.0 — Session-based auth) ══════════ -->
-    <!-- Không còn nhập key tại đây — kichHoatKey được thực hiện trong Profile của khach.html -->
+    <!-- ══════════ MÀN KÍCH HOẠT KEY HOST (FIX E — hiện cho guest đã đăng nhập) ══════════ -->
     <div id="hostAuthPanel" style="display:none;">
         <div class="hs-auth-wrap">
             <div class="hs-auth-card">
                 <span class="hs-auth-icon">🏟️</span>
-                <div class="hs-auth-title">Đang Kiểm Tra Phiên Đăng Nhập...</div>
-                <p class="hs-auth-sub">
-                    Vui lòng đăng nhập vào trang Khách và kích hoạt Key Host trong phần Hồ Sơ của bạn.
+                <div class="hs-auth-title">Kích Hoạt Quyền Host Sân</div>
+                <p class="hs-auth-sub" id="hostAuthSubText">
+                    Nhập mã SaaS Key để kích hoạt quyền đăng kèo vãng lai.
                 </p>
-                <a href="khach.html" class="hs-btn-primary" style="width:100%;justify-content:center;display:flex;text-decoration:none;margin-bottom:12px;">
-                    <i class="fa-solid fa-arrow-right"></i> Về Trang Khách Để Đăng Nhập
-                </a>
-                <div style="margin-top:4px;">
-                    <a href="index.html" style="font-size:0.8rem;color:#64748b;text-decoration:none;">
-                        <i class="fa-solid fa-arrow-left"></i> Quay lại trang chủ
+
+                <!-- Form nhập key -->
+                <div id="hostKeyForm" style="margin-top:16px;">
+                    <div style="position:relative;margin-bottom:12px;">
+                        <input type="text" id="hostActivationKey"
+                               placeholder="TVL-XXXXX-XXXX"
+                               maxlength="14"
+                               autocomplete="off"
+                               style="width:100%;padding:12px 16px;border-radius:8px;
+                                      border:1.5px solid rgba(0,255,136,0.3);
+                                      background:rgba(0,255,136,0.04);
+                                      color:#e2e8f0;font-family:monospace;font-size:1rem;
+                                      text-transform:uppercase;box-sizing:border-box;
+                                      outline:none;letter-spacing:0.05em;"
+                               oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9\-]/g,'')">
+                    </div>
+                    <button onclick="xacThucKeyHost()"
+                            style="width:100%;padding:12px;border-radius:8px;border:none;
+                                   background:linear-gradient(135deg,#00ff88,#00cc6a);
+                                   color:#0a1628;font-weight:800;font-size:0.95rem;
+                                   cursor:pointer;display:flex;align-items:center;
+                                   justify-content:center;gap:8px;">
+                        <i class="fa-solid fa-key"></i> Kích Hoạt Quyền Quản Trị
+                    </button>
+                </div>
+
+                <!-- Hướng dẫn mua key — inject bởi _hienHuongDanMuaKey() -->
+                <div id="hostKeyHint" style="display:none;"></div>
+
+                <!-- Link điều hướng -->
+                <div style="margin-top:16px;display:flex;justify-content:space-between;align-items:center;">
+                    <a href="khach.html"
+                       style="font-size:0.8rem;color:#64748b;text-decoration:none;">
+                        <i class="fa-solid fa-arrow-left"></i> Về trang Khách
+                    </a>
+                    <a href="index.html"
+                       style="font-size:0.8rem;color:#64748b;text-decoration:none;">
+                        <i class="fa-solid fa-house"></i> Trang chủ
                     </a>
                 </div>
             </div>

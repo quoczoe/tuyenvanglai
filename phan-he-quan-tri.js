@@ -765,23 +765,33 @@
     }
 
     // Khởi chạy khi admin.html load xong
-    // Có fallback timeout 5 giây: nếu dbEngine chưa sẵn sàng vẫn hiện auth panel
+    // Có fallback timeout 8 giây + try/catch toàn diện — tránh crash silent → màn trắng
     document.addEventListener("DOMContentLoaded", () => {
         let attempts = 0;
         const check = setInterval(() => {
             attempts++;
-            if (window.khoiTaoTheme && window.khoiTaoHologramGlow && window.dbEngine) {
-                // Tất cả dependency sẵn sàng → khởi tạo bình thường
+            try {
+                if (window.khoiTaoTheme && window.khoiTaoHologramGlow && window.dbEngine) {
+                    // Tất cả dependency sẵn sàng → khởi tạo bình thường
+                    clearInterval(check);
+                    window.khoiTaoTheme();
+                    window.khoiTaoHologramGlow();
+                    window.khoiTaoTrangAdmin();
+                } else if (attempts >= 80) {
+                    // Sau 80×100ms = 8 giây vẫn chưa load được → hiện auth panel dự phòng
+                    clearInterval(check);
+                    console.warn("[Admin Init] Timeout 8s — dbEngine chưa sẵn sàng, hiện auth panel dự phòng.");
+                    const ap = document.getElementById("adminAuthPanel");
+                    if (ap) ap.style.display = "block";
+                }
+            } catch (err) {
+                // Crash trong init → dừng interval, hiện auth panel ngay, log lỗi
                 clearInterval(check);
-                window.khoiTaoTheme();
-                window.khoiTaoHologramGlow();
-                window.khoiTaoTrangAdmin();
-            } else if (attempts >= 50) {
-                // Sau 50×100ms = 5 giây vẫn chưa load được → hiện auth panel để tránh màn trắng
-                clearInterval(check);
-                console.warn("[Admin Init] Timeout 5s — dbEngine chưa sẵn sàng, hiện auth panel dự phòng.");
-                const ap = document.getElementById("adminAuthPanel");
-                if (ap) ap.style.display = "block";
+                console.error("[Admin Init] Crash trong init interval:", err);
+                try {
+                    const ap = document.getElementById("adminAuthPanel");
+                    if (ap) ap.style.display = "block";
+                } catch (_) { /* DOM lỗi — không làm gì thêm */ }
             }
         }, 100);
     });

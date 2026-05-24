@@ -71,9 +71,10 @@
                 const guestData = JSON.parse(savedGuest);
                 if (guestData.vai_tro !== "host" || !guestData.ma_key_host) {
                     // Đăng nhập rồi nhưng chưa phải host
-                    window.hienToast("Tài khoản chưa là Host", "Vào trang Profile để kích hoạt Key Host.", "warning");
-                    setTimeout(() => { window.location.href = "khach.html?redirect=host"; }, 2000);
+                    // FIX E: KHÔNG redirect — hiện màn hình nhập Key tại chỗ
+                    window.currentUser = guestData;
                     _hienThiManKichHoat();
+                    _hienHuongDanMuaKey(guestData.ten_khach || "");
                     return;
                 }
                 key = guestData.ma_key_host;
@@ -130,6 +131,44 @@
         const con  = document.getElementById("hostConsole");
         if (auth) auth.style.display = "block";
         if (con)  con.style.display  = "none";
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+     * FIX E — Hiện hướng dẫn mua key bên dưới form nhập key
+     * Gọi khi user đã đăng nhập nhưng vai_tro vẫn là 'guest'
+     * ═══════════════════════════════════════════════════════════════ */
+    function _hienHuongDanMuaKey(tenKhach) {
+        // Cập nhật sub-text để phù hợp ngữ cảnh
+        const sub = document.getElementById("hostAuthSubText");
+        if (sub) {
+            sub.textContent = "Nhập mã SaaS Key để kích hoạt quyền đăng kèo vãng lai.";
+        }
+
+        // Inject hướng dẫn liên hệ vào #hostKeyHint
+        const hint = document.getElementById("hostKeyHint");
+        if (!hint) return;
+        hint.innerHTML = `
+            <div style="margin-top:14px;padding:12px 14px;border-radius:8px;
+                        border:1px solid rgba(0,255,136,0.2);
+                        background:rgba(0,255,136,0.04);
+                        font-size:0.78rem;color:#9ca3af;line-height:1.6;">
+                <div style="color:#00ff88;font-weight:700;margin-bottom:6px;">
+                    <i class="fa-solid fa-circle-info"></i>
+                    Xin chào${tenKhach ? " " + tenKhach : ""}!
+                </div>
+                Bạn đang truy cập khu vực <strong style="color:#e2e8f0;">HOST SÂN</strong> —
+                dành cho người muốn đăng bài gom khách vãng lai.<br><br>
+                Để kích hoạt, bạn cần một <strong style="color:#00ff88;">Mã SaaS Key</strong>
+                từ Admin. Liên hệ:<br>
+                <a href="https://m.me/tuyenvanglai" target="_blank" rel="noopener"
+                   style="color:#00ff88;font-weight:700;text-decoration:none;
+                          display:inline-flex;align-items:center;gap:6px;margin-top:8px;">
+                    <i class="fa-brands fa-facebook-messenger"></i>
+                    Nhắn tin Admin qua Facebook Messenger ↗
+                </a>
+            </div>
+        `;
+        hint.style.display = "block";
     }
 
     async function _hienThiDashboard() {
@@ -244,10 +283,34 @@
                 } catch (e) { console.warn("Không cập nhật được device_id:", e); }
             }
 
-            window.currentHostKey = key;
-            localStorage.setItem("tvl_host_key", key);
-            window.hienToast("Kích hoạt thành công! ✅", "Hệ thống đã xác nhận Key hợp lệ. Chào mừng Host Sân!", "success");
-            _hienThiDashboard();
+            window.currentHostKey  = key;
+            window.currentHostInfo = matched;
+            // FIX E: Cập nhật vai_tro + ma_key_host trong session tvl_guest
+            const savedG = localStorage.getItem("tvl_guest");
+            if (savedG) {
+                try {
+                    const gd = JSON.parse(savedG);
+                    gd.vai_tro    = "host";
+                    gd.ma_key_host = key;
+                    localStorage.setItem("tvl_guest", JSON.stringify(gd));
+                    window.currentUser = gd;
+                    // Đồng thời ghi lên Supabase để đồng bộ nguoi_dung.vai_tro
+                    try {
+                        await window.dbEngine.ghi(
+                            "nguoi_dung",
+                            { vai_tro: "host", ma_key_host: key },
+                            { sdt_khach: gd.sdt_khach }
+                        );
+                    } catch (dbErr) {
+                        console.warn("[xacThucKeyHost] Không ghi được nguoi_dung:", dbErr);
+                        // Không chặn luồng — localStorage đã cập nhật
+                    }
+                } catch (_) { /* JSON lỗi — bỏ qua */ }
+            }
+            localStorage.setItem("tvl_host_key", key); // backward compat
+            window.hienToast("🏟️ Kích hoạt thành công!", "Chào mừng Host Sân mới! Đang tải dashboard...", "success");
+            // FIX E: Không reload/redirect — render dashboard tại chỗ
+            await _hienThiDashboard();
 
         } catch (e) {
             console.error("Lỗi xác thực key:", e);
