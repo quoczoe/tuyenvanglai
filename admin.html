@@ -448,6 +448,9 @@
 
         /* Auth: adminConsole ẩn theo mặc định — adminAuthPanel hiện ngay (không phụ thuộc JS) */
         #adminConsole   { display: none; }
+        /* LAYER-1 CSS GUARD: chặn mọi CSS override ẩn auth panel */
+        #adminAuthPanel { display: block !important; visibility: visible !important; opacity: 1 !important; }
+        /* Override bị JS _hienConsole() ghi đè bằng inline style — CSS guard chỉ chống CSS-level */
 
         /* ═══════════════════════════════════════════════════════════════════
          * EMERGENCY FALLBACK: Đảm bảo nội dung luôn hiển thị
@@ -470,28 +473,42 @@
     background:#1a2844; border-bottom:2px solid #00ff88;
     color:#e2e8f0; font-family:Inter,sans-serif; font-size:0.82rem;
     padding:8px 16px; display:flex; align-items:center;
-    justify-content:space-between; gap:12px;">
+    justify-content:space-between; gap:12px; flex-wrap:wrap;">
     <span>
         <span style="color:#00ff88;font-weight:700;">ADMIN</span>
-        — Gặp sự cố trên Cốc Cốc / trang không load đúng:
+        — Nếu form đăng nhập không hiện:
+        <span id="bannerDiag" style="color:#94a3b8;font-size:0.72rem;"></span>
     </span>
+    <div style="display:flex;gap:8px;flex-shrink:0;">
     <button onclick="
         sessionStorage.clear();
         localStorage.removeItem('tvl_admin');
-        this.parentElement.style.display='none';
+        var ap=document.getElementById('adminAuthPanel');
+        if(ap)ap.style.cssText='display:block!important';
+        this.closest('div').parentElement.style.display='none';
         location.reload();
     " style="background:#00ff88;color:#0a1628;border:none;border-radius:6px;
               padding:5px 12px;font-weight:700;font-size:0.8rem;cursor:pointer;
               font-family:inherit;white-space:nowrap;">
         🔄 Xóa Cache & Tải Lại
     </button>
-    <button onclick="this.parentElement.style.display='none';"
+    <button onclick="
+        var ap=document.getElementById('adminAuthPanel');
+        if(ap){ap.style.cssText='display:block!important;visibility:visible!important;opacity:1!important';}
+        this.closest('div').parentElement.style.display='none';
+    " style="background:#1e3a5f;color:#00ff88;border:1px solid #00ff88;border-radius:6px;
+              padding:5px 12px;font-weight:700;font-size:0.8rem;cursor:pointer;
+              font-family:inherit;white-space:nowrap;">
+        👁 Hiện Form
+    </button>
+    <button onclick="this.closest('[id]').style.display='none';"
             style="background:transparent;border:1px solid #4b5563;color:#9ca3af;
                    border-radius:4px;padding:4px 8px;cursor:pointer;font-size:0.75rem;
                    font-family:inherit;">
         ✕ Đóng
     </button>
-</div>
+    </div><!-- /button group -->
+</div><!-- /adminLoadingBanner -->
 <!-- Đẩy content xuống để không bị banner che -->
 <div style="height:44px;"></div>
 
@@ -560,6 +577,15 @@
             </div>
         </div>
     </div>
+    <!-- LAYER-2 SYNC GUARD: chạy đồng bộ ngay khi parser đọc qua đây (trước DOMContentLoaded) -->
+    <script>
+    (function(){
+        try {
+            var _ap = document.getElementById("adminAuthPanel");
+            if (_ap) _ap.style.display = "block"; // Khẳng định lại trước khi bất kỳ async nào chạy
+        } catch(_) {}
+    })();
+    </script>
 
     <!-- ══ CONSOLE QUẢN TRỊ ══ -->
     <div id="adminConsole">
@@ -960,11 +986,15 @@
     </div>
 </div>
 
-<!-- ══ SCRIPTS — Dùng đường dẫn tuyệt đối (/) để Cốc Cốc không 404 khi URL rút gọn ══ -->
-<script src="/ket-noi-supabase.js?v=6.1"></script>
-<script src="/bo-may-du-lieu.js?v=6.1"></script>
-<script src="/hieu-ung-giao-dien.js?v=6.1"></script>
-<script src="/phan-he-quan-tri.js?v=6.1"></script>
+<!-- ══ SCRIPTS — onerror ghi log chẩn đoán nếu Cốc Cốc block script ══ -->
+<script src="/ket-noi-supabase.js?v=6.2"
+    onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: ket-noi-supabase.js — Cốc Cốc có thể đã block file này')"></script>
+<script src="/bo-may-du-lieu.js?v=6.2"
+    onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: bo-may-du-lieu.js')"></script>
+<script src="/hieu-ung-giao-dien.js?v=6.2"
+    onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: hieu-ung-giao-dien.js')"></script>
+<script src="/phan-he-quan-tri.js?v=6.2"
+    onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: phan-he-quan-tri.js — auth panel sẽ hiện sau 8s'); setTimeout(function(){var ap=document.getElementById('adminAuthPanel');if(ap)ap.style.display='block';},500);"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════
@@ -985,22 +1015,56 @@
                 if (e.target === this && typeof dongModalKey === "function") dongModalKey();
             });
 
+            /* ───────────────────────────────────────────────────────────────
+             * LAYER-3 GUARDIAN TIMER — bảo vệ form đăng nhập khỏi bị ẩn nhầm
+             * Chạy mỗi 300ms trong 12 giây đầu tiên.
+             * Nếu console chưa hiện mà auth panel bị ẩn → khôi phục ngay.
+             * Dừng khi console được hiện (đã đăng nhập thành công).
+             * ─────────────────────────────────────────────────────────────── */
+            var _gTick = 0;
+            var _gTimer = setInterval(function () {
+                _gTick++;
+                if (_gTick > 40) { clearInterval(_gTimer); return; } // 40 × 300ms = 12 giây
+                try {
+                    var co = document.getElementById("adminConsole");
+                    var consoleActive = co && co.style.display === "block" && co.offsetHeight > 0;
+                    if (consoleActive) { clearInterval(_gTimer); return; } // Đã đăng nhập OK
+                    var ap = document.getElementById("adminAuthPanel");
+                    if (ap && ap.style.display !== "block") {
+                        ap.style.display = "block";
+                        console.warn("[admin Guardian] Khôi phục auth panel — lần", _gTick);
+                    }
+                } catch (_) {}
+            }, 300);
+
+            /* Cập nhật thông tin chẩn đoán vào banner */
+            try {
+                var diag = document.getElementById("bannerDiag");
+                if (diag) {
+                    var dW = window.outerWidth  - window.innerWidth;
+                    var dH = window.outerHeight - window.innerHeight;
+                    diag.textContent = "| " + window.innerWidth + "×" + window.innerHeight
+                        + " | diff W:" + dW + " H:" + dH
+                        + " | UA:" + navigator.userAgent.slice(0,40);
+                }
+            } catch (_) {}
+
             /* Ẩn banner cảnh báo khi trang load thành công và có form đăng nhập hiện */
             setTimeout(function () {
                 try {
                     var banner = document.getElementById("adminLoadingBanner");
                     var spacer = banner && banner.nextElementSibling;
                     /* Chỉ ẩn banner nếu auth panel hoặc console đang visible */
-                    var ap = document.getElementById("adminAuthPanel");
-                    var co = document.getElementById("adminConsole");
-                    var authOk = ap && ap.offsetHeight > 0;
-                    var consoleOk = co && co.style.display === "block" && co.offsetHeight > 0;
+                    var apEl = document.getElementById("adminAuthPanel");
+                    var coEl = document.getElementById("adminConsole");
+                    var authOk   = apEl && apEl.offsetHeight > 0;
+                    var consoleOk = coEl && coEl.style.display === "block" && coEl.offsetHeight > 0;
                     if ((authOk || consoleOk) && banner) {
                         banner.style.display = "none";
-                        if (spacer) spacer.style.display = "none";
+                        if (spacer && spacer.tagName === "DIV") spacer.style.display = "none";
                     }
                 } catch (_) {}
-            }, 2000);
+            }, 3000); // Tăng từ 2000 → 3000ms để guardian timer kịp hoạt động trước
 
         } catch (err) {
             console.warn("[admin] DOMContentLoaded lỗi:", err);
