@@ -45,36 +45,47 @@
          * ══════════════════════════════════════════════════════════════
          */
         /*
-         * ══════════════════════════════════════════════════════════════
-         * CRITICAL FIX (PC BLANK): giao-dien.css áp dụng toàn cục:
-         *   body { display:flex; flex-direction:column; height:100vh;
+         * ═══════════════════════════════════════════════════════════════════
+         * FIX TRANG TRẮNG TRÊN PC (root cause: giao-dien.css global body rule)
+         *
+         * giao-dien.css áp dụng toàn cục lên MỌI trang:
+         *   body { display:flex; flex-direction:column;
          *          height:100dvh; overflow:hidden; }
-         * Trên PC điều này khiến toàn bộ nội dung admin bị collapse /
-         * bị cắt bởi overflow:hidden → trang trắng.
-         * Mobile không bị vì 100dvh co theo status bar, nội dung vừa vặn.
-         * Fix: override tất cả property nguy hiểm bằng !important.
-         * ══════════════════════════════════════════════════════════════
+         *
+         * Trên PC: 100dvh = 100vh (không có address bar), flex + overflow:hidden
+         * làm nội dung bị collapse / clipped → chỉ thấy background màu tối.
+         * Trên Mobile: 100dvh co theo status bar nên nội dung vừa vặn.
+         *
+         * FIX: override tất cả các property nguy hiểm bằng !important.
+         * overflow:auto !important là property quan trọng nhất — nếu thiếu
+         * thì overflow:hidden vẫn clip content dù height đã là auto.
+         *
+         * Ngoài ra, <body> element được gắn style="" trực tiếp như lớp bảo vệ
+         * cuối cùng — inline style attr KHÔNG thể bị override bởi bất kỳ
+         * stylesheet rule nào (kể cả !important trong external CSS).
+         * ═══════════════════════════════════════════════════════════════════
          */
         html {
-            scrollbar-gutter: stable; /* Dành sẵn vị trí thanh cuộn */
             height: auto !important;
-            overflow: auto !important;
+            overflow-x: hidden !important;
+            overflow-y: auto !important;
+            scrollbar-gutter: stable;
         }
-        html, body {
+        body {
+            display: block !important;            /* tắt flex layout */
+            height: auto !important;              /* body tự co theo nội dung */
+            min-height: 100vh !important;         /* đủ cao trên màn PC lớn */
+            max-height: none !important;          /* không bị giới hạn từ trên */
+            overflow: auto !important;            /* ← MISSING trước đây — bật cuộn */
+            overflow-x: hidden !important;        /* không cuộn ngang */
+            overflow-y: auto !important;          /* cuộn dọc khi cần */
+            flex-direction: unset !important;     /* triệt tiêu flex-direction */
+            align-items: unset !important;        /* triệt tiêu flex align */
+            justify-content: unset !important;    /* triệt tiêu flex justify */
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-base);
             color: var(--text-main);
-            min-height: 100vh;
-            overflow-y: scroll; /* Luôn giữ scrollbar — tránh nhảy chiều rộng khi đổi tab */
         }
-        body {
-            /* Override giao-dien.css: display:flex → block, height:100vh → auto */
-            display: block !important;
-            height: auto !important;
-            flex-direction: unset !important;
-        }
-        .gateway-wrapper { height: auto; min-height: 100vh; overflow: visible; }
-        .gateway-container { overflow: visible; height: auto; }
 
         /* ══ HEADER ══ */
         .ad-header {
@@ -429,7 +440,7 @@
         #adminConsole   { display: none; }
     </style>
 </head>
-<body data-theme="dark">
+<body data-theme="dark" style="display:block;height:auto;min-height:100vh;overflow:auto;overflow-x:hidden;overflow-y:auto;">
 
 <div class="willow-decor willow-top-left"></div>
 <div class="willow-decor willow-top-right"></div>
