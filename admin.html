@@ -6,10 +6,29 @@
     <title>👑 Trung Tâm Chỉ Huy | TUYENVANGLAI.IO.VN</title>
     <meta name="robots" content="noindex, nofollow">
     <meta name="description" content="Admin Panel bảo mật — Hệ thống quản trị tuyệt mật TUYENVANGLAI.IO.VN.">
+    <!--
+        QUAN TRỌNG — CSS KHÔNG CHẶN RENDER (Non-render-blocking):
+        Dùng kỹ thuật media="print" + onload để Google Fonts & Font Awesome
+        không chặn render trang. Nếu Cốc Cốc block Google/CDNJS, trang vẫn
+        hiện nội dung ngay (chỉ mất font & icon, không mất layout/text).
+    -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: NON-BLOCKING -->
+    <link rel="preload" as="style"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          media="print" onload="this.media='all'">
+    <!-- Font Awesome: NON-BLOCKING -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          media="print" onload="this.media='all'">
+    <!-- Fallback khi JS tắt -->
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    </noscript>
     <!-- components.css không dùng trong admin.html — đã tháo để tránh xung đột -->
     <style>
         /* ══ DESIGN SYSTEM ══ */
@@ -448,9 +467,7 @@
 
         /* Auth: adminConsole ẩn theo mặc định — adminAuthPanel hiện ngay (không phụ thuộc JS) */
         #adminConsole   { display: none; }
-        /* LAYER-1 CSS GUARD: chặn mọi CSS override ẩn auth panel */
-        #adminAuthPanel { display: block !important; visibility: visible !important; opacity: 1 !important; }
-        /* Override bị JS _hienConsole() ghi đè bằng inline style — CSS guard chỉ chống CSS-level */
+        /* adminAuthPanel KHÔNG có display:none trong CSS — JS điều khiển hoàn toàn qua inline style */
 
         /* ═══════════════════════════════════════════════════════════════════
          * EMERGENCY FALLBACK: Đảm bảo nội dung luôn hiển thị
@@ -467,50 +484,32 @@
 </head>
 <body data-theme="dark">
 
-<!-- DẢI CẢNH BÁO KHẨN — luôn hiện, không phụ thuộc JS/CSS class -->
+<!-- BANNER TẢI TRANG — hiện inline CSS thuần, tự ẩn sau 2s nếu nội dung đã load.
+     Nếu còn hiện: bấm "Xóa Cache & Tải Lại" để reset.
+     Pure inline styles — không phụ thuộc bất kỳ stylesheet nào. -->
 <div id="adminLoadingBanner" style="
     position:fixed; top:0; left:0; right:0; z-index:99999;
-    background:#1a2844; border-bottom:2px solid #00ff88;
-    color:#e2e8f0; font-family:Inter,sans-serif; font-size:0.82rem;
-    padding:8px 16px; display:flex; align-items:center;
-    justify-content:space-between; gap:12px; flex-wrap:wrap;">
-    <span>
-        <span style="color:#00ff88;font-weight:700;">ADMIN</span>
-        — Nếu form đăng nhập không hiện:
-        <span id="bannerDiag" style="color:#94a3b8;font-size:0.72rem;"></span>
+    background:#0f1e35; border-bottom:2px solid #00ff88;
+    color:#e2e8f0; font-family:system-ui,Arial,sans-serif; font-size:0.8rem;
+    padding:7px 16px; display:flex; align-items:center; gap:12px;">
+    <span style="color:#00ff88; font-weight:700; flex:1;">
+        ⚙️ TUYENVANGLAI ADMIN — đang tải...
     </span>
-    <div style="display:flex;gap:8px;flex-shrink:0;">
-    <button onclick="
-        sessionStorage.clear();
-        localStorage.removeItem('tvl_admin');
-        var ap=document.getElementById('adminAuthPanel');
-        if(ap)ap.style.cssText='display:block!important';
-        this.closest('div').parentElement.style.display='none';
-        location.reload();
-    " style="background:#00ff88;color:#0a1628;border:none;border-radius:6px;
-              padding:5px 12px;font-weight:700;font-size:0.8rem;cursor:pointer;
-              font-family:inherit;white-space:nowrap;">
-        🔄 Xóa Cache & Tải Lại
+    <button onclick="sessionStorage.clear();location.reload();"
+        style="background:#00ff88; color:#0a1628; border:none; border-radius:5px;
+               padding:4px 12px; font-weight:700; font-size:0.78rem; cursor:pointer;
+               white-space:nowrap; font-family:inherit;">
+        🔄 Tải Lại
     </button>
-    <button onclick="
-        var ap=document.getElementById('adminAuthPanel');
-        if(ap){ap.style.cssText='display:block!important;visibility:visible!important;opacity:1!important';}
-        this.closest('div').parentElement.style.display='none';
-    " style="background:#1e3a5f;color:#00ff88;border:1px solid #00ff88;border-radius:6px;
-              padding:5px 12px;font-weight:700;font-size:0.8rem;cursor:pointer;
-              font-family:inherit;white-space:nowrap;">
-        👁 Hiện Form
+    <button onclick="this.parentElement.style.display='none';"
+        style="background:transparent; border:1px solid #374151; color:#9ca3af;
+               border-radius:4px; padding:3px 8px; cursor:pointer; font-size:0.75rem;
+               font-family:inherit;">
+        ✕
     </button>
-    <button onclick="this.closest('[id]').style.display='none';"
-            style="background:transparent;border:1px solid #4b5563;color:#9ca3af;
-                   border-radius:4px;padding:4px 8px;cursor:pointer;font-size:0.75rem;
-                   font-family:inherit;">
-        ✕ Đóng
-    </button>
-    </div><!-- /button group -->
-</div><!-- /adminLoadingBanner -->
+</div>
 <!-- Đẩy content xuống để không bị banner che -->
-<div style="height:44px;"></div>
+<div id="bannerSpacer" style="height:38px;"></div>
 
 <!-- ══ HEADER ══ -->
 <header class="ad-header">
@@ -577,16 +576,6 @@
             </div>
         </div>
     </div>
-    <!-- LAYER-2 SYNC GUARD: chạy đồng bộ ngay khi parser đọc qua đây (trước DOMContentLoaded) -->
-    <script>
-    (function(){
-        try {
-            var _ap = document.getElementById("adminAuthPanel");
-            if (_ap) _ap.style.display = "block"; // Khẳng định lại trước khi bất kỳ async nào chạy
-        } catch(_) {}
-    })();
-    </script>
-
     <!-- ══ CONSOLE QUẢN TRỊ ══ -->
     <div id="adminConsole">
 
@@ -1015,56 +1004,23 @@
                 if (e.target === this && typeof dongModalKey === "function") dongModalKey();
             });
 
-            /* ───────────────────────────────────────────────────────────────
-             * LAYER-3 GUARDIAN TIMER — bảo vệ form đăng nhập khỏi bị ẩn nhầm
-             * Chạy mỗi 300ms trong 12 giây đầu tiên.
-             * Nếu console chưa hiện mà auth panel bị ẩn → khôi phục ngay.
-             * Dừng khi console được hiện (đã đăng nhập thành công).
-             * ─────────────────────────────────────────────────────────────── */
-            var _gTick = 0;
-            var _gTimer = setInterval(function () {
-                _gTick++;
-                if (_gTick > 40) { clearInterval(_gTimer); return; } // 40 × 300ms = 12 giây
-                try {
-                    var co = document.getElementById("adminConsole");
-                    var consoleActive = co && co.style.display === "block" && co.offsetHeight > 0;
-                    if (consoleActive) { clearInterval(_gTimer); return; } // Đã đăng nhập OK
-                    var ap = document.getElementById("adminAuthPanel");
-                    if (ap && ap.style.display !== "block") {
-                        ap.style.display = "block";
-                        console.warn("[admin Guardian] Khôi phục auth panel — lần", _gTick);
-                    }
-                } catch (_) {}
-            }, 300);
-
-            /* Cập nhật thông tin chẩn đoán vào banner */
-            try {
-                var diag = document.getElementById("bannerDiag");
-                if (diag) {
-                    var dW = window.outerWidth  - window.innerWidth;
-                    var dH = window.outerHeight - window.innerHeight;
-                    diag.textContent = "| " + window.innerWidth + "×" + window.innerHeight
-                        + " | diff W:" + dW + " H:" + dH
-                        + " | UA:" + navigator.userAgent.slice(0,40);
-                }
-            } catch (_) {}
-
-            /* Ẩn banner cảnh báo khi trang load thành công và có form đăng nhập hiện */
+            /* Ẩn banner sau 2 giây nếu trang load thành công */
             setTimeout(function () {
                 try {
-                    var banner = document.getElementById("adminLoadingBanner");
-                    var spacer = banner && banner.nextElementSibling;
-                    /* Chỉ ẩn banner nếu auth panel hoặc console đang visible */
+                    var banner  = document.getElementById("adminLoadingBanner");
+                    var spacer  = document.getElementById("bannerSpacer");
+                    if (!banner) return;
                     var apEl = document.getElementById("adminAuthPanel");
                     var coEl = document.getElementById("adminConsole");
-                    var authOk   = apEl && apEl.offsetHeight > 0;
-                    var consoleOk = coEl && coEl.style.display === "block" && coEl.offsetHeight > 0;
-                    if ((authOk || consoleOk) && banner) {
+                    /* Ẩn khi auth panel HOẶC console đang hiện với chiều cao > 0 */
+                    var anyVisible = (apEl && apEl.offsetHeight > 0) ||
+                                     (coEl && coEl.offsetHeight > 0);
+                    if (anyVisible) {
                         banner.style.display = "none";
-                        if (spacer && spacer.tagName === "DIV") spacer.style.display = "none";
+                        if (spacer) spacer.style.display = "none";
                     }
                 } catch (_) {}
-            }, 3000); // Tăng từ 2000 → 3000ms để guardian timer kịp hoạt động trước
+            }, 2000);
 
         } catch (err) {
             console.warn("[admin] DOMContentLoaded lỗi:", err);
