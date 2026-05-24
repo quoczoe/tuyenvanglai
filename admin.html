@@ -29,13 +29,12 @@
         }
 
         /* Body: cuộn bình thường — giao-dien.css đã được tháo, không còn xung đột */
-        html { scrollbar-gutter: stable; }
+        html, body { scrollbar-gutter: stable; }
         body {
             display: block;
             height: auto;
             min-height: 100vh;
-            overflow-y: auto;
-            overflow-x: hidden;
+            /* KHÔNG dùng overflow-x:hidden — gây bug position:sticky trong Chromium cũ (Cốc Cốc) */
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-base);
             color: var(--text-main);
@@ -462,7 +461,7 @@
     justify-content:space-between; gap:12px;">
     <span>
         <span style="color:#00ff88;font-weight:700;">ADMIN</span>
-        — Nếu trang trắng / không hiện form đăng nhập:
+        — Gặp sự cố trên Cốc Cốc / trang không load đúng:
     </span>
     <button onclick="
         sessionStorage.clear();
@@ -949,11 +948,11 @@
     </div>
 </div>
 
-<!-- ══ SCRIPTS ══ -->
-<script src="ket-noi-supabase.js?v=6.0"></script>
-<script src="bo-may-du-lieu.js?v=6.0"></script>
-<script src="hieu-ung-giao-dien.js?v=6.0"></script>
-<script src="phan-he-quan-tri.js?v=6.0"></script>
+<!-- ══ SCRIPTS — Dùng đường dẫn tuyệt đối (/) để Cốc Cốc không 404 khi URL rút gọn ══ -->
+<script src="/ket-noi-supabase.js?v=6.1"></script>
+<script src="/bo-may-du-lieu.js?v=6.1"></script>
+<script src="/hieu-ung-giao-dien.js?v=6.1"></script>
+<script src="/phan-he-quan-tri.js?v=6.1"></script>
 
 <script>
 /* ═══════════════════════════════════════════════════════════
@@ -1083,25 +1082,205 @@
 </script>
 
 <style>
-/* Vô hiệu hóa bôi đen / copy nội dung toàn trang */
+/* ── Vô hiệu hóa bôi đen / copy toàn trang ── */
 * { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
 /* Cho phép nhập liệu bình thường trong ô input / textarea */
 input, textarea, [contenteditable] { user-select: text; -webkit-user-select: text; }
 </style>
 <script>
-// ── BẢO VỆ MÃ NGUỒN — chống người dùng thông thường xem source / mở DevTools ──
-document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-document.addEventListener('keydown', function (e) {
-    // Chặn: F12 | Ctrl+Shift+I/C/J (DevTools) | Ctrl+U (View Source)
-    if (e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && ['I', 'C', 'J'].includes(e.key.toUpperCase())) ||
-        (e.ctrlKey && e.key.toUpperCase() === 'U')) {
-        e.preventDefault();
-        return false;
+/* ══════════════════════════════════════════════════════════════════════════════
+ * BẢO VỆ MÃ NGUỒN — Phiên bản thông minh v2 (chống false-positive Cốc Cốc)
+ *
+ * Kiến trúc FAIL-SAFE:
+ *   → Form đăng nhập LUÔN render trước (display:block ngay từ HTML)
+ *   → Detection chạy SAU khi trang đã load hoàn chỉnh
+ *   → Khi phát hiện DevTools: chỉ phủ overlay lên trên, KHÔNG xóa DOM form
+ *   → Khi DevTools đóng: overlay tự biến mất, form trở lại bình thường
+ *
+ * Tại sao Cốc Cốc bị false-positive trước đây?
+ *   → Cốc Cốc có thanh Sidebar tiện ích cố định (~60-80px)
+ *   → Ngưỡng cũ 160px quá thấp → bị Sidebar nuốt chửng → false-positive
+ *   → Ngưỡng mới 300px → Sidebar 60-80px không bao giờ kích hoạt
+ * ══════════════════════════════════════════════════════════════════════════════ */
+(function () {
+    'use strict';
+
+    /* ── 1. Chặn chuột phải ── */
+    document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+    /* ── 2. Chặn phím tắt DevTools / View Source ── */
+    document.addEventListener('keydown', function (e) {
+        /* F12 | Ctrl+Shift+I / Ctrl+Shift+C / Ctrl+Shift+J | Ctrl+U */
+        if (e.key === 'F12' ||
+            (e.ctrlKey && e.shiftKey && ['I','C','J'].includes(e.key.toUpperCase())) ||
+            (e.ctrlKey && e.key.toUpperCase() === 'U')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
+    /* ── 3. Phát hiện DevTools thông minh ── */
+
+    /* Biến toàn cục module */
+    var _overlay = null;    /* Tham chiếu đến overlay cảnh báo hiện tại */
+    var _getterHitCount = 0; /* Đếm số lần getter bị trigger liên tiếp */
+
+    /*
+     * PHƯƠNG PHÁP A: So sánh kích thước cửa sổ — ngưỡng 300px (an toàn)
+     * ──────────────────────────────────────────────────────────────────
+     * - DevTools docked-bottom / docked-right thường chiếm 300-600px
+     * - Sidebar Cốc Cốc chỉ ~60-80px → KHÔNG BAO GIỜ đạt ngưỡng 300px
+     * - Sidebar Windows Task Bar (~40px) → AN TOÀN
+     * - Browser toolbar + bookmarks bar (~100-130px) → AN TOÀN
+     */
+    function _kiemTraKichThuoc() {
+        try {
+            var dW = window.outerWidth  - window.innerWidth;
+            var dH = window.outerHeight - window.innerHeight;
+            /* Chỉ tính chênh lệch dương — âm có thể do browser zoom scale */
+            return (dW > 300 || (dH > 300 && dW >= 0));
+        } catch (_) { return false; }
     }
-});
-// DevTools detection đã được tắt — tránh false positive gây trang trắng
-// Bảo mật thật sự nằm ở backend Supabase (RLS policies)
+
+    /*
+     * PHƯƠNG PHÁP B: Getter-based detection (nhạy hơn khi DevTools inspect)
+     * ──────────────────────────────────────────────────────────────────────
+     * Nguyên lý: Khi DevTools đang mở panel Console, nó format/inspect
+     * tất cả objects được log. Định nghĩa getter trên object → khi DevTools
+     * inspect để format → getter được trigger → ta biết DevTools đang mở.
+     *
+     * Lưu ý: Chỉ chạy khi Phương pháp A chưa xác nhận (tiết kiệm CPU).
+     * Kết quả dương tính phải xảy ra 2 lần liên tiếp mới tin (tránh fluke).
+     */
+    function _kiemTraGetter() {
+        var triggered = false;
+        try {
+            /* Tạo object bẫy với getter trên thuộc tính toString */
+            var trap = Object.create(null);
+            Object.defineProperty(trap, 'toString', {
+                enumerable: true,
+                configurable: true,
+                get: function () {
+                    triggered = true;   /* DevTools đã inspect object này */
+                    return function () { return ''; };
+                }
+            });
+            /* %o format buộc DevTools gọi formatter → trigger getter nếu panel đang mở */
+            /* Dùng console.log tạm (hệ thống sẽ clear định kỳ bên dưới) */
+            console.log('%o', trap);
+        } catch (_) {}
+
+        if (triggered) {
+            _getterHitCount++;
+        } else {
+            /* Reset counter nếu getter không trigger — tránh đếm tích lũy sai */
+            _getterHitCount = Math.max(0, _getterHitCount - 1);
+        }
+        /* Yêu cầu 2 lần getter trigger liên tiếp → mới xác nhận DevTools mở */
+        return _getterHitCount >= 2;
+    }
+
+    /*
+     * Hiện overlay cảnh báo DevTools
+     * ────────────────────────────────
+     * QUAN TRỌNG: Chỉ phủ overlay lên trên — KHÔNG XÓA / HIDE form đăng nhập.
+     * Form vẫn tồn tại đầy đủ trong DOM phía sau overlay.
+     */
+    function _hienOverlay() {
+        if (_overlay) return; /* Đã hiện → không tạo thêm */
+        try {
+            _overlay = document.createElement('div');
+            _overlay.id = 'devToolsShield';
+            /* Inline styles hoàn toàn — không phụ thuộc CSS class (an toàn nhất) */
+            _overlay.style.cssText =
+                'position:fixed;inset:0;z-index:88888;' +
+                'background:rgba(8,12,22,0.97);' +
+                'display:flex;flex-direction:column;align-items:center;' +
+                'justify-content:center;font-family:Inter,sans-serif;' +
+                'text-align:center;padding:2rem;' +
+                /* Smooth fade-in */
+                'animation:dtFadeIn 0.3s ease forwards;';
+            _overlay.innerHTML =
+                '<style>' +
+                    '@keyframes dtFadeIn{from{opacity:0}to{opacity:1}}' +
+                    '@keyframes dtShield{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}' +
+                '</style>' +
+                '<div style="font-size:3.8rem;margin-bottom:20px;' +
+                     'animation:dtShield 2.5s ease-in-out infinite;' +
+                     'filter:drop-shadow(0 0 20px rgba(0,255,136,0.5))">🛡️</div>' +
+                '<h2 style="color:#00ff88;font-size:1.2rem;font-weight:800;' +
+                     'margin:0 0 12px;letter-spacing:0.04em;text-transform:uppercase;">' +
+                    'Vui Lòng Đóng DevTools' +
+                '</h2>' +
+                '<p style="color:#94a3b8;font-size:0.85rem;line-height:1.75;' +
+                     'max-width:380px;margin:0 auto 20px;">' +
+                    'Hệ thống bảo mật phát hiện cửa sổ phát triển đang mở.<br>' +
+                    'Nhấn <kbd style="background:#1e3a5f;padding:2px 8px;border-radius:4px;' +
+                    'font-family:monospace;color:#e2e8f0;border:1px solid #2a4a7f;">F12</kbd> ' +
+                    'hoặc đóng DevTools để tiếp tục truy cập.' +
+                '</p>' +
+                /* Nút thoát tạm — cho phép thao tác khẩn khi có vấn đề phát hiện sai */
+                '<button onclick="document.getElementById(\'devToolsShield\').remove();' +
+                        'window._devOverlayForced=true;" ' +
+                     'style="margin-top:8px;background:transparent;border:1px solid #2a4a7f;' +
+                     'color:#4b6a8a;border-radius:6px;padding:6px 16px;cursor:pointer;' +
+                     'font-size:0.72rem;font-family:Inter,sans-serif;">' +
+                    'Tiếp tục dù vậy (không khuyến khích)' +
+                '</button>';
+            document.body.appendChild(_overlay);
+        } catch (_) {
+            /* Nếu tạo overlay thất bại — KHÔNG làm gì cả, form đăng nhập vẫn hiển thị */
+        }
+    }
+
+    /* Ẩn overlay khi DevTools đóng → trang tự phục hồi */
+    function _anOverlay() {
+        try {
+            if (_overlay && !window._devOverlayForced) {
+                _overlay.remove();
+                _overlay = null;
+                _getterHitCount = 0; /* Reset counter */
+            }
+        } catch (_) {}
+    }
+
+    /*
+     * Hàm kiểm tra tổng hợp — bọc try/catch toàn diện
+     * Đây là điểm truy nhập chính của interval
+     */
+    function _khoiChay() {
+        try {
+            /* Phương pháp A: kích thước (nhanh, không tốn CPU) */
+            var devToolsMo = _kiemTraKichThuoc();
+
+            /* Phương pháp B: getter (chỉ chạy khi A chưa xác nhận — tiết kiệm) */
+            if (!devToolsMo) devToolsMo = _kiemTraGetter();
+
+            if (devToolsMo && !_overlay && !window._devOverlayForced) {
+                _hienOverlay();
+            } else if (!devToolsMo && _overlay) {
+                _anOverlay();
+            }
+        } catch (_) {
+            /*
+             * TUYỆT ĐỐI KHÔNG RE-THROW bất kỳ lỗi nào từ khối detection.
+             * Form đăng nhập phải luôn hiển thị dù detection có crash.
+             */
+        }
+    }
+
+    /*
+     * Khởi động sau 800ms — đảm bảo form đăng nhập đã render xong trước
+     * rồi mới bắt đầu theo dõi. Interval 2000ms: đủ nhạy, không nặng CPU.
+     */
+    setTimeout(function () {
+        _khoiChay(); /* Lần check đầu tiên */
+        setInterval(_khoiChay, 2000);
+        /* Xóa console định kỳ để ẩn log kỹ thuật */
+        setInterval(function () { try { console.clear(); } catch (_) {} }, 3000);
+    }, 800);
+
+})();
 </script>
 </body>
 </html>
