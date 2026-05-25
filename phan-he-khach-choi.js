@@ -1089,7 +1089,7 @@
         // FIX 4 — TOGGLE: nếu tag này đang active → click lại → tắt, reset về "Tất cả"
         const isAlreadyActive = btnEl && btnEl.classList.contains("active");
         if (isAlreadyActive) {
-            document.querySelectorAll(".btn-time-filter").forEach(b => b.classList.remove("active"));
+            document.querySelectorAll(".kh-time-btn").forEach(b => b.classList.remove("active"));
             const fromEl = document.getElementById("statsDateFrom");
             const toEl   = document.getElementById("statsDateTo");
             if (fromEl) fromEl.value = "";
@@ -1124,7 +1124,7 @@
         _taiThongKeKhach();
         _taiLichSuChiTieu(); // Cập nhật lịch sử chi tiêu theo cùng khoảng thời gian
 
-        document.querySelectorAll(".btn-time-filter").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".kh-time-btn").forEach(b => b.classList.remove("active"));
         if (btnEl) btnEl.classList.add("active");
     };
 

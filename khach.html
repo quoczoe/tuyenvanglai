@@ -31,6 +31,7 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-base);
             color: var(--text-main);
+            overflow-x: hidden;
             overflow-y: auto;
             min-height: 100vh;
         }
@@ -455,6 +456,29 @@
             display: flex; align-items: center; gap: 5px; white-space: nowrap;
         }
         .kh-btn-detail:hover { border-color: #60a5fa; color: #60a5fa; background: rgba(96,165,250,0.08); }
+
+        /* H3 — Nút "Đã Đặt": phân biệt rõ với nút Đặt Slot */
+        .btn-da-dat {
+            background: rgba(30,41,59,0.9);
+            border: 1.5px solid rgba(71,85,105,0.5);
+            color: #34d399;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            cursor: not-allowed;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-family: inherit;
+            opacity: 0.9;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* H4-layout — Khung trình độ: cố định chiều cao tối thiểu */
+        .kh-trinh-do-row { min-height: 75px; }
     </style>
 </head>
 <body data-theme="dark">

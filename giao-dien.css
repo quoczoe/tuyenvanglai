@@ -3206,33 +3206,77 @@ body::before {
 /* A.2: Nút Quản lý — icon + gap */
 .mv-ql-btn { gap: 6px; display: inline-flex; align-items: center; }
 
-/* A.4: Input + primary button cải thiện */
-.mv-input { padding: 9px 13px; border-radius: 8px; }
-.mv-btn-primary { text-shadow: 0 0 8px rgba(0,212,255,0.4); }
-
-/* A.5: Role buttons — segmented tab style */
-.mv-role-btns {
-    gap: 0;
-    border: 1px solid rgba(255,255,255,0.1);
+/* A.4: Input slate-800 + Button indigo-600 */
+.mv-input {
+    background: #1e293b;
+    border: 1px solid #334155;
     border-radius: 8px;
-    overflow: hidden;
+    height: 40px;
+    padding: 0 12px;
+    font-size: 0.875rem;
+    width: 100%;
+    color: #e2e8f0;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+    font-family: inherit;
+}
+.mv-input:focus { outline: none; border-color: #6366f1; }
+.mv-btn-primary {
+    background: #4f46e5 !important;
+    border-color: #4f46e5 !important;
+    color: #fff !important;
+    height: 40px;
+    padding: 0 16px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-shadow: none !important;
+    border-radius: 8px;
+}
+.mv-btn-primary:hover { background: #6366f1 !important; border-color: #6366f1 !important; }
+
+/* A.5: Role buttons — individual rounded style */
+.mv-role-btns {
+    gap: 6px;
+    border: none;
+    border-radius: 0;
+    overflow: visible;
 }
 .mv-role-btns .mv-btn {
-    border-radius: 0;
-    border: none;
-    border-right: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    border: 1px solid #334155;
+    background: transparent;
+    color: #94a3b8;
     flex: 1;
     text-align: center;
     justify-content: center;
+    font-size: 0.875rem;
+    padding: 6px 16px;
 }
-.mv-role-btns .mv-btn:last-child { border-right: none; }
+.mv-role-btns .mv-btn:hover { background: rgba(255,255,255,0.05); color: #e2e8f0; }
+.mv-role-btns .mv-btn:last-child { border-right: 1px solid #334155; }
+.mv-role-btns .mv-btn.mv-btn-active {
+    background: #4f46e5;
+    border-color: #4f46e5;
+    color: #fff;
+}
 
-/* A.6: Delete zone — viền đỏ rõ hơn */
+/* A.6: Delete zone + danger button solid red */
 .mv-section-danger {
     border-color: rgba(239,68,68,0.4);
     background: rgba(239,68,68,0.06);
 }
 .mv-section-danger .mv-section-title { color: #f87171; }
+.mv-btn-danger {
+    background: #b91c1c;
+    border-color: #b91c1c;
+    color: #fff;
+    height: 40px;
+    padding: 0 16px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: 8px;
+}
+.mv-btn-danger:hover { background: #dc2626; border-color: #dc2626; }
 
 /* ═══════════════════════════════════════════════════
    PHÂN HỆ B — Key Form Polish

@@ -772,7 +772,7 @@
                     Nhập chính xác SĐT <code style="color:#fbbf24;background:rgba(251,191,36,0.1);
                     padding:2px 6px;border-radius:4px;">${sdtAttr}</code> để xác nhận.
                 </p>
-                <div class="mv-form-grid" style="margin-bottom:10px;">
+                <div class="mv-form-grid" style="margin-bottom:12px;">
                     <div>
                         <label class="mv-label">Nhập SĐT để xác nhận</label>
                         <input type="text" id="mvXoaConfirmSdt" class="mv-input"
