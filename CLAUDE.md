@@ -953,3 +953,10 @@ Thêm CDN Chart.js vào `admin.html`:
 ---
 
 *File này là kim chỉ nam tuyệt đối. Mọi phiên làm việc tiếp theo phải đọc và tuân thủ 100% nội dung trên.*
+
+---
+
+## Quy tắc làm việc khi bị limit
+- Trước khi bắt đầu bất kỳ task dài nào, tạo hoặc cập nhật file TODO.md liệt kê từng bước cụ thể.
+- Sau mỗi bước hoàn thành, đánh dấu [x] vào TODO.md ngay lập tức.
+- Nếu được resume sau khi bị limit, đọc TODO.md trước tiên để biết đang ở bước nào và tiếp tục từ đó.

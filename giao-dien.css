@@ -2811,6 +2811,28 @@ body::before {
     }
 }
 
+/* ── TASK 3.6: Trình độ tách dòng + badge đăng ký riêng ── */
+.kh-trinh-do-row {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 2px;
+}
+.kh-trinh-do-line {
+    font-size: 0.75rem;
+    color: #cbd5e1;
+    line-height: 1.4;
+    white-space: normal;
+}
+.kh-da-dang-ky-badge {
+    display: block;
+    font-size: 0.75rem;
+    color: #9ca3af;
+    margin-top: 6px;
+    padding: 3px 0;
+    border-top: 1px solid rgba(255,255,255,0.05);
+}
+
 /* ── 2C: Nút ĐÃ ĐẶT ── */
 .btn-da-dat {
     background: rgba(0,255,136,0.08);
@@ -2906,6 +2928,8 @@ body::before {
 .shuttlecock-card label {
     font-size: 0.72rem;
     overflow: visible;
+    /* TASK 4.5: Không cắt tiêu đề cột trên PC hẹp */
+    white-space: nowrap;
 }
 @media (max-width: 480px) {
     .shuttlecock-card .sc-row-2col { grid-template-columns: 1fr; }
@@ -2988,4 +3012,189 @@ body::before {
     font-size: 0.85rem;
     color: #e2e8f0;
     line-height: 1.5;
+}
+
+/* ═══════════════════════════════════════════════════
+   TASK 1.2 — Modal Quản Lý Thành Viên (mv-*)
+   5 section xếp chồng, không dùng alert/confirm
+   ═══════════════════════════════════════════════════ */
+
+/* Nút "Quản lý" đơn trong cột Hành động bảng thành viên */
+.mv-ql-btn {
+    background: linear-gradient(135deg, rgba(0,212,255,0.12), rgba(0,255,136,0.1));
+    border: 1px solid rgba(0,212,255,0.35);
+    color: #00d4ff;
+    padding: 5px 14px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+.mv-ql-btn:hover {
+    background: linear-gradient(135deg, rgba(0,212,255,0.22), rgba(0,255,136,0.18));
+    border-color: rgba(0,212,255,0.6);
+}
+
+/* Section block */
+.mv-section {
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+    background: rgba(255,255,255,0.02);
+}
+.mv-section:last-child { margin-bottom: 0; }
+.mv-section-danger {
+    border-color: rgba(239,68,68,0.25);
+    background: rgba(239,68,68,0.04);
+}
+
+/* Section title */
+.mv-section-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 12px;
+}
+
+/* Form grid: label on top, input below */
+.mv-form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+.mv-label {
+    font-size: 0.72rem;
+    color: #64748b;
+    display: block;
+    margin-bottom: 3px;
+}
+.mv-input {
+    width: 100%;
+    padding: 8px 11px;
+    background: #0f1e35;
+    border: 1px solid #2d4a6e;
+    border-radius: 7px;
+    color: #e2e8f0;
+    font-size: 0.88rem;
+    box-sizing: border-box;
+    font-family: inherit;
+    transition: border-color 0.2s;
+}
+.mv-input:focus {
+    outline: none;
+    border-color: rgba(0,212,255,0.5);
+}
+.mv-input:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+/* Vai trò buttons */
+.mv-role-btns {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+/* Generic button */
+.mv-btn {
+    padding: 7px 16px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid #2d4a6e;
+    border-radius: 7px;
+    color: #94a3b8;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+.mv-btn:hover { background: rgba(255,255,255,0.09); color: #e2e8f0; }
+
+/* Button variants */
+.mv-btn-primary {
+    background: linear-gradient(135deg, rgba(0,212,255,0.15), rgba(0,255,136,0.12));
+    border-color: rgba(0,212,255,0.4);
+    color: #00d4ff;
+}
+.mv-btn-primary:hover {
+    background: linear-gradient(135deg, rgba(0,212,255,0.25), rgba(0,255,136,0.2));
+    border-color: rgba(0,212,255,0.65);
+    color: #00eeff;
+}
+.mv-btn-active {
+    background: rgba(0,255,136,0.14);
+    border-color: rgba(0,255,136,0.5);
+    color: #00ff88;
+}
+.mv-btn-warn {
+    background: rgba(251,146,60,0.12);
+    border-color: rgba(251,146,60,0.4);
+    color: #fb923c;
+}
+.mv-btn-warn:hover {
+    background: rgba(251,146,60,0.22);
+    border-color: rgba(251,146,60,0.65);
+}
+.mv-btn-danger {
+    background: rgba(239,68,68,0.12);
+    border-color: rgba(239,68,68,0.4);
+    color: #ef4444;
+}
+.mv-btn-danger:hover {
+    background: rgba(239,68,68,0.22);
+    border-color: rgba(239,68,68,0.65);
+}
+
+/* Inline confirm box (cho đổi vai trò) */
+.mv-confirm-box {
+    background: rgba(251,191,36,0.07);
+    border: 1px solid rgba(251,191,36,0.3);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 0.82rem;
+    color: #e2e8f0;
+}
+
+/* Badge vai trò trong bảng */
+.mv-role-badge-admin {
+    display: inline-block;
+    background: rgba(251,191,36,0.14);
+    border: 1px solid rgba(251,191,36,0.4);
+    color: #fbbf24;
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.mv-role-badge-host {
+    display: inline-block;
+    background: rgba(0,255,136,0.1);
+    border: 1px solid rgba(0,255,136,0.35);
+    color: #00ff88;
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.mv-role-badge-guest {
+    display: inline-block;
+    background: rgba(99,102,241,0.1);
+    border: 1px solid rgba(99,102,241,0.3);
+    color: #818cf8;
+    padding: 2px 9px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    white-space: nowrap;
 }

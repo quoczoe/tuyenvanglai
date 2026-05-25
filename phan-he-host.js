@@ -525,11 +525,11 @@
     function _tinhGoiYGia() {
         const dur     = parseFloat(document.getElementById("hostTotalDuration")?.value) || 0;
         const soSan   = Number(document.getElementById("hostCourtQuantity")?.value) || 1;
-        const giaSanH = Number(document.getElementById("hostAccountingCourtPrice")?.value) || 0;
-        const tienNuoc = Number(document.getElementById("hostAccountingWaterCost")?.value) || 0;
-        const soNam   = Number(document.getElementById("hostAccountingEstMale")?.value) || 0;
-        const soNu    = Number(document.getElementById("hostAccountingEstFemale")?.value) || 0;
-        const chenh   = Number(document.getElementById("hostAccountingGap")?.value) || 0;
+        const giaSanH  = _parseCurrency("hostAccountingCourtPrice");
+        const tienNuoc = _parseCurrency("hostAccountingWaterCost");
+        const soNam    = Number(document.getElementById("hostAccountingEstMale")?.value) || 0;
+        const soNu     = Number(document.getElementById("hostAccountingEstFemale")?.value) || 0;
+        const chenh    = _parseCurrency("hostAccountingGap");
 
         const tienSan = giaSanH * dur * soSan;
         let tienCau = 0;
@@ -591,10 +591,9 @@
         if (phuongAn === "breakeven") { giaNam = _calcBreakEvenMale; giaNu = _calcBreakEvenFemale; }
         else if (phuongAn === "small") { giaNam = _calcSmallMale; giaNu = _calcSmallFemale; }
         else if (phuongAn === "big")   { giaNam = _calcBigMale;   giaNu = _calcBigFemale; }
-        const inpNam = document.getElementById("hostPublicPriceMale");
-        const inpNu  = document.getElementById("hostPublicPriceFemale");
-        if (inpNam) inpNam.value = giaNam;
-        if (inpNu)  inpNu.value  = giaNu;
+        // Dùng _setCurrencyInput để format với dấu chấm nghìn
+        _setCurrencyInput("hostPublicPriceMale",   giaNam);
+        _setCurrencyInput("hostPublicPriceFemale", giaNu);
         ["sugBoxBreak","sugBoxSmall","sugBoxBig"].forEach(id => document.getElementById(id)?.classList.remove("selected"));
         const box = document.getElementById(`sugBox${phuongAn === "breakeven" ? "Break" : phuongAn === "small" ? "Small" : "Big"}`);
         if (box) box.classList.add("selected");
@@ -639,8 +638,8 @@
         const gio_bat_dau = document.getElementById("hostTimeStart")?.value;
         const gio_ket_thuc = document.getElementById("hostTimeEnd")?.value;
         const durStr      = document.getElementById("hostTotalDuration")?.value;
-        const gia_nam     = Number(document.getElementById("hostPublicPriceMale")?.value) || 0;
-        const gia_nu      = Number(document.getElementById("hostPublicPriceFemale")?.value) || 0;
+        const gia_nam     = _parseCurrency("hostPublicPriceMale");
+        const gia_nu      = _parseCurrency("hostPublicPriceFemale");
 
         if (!tinh_thanh || !quan_huyen || !ten_san || !dia_chi_san || !ngay_danh || !gio_bat_dau || !gio_ket_thuc) {
             window.hienToast("Thiếu thông tin", "Vui lòng điền đầy đủ: Tỉnh/Thành, Quận/Huyện, Tên sân, Địa chỉ, Ngày giờ.", "danger");
@@ -680,11 +679,11 @@
 
         // Kế toán nội bộ
         const so_gio_choi   = parseFloat(durStr) || 0;
-        const gia_thue_san_1h = Number(document.getElementById("hostAccountingCourtPrice")?.value) || 0;
-        const chi_phi_nuoc_khac = Number(document.getElementById("hostAccountingWaterCost")?.value) || 0;
-        const so_nguoi_nam  = Number(document.getElementById("hostAccountingEstMale")?.value) || 0;
-        const so_nguoi_nu   = Number(document.getElementById("hostAccountingEstFemale")?.value) || 0;
-        const chenh_lech_gia = Number(document.getElementById("hostAccountingGap")?.value) || 0;
+        const gia_thue_san_1h    = _parseCurrency("hostAccountingCourtPrice");
+        const chi_phi_nuoc_khac = _parseCurrency("hostAccountingWaterCost");
+        const so_nguoi_nam      = Number(document.getElementById("hostAccountingEstMale")?.value) || 0;
+        const so_nguoi_nu       = Number(document.getElementById("hostAccountingEstFemale")?.value) || 0;
+        const chenh_lech_gia    = _parseCurrency("hostAccountingGap");
         const chi_phi_san_co_dinh = gia_thue_san_1h * so_gio_choi * so_san_mo;
         const tong_doanh_thu_du_kien = so_nguoi_nam * gia_nam + so_nguoi_nu * gia_nu;
 
@@ -744,8 +743,11 @@
         const ids = ["hostProvince","hostDistrict","hostCourtName","hostCourtAddress","hostCourtNumber",
                      "hostPublicPriceMale","hostPublicPriceFemale","hostMaleCustomLevel","hostFemaleCustomLevel"];
         ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
-        [["hostAccountingCourtPrice", 80000],["hostAccountingWaterCost", 30000],
-         ["hostAccountingEstMale", 6],["hostAccountingEstFemale", 4],["hostAccountingGap", 5000]
+        // Ô tiền → dùng _setCurrencyInput để hiển thị đúng định dạng dấu chấm nghìn
+        _setCurrencyInput("hostAccountingCourtPrice", 80000);
+        _setCurrencyInput("hostAccountingWaterCost",  30000);
+        _setCurrencyInput("hostAccountingGap",        5000);
+        [["hostAccountingEstMale", 6],["hostAccountingEstFemale", 4]
         ].forEach(([id, val]) => { const el = document.getElementById(id); if (el) el.value = val; });
 
         const today = new Date().toLocaleDateString("sv-SE");
@@ -903,13 +905,14 @@
             set("hostDatePlay",     slot.ngay_danh);
             set("hostTimeStart",    slot.gio_bat_dau);
             set("hostTimeEnd",      slot.gio_ket_thuc);
-            set("hostPublicPriceMale",   slot.gia_nam || 0);
-            set("hostPublicPriceFemale", slot.gia_nu  || 0);
-            set("hostAccountingCourtPrice", slot.gia_thue_san_1h    || 0);
-            set("hostAccountingWaterCost",  slot.chi_phi_nuoc_khac  || 0);
-            set("hostAccountingEstMale",    slot.so_nguoi_nam        || 0);
-            set("hostAccountingEstFemale",  slot.so_nguoi_nu         || 0);
-            set("hostAccountingGap",        slot.chenh_lech_gia      || 0);
+            // Ô tiền → format với dấu chấm nghìn khi load
+            _setCurrencyInput("hostPublicPriceMale",      slot.gia_nam            || 0);
+            _setCurrencyInput("hostPublicPriceFemale",    slot.gia_nu             || 0);
+            _setCurrencyInput("hostAccountingCourtPrice", slot.gia_thue_san_1h    || 0);
+            _setCurrencyInput("hostAccountingWaterCost",  slot.chi_phi_nuoc_khac  || 0);
+            _setCurrencyInput("hostAccountingGap",        slot.chenh_lech_gia     || 0);
+            set("hostAccountingEstMale",  slot.so_nguoi_nam  || 0);
+            set("hostAccountingEstFemale", slot.so_nguoi_nu  || 0);
 
             // Giới tính — ngược map
             const gRev = { "Nam": "male", "Nữ": "female", "Cả hai": "both" };
@@ -1203,7 +1206,8 @@
      * Lưu giá trị thô vào dataset.rawValue để ghi DB.
      */
     window._formatInputTienTe = function(input) {
-        const raw = input.value.replace(/\./g, "").replace(/[^0-9]/g, "");
+        // Cho phép ký tự số + dấu âm (ô chênh lệch giá có thể âm)
+        const raw = input.value.replace(/\./g, "").replace(/[^0-9-]/g, "");
         const num = parseInt(raw, 10);
         if (!isNaN(num) && raw !== "") {
             input.value = num.toLocaleString("vi-VN"); // "150.000"
@@ -1213,10 +1217,33 @@
 
     /**
      * Lấy giá trị số thô từ input đã format (bỏ dấu chấm nghìn).
+     * Hỗ trợ cả type="text" (formatted) và type="number" (legacy).
      */
     window._layGiaTriThoInput = function(input) {
+        if (!input) return 0;
         return parseInt(input.dataset.rawValue || input.value.replace(/\./g, "") || "0", 10);
     };
+
+    /**
+     * Lấy số tiền từ element ID — thay thế cho Number(el.value).
+     * Tự động nhận dạng cả input có format dấu chấm lẫn type=number thuần.
+     */
+    function _parseCurrency(elId) {
+        const el = document.getElementById(elId);
+        if (!el) return 0;
+        return window._layGiaTriThoInput(el);
+    }
+
+    /**
+     * Gán giá trị đã format vào input tiền tệ (khi load data / apply pricing suggestion).
+     */
+    function _setCurrencyInput(elId, num) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        const n = Number(num) || 0;
+        el.value = n.toLocaleString("vi-VN");
+        el.dataset.rawValue = String(n);
+    }
 
     function _formatDate(str) {
         if (!str) return "--";

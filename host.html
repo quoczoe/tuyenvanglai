@@ -32,6 +32,9 @@
             background: var(--bg-base);
             color: var(--text-main);
             overflow-y: auto;
+            /* TASK 4.1: Ngăn tràn ngang trên mobile */
+            overflow-x: hidden;
+            max-width: 100vw;
             min-height: 100vh;
         }
         .gateway-wrapper { height: auto; min-height: 100vh; overflow: visible; }
@@ -60,9 +63,11 @@
         .hs-back-btn:hover { border-color: var(--accent-green); color: var(--accent-green); }
 
         /* ══ LAYOUT ══ */
+        /* TASK 4.4: Bỏ max-width cố định → tận dụng toàn bộ chiều rộng PC */
         .hs-main {
-            max-width: 1600px; margin: 0 auto;
+            width: 100%;
             padding: 1.5rem 2rem 3rem;
+            box-sizing: border-box;
         }
         @media (max-width: 768px) { .hs-main { padding: 1rem; } }
 
@@ -585,11 +590,15 @@
                     <!-- Giá công khai -->
                     <div class="hs-form-group">
                         <label class="hs-label">Giá thu <span style="color:#60a5fa;">Nam</span> (VNĐ)</label>
-                        <input type="number" class="hs-input" id="hostPublicPriceMale" value="70000" min="0" step="5000">
+                        <input type="text" class="hs-input" id="hostPublicPriceMale"
+                            value="70.000" inputmode="numeric"
+                            oninput="window._formatInputTienTe(this)" onchange="tinhToanPricingGoiY()">
                     </div>
                     <div class="hs-form-group">
                         <label class="hs-label">Giá thu <span style="color:#f472b6;">Nữ</span> (VNĐ)</label>
-                        <input type="number" class="hs-input" id="hostPublicPriceFemale" value="65000" min="0" step="5000">
+                        <input type="text" class="hs-input" id="hostPublicPriceFemale"
+                            value="65.000" inputmode="numeric"
+                            oninput="window._formatInputTienTe(this)" onchange="tinhToanPricingGoiY()">
                     </div>
 
                     <!-- Tiện ích -->
@@ -619,7 +628,9 @@
                     <!-- Giá sân -->
                     <div class="hs-form-group full">
                         <label class="hs-label">Tiền thuê sân / 1 giờ (VNĐ)</label>
-                        <input type="number" class="hs-input" id="hostAccountingCourtPrice" value="80000" onchange="tinhToanPricingGoiY()">
+                        <input type="text" class="hs-input" id="hostAccountingCourtPrice"
+                            value="80.000" inputmode="numeric"
+                            oninput="window._formatInputTienTe(this)" onchange="tinhToanPricingGoiY()">
                         <span class="hs-hint">Tổng chi phí sân: <strong id="hostTotalCost" style="color:#fbbf24;">0đ</strong></span>
                     </div>
 
@@ -637,7 +648,9 @@
                     <!-- Tiền nước -->
                     <div class="hs-form-group full">
                         <label class="hs-label">Tiền nước / Chi phí phát sinh (VNĐ)</label>
-                        <input type="number" class="hs-input" id="hostAccountingWaterCost" value="30000" onchange="tinhToanPricingGoiY()">
+                        <input type="text" class="hs-input" id="hostAccountingWaterCost"
+                            value="30.000" inputmode="numeric"
+                            oninput="window._formatInputTienTe(this)" onchange="tinhToanPricingGoiY()">
                     </div>
 
                     <!-- Số người -->
@@ -653,7 +666,9 @@
                     <!-- Chênh lệch -->
                     <div class="hs-form-group full">
                         <label class="hs-label">Chênh lệch Nam cao hơn Nữ (VNĐ)</label>
-                        <input type="number" class="hs-input" id="hostAccountingGap" value="5000" onchange="tinhToanPricingGoiY()">
+                        <input type="text" class="hs-input" id="hostAccountingGap"
+                            value="5.000" inputmode="numeric"
+                            oninput="window._formatInputTienTe(this)" onchange="tinhToanPricingGoiY()">
                         <span class="hs-hint">Nhập 0 để chia đều. Âm = Nữ cao hơn Nam.</span>
                     </div>
 

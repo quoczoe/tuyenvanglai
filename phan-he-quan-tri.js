@@ -356,8 +356,8 @@
         const soNgay  = Number(document.getElementById("keyFormSoNgay")?.value) || 30;
         const status  = document.getElementById("keyFormStatus")?.value || "Chưa kích hoạt";
 
-        if (!maKey || !tenHost) {
-            window.hienToast("Thiếu thông tin", "Vui lòng điền Mã Key và Tên Host.", "danger");
+        if (!maKey) {
+            window.hienToast("Thiếu thông tin", "Vui lòng điền Mã Key.", "danger");
             return;
         }
 
@@ -379,17 +379,17 @@
                 await window.dbEngine.ghi("quan_ly_key", payload, { ma_key: _editingKeyId });
                 window.hienToast("Cập nhật Key ✅", `Key ${maKey} đã được chỉnh sửa.`, "success");
             } else {
-                // Tạo key mới — trang thái mặc định "Chưa kích hoạt"
-                // ngay_kich_hoat và ngay_het_han sẽ do host tự động điền khi kích hoạt
+                // Tạo key mới — ten_host và sdt_host hardcode "--"
+                // Host sẽ tự cập nhật 2 trường này khi kích hoạt key thành công
                 const payload = {
                     ma_key:           maKey,
-                    ten_host:         tenHost,
-                    sdt_host:         sdtHost,
+                    ten_host:         "--",
+                    sdt_host:         "--",
                     so_ngay_duoc_xai: soNgay,
                     trang_thai:       "Chưa kích hoạt"
                 };
                 await window.dbEngine.ghi("quan_ly_key", payload);
-                window.hienToast("Tạo Key thành công! 🔑", `Key ${maKey} cho ${tenHost}.`, "success");
+                window.hienToast("Tạo Key thành công! 🔑", `Key ${maKey} — Host nhập key để kích hoạt.`, "success");
             }
             window.dongModalKey();
             await _taiDanhSachKey();
@@ -454,7 +454,7 @@
     async function _taiDanhSachKhach() {
         const tbody = document.getElementById("adminGuestsBody");
         if (!tbody) return;
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:16px;color:#64748b;">
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:16px;color:#64748b;">
             <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>`;
         try {
             // Tải song song 4 bảng để tổng hợp dữ liệu thành viên
@@ -542,49 +542,45 @@
             _st("adminGuestCount", `${list.length} thành viên`);
 
             if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:20px;color:#64748b;">
+                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:20px;color:#64748b;">
                     Chưa có thành viên nào trong hệ thống.</td></tr>`;
                 return;
             }
+
+            // Bản đồ badge vai trò
+            const _vaiTroBadge = function(vt) {
+                if (vt === "admin") return '<span class="mv-role-badge-admin">👑 Admin</span>';
+                if (vt === "host")  return '<span class="mv-role-badge-host">🏟️ Host</span>';
+                return '<span class="mv-role-badge-guest">👤 Guest</span>';
+            };
 
             tbody.innerHTML = "";
             list.forEach((g, i) => {
                 const d  = g.ngayTG ? new Date(g.ngayTG).toLocaleDateString("vi-VN") : "--";
                 const tb = _tbSao(g.sdt);
                 const soLuotDG = reviewMap[g.sdt]?.saoArr.length || 0;
+                // Escape SĐT cho onclick (safe to use trong attribute)
+                const sdtSafe = g.sdt.replace(/'/g, "\\'").replace(/"/g, "&quot;");
 
                 // Cell ⭐ Sao TB
+                const tenSafe = (g.ten || "").replace(/'/g, "\\'");
                 const saoCellHTML = tb
                     ? `<span class="sao-badge">${tb} ⭐</span>
                        <span style="font-size:0.72rem;color:#9ca3af;display:block;margin-top:2px;">(${soLuotDG} lượt)</span>
                        <button class="btn-mini" style="margin-top:4px;"
-                           onclick="window.xemDanhGiaThanhVien('${g.sdt}', '${(g.ten||"").replace(/'/g,"\\'")}')">
+                           onclick="window.xemDanhGiaThanhVien('${sdtSafe}', '${tenSafe}')">
                            📋 Chi tiết
                        </button>`
                     : `<span style="color:#6b7280;font-size:0.78rem;">Chưa có</span>`;
 
-                // Cell Hành động — dropdown
-                const trangThaiTK = g.trang_thai_tai_khoan !== false;
-                const hanhDongHTML = `
-                    <div class="ad-action-dropdown-wrap">
-                        <button class="btn-mini" onclick="window.moHanhDongThanhVien('${g.sdt}', this)">
-                            ⚙️ Hành động ▾
-                        </button>
-                        <div class="ad-action-dropdown" id="dropdown_${g.sdt.replace(/\+/g,'plus')}" style="display:none;">
-                            <button onclick="window.moModalSuaThanhVien('${g.sdt}')">✏️ Sửa thông tin</button>
-                            <button onclick="window.doiVaiTroThanhVien('${g.sdt}', '${g.vai_tro}')">🔄 Đổi vai trò</button>
-                            <button onclick="window.capLaiMatKhau('${g.sdt}')">🔑 Cấp lại mật khẩu</button>
-                            <button onclick="window.khoaMoTaiKhoan('${g.sdt}', ${trangThaiTK})">
-                                ${trangThaiTK ? '🔒 Khóa TK' : '🔓 Mở khóa'}
-                            </button>
-                            <button class="danger" onclick="window.xoaTaiKhoan('${g.sdt}')">🗑️ Xóa TK</button>
-                        </div>
-                    </div>`;
+                // Cell Hành động — nút đơn mở modal toàn diện
+                const hanhDongHTML = `<button class="mv-ql-btn" onclick="window.moModalQuanLyThanhVien('${sdtSafe}')">⚙️ Quản lý</button>`;
 
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
                 <td style="color:#64748b;font-size:0.8rem;">${i + 1}</td>
                 <td style="font-weight:700;font-size:0.85rem;">${g.ten}</td>
+                <td style="text-align:center;">${_vaiTroBadge(g.vai_tro)}</td>
                 <td>
                     <a href="https://zalo.me/${g.sdt}" target="_blank"
                         style="color:#00d4ff;font-size:0.82rem;text-decoration:none;">
@@ -596,12 +592,12 @@
                 <td style="font-weight:700;color:#00ff88;">${_fVND(g.tongChi)}</td>
                 <td style="font-weight:700;color:#a78bfa;text-align:center;">${g.hosts.size}</td>
                 <td style="text-align:center;">${saoCellHTML}</td>
-                <td>${hanhDongHTML}</td>`;
+                <td style="text-align:center;">${hanhDongHTML}</td>`;
                 tbody.appendChild(tr);
             });
         } catch (e) {
             console.error("[Admin] Lỗi tải thành viên:", e);
-            tbody.innerHTML = `<tr><td colspan="9" style="color:#ef4444;text-align:center;padding:16px;">
+            tbody.innerHTML = `<tr><td colspan="10" style="color:#ef4444;text-align:center;padding:16px;">
                 Lỗi tải dữ liệu: ${e.message || e}</td></tr>`;
         }
     }
@@ -614,160 +610,289 @@
     };
 
     /* ═══════════════════════════════════════════════════
-     * 6B. CRUD THÀNH VIÊN — Dropdown hành động, Modal sửa, Xóa, Khóa/Mở
+     * 6B. MODAL QUẢN LÝ THÀNH VIÊN — 5 section, không dùng alert()/confirm()
+     * Gồm: sửa thông tin, đổi vai trò, cấp mật khẩu, khóa/mở, xóa TK
      * ═══════════════════════════════════════════════════ */
 
-    // Toggle dropdown hành động — đóng tất cả dropdown khác trước khi mở cái này
-    window.moHanhDongThanhVien = function (sdt, btnEl) {
-        const safeSdt = sdt.replace(/\+/g, "plus");
-        document.querySelectorAll(".ad-action-dropdown").forEach(d => {
-            if (d.id !== "dropdown_" + safeSdt) d.style.display = "none";
-        });
-        const dd = document.getElementById("dropdown_" + safeSdt);
-        if (dd) dd.style.display = (dd.style.display === "none" ? "block" : "none");
-    };
+    // Hàm helper: escape chuỗi cho HTML attribute
+    function _mvEsc(s) {
+        if (s === null || s === undefined) return "";
+        return String(s)
+            .replace(/&/g, "&amp;")
+            .replace(/"/g, "&quot;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+    }
 
-    // Click ngoài vùng dropdown → đóng tất cả
-    document.addEventListener("click", function (e) {
-        if (!e.target.closest(".ad-action-dropdown-wrap")) {
-            document.querySelectorAll(".ad-action-dropdown").forEach(d => {
-                d.style.display = "none";
-            });
-        }
-    });
+    // SHA-256 hash phía client (Web Crypto API) — dùng khi admin cấp mật khẩu mới
+    async function _hashMK(plain) {
+        const SALT    = "tvl_pepper_2026";
+        const encoder = new TextEncoder();
+        const data    = encoder.encode(SALT + plain);
+        const buf     = await crypto.subtle.digest("SHA-256", data);
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
 
-    // Mở modal sửa thông tin thành viên với dữ liệu pre-filled
-    window.moModalSuaThanhVien = async function (sdt) {
+    // Mở modal Quản Lý Thành Viên (5 section xếp chồng)
+    window.moModalQuanLyThanhVien = async function (sdt) {
+        const overlay = document.getElementById("modalThanhVienOverlay");
+        const body    = document.getElementById("modalThanhVienTitle");
+        const bodyEl  = document.getElementById("modalThanhVienBody");
+        if (!overlay || !bodyEl) return;
+
+        // Hiện modal với trạng thái đang tải
+        if (body) body.textContent = "Đang tải thông tin...";
+        bodyEl.innerHTML = `<div style="text-align:center;padding:30px;color:#64748b;">
+            <i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>`;
+        overlay.style.display = "flex";
+
         try {
             const users = await window.dbEngine.doc("nguoi_dung");
             const u = (users || []).find(x => x.sdt_khach === sdt);
             if (!u) {
                 window.hienToast("Lỗi", "Không tìm thấy thành viên.", "danger");
+                overlay.style.display = "none";
                 return;
             }
-            document.getElementById("modalThanhVienTitle").textContent = "Sửa Thành Viên: " + sdt;
-            document.getElementById("modalThanhVienBody").innerHTML = `
-                <div style="display:flex;flex-direction:column;gap:14px;">
+
+            if (body) body.textContent = `⚙️ Quản lý: ${u.ten_khach || sdt}`;
+
+            const sdtAttr  = _mvEsc(sdt);
+            const vaiTro   = u.vai_tro || "guest";
+            const isActive = u.is_active !== false; // mặc định true nếu cột chưa có
+
+            bodyEl.innerHTML = `
+            <!-- ── A: Thông tin cơ bản ── -->
+            <div class="mv-section">
+                <div class="mv-section-title">✏️ Thông Tin Cơ Bản</div>
+                <div class="mv-form-grid">
                     <div>
-                        <label style="font-size:0.78rem;color:#94a3b8;display:block;margin-bottom:4px;">Họ tên</label>
-                        <input type="text" id="editTenKhach" value="${(u.ten_khach||'').replace(/"/g,'&quot;')}"
-                            placeholder="Họ tên"
-                            style="width:100%;padding:9px 12px;background:#0f1e35;border:1px solid #2d4a6e;
-                                   border-radius:8px;color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;">
-                    </div>
-                    <div>
-                        <label style="font-size:0.78rem;color:#94a3b8;display:block;margin-bottom:4px;">SĐT Zalo</label>
-                        <input type="tel" id="editSdtZalo" value="${u.sdt_zalo||''}"
-                            placeholder="SĐT Zalo"
-                            style="width:100%;padding:9px 12px;background:#0f1e35;border:1px solid #2d4a6e;
-                                   border-radius:8px;color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;">
-                    </div>
-                    <div>
-                        <label style="font-size:0.78rem;color:#94a3b8;display:block;margin-bottom:4px;">Facebook</label>
-                        <input type="url" id="editFacebook" value="${u.facebook_link||''}"
-                            placeholder="Link Facebook"
-                            style="width:100%;padding:9px 12px;background:#0f1e35;border:1px solid #2d4a6e;
-                                   border-radius:8px;color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;">
+                        <label class="mv-label">Họ tên</label>
+                        <input type="text" id="mvTenKhach" class="mv-input"
+                            value="${_mvEsc(u.ten_khach)}" placeholder="Họ tên">
                     </div>
                     <div>
-                        <label style="font-size:0.78rem;color:#94a3b8;display:block;margin-bottom:4px;">Vai trò</label>
-                        <select id="editVaiTro"
-                            style="width:100%;padding:9px 12px;background:#0f1e35;border:1px solid #2d4a6e;
-                                   border-radius:8px;color:#e2e8f0;font-size:0.9rem;box-sizing:border-box;">
-                            <option value="guest" ${u.vai_tro==='guest'||!u.vai_tro ? 'selected':''}>Guest (Khách)</option>
-                            <option value="host"  ${u.vai_tro==='host' ? 'selected':''}>Host (Chủ sân)</option>
-                        </select>
+                        <label class="mv-label">SĐT (khóa chính — không đổi được)</label>
+                        <input type="text" class="mv-input" value="${sdtAttr}" disabled>
                     </div>
-                    <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:6px;">
-                        <button onclick="window.dongModalThanhVien()"
-                            style="padding:9px 20px;background:rgba(255,255,255,0.06);border:1px solid #2d4a6e;
-                                   border-radius:8px;color:#94a3b8;cursor:pointer;font-size:0.9rem;">
-                            Hủy
-                        </button>
-                        <button onclick="window.luuSuaThanhVien('${sdt}')"
-                            style="padding:9px 20px;background:linear-gradient(135deg,#00d4ff,#00ff88);
-                                   border:none;border-radius:8px;color:#0f1e35;font-weight:700;cursor:pointer;font-size:0.9rem;">
-                            💾 Lưu thay đổi
-                        </button>
+                    <div>
+                        <label class="mv-label">Số dư ví (đ)</label>
+                        <input type="number" id="mvSoDu" class="mv-input"
+                            value="${Number(u.so_du_vi) || 0}" min="0" placeholder="0">
                     </div>
-                </div>`;
-            document.getElementById("modalThanhVienOverlay").style.display = "flex";
+                    <div>
+                        <label class="mv-label">Link Facebook</label>
+                        <input type="url" id="mvFacebook" class="mv-input"
+                            value="${_mvEsc(u.facebook_link)}" placeholder="https://fb.com/...">
+                    </div>
+                    <div>
+                        <label class="mv-label">SĐT Zalo liên lạc</label>
+                        <input type="tel" id="mvSdtZalo" class="mv-input"
+                            value="${_mvEsc(u.sdt_zalo)}" placeholder="0909...">
+                    </div>
+                </div>
+                <button class="mv-btn mv-btn-primary" style="width:100%;"
+                    onclick="window._luuThongTinTV('${sdtAttr}')">
+                    💾 Lưu thông tin
+                </button>
+            </div>
+
+            <!-- ── B: Đổi vai trò ── -->
+            <div class="mv-section">
+                <div class="mv-section-title">🎭 Vai Trò &nbsp;<span style="color:#00ff88;font-weight:700;">${vaiTro}</span></div>
+                <div class="mv-role-btns">
+                    <button class="mv-btn ${vaiTro === 'guest' ? 'mv-btn-active' : ''}"
+                        onclick="window._xacNhanDoiVaiTro('${sdtAttr}', 'guest')">👤 Guest</button>
+                    <button class="mv-btn ${vaiTro === 'host' ? 'mv-btn-active' : ''}"
+                        onclick="window._xacNhanDoiVaiTro('${sdtAttr}', 'host')">🏟️ Host</button>
+                    <button class="mv-btn ${vaiTro === 'admin' ? 'mv-btn-active' : ''}"
+                        onclick="window._xacNhanDoiVaiTro('${sdtAttr}', 'admin')">👑 Admin</button>
+                </div>
+                <div id="mvRoleConfirm" class="mv-confirm-box" style="display:none;">
+                    <span id="mvRoleConfirmText" style="font-size:0.85rem;"></span>
+                    <div style="display:flex;gap:8px;margin-top:10px;">
+                        <button class="mv-btn mv-btn-primary" id="mvRoleConfirmYes" style="flex:1;">✅ Xác nhận đổi</button>
+                        <button class="mv-btn" style="flex:1;"
+                            onclick="document.getElementById('mvRoleConfirm').style.display='none'">❌ Hủy</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ── C: Cấp lại mật khẩu ── -->
+            <div class="mv-section">
+                <div class="mv-section-title">🔑 Cấp Lại Mật Khẩu</div>
+                <div class="mv-form-grid" style="margin-bottom:10px;">
+                    <div>
+                        <label class="mv-label">Mật khẩu mới (tối thiểu 6 ký tự)</label>
+                        <input type="password" id="mvNewPassword" class="mv-input" placeholder="••••••••">
+                    </div>
+                    <div>
+                        <label class="mv-label">Xác nhận mật khẩu</label>
+                        <input type="password" id="mvConfirmPassword" class="mv-input" placeholder="••••••••">
+                    </div>
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button class="mv-btn mv-btn-primary" style="flex:1;"
+                        onclick="window._luuMatKhauTV('${sdtAttr}')">🔑 Đặt mật khẩu mới</button>
+                    <button class="mv-btn"
+                        onclick="window._xoaHashMKTV('${sdtAttr}')">🗑️ Xóa hash</button>
+                </div>
+            </div>
+
+            <!-- ── D: Khóa / Mở tài khoản ── -->
+            <div class="mv-section">
+                <div class="mv-section-title">🔐 Trạng Thái Tài Khoản</div>
+                <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                    <span style="font-size:0.88rem;color:#94a3b8;">Hiện tại:
+                        <strong style="color:${isActive ? '#00ff88' : '#ef4444'};">
+                            ${isActive ? '✅ Đang hoạt động' : '🔒 Đã bị khóa'}
+                        </strong>
+                    </span>
+                    <button class="mv-btn ${isActive ? 'mv-btn-warn' : 'mv-btn-primary'}"
+                        onclick="window._khoaMoTV('${sdtAttr}', ${isActive})">
+                        ${isActive ? '🔒 Khóa tài khoản' : '🔓 Mở khóa tài khoản'}
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── E: Xóa tài khoản ── -->
+            <div class="mv-section mv-section-danger">
+                <div class="mv-section-title" style="color:#ef4444;">🗑️ Xóa Tài Khoản Vĩnh Viễn</div>
+                <p style="font-size:0.8rem;color:#9ca3af;margin:0 0 10px;line-height:1.5;">
+                    Hành động <strong style="color:#ef4444;">KHÔNG THỂ HOÀN TÁC</strong>.
+                    Nhập chính xác SĐT <code style="color:#fbbf24;background:rgba(251,191,36,0.1);
+                    padding:2px 6px;border-radius:4px;">${sdtAttr}</code> để xác nhận.
+                </p>
+                <div class="mv-form-grid" style="margin-bottom:10px;">
+                    <div>
+                        <label class="mv-label">Nhập SĐT để xác nhận</label>
+                        <input type="text" id="mvXoaConfirmSdt" class="mv-input"
+                            placeholder="${sdtAttr}">
+                    </div>
+                </div>
+                <button class="mv-btn mv-btn-danger" style="width:100%;"
+                    onclick="window._xoaTV('${sdtAttr}')">
+                    🗑️ Xóa vĩnh viễn tài khoản này
+                </button>
+            </div>`;
+
         } catch (e) {
             window.hienToast("Lỗi", "Không thể tải dữ liệu thành viên.", "danger");
+            overlay.style.display = "none";
         }
     };
 
-    // Lưu thay đổi thông tin thành viên vào Supabase
-    window.luuSuaThanhVien = async function (sdt) {
+    // A — Lưu thông tin cơ bản
+    window._luuThongTinTV = async function (sdt) {
+        const ten  = document.getElementById("mvTenKhach")?.value?.trim();
+        const sodu = document.getElementById("mvSoDu")?.value;
+        const fb   = document.getElementById("mvFacebook")?.value?.trim();
+        const zalo = document.getElementById("mvSdtZalo")?.value?.trim();
+
         const payload = {};
-        const ten   = document.getElementById("editTenKhach")?.value?.trim();
-        const zalo  = document.getElementById("editSdtZalo")?.value?.trim();
-        const fb    = document.getElementById("editFacebook")?.value?.trim();
-        const role  = document.getElementById("editVaiTro")?.value;
-        if (ten  !== undefined && ten  !== "") payload.ten_khach     = ten;
-        if (zalo !== undefined)                payload.sdt_zalo      = zalo  || null;
-        if (fb   !== undefined)                payload.facebook_link = fb    || null;
-        if (role)                              payload.vai_tro       = role;
+        if (ten  !== undefined) payload.ten_khach    = ten  || null;
+        if (sodu !== undefined) payload.so_du_vi     = Number(sodu) || 0;
+        if (fb   !== undefined) payload.facebook_link = fb  || null;
+        if (zalo !== undefined) payload.sdt_zalo      = zalo || null;
 
         try {
             await window.dbEngine.ghi("nguoi_dung", payload, { sdt_khach: sdt });
-            window.hienToast("Thành công ✅", "Đã cập nhật thông tin thành viên.", "success");
-            window.dongModalThanhVien();
-            _taiDanhSachKhach(); // Reload bảng
+            window.hienToast("Đã lưu ✅", "Thông tin thành viên đã cập nhật.", "success");
+            _taiDanhSachKhach();
         } catch (e) {
             window.hienToast("Lỗi", "Không thể lưu: " + (e.message || "").slice(0, 80), "danger");
         }
     };
 
-    // Đổi vai trò guest ↔ host
-    window.doiVaiTroThanhVien = async function (sdt, vaiTroHienTai) {
-        const moi = vaiTroHienTai === "guest" ? "host" : "guest";
-        if (!confirm(`Đổi vai trò của ${sdt}\ntừ "${vaiTroHienTai}" → "${moi}"?`)) return;
+    // B — Hiện confirm nội tuyến trước khi đổi vai trò
+    window._xacNhanDoiVaiTro = function (sdt, vaiTroMoi) {
+        const box  = document.getElementById("mvRoleConfirm");
+        const txt  = document.getElementById("mvRoleConfirmText");
+        const btn  = document.getElementById("mvRoleConfirmYes");
+        if (!box || !txt || !btn) return;
+        txt.innerHTML = `Đổi vai trò thành <strong style="color:#00ff88;">${vaiTroMoi}</strong>?`;
+        btn.onclick   = function () { window._thucHienDoiVaiTro(sdt, vaiTroMoi); };
+        box.style.display = "block";
+    };
+
+    // B — Thực hiện đổi vai trò sau khi confirm
+    window._thucHienDoiVaiTro = async function (sdt, vaiTroMoi) {
         try {
-            await window.dbEngine.ghi("nguoi_dung", { vai_tro: moi }, { sdt_khach: sdt });
-            window.hienToast("Đã đổi vai trò ✅", `${sdt} giờ là: ${moi}`, "success");
+            await window.dbEngine.ghi("nguoi_dung", { vai_tro: vaiTroMoi }, { sdt_khach: sdt });
+            window.hienToast("Đã đổi vai trò ✅", `${sdt} → ${vaiTroMoi}`, "success");
             _taiDanhSachKhach();
+            // Reload lại modal để phản ánh vai trò mới
+            window.moModalQuanLyThanhVien(sdt);
         } catch (e) {
             window.hienToast("Lỗi", "Không thể đổi vai trò.", "danger");
         }
     };
 
-    // Cấp lại mật khẩu — xóa hash, user đặt lại khi đăng nhập kế tiếp
-    window.capLaiMatKhau = async function (sdt) {
-        if (!confirm(`Reset mật khẩu cho ${sdt}?\nLần đăng nhập kế tiếp họ sẽ được đặt mật khẩu mới.`)) return;
+    // C — Đặt mật khẩu mới (hash phía client)
+    window._luuMatKhauTV = async function (sdt) {
+        const pw  = document.getElementById("mvNewPassword")?.value  || "";
+        const pw2 = document.getElementById("mvConfirmPassword")?.value || "";
+        if (pw.length < 6) {
+            window.hienToast("Lỗi", "Mật khẩu tối thiểu 6 ký tự.", "danger");
+            return;
+        }
+        if (pw !== pw2) {
+            window.hienToast("Lỗi", "Mật khẩu xác nhận không khớp.", "danger");
+            return;
+        }
         try {
-            await window.dbEngine.ghi("nguoi_dung", { mat_khau_hash: null }, { sdt_khach: sdt });
-            window.hienToast("Đã reset ✅", "Mật khẩu đã bị xóa. User đặt mới khi đăng nhập.", "success");
+            const hash = await _hashMK(pw);
+            await window.dbEngine.ghi("nguoi_dung", { mat_khau_hash: hash }, { sdt_khach: sdt });
+            window.hienToast("Mật khẩu mới đã lưu ✅", "Hash đã cập nhật vào DB.", "success");
+            const p1 = document.getElementById("mvNewPassword");
+            const p2 = document.getElementById("mvConfirmPassword");
+            if (p1) p1.value = "";
+            if (p2) p2.value = "";
         } catch (e) {
-            window.hienToast("Lỗi", "Không thể reset mật khẩu.", "danger");
+            window.hienToast("Lỗi", "Không thể lưu mật khẩu.", "danger");
         }
     };
 
-    // Khóa hoặc mở khóa tài khoản (toggle trang_thai_tai_khoan)
-    window.khoaMoTaiKhoan = async function (sdt, trangThaiHienTai) {
-        const moiLaActive = !trangThaiHienTai; // Toggle: true → false hoặc ngược lại
-        const label = moiLaActive ? "Mở khóa" : "Khóa";
-        if (!confirm(`${label} tài khoản ${sdt}?`)) return;
+    // C — Xóa hash (reset, user tự đặt mới khi đăng nhập)
+    window._xoaHashMKTV = async function (sdt) {
         try {
-            await window.dbEngine.ghi("nguoi_dung", { trang_thai_tai_khoan: moiLaActive }, { sdt_khach: sdt });
+            await window.dbEngine.ghi("nguoi_dung", { mat_khau_hash: null }, { sdt_khach: sdt });
+            window.hienToast("Đã xóa hash ✅", "User sẽ đặt mật khẩu mới khi đăng nhập.", "success");
+        } catch (e) {
+            window.hienToast("Lỗi", "Không thể xóa hash.", "danger");
+        }
+    };
+
+    // D — Khóa hoặc mở khóa tài khoản (toggle is_active)
+    window._khoaMoTV = async function (sdt, isActive) {
+        const newActive = !isActive;
+        const label     = newActive ? "Mở khóa" : "Khóa";
+        try {
+            await window.dbEngine.ghi("nguoi_dung", { is_active: newActive }, { sdt_khach: sdt });
             window.hienToast(
-                label + " thành công ✅",
-                `Tài khoản ${sdt} đã ${moiLaActive ? "được mở khóa" : "bị khóa"}.`,
-                moiLaActive ? "success" : "warning"
+                `${label} thành công ✅`,
+                `Tài khoản ${sdt} ${newActive ? "đã được mở khóa" : "đã bị khóa"}.`,
+                newActive ? "success" : "warning"
             );
             _taiDanhSachKhach();
+            // Reload modal để nút phản ánh trạng thái mới
+            window.moModalQuanLyThanhVien(sdt);
         } catch (e) {
             window.hienToast("Lỗi", `Không thể ${label.toLowerCase()} tài khoản.`, "danger");
         }
     };
 
-    // Xóa tài khoản — double confirm, chỉ xóa nguoi_dung (giữ lịch sử dat_slot)
-    window.xoaTaiKhoan = async function (sdt) {
-        if (!confirm(`⚠️ XÓA VĨNH VIỄN tài khoản ${sdt}?\nHành động này KHÔNG thể hoàn tác!`)) return;
-        if (!confirm(`Xác nhận lần 2: Xóa tài khoản ${sdt}?`)) return;
+    // E — Xóa tài khoản (kiểm tra SĐT nhập đúng → xóa)
+    window._xoaTV = async function (sdt) {
+        const nhapSdt = (document.getElementById("mvXoaConfirmSdt")?.value || "").trim();
+        if (nhapSdt !== sdt) {
+            window.hienToast("Xác nhận sai", `SĐT nhập vào (${nhapSdt || "rỗng"}) không khớp với ${sdt}.`, "danger");
+            return;
+        }
         try {
             await window.dbEngine.xoa("nguoi_dung", { sdt_khach: sdt });
             window.hienToast("Đã xóa ✅", `Tài khoản ${sdt} đã bị xóa vĩnh viễn.`, "warning");
+            window.dongModalThanhVien();
             _taiDanhSachKhach();
         } catch (e) {
             window.hienToast("Lỗi", "Không thể xóa tài khoản.", "danger");
@@ -780,7 +905,7 @@
         if (overlay) overlay.style.display = "none";
     };
 
-    // Click outside modal → đóng
+    // Click bên ngoài hộp modal → đóng
     document.addEventListener("click", function (e) {
         const overlay = document.getElementById("modalThanhVienOverlay");
         if (overlay && e.target === overlay) window.dongModalThanhVien();
@@ -1049,17 +1174,15 @@
         const btn = document.getElementById("btnLuuThongBao");
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
         try {
-            // Mỗi config key là 1 bản ghi riêng biệt trong cau_hinh_he_thong
+            // TASK 1.3: Dùng upsert (INSERT … ON CONFLICT DO UPDATE) thay vì PATCH thuần
+            // → Tránh trường hợp row chưa tồn tại → PATCH trả về 0 row thay đổi
             await Promise.all([
-                window.dbEngine.ghi("cau_hinh_he_thong",
-                    { noi_dung_thong_bao: content },
-                    { id: "popup_chinh" }),
-                window.dbEngine.ghi("cau_hinh_he_thong",
-                    { noi_dung_thong_bao: String(total) },
-                    { id: "so_keo_hien_thi" }),
-                window.dbEngine.ghi("cau_hinh_he_thong",
-                    { noi_dung_thong_bao: String(online) },
-                    { id: "so_thanh_vien" })
+                window.dbEngine.upsert("cau_hinh_he_thong",
+                    { id: "popup_chinh",    noi_dung_thong_bao: content }),
+                window.dbEngine.upsert("cau_hinh_he_thong",
+                    { id: "so_keo_hien_thi", noi_dung_thong_bao: String(total) }),
+                window.dbEngine.upsert("cau_hinh_he_thong",
+                    { id: "so_thanh_vien",   noi_dung_thong_bao: String(online) })
             ]);
             window.hienToast("Đã lưu cấu hình ✅", "Thông báo và số liệu trang chủ đã cập nhật.", "success");
         } catch (e) {

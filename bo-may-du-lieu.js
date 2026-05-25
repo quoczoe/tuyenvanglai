@@ -230,6 +230,21 @@
                 hienLoiMang(`Xóa khỏi bảng "${tenBang}"`);
                 throw e;
             }
+        },
+
+        /**
+         * INSERT hoặc UPDATE khi conflict PK — dùng cho cau_hinh_he_thong v.v.
+         */
+        async upsert(tenBang, payload) {
+            if (!window.khoDuLieuVinhVien) {
+                throw new Error("window.khoDuLieuVinhVien chưa sẵn sàng");
+            }
+            try {
+                return await window.khoDuLieuVinhVien.upsertData(tenBang, payload);
+            } catch (e) {
+                hienLoiMang(`Upsert vào bảng "${tenBang}"`);
+                throw e;
+            }
         }
     };
 

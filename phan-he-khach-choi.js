@@ -269,8 +269,8 @@
             const user = users[0] || null;
 
             if (user) {
-                // ── 5B: Kiểm tra tài khoản bị khóa ──
-                if (user.trang_thai_tai_khoan === false) {
+                // ── 5B: Kiểm tra tài khoản bị khóa (dùng is_active — cột mới) ──
+                if (user.is_active === false) {
                     window.hienToast(
                         "Tài khoản bị khóa",
                         "Tài khoản của bạn đã bị Admin tạm khóa. Liên hệ Admin để biết thêm.",
@@ -851,14 +851,19 @@
         };
         const genderBadge = genderMap[slot.gioi_tinh_can] || "";
 
-        // Trình độ từ JSONB yeu_cau_trinh_do
+        // Trình độ từ JSONB yeu_cau_trinh_do — TASK 3.6: mỗi giới tính 1 dòng riêng
         const td = slot.yeu_cau_trinh_do || {};
-        const mLevels = (td.nam || []).join(", ");
-        const fLevels = (td.nu  || []).join(", ");
-        let levelText = "";
-        if (slot.gioi_tinh_can === "Cả hai") levelText = `Nam: ${mLevels || "--"} | Nữ: ${fLevels || "--"}`;
-        else if (slot.gioi_tinh_can === "Nữ") levelText = fLevels || "--";
-        else levelText = mLevels || "--";
+        const mLevels = Array.isArray(td.nam) ? td.nam.join(", ") : (td.nam || "");
+        const fLevels = Array.isArray(td.nu)  ? td.nu.join(", ")  : (td.nu  || "");
+        let levelHTML = "";
+        if (slot.gioi_tinh_can === "Cả hai") {
+            levelHTML = `<span class="kh-trinh-do-line">🏸 Nam: ${mLevels || "--"}</span>`
+                      + `<span class="kh-trinh-do-line">🏸 Nữ: ${fLevels || "--"}</span>`;
+        } else if (slot.gioi_tinh_can === "Nữ") {
+            levelHTML = `<span class="kh-trinh-do-line">🏸 ${fLevels || "--"}</span>`;
+        } else {
+            levelHTML = `<span class="kh-trinh-do-line">🏸 ${mLevels || "--"}</span>`;
+        }
 
         // Tiện ích từ JSONB tien_ich_bao_gom
         const baoGom = slot.tien_ich_bao_gom || {};
@@ -896,14 +901,14 @@
                 </div>
 
                 <div class="slot-details-row">
-                    <div class="slot-detail-item">
-                        <span class="detail-label">Trình độ</span>
-                        <span class="detail-value" style="font-size:0.75rem;">${levelText}</span>
+                    <div class="slot-detail-item" style="flex:1;">
+                        <span class="detail-label">Trình độ yêu cầu</span>
+                        <div class="kh-trinh-do-row">${levelHTML}</div>
                     </div>
-                    <div class="slot-detail-item">
-                        <span class="detail-label">Đã đăng ký</span>
-                        <span class="detail-value">${soKhach} người</span>
-                    </div>
+                </div>
+                <!-- TASK 3.6: badge "Đã đăng ký" tách thành dòng riêng -->
+                <div class="kh-da-dang-ky-badge">
+                    <i class="fa-solid fa-users" style="margin-right:4px;opacity:0.7;"></i>${soKhach} người đã đăng ký
                 </div>
 
                 <div class="slot-price-row">

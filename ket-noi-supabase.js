@@ -177,6 +177,36 @@
                 console.error(`❌ [Lỗi Xóa Data - ${tenBang}]:`, error);
                 throw error;
             }
+        },
+
+        /**
+         * D. UPSERT — INSERT hoặc UPDATE nếu đã tồn tại (conflict on PK)
+         * Dùng Supabase Prefer: resolution=merge-duplicates
+         * @param {string} tenBang  - Tên bảng
+         * @param {Object|Array} payload - Dữ liệu (object đơn hoặc mảng)
+         * @returns {Promise<Array>}
+         */
+        async upsertData(tenBang, payload) {
+            try {
+                const url = `${SUPABASE_URL}/rest/v1/${tenBang}`;
+                const headers = Object.assign({}, LAY_HEADERS_CHUAN(), {
+                    "Prefer": "resolution=merge-duplicates,return=representation"
+                });
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers,
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Lỗi upsert bảng ${tenBang}: ${errorText}`);
+                }
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error(`❌ [Lỗi Upsert - ${tenBang}]:`, error);
+                throw error;
+            }
         }
     };
 

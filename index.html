@@ -1206,14 +1206,16 @@
             }
 
             // ── Bước 2: Fallback — đọc từ cau_hinh_he_thong nếu bước 1 thất bại ──
+            // TASK 2.1: Đọc đúng cột noi_dung_thong_bao theo từng id row
             if (!daLayDuocData) {
                 try {
-                    const cfg = await window.dbEngine.doc("cau_hinh_he_thong");
-                    const c = (cfg || [])[0] || {};
-                    soKeoMo     = c.total_slots    || SO_KEO_MAC_DINH;
-                    soThanhVien = c.online_players || SO_THANH_VIEN_MAC_DINH;
+                    const cfg    = await window.dbEngine.doc("cau_hinh_he_thong");
+                    const cfgMap = {};
+                    (cfg || []).forEach(c => { if (c.id) cfgMap[c.id] = c; });
+                    soKeoMo     = Number(cfgMap["so_keo_hien_thi"]?.noi_dung_thong_bao)   || SO_KEO_MAC_DINH;
+                    soThanhVien = Number(cfgMap["so_thanh_vien"]?.noi_dung_thong_bao)     || SO_THANH_VIEN_MAC_DINH;
                 } catch (e2) {
-                    // Giữ 0 nếu tất cả đều thất bại
+                    // Giữ fallback hằng số nếu tất cả đều thất bại
                     console.warn("[Index] Không tải được số liệu:", e2.message);
                 }
             }
