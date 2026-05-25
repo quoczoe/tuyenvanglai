@@ -1179,32 +1179,54 @@
             // Render bảng
             if (table) table.style.display = "table";
             const rowsHTML = guests.map((g, idx) => {
-                const trangThai = g.trang_thai_di_danh || "Chờ đánh";
-                const isActive  = trangThai === "Đã tham gia";
-                const isHuy     = trangThai === "Khách hủy" || trangThai === "Bùng kèo";
-                const gioiTinh  = g.gioi_tinh === "female" ? "Nữ" : "Nam";
-                const genderClr = g.gioi_tinh === "female" ? "#f472b6" : "#60a5fa";
+                const trangThai  = g.trang_thai_di_danh || "Chờ đánh";
+                const isActive   = trangThai === "Đã tham gia";
+                const isKhachHuy = trangThai === "Khách hủy";   // khách tự hủy — host không can thiệp
+                const isBung     = trangThai === "Bùng kèo";    // host đánh dấu vắng mặt
+                const isHuy      = isKhachHuy || isBung;        // dùng chung cho cột Thời gian hủy
+                const canRate    = isActive || isBung;          // cả 2 đều được đánh giá
+                const gioiTinh   = g.gioi_tinh === "female" ? "Nữ" : "Nam";
+                const genderClr  = g.gioi_tinh === "female" ? "#f472b6" : "#60a5fa";
 
-                // [2] Badge trạng thái — white-space:nowrap để không bẻ dòng
-                let badgeStyle = "background:rgba(100,116,139,0.2);color:#94a3b8;";
-                if (isActive) badgeStyle = "background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.3);";
-                else if (isHuy) badgeStyle = "background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);";
+                // Badge trạng thái — màu riêng: xanh/cam/đỏ/xám
+                let badgeStyle;
+                if      (isActive)    badgeStyle = "background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.3);";
+                else if (isBung)      badgeStyle = "background:rgba(251,146,60,0.12);color:#fb923c;border:1px solid rgba(251,146,60,0.3);";
+                else if (isKhachHuy)  badgeStyle = "background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);";
+                else                  badgeStyle = "background:rgba(100,116,139,0.2);color:#94a3b8;";
 
-                // Checkbox xác nhận tham gia — ẩn nếu đã hủy
-                const checkboxHTML = isHuy
-                    ? `<span style="color:#475569;font-size:0.75rem;">—</span>`
-                    : `<input type="checkbox"
-                            data-guest-id="${g.id}"
-                            data-ca-id="${matchId}"
-                            ${isActive ? "checked" : ""}
-                            onchange="window.xacNhanThamGia(this)"
-                            style="width:16px;height:16px;accent-color:#00ff88;cursor:pointer;">`;
+                // Cột Xác nhận tham gia — select 3 trạng thái
+                // Chỉ disable khi "Khách hủy" (khách tự hủy qua portal, host không đổi được)
+                const selectHTML = isKhachHuy
+                    ? `<span style="color:#475569;font-size:0.72rem;">—</span>`
+                    : `<select data-guest-id="${g.id}" data-ca-id="${matchId}"
+                               onchange="window.doiTrangThaiDiDanh(this)"
+                               style="background:rgba(15,30,53,0.9);border:1px solid #2d4a6e;color:#e2e8f0;
+                                      border-radius:7px;padding:5px 7px;font-size:0.76rem;font-family:inherit;
+                                      cursor:pointer;outline:none;min-width:118px;">
+                           <option value="Chờ đánh"    ${trangThai==="Chờ đánh"    ?"selected":""}>⏳ Chờ đánh</option>
+                           <option value="Đã tham gia" ${trangThai==="Đã tham gia" ?"selected":""}>✅ Đã tham gia</option>
+                           <option value="Bùng kèo"    ${trangThai==="Bùng kèo"    ?"selected":""}>❌ Bùng kèo</option>
+                       </select>`;
 
-                // [1] Cột Thanh toán — disabled + hiện "—" khi Khách hủy
+                // Cột Thanh toán — theo từng trạng thái
                 let ttCellHTML;
-                if (isHuy) {
+                if (isKhachHuy) {
+                    // Khách tự hủy — không thu được
                     ttCellHTML = `<span style="color:#475569;font-size:0.72rem;">—</span>`;
+                } else if (isBung) {
+                    // Bùng kèo — cho nhập số tiền thu tùy chọn (0 = không thu được, >0 = thu tiền phạt)
+                    const tienBung = g.tien_thu_bung || 0;
+                    ttCellHTML = `<div style="display:flex;align-items:center;gap:4px;justify-content:center;">
+                        <input type="number" data-slot-id="${g.id}" value="${tienBung}" min="0" step="1000"
+                               onchange="window.capNhatTienBung(this)" placeholder="0"
+                               style="width:80px;background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.3);
+                                      color:#fb923c;border-radius:6px;padding:4px 7px;font-size:0.75rem;
+                                      text-align:right;font-family:inherit;outline:none;box-sizing:border-box;">
+                        <span style="font-size:0.7rem;color:#64748b;flex-shrink:0;">đ</span>
+                    </div>`;
                 } else {
+                    // Chờ đánh hoặc Đã tham gia — checkbox Đã trả / Chưa trả
                     const daTT = !!g.da_thanh_toan;
                     const ttBadgeStyle = daTT
                         ? "background:rgba(6,78,59,0.6);color:#34d399;border:1px solid rgba(5,46,37,0.5);"
@@ -1218,14 +1240,16 @@
                     </label>`;
                 }
 
-                // Cột Thời gian hủy — chỉ hiện khi hủy
-                const tgHuy = isHuy ? _formatTS(g.huy_luc || g.updated_at) : "--";
+                // Cột Thời gian hủy
+                const tgHuyClr = isBung ? "#fb923c" : (isKhachHuy ? "#f87171" : "#475569");
+                const tgHuy    = isHuy ? _formatTS(g.huy_luc || g.updated_at) : "--";
 
-                // [4] Cột Đánh giá per-row
+                // Cột Đánh giá — cho phép cả "Đã tham gia" lẫn "Bùng kèo"
                 const tenKhachEsc = (g.ten_khach || "").replace(/'/g, "\\x27");
                 const sdtKhachEsc = (g.sdt_khach || "").replace(/'/g, "\\x27");
                 let ratingCellHTML;
-                if (!isActive) {
+                if (!canRate) {
+                    // Khách tự hủy hoặc Chờ đánh → không đánh giá
                     ratingCellHTML = `<span style="color:#475569;font-size:0.72rem;">—</span>`;
                 } else {
                     const existingRev = reviewsMap.get(g.sdt_khach);
@@ -1256,9 +1280,9 @@
                         <span style="padding:3px 9px;border-radius:10px;font-size:0.75rem;font-weight:600;white-space:nowrap;${badgeStyle}">${trangThai}</span>
                     </td>
                     <td style="padding:10px;text-align:center;color:#94a3b8;font-size:0.78rem;white-space:nowrap;">${_formatTS(g.created_at)}</td>
-                    <td style="padding:10px;text-align:center;color:${isHuy ? "#f87171" : "#475569"};font-size:0.78rem;white-space:nowrap;">${tgHuy}</td>
+                    <td style="padding:10px;text-align:center;color:${tgHuyClr};font-size:0.78rem;white-space:nowrap;">${tgHuy}</td>
                     <td style="padding:10px;text-align:center;">${ttCellHTML}</td>
-                    <td style="padding:10px;text-align:center;">${checkboxHTML}</td>
+                    <td style="padding:10px;text-align:center;">${selectHTML}</td>
                     <td style="padding:10px;text-align:center;">${ratingCellHTML}</td>
                 </tr>`;
             }).join("");
@@ -1419,6 +1443,61 @@
             window.hienToast("Lỗi cập nhật", "Không thể lưu trạng thái. Thử lại sau.", "danger");
         } finally {
             checkbox.disabled = false;
+        }
+    };
+
+    /* ─── doiTrangThaiDiDanh ───────────────────────────────────────
+     * Hàm mới thay checkbox — xử lý select 3 trạng thái:
+     * "Chờ đánh" | "Đã tham gia" | "Bùng kèo"
+     * (xacNhanThamGia giữ nguyên cho backward compat với moModalDanhSachKhach cũ)
+     * ──────────────────────────────────────────────────────────────── */
+    window.doiTrangThaiDiDanh = async function (selectEl) {
+        const guestId  = selectEl.dataset.guestId;
+        const newState = selectEl.value;
+        const prevVal  = selectEl.dataset.prev || selectEl.value;
+        selectEl.disabled = true;
+
+        try {
+            await window.dbEngine.ghi("dat_slot", { trang_thai_di_danh: newState }, { id: guestId });
+            selectEl.dataset.prev = newState;
+            window.hienToast("Đã cập nhật", newState, "success");
+            // Reload modal DS Khách để cập nhật cột Thanh toán + Đánh giá theo trạng thái mới
+            const modal = document.getElementById("modal-guest-list");
+            if (modal?.dataset.matchId) {
+                const titleEl = document.getElementById("modal-guest-list-title");
+                const currentTitle = (titleEl?.textContent || "").replace(/^DS Khách — /, "");
+                window.openGuestListModal(modal.dataset.matchId, currentTitle).catch(() => {});
+            }
+            _taiLichSuCaDau().catch(() => {});
+        } catch (e) {
+            selectEl.value = prevVal; // rollback UI
+            console.error("Lỗi doiTrangThaiDiDanh:", e);
+            window.hienToast("Lỗi cập nhật", "Không thể lưu trạng thái. Thử lại sau.", "danger");
+        } finally {
+            selectEl.disabled = false;
+        }
+    };
+
+    /* ─── capNhatTienBung ──────────────────────────────────────────
+     * Lưu số tiền thu được khi khách Bùng kèo (0 = không thu, >0 = phạt)
+     * Đọc từ input[type=number] trong cột Thanh toán của "Bùng kèo" row
+     * ──────────────────────────────────────────────────────────────── */
+    window.capNhatTienBung = async function (inputEl) {
+        const slotId = inputEl.dataset.slotId;
+        const amount = Math.max(0, parseInt(inputEl.value) || 0);
+        inputEl.disabled = true;
+        try {
+            await window.dbEngine.ghi("dat_slot", { tien_thu_bung: amount }, { id: slotId });
+            window.hienToast(
+                "Đã lưu tiền bùng",
+                amount > 0 ? `Thu được ${amount.toLocaleString("vi-VN")}đ` : "Không thu được tiền",
+                "success"
+            );
+        } catch (e) {
+            console.error("Lỗi capNhatTienBung:", e);
+            window.hienToast("Lỗi lưu", "Không thể lưu số tiền. Thử lại sau.", "danger");
+        } finally {
+            inputEl.disabled = false;
         }
     };
 
