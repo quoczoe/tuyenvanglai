@@ -455,13 +455,14 @@
                 <input type="number" class="form-control" id="scGiaOng_${id}" value="${gia}"
                     placeholder="Giá ống"
                     onchange="window._dongBoGia('${id}','ong')"
-                    oninput="window._tinhChiPhiCau()">
+                    oninput="window._tinhChiPhiCau();_tinhGoiYGia();">
             </div>
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label" style="font-size:0.7rem;">Đã dùng (quả)</label>
                 <input type="number" class="form-control" id="scDaDung_${id}" value="${daDung}"
                     min="0" placeholder="0"
-                    oninput="_tinhGoiYGia();window._tinhChiPhiCau();">
+                    oninput="_tinhGoiYGia();window._tinhChiPhiCau();"
+                    onchange="_tinhGoiYGia();window._tinhChiPhiCau();">
             </div>
             <div style="display:flex;align-items:flex-end;">
                 <button type="button" class="btn-remove-sc" onclick="window.xoaLoaiCau('${id}')" title="Xóa loại cầu này">
@@ -900,7 +901,7 @@
                         <button class="btn-mini btn-mini-green hs-action-btn" onclick="window.chotCaDau('${slot.id}')">
                             <i class="fa-solid fa-flag-checkered"></i> Chốt Ca
                         </button>` : `
-                        <button class="btn-mini btn-mini-cyan hs-action-btn" onclick="window.moModalDanhGiaKhach('${slot.id}')">
+                        <button class="btn-mini btn-mini-cyan hs-action-btn" onclick="window.moModalDanhGiaCa('${slot.id}','${(slot.ten_san||'').replace(/'/g,'\\x27')}')">
                             <i class="fa-solid fa-star"></i> Đánh giá
                         </button>
                         <button class="btn-mini btn-mini-gold hs-action-btn" onclick="window.xuatCSVCaDau('${slot.id}')" title="Xuất danh sách khách ra Excel">
@@ -1119,6 +1120,18 @@
         modal.classList.remove("hidden");
         document.body.style.overflow = "hidden";
 
+        // Helper: format timestamp → "HH:mm DD/MM/YYYY"
+        function _formatTS(ts) {
+            if (!ts) return "--";
+            const d = new Date(ts);
+            if (isNaN(d)) return "--";
+            const hh = String(d.getHours()).padStart(2,"0");
+            const mm = String(d.getMinutes()).padStart(2,"0");
+            const dd = String(d.getDate()).padStart(2,"0");
+            const mo = String(d.getMonth()+1).padStart(2,"0");
+            return `${hh}:${mm} ${dd}/${mo}/${d.getFullYear()}`;
+        }
+
         try {
             // Fetch danh sách khách đăng ký ca này
             const guests = await window.dbEngine.doc("dat_slot", { eq: { id_ca_dau: matchId } });
@@ -1154,6 +1167,22 @@
                             onchange="window.xacNhanThamGia(this)"
                             style="width:16px;height:16px;accent-color:#00ff88;cursor:pointer;">`;
 
+                // Cột Thanh toán
+                const daTT = !!g.da_thanh_toan;
+                const ttBadgeStyle = daTT
+                    ? "background:rgba(6,78,59,0.6);color:#34d399;border:1px solid rgba(5,46,37,0.5);"
+                    : "background:rgba(51,65,85,0.5);color:#94a3b8;";
+                const ttBadgeText = daTT ? "Đã trả" : "Chưa trả";
+                const ttCheckboxHTML = `<label style="display:flex;align-items:center;gap:6px;justify-content:center;cursor:pointer;">
+                    <input type="checkbox" data-slot-id="${g.id}" ${daTT ? "checked" : ""}
+                           onchange="window.capNhatThanhToan(this)"
+                           style="width:14px;height:14px;accent-color:#34d399;cursor:pointer;">
+                    <span id="tt-badge-${g.id}" style="padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;${ttBadgeStyle}">${ttBadgeText}</span>
+                </label>`;
+
+                // Cột Thời gian hủy — chỉ hiện khi trạng thái là huy
+                const tgHuy = isHuy ? _formatTS(g.huy_luc || g.updated_at) : "--";
+
                 return `<tr style="border-bottom:1px solid rgba(30,58,95,0.5);transition:background 0.12s;"
                             onmouseover="this.style.background='rgba(30,58,95,0.35)'"
                             onmouseout="this.style.background='transparent'">
@@ -1164,6 +1193,9 @@
                     <td style="padding:10px;text-align:center;">
                         <span style="padding:3px 9px;border-radius:10px;font-size:0.75rem;font-weight:600;${badgeStyle}">${trangThai}</span>
                     </td>
+                    <td style="padding:10px;text-align:center;color:#94a3b8;font-size:0.78rem;white-space:nowrap;">${_formatTS(g.created_at)}</td>
+                    <td style="padding:10px;text-align:center;color:${isHuy ? '#f87171' : '#475569'};font-size:0.78rem;white-space:nowrap;">${tgHuy}</td>
+                    <td style="padding:10px;text-align:center;">${ttCheckboxHTML}</td>
                     <td style="padding:10px;text-align:center;">${checkboxHTML}</td>
                 </tr>`;
             }).join("");
@@ -1172,7 +1204,7 @@
 
         } catch (err) {
             if (loading) loading.style.display = "none";
-            if (tbody)   tbody.innerHTML = `<tr><td colspan="6" style="padding:24px;text-align:center;color:#f87171;">Lỗi tải danh sách: ${(err.message || "").slice(0, 80)}</td></tr>`;
+            if (tbody)   tbody.innerHTML = `<tr><td colspan="9" style="padding:24px;text-align:center;color:#f87171;">Lỗi tải danh sách: ${(err.message || "").slice(0, 80)}</td></tr>`;
             if (table)   table.style.display = "table";
             console.error("openGuestListModal error:", err);
         }
@@ -1227,6 +1259,93 @@
             window.hienToast("Lỗi cập nhật", "Không thể lưu trạng thái. Thử lại sau.", "danger");
         } finally {
             checkbox.disabled = false;
+        }
+    };
+
+    /* L2 — Cập nhật trạng thái thanh toán qua checkbox trong modal DS Khách */
+    window.capNhatThanhToan = async function (checkbox) {
+        const slotId    = checkbox.dataset.slotId;
+        const isChecked = checkbox.checked;
+        checkbox.disabled = true;
+
+        try {
+            await window.dbEngine.ghi("dat_slot", { da_thanh_toan: isChecked }, { id: slotId });
+            // Cập nhật badge ngay mà không reload toàn bộ modal
+            const badge = document.getElementById(`tt-badge-${slotId}`);
+            if (badge) {
+                if (isChecked) {
+                    badge.textContent = "Đã trả";
+                    badge.style.cssText = "padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;background:rgba(6,78,59,0.6);color:#34d399;border:1px solid rgba(5,46,37,0.5);";
+                } else {
+                    badge.textContent = "Chưa trả";
+                    badge.style.cssText = "padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;background:rgba(51,65,85,0.5);color:#94a3b8;";
+                }
+            }
+            window.hienToast("Đã cập nhật.", isChecked ? "Đã đánh dấu thanh toán." : "Đã bỏ đánh dấu.", "success");
+        } catch (e) {
+            checkbox.checked = !isChecked;   // rollback
+            console.error("Lỗi capNhatThanhToan:", e);
+            window.hienToast("Lỗi cập nhật thanh toán!", "Không thể lưu. Thử lại sau.", "danger");
+        } finally {
+            checkbox.disabled = false;
+        }
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * L3: ĐÁNH GIÁ CA ĐẤU — modal đơn giản
+     *     Lưu ghi chú vào field danh_gia trong bảng ca_dau
+     *     (Khác với moModalDanhGiaKhach — chấm điểm cá nhân từng khách)
+     * ═══════════════════════════════════════════════════ */
+    window.moModalDanhGiaCa = async function (slotId, tenSan) {
+        const modal = document.getElementById("modal-danh-gia-ca");
+        if (!modal) return;
+        modal.dataset.slotId = slotId;
+
+        // Cập nhật subtitle
+        const sub = document.getElementById("modal-danh-gia-ca-sTitle");
+        if (sub) sub.textContent = tenSan ? `Sân: ${tenSan}` : `Ca đấu: ${slotId.slice(0,8)}...`;
+
+        // Pre-fill nội dung đã lưu trước đó (nếu có)
+        const textarea = document.getElementById("modal-danh-gia-ca-text");
+        if (textarea) {
+            textarea.value = "";
+            try {
+                const list = await window.dbEngine.doc("ca_dau", { eq: { id: slotId } });
+                if (list?.[0]?.danh_gia) textarea.value = list[0].danh_gia;
+            } catch (_) { /* bỏ qua lỗi pre-fill */ }
+        }
+
+        modal.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+        if (textarea) setTimeout(() => textarea.focus(), 80);
+    };
+
+    window.dongModalDanhGiaCa = function () {
+        const modal = document.getElementById("modal-danh-gia-ca");
+        if (modal) modal.classList.add("hidden");
+        document.body.style.overflow = "";
+    };
+
+    window.luuDanhGiaCa = async function () {
+        const modal    = document.getElementById("modal-danh-gia-ca");
+        const slotId   = modal?.dataset.slotId;
+        const textarea = document.getElementById("modal-danh-gia-ca-text");
+        const ghiChu   = textarea?.value?.trim() || "";
+
+        if (!slotId) { window.hienToast("Lỗi", "Không tìm thấy ca đấu.", "danger"); return; }
+
+        const btn = modal?.querySelector("button[onclick*='luuDanhGiaCa']");
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...'; }
+
+        try {
+            await window.dbEngine.ghi("ca_dau", { danh_gia: ghiChu || null }, { id: slotId });
+            window.hienToast("Đã lưu đánh giá ⭐", "Ghi chú ca đấu đã được cập nhật.", "success");
+            window.dongModalDanhGiaCa();
+        } catch (e) {
+            console.error("Lỗi luuDanhGiaCa:", e);
+            window.hienToast("Lỗi lưu đánh giá", "Không thể lưu. Thử lại sau.", "danger");
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu'; }
         }
     };
 

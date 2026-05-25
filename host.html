@@ -400,6 +400,58 @@
 
         /* H-JS3: helper ẩn/hiện modal */
         .hidden { display: none !important; }
+
+        /* ══════════════════════════════════════════════════
+           M1: Fix tràn khung toàn trang mobile
+           ══════════════════════════════════════════════════ */
+        html, body {
+            /* Đảm bảo dùng max-width: 100% (không bao gồm scrollbar như 100vw) */
+            max-width: 100%;
+        }
+        @media (max-width: 768px) {
+            html, body {
+                overflow-x: hidden;
+                max-width: 100%;
+            }
+            /* Đảm bảo container chính không tràn ngang */
+            .hs-main,
+            .hs-card,
+            .hs-form-layout,
+            .hs-console {
+                max-width: 100%;
+                box-sizing: border-box;
+            }
+            /* Ngăn phần tử có min-width cứng làm tràn viewport */
+            [style*="min-width"] {
+                max-width: 100%;
+            }
+        }
+
+        /* ══════════════════════════════════════════════════
+           M2: Bảng cầu mobile — đã được triển khai ở khối
+           H-CSS1/H-CSS2 bên trên (lines 369-399).
+           Không cần thêm CSS mới.
+           ══════════════════════════════════════════════════ */
+
+        /* ══════════════════════════════════════════════════
+           M3: Modal DS Khách — badge trạng thái không bẻ dòng
+           ══════════════════════════════════════════════════ */
+        @media (max-width: 768px) {
+            /* Badge trạng thái không bị bẻ dòng */
+            #modal-guest-list td span {
+                white-space: nowrap;
+            }
+            /* Giảm padding badge để vừa không gian hẹp */
+            #modal-guest-list td > span[style] {
+                padding: 2px 6px !important;
+                font-size: 0.7rem !important;
+            }
+            /* Bảng trong modal đã bọc overflow-x:auto trong HTML —
+               đảm bảo bảng có min-width để vuốt ngang đúng */
+            #modal-guest-list-table {
+                min-width: 520px;
+            }
+        }
     </style>
 </head>
 <body data-theme="dark">
@@ -1078,6 +1130,9 @@ console.log=()=>{};
                             <th style="padding:9px 10px;text-align:left;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">SĐT</th>
                             <th style="padding:9px 10px;text-align:center;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">Giới Tính</th>
                             <th style="padding:9px 10px;text-align:center;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">Trạng Thái</th>
+                            <th style="padding:9px 10px;text-align:center;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">Thời gian đặt</th>
+                            <th style="padding:9px 10px;text-align:center;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">Thời gian hủy</th>
+                            <th style="padding:9px 10px;text-align:center;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">Thanh toán</th>
                             <th style="padding:9px 10px;text-align:center;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">Xác nhận tham gia</th>
                         </tr>
                     </thead>
@@ -1090,6 +1145,43 @@ console.log=()=>{};
             <button onclick="window.closeGuestListModal()"
                     style="background:rgba(30,58,95,0.6);border:1px solid #2d4a6e;color:#94a3b8;padding:8px 20px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;">
                 Đóng
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     L3: Modal đánh giá ca đấu — lưu ghi chú vào ca_dau.danh_gia
+     ══════════════════════════════════════════════════════════ -->
+<div id="modal-danh-gia-ca" class="hidden"
+     style="position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.72);"
+     onclick="if(event.target===this)window.dongModalDanhGiaCa()">
+    <div style="background:#0f1e35;border:1px solid #1e3a5f;border-radius:14px;width:min(96vw,500px);box-shadow:0 8px 40px rgba(0,0,0,0.6);display:flex;flex-direction:column;">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid #1e3a5f;">
+            <h3 style="margin:0;font-size:1rem;color:#e2e8f0;font-weight:700;">
+                <i class="fa-solid fa-star" style="color:#fbbf24;margin-right:8px;"></i>Đánh giá ca đấu
+            </h3>
+            <button onclick="window.dongModalDanhGiaCa()"
+                    style="background:rgba(100,116,139,0.2);border:1px solid rgba(100,116,139,0.4);color:#94a3b8;font-size:1.1rem;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">✕</button>
+        </div>
+        <!-- Body -->
+        <div style="padding:20px 22px;">
+            <p id="modal-danh-gia-ca-sTitle" style="margin:0 0 12px;font-size:0.82rem;color:#64748b;"></p>
+            <label style="display:block;font-size:0.82rem;font-weight:600;color:#94a3b8;margin-bottom:6px;">Ghi chú / nhận xét ca đấu</label>
+            <textarea id="modal-danh-gia-ca-text" rows="5"
+                style="width:100%;box-sizing:border-box;background:rgba(30,58,95,0.5);border:1px solid #1e3a5f;border-radius:8px;color:#e2e8f0;padding:10px 12px;font-size:0.88rem;font-family:inherit;resize:vertical;outline:none;"
+                placeholder="Nhận xét về buổi tập, số lượng khách, chất lượng cầu, sân..."></textarea>
+        </div>
+        <!-- Footer -->
+        <div style="padding:12px 22px 18px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #1e3a5f;">
+            <button onclick="window.dongModalDanhGiaCa()"
+                    style="background:rgba(30,58,95,0.6);border:1px solid #2d4a6e;color:#94a3b8;padding:8px 18px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;">
+                Hủy
+            </button>
+            <button onclick="window.luuDanhGiaCa()"
+                    style="background:linear-gradient(135deg,rgba(0,255,136,0.18),rgba(0,200,100,0.25));border:1px solid rgba(0,255,136,0.35);color:#00ff88;padding:8px 22px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;font-weight:700;">
+                <i class="fa-solid fa-floppy-disk"></i> Lưu
             </button>
         </div>
     </div>
