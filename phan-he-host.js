@@ -844,7 +844,8 @@
                     <div style="font-size:0.72rem;color:#94a3b8;">Nữ</div>
                 </td>
                 <td>
-                    <div class="badge-slot-count"><i class="fa-solid fa-users" style="font-size:0.7rem;"></i> ${daDen}/${tongKhach} khách</div>
+                    <div class="badge-slot-count"><i class="fa-solid fa-users" style="font-size:0.7rem;"></i> ${tongKhach}${slot.tong_slot_can > 0 ? ' / ' + slot.tong_slot_can : ''} đã đặt</div>
+                    <div style="font-size:0.68rem;color:#94a3b8;">${daDen} đã tham gia</div>
                     <button class="btn-mini btn-mini-cyan" style="margin-top:6px;width:100%;"
                         onclick="window.moModalDanhSachKhach('${slot.id}')">
                         <i class="fa-solid fa-list-check"></i> DS Khách

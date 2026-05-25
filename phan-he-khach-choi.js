@@ -841,6 +841,8 @@
         card.dataset.caId = slot.id; // Để query nút sau khi đặt slot thành công
 
         const isToday = slot.ngay_danh === new Date().toLocaleDateString("sv-SE");
+        // J5: Kiểm tra slot đã full (tong_slot_can > 0 và đã đặt đủ)
+        const isFull = slot.tong_slot_can > 0 && soKhach >= slot.tong_slot_can;
 
         // Badge giới tính (gioi_tinh_can = "Nam" | "Nữ" | "Cả hai")
         const genderMap = {
@@ -939,18 +941,22 @@
                 <button class="kh-btn-detail" onclick="window.moModalChiTietKeo('${slot.id}')">
                     <i class="fa-solid fa-circle-info"></i> Chi tiết
                 </button>
-                ${window.currentGuest
-                    ? (daDatSet.has(slot.id)
-                        ? `<button class="btn-da-dat" style="flex:1;" disabled>
-                            <i class="fa-solid fa-circle-check"></i> ĐÃ ĐẶT
-                           </button>`
-                        : `<button class="btn-dat-slot" style="flex:1;" onclick="window.datSlot('${slot.id}')">
-                            <i class="fa-solid fa-ticket"></i> ĐẶT SLOT
-                           </button>`)
-                    : `<button class="btn-dat-slot btn-dat-slot-disabled" style="flex:1;"
-                        onclick="if(window.innerWidth < 768) window.openLoginSheet(); else window.hienToast('Cần đăng nhập','Đăng nhập hoặc đăng ký bên sidebar trái.','warning')">
-                        <i class="fa-solid fa-lock"></i> ĐẶT SLOT
+                ${isFull
+                    ? `<button style="flex:1;background:#334155;border:1px solid #475569;color:#64748b;cursor:not-allowed;padding:10px 22px;border-radius:12px;font-size:0.88rem;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;" disabled>
+                           <i class="fa-solid fa-users-slash"></i> Đã full slot
                        </button>`
+                    : (window.currentGuest
+                        ? (daDatSet.has(slot.id)
+                            ? `<button class="btn-da-dat" style="flex:1;" disabled>
+                                <i class="fa-solid fa-circle-check"></i> ĐÃ ĐẶT
+                               </button>`
+                            : `<button class="btn-dat-slot" style="flex:1;" onclick="window.datSlot('${slot.id}')">
+                                <i class="fa-solid fa-ticket"></i> ĐẶT SLOT
+                               </button>`)
+                        : `<button class="btn-dat-slot btn-dat-slot-disabled" style="flex:1;"
+                            onclick="if(window.innerWidth < 768) window.openLoginSheet(); else window.hienToast('Cần đăng nhập','Đăng nhập hoặc đăng ký bên sidebar trái.','warning')">
+                            <i class="fa-solid fa-lock"></i> ĐẶT SLOT
+                           </button>`)
                 }
             </div>
         </div>`;

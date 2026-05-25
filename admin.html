@@ -480,6 +480,164 @@
         .ad-auth-sub { color: #9ca3af !important; }
         .ad-auth-badge { border-color: #00ff88 !important; }
 
+        /* ══════════════════════════════════════════════════
+         * MODAL QUẢN LÝ THÀNH VIÊN — .mv-* design system
+         * A.4: Input slate-800 + Button indigo-600
+         * A.5: Role buttons individual rounded
+         * A.6: Danger zone + red button
+         * ══════════════════════════════════════════════════ */
+
+        /* Nền + tiêu đề section */
+        .mv-section {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid #1e3a5f;
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+        .mv-section-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+        }
+        .mv-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .mv-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        @media (max-width: 500px) { .mv-form-grid { grid-template-columns: 1fr; } }
+
+        /* A.4 — Input: slate-800 + indigo focus */
+        .mv-input {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            height: 40px;
+            padding: 0 12px;
+            font-size: 0.875rem;
+            font-family: inherit;
+            width: 100%;
+            color: #e2e8f0;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .mv-input:focus { outline: none; border-color: #6366f1; }
+        .mv-input:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        /* Base button */
+        .mv-btn {
+            padding: 7px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid #2d4a6e;
+            border-radius: 7px;
+            color: #94a3b8;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .mv-btn:hover { background: rgba(255,255,255,0.09); color: #e2e8f0; }
+
+        /* A.4 — Primary button: indigo-600 */
+        .mv-btn-primary {
+            background: #4f46e5;
+            border-color: #4f46e5;
+            color: #fff;
+            height: 40px;
+            padding: 0 16px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 8px;
+            justify-content: center;
+        }
+        .mv-btn-primary:hover { background: #6366f1; border-color: #6366f1; color: #fff; }
+
+        /* Warning button (Khóa tài khoản) */
+        .mv-btn-warn {
+            background: rgba(251,146,60,0.12);
+            border-color: rgba(251,146,60,0.4);
+            color: #fb923c;
+        }
+        .mv-btn-warn:hover { background: rgba(251,146,60,0.22); border-color: rgba(251,146,60,0.65); }
+
+        /* A.5 — Role buttons: individual rounded, active = indigo-600 */
+        .mv-role-btns {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .mv-role-btns .mv-btn {
+            border-radius: 6px;
+            border: 1px solid #334155;
+            background: transparent;
+            color: #94a3b8;
+            flex: 1;
+            text-align: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            padding: 6px 16px;
+            height: auto;
+        }
+        .mv-role-btns .mv-btn:hover { background: rgba(255,255,255,0.05); color: #e2e8f0; }
+        .mv-role-btns .mv-btn.mv-btn-active {
+            background: #4f46e5;
+            border-color: #4f46e5;
+            color: #fff;
+        }
+
+        /* Confirm box (đổi vai trò) */
+        .mv-confirm-box {
+            background: rgba(251,191,36,0.07);
+            border: 1px solid rgba(251,191,36,0.3);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 0.82rem;
+            color: #e2e8f0;
+            margin-top: 10px;
+        }
+
+        /* A.6 — Danger zone: border-red-800/50 + bg-red-950/20 */
+        .mv-section-danger {
+            border-color: rgba(153,27,27,0.5);
+            background: rgba(69,10,10,0.2);
+        }
+        .mv-section-danger .mv-section-title { color: #f87171; }
+
+        /* A.6 — Delete button: solid red-700 */
+        .mv-btn-danger {
+            background: #b91c1c;
+            border: 1px solid #b91c1c;
+            color: #fff;
+            height: 40px;
+            padding: 0 16px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .mv-btn-danger:hover { background: #dc2626; border-color: #dc2626; }
+
     </style>
 </head>
 <body data-theme="dark">
