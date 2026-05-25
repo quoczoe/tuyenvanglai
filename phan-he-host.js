@@ -1157,8 +1157,17 @@
         }
 
         try {
-            // Fetch danh sách khách đăng ký ca này
-            const guests = await window.dbEngine.doc("dat_slot", { eq: { id_ca_dau: matchId } });
+            // [4] Fetch song song: khách + ca đấu (kiểm tra da_chot_ca) + đánh giá hiện có
+            const [guests, caDauList, reviewsRaw] = await Promise.all([
+                window.dbEngine.doc("dat_slot", { eq: { id_ca_dau: matchId } }),
+                window.dbEngine.doc("ca_dau",   { eq: { id: matchId } }).catch(() => []),
+                window.dbEngine.doc("danh_gia_tin_dung", {
+                    eq: { id_ca_dau: matchId, loai_danh_gia: "HostToGuest" }
+                }).catch(() => [])
+            ]);
+            const daChotCa   = !!(caDauList[0]?.da_chot_ca);
+            // Map: sdt_nguoi_bi_danh_gia → review object
+            const reviewsMap = new Map((reviewsRaw || []).map(r => [r.sdt_nguoi_bi_danh_gia, r]));
 
             if (loading) loading.style.display = "none";
 
@@ -1170,18 +1179,18 @@
             // Render bảng
             if (table) table.style.display = "table";
             const rowsHTML = guests.map((g, idx) => {
-                const trangThai  = g.trang_thai_di_danh || "Chờ đánh";
-                const isActive   = trangThai === "Đã tham gia";
-                const isHuy      = trangThai === "Khách hủy" || trangThai === "Bùng kèo";
-                const gioiTinh   = g.gioi_tinh === "female" ? "Nữ" : "Nam";
-                const genderClr  = g.gioi_tinh === "female" ? "#f472b6" : "#60a5fa";
+                const trangThai = g.trang_thai_di_danh || "Chờ đánh";
+                const isActive  = trangThai === "Đã tham gia";
+                const isHuy     = trangThai === "Khách hủy" || trangThai === "Bùng kèo";
+                const gioiTinh  = g.gioi_tinh === "female" ? "Nữ" : "Nam";
+                const genderClr = g.gioi_tinh === "female" ? "#f472b6" : "#60a5fa";
 
-                // Badge trạng thái
+                // [2] Badge trạng thái — white-space:nowrap để không bẻ dòng
                 let badgeStyle = "background:rgba(100,116,139,0.2);color:#94a3b8;";
                 if (isActive) badgeStyle = "background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.3);";
                 else if (isHuy) badgeStyle = "background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);";
 
-                // Checkbox xác nhận — ẩn nếu đã hủy
+                // Checkbox xác nhận tham gia — ẩn nếu đã hủy
                 const checkboxHTML = isHuy
                     ? `<span style="color:#475569;font-size:0.75rem;">—</span>`
                     : `<input type="checkbox"
@@ -1191,21 +1200,50 @@
                             onchange="window.xacNhanThamGia(this)"
                             style="width:16px;height:16px;accent-color:#00ff88;cursor:pointer;">`;
 
-                // Cột Thanh toán
-                const daTT = !!g.da_thanh_toan;
-                const ttBadgeStyle = daTT
-                    ? "background:rgba(6,78,59,0.6);color:#34d399;border:1px solid rgba(5,46,37,0.5);"
-                    : "background:rgba(51,65,85,0.5);color:#94a3b8;";
-                const ttBadgeText = daTT ? "Đã trả" : "Chưa trả";
-                const ttCheckboxHTML = `<label style="display:flex;align-items:center;gap:6px;justify-content:center;cursor:pointer;">
-                    <input type="checkbox" data-slot-id="${g.id}" ${daTT ? "checked" : ""}
-                           onchange="window.capNhatThanhToan(this)"
-                           style="width:14px;height:14px;accent-color:#34d399;cursor:pointer;">
-                    <span id="tt-badge-${g.id}" style="padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;${ttBadgeStyle}">${ttBadgeText}</span>
-                </label>`;
+                // [1] Cột Thanh toán — disabled + hiện "—" khi Khách hủy
+                let ttCellHTML;
+                if (isHuy) {
+                    ttCellHTML = `<span style="color:#475569;font-size:0.72rem;">—</span>`;
+                } else {
+                    const daTT = !!g.da_thanh_toan;
+                    const ttBadgeStyle = daTT
+                        ? "background:rgba(6,78,59,0.6);color:#34d399;border:1px solid rgba(5,46,37,0.5);"
+                        : "background:rgba(51,65,85,0.5);color:#94a3b8;";
+                    const ttBadgeText = daTT ? "Đã trả" : "Chưa trả";
+                    ttCellHTML = `<label style="display:flex;align-items:center;gap:6px;justify-content:center;cursor:pointer;">
+                        <input type="checkbox" data-slot-id="${g.id}" ${daTT ? "checked" : ""}
+                               onchange="window.capNhatThanhToan(this)"
+                               style="width:14px;height:14px;accent-color:#34d399;cursor:pointer;">
+                        <span id="tt-badge-${g.id}" style="padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;${ttBadgeStyle}">${ttBadgeText}</span>
+                    </label>`;
+                }
 
-                // Cột Thời gian hủy — chỉ hiện khi trạng thái là huy
+                // Cột Thời gian hủy — chỉ hiện khi hủy
                 const tgHuy = isHuy ? _formatTS(g.huy_luc || g.updated_at) : "--";
+
+                // [4] Cột Đánh giá per-row
+                const tenKhachEsc = (g.ten_khach || "").replace(/'/g, "\\x27");
+                const sdtKhachEsc = (g.sdt_khach || "").replace(/'/g, "\\x27");
+                let ratingCellHTML;
+                if (!isActive) {
+                    ratingCellHTML = `<span style="color:#475569;font-size:0.72rem;">—</span>`;
+                } else {
+                    const existingRev = reviewsMap.get(g.sdt_khach);
+                    if (existingRev) {
+                        const starStr = "★".repeat(Math.min(5, existingRev.so_sao || 0));
+                        const tooltip = (existingRev.nhan_xet || "").replace(/"/g,"&quot;").slice(0, 80);
+                        ratingCellHTML = `<span title="${tooltip}" style="color:#fbbf24;font-size:0.95rem;letter-spacing:1px;">${starStr}</span>
+                            <span style="display:block;font-size:0.68rem;color:#64748b;white-space:nowrap;margin-top:2px;">${existingRev.so_sao}/5 sao</span>`;
+                    } else if (daChotCa) {
+                        ratingCellHTML = `<button
+                            onclick="window.moQuickDanhGiaKhach('${sdtKhachEsc}','${tenKhachEsc}','${matchId}')"
+                            style="background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;padding:4px 12px;border-radius:7px;cursor:pointer;font-size:0.75rem;font-family:inherit;white-space:nowrap;">
+                            ⭐ Đánh giá
+                        </button>`;
+                    } else {
+                        ratingCellHTML = `<span style="color:#475569;font-size:0.7rem;white-space:nowrap;">Chờ chốt ca</span>`;
+                    }
+                }
 
                 return `<tr style="border-bottom:1px solid rgba(30,58,95,0.5);transition:background 0.12s;"
                             onmouseover="this.style.background='rgba(30,58,95,0.35)'"
@@ -1215,12 +1253,13 @@
                     <td style="padding:10px;color:#94a3b8;font-family:monospace;">${g.sdt_khach || "—"}</td>
                     <td style="padding:10px;text-align:center;color:${genderClr};">${gioiTinh}</td>
                     <td style="padding:10px;text-align:center;">
-                        <span style="padding:3px 9px;border-radius:10px;font-size:0.75rem;font-weight:600;${badgeStyle}">${trangThai}</span>
+                        <span style="padding:3px 9px;border-radius:10px;font-size:0.75rem;font-weight:600;white-space:nowrap;${badgeStyle}">${trangThai}</span>
                     </td>
                     <td style="padding:10px;text-align:center;color:#94a3b8;font-size:0.78rem;white-space:nowrap;">${_formatTS(g.created_at)}</td>
-                    <td style="padding:10px;text-align:center;color:${isHuy ? '#f87171' : '#475569'};font-size:0.78rem;white-space:nowrap;">${tgHuy}</td>
-                    <td style="padding:10px;text-align:center;">${ttCheckboxHTML}</td>
+                    <td style="padding:10px;text-align:center;color:${isHuy ? "#f87171" : "#475569"};font-size:0.78rem;white-space:nowrap;">${tgHuy}</td>
+                    <td style="padding:10px;text-align:center;">${ttCellHTML}</td>
                     <td style="padding:10px;text-align:center;">${checkboxHTML}</td>
+                    <td style="padding:10px;text-align:center;">${ratingCellHTML}</td>
                 </tr>`;
             }).join("");
 
@@ -1228,7 +1267,7 @@
 
         } catch (err) {
             if (loading) loading.style.display = "none";
-            if (tbody)   tbody.innerHTML = `<tr><td colspan="9" style="padding:24px;text-align:center;color:#f87171;">Lỗi tải danh sách: ${(err.message || "").slice(0, 80)}</td></tr>`;
+            if (tbody)   tbody.innerHTML = `<tr><td colspan="10" style="padding:24px;text-align:center;color:#f87171;">Lỗi tải danh sách: ${(err.message || "").slice(0, 80)}</td></tr>`;
             if (table)   table.style.display = "table";
             console.error("openGuestListModal error:", err);
         }
@@ -1239,6 +1278,103 @@
         const modal = document.getElementById("modal-guest-list");
         if (modal) modal.classList.add("hidden");
         document.body.style.overflow = "";
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * [4] QUICK ĐÁNH GIÁ KHÁCH từ modal DS Khách
+     *     Mở modal nhỏ #modal-quick-dg, lưu vào danh_gia_tin_dung
+     * ═══════════════════════════════════════════════════ */
+    let _qdStarVal = 5;
+    const _qdStarLabels = ["", "1 sao — Tệ", "2 sao — Không tốt", "3 sao — Bình thường", "4 sao — Tốt", "5 sao — Xuất sắc"];
+
+    function _renderQdStars(selected) {
+        _qdStarVal = selected;
+        const container = document.getElementById("qd-stars");
+        const labelEl   = document.getElementById("qd-star-label");
+        if (!container) return;
+        container.innerHTML = [1,2,3,4,5].map(n =>
+            `<span onclick="window._setQdStar(${n})"
+                   onmouseover="window._hoverQdStar(${n})"
+                   onmouseout="window._hoverQdStar(0)"
+                   style="color:${n <= selected ? "#fbbf24" : "#334155"};transition:color 0.1s;cursor:pointer;user-select:none;">★</span>`
+        ).join("");
+        if (labelEl) labelEl.textContent = _qdStarLabels[selected] || "";
+    }
+
+    window._setQdStar = function(n) { _qdStarVal = n; _renderQdStars(n); };
+    window._hoverQdStar = function(n) {
+        const container = document.getElementById("qd-stars");
+        if (!container) return;
+        container.querySelectorAll("span").forEach((s, i) => {
+            s.style.color = (n > 0 && i < n) ? "#fbbf24" : (i < _qdStarVal ? "#fbbf24" : "#334155");
+        });
+    };
+
+    window.moQuickDanhGiaKhach = function (sdtKhach, tenKhach, caId) {
+        const modal = document.getElementById("modal-quick-dg");
+        if (!modal) return;
+        document.getElementById("qd-sdt").value   = sdtKhach;
+        document.getElementById("qd-ca-id").value = caId;
+        const titleEl   = document.getElementById("qd-title");
+        const commentEl = document.getElementById("qd-comment");
+        if (titleEl)   titleEl.textContent = `⭐ Đánh giá: ${tenKhach}`;
+        if (commentEl) commentEl.value = "";
+        _renderQdStars(5);
+        modal.classList.remove("hidden");
+    };
+
+    window.dongQuickDanhGia = function () {
+        const modal = document.getElementById("modal-quick-dg");
+        if (modal) modal.classList.add("hidden");
+    };
+
+    window.guiQuickDanhGia = async function () {
+        const sdtKhach = document.getElementById("qd-sdt")?.value?.trim();
+        const caId     = document.getElementById("qd-ca-id")?.value?.trim();
+        const comment  = document.getElementById("qd-comment")?.value?.trim();
+        const btn      = document.getElementById("qd-submit-btn");
+
+        if (!sdtKhach || !caId) {
+            window.hienToast("Lỗi", "Thiếu thông tin khách hoặc ca đấu.", "danger"); return;
+        }
+        const hostPhone = window.currentHostInfo?.sdt_host || window.currentHostKey;
+        if (!hostPhone) {
+            window.hienToast("Lỗi", "Không xác định được tài khoản Host.", "danger"); return;
+        }
+
+        // Kiểm tra đã đánh giá chưa
+        const existed = await window.dbEngine.doc("danh_gia_tin_dung", {
+            eq: { id_ca_dau: caId, sdt_nguoi_viet: hostPhone, loai_danh_gia: "HostToGuest", sdt_nguoi_bi_danh_gia: sdtKhach }
+        }).catch(() => []);
+        if (existed.length > 0) {
+            window.hienToast("Đã đánh giá", "Bạn đã gửi đánh giá cho khách này rồi.", "warning"); return;
+        }
+
+        if (btn) { btn.disabled = true; btn.textContent = "Đang gửi..."; }
+        try {
+            await window.dbEngine.ghi("danh_gia_tin_dung", {
+                id_ca_dau:             caId,
+                sdt_nguoi_viet:        hostPhone,
+                sdt_nguoi_bi_danh_gia: sdtKhach,
+                loai_danh_gia:         "HostToGuest",
+                so_sao:                _qdStarVal,
+                nhan_xet:              comment || null
+            });
+            window.hienToast("Đánh giá thành công! ⭐", `Đã gửi ${_qdStarVal} sao cho khách.`, "success");
+            window.dongQuickDanhGia();
+            // Reload lại DS Khách để cập nhật cột Đánh giá
+            const guestModal = document.getElementById("modal-guest-list");
+            if (guestModal?.dataset.matchId) {
+                const titleEl = document.getElementById("modal-guest-list-title");
+                const currentTitle = (titleEl?.textContent || "").replace(/^DS Khách — /, "");
+                window.openGuestListModal(guestModal.dataset.matchId, currentTitle).catch(() => {});
+            }
+        } catch (e) {
+            console.error("Lỗi gửi quick đánh giá:", e);
+            window.hienToast("Lỗi", "Không gửi được đánh giá: " + (e.message || "").slice(0, 60), "danger");
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-star"></i> Gửi đánh giá'; }
+        }
     };
 
     /* Cập nhật trạng thái khách qua bảng dat_slot */

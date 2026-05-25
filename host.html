@@ -510,7 +510,7 @@
             /* Bảng trong modal đã bọc overflow-x:auto trong HTML —
                đảm bảo bảng có min-width để vuốt ngang đúng */
             #modal-guest-list-table {
-                min-width: 520px;
+                min-width: 680px;
             }
         }
     </style>
@@ -1160,9 +1160,9 @@ console.log=()=>{};
 <div id="modal-guest-list" class="hidden"
      style="position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.72);"
      onclick="if(event.target===this)window.closeGuestListModal()">
-    <div style="background:#0f1e35;border:1px solid #1e3a5f;border-radius:14px;width:min(96vw,780px);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.6);">
+    <div style="background:#0f1e35;border:1px solid #1e3a5f;border-radius:14px;width:min(98vw,1280px);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.6);">
         <!-- Header -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid #1e3a5f;flex-shrink:0;">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 24px 14px;border-bottom:1px solid #1e3a5f;flex-shrink:0;">
             <div>
                 <h3 id="modal-guest-list-title" style="margin:0;font-size:1.05rem;color:#e2e8f0;font-weight:700;">Danh Sách Khách</h3>
                 <p style="margin:4px 0 0;font-size:0.75rem;color:#64748b;">Tích chọn ô <strong style="color:#00ff88;">Xác nhận tham gia</strong> để xác thực người đã đến sân thực tế.</p>
@@ -1195,6 +1195,7 @@ console.log=()=>{};
                             <th style="padding:9px 10px;text-align:center;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">Thời gian hủy</th>
                             <th style="padding:9px 10px;text-align:center;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">Thanh toán</th>
                             <th style="padding:9px 10px;text-align:center;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">Xác nhận tham gia</th>
+                            <th style="padding:9px 10px;text-align:center;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">Đánh Giá</th>
                         </tr>
                     </thead>
                     <tbody id="modal-guest-list-body"></tbody>
@@ -1243,6 +1244,46 @@ console.log=()=>{};
             <button onclick="window.luuDanhGiaCa()"
                     style="background:linear-gradient(135deg,rgba(0,255,136,0.18),rgba(0,200,100,0.25));border:1px solid rgba(0,255,136,0.35);color:#00ff88;padding:8px 22px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;font-weight:700;">
                 <i class="fa-solid fa-floppy-disk"></i> Lưu
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     [4] Modal quick đánh giá từng khách — z-index:1200 (trên DS Khách 1100)
+     ══════════════════════════════════════════════════════════ -->
+<div id="modal-quick-dg" class="hidden"
+     style="position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.65);"
+     onclick="if(event.target===this)window.dongQuickDanhGia()">
+    <div style="background:#0f1e35;border:1px solid #1e3a5f;border-radius:14px;width:min(92vw,420px);padding:26px 28px;box-shadow:0 8px 40px rgba(0,0,0,0.7);">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+            <h3 id="qd-title" style="margin:0;font-size:0.95rem;color:#e2e8f0;font-weight:700;">⭐ Đánh giá khách</h3>
+            <button onclick="window.dongQuickDanhGia()"
+                    style="background:none;border:none;color:#64748b;font-size:1.1rem;cursor:pointer;padding:4px 8px;line-height:1;">✕</button>
+        </div>
+        <!-- Hidden state -->
+        <input type="hidden" id="qd-sdt">
+        <input type="hidden" id="qd-ca-id">
+        <!-- Star picker -->
+        <div style="text-align:center;margin-bottom:18px;">
+            <div id="qd-stars" style="display:inline-flex;gap:8px;font-size:2rem;cursor:pointer;line-height:1;"></div>
+            <div id="qd-star-label" style="font-size:0.75rem;color:#94a3b8;margin-top:6px;">5 sao — Xuất sắc</div>
+        </div>
+        <!-- Comment -->
+        <textarea id="qd-comment" placeholder="Nhận xét (tùy chọn)..." rows="3"
+                  style="width:100%;background:rgba(30,58,95,0.4);border:1px solid #1e3a5f;border-radius:8px;color:#e2e8f0;padding:10px 12px;font-family:inherit;font-size:0.85rem;resize:none;box-sizing:border-box;outline:none;transition:border-color 0.15s;"
+                  onfocus="this.style.borderColor='rgba(0,255,136,0.4)'"
+                  onblur="this.style.borderColor='#1e3a5f'"></textarea>
+        <!-- Actions -->
+        <div style="display:flex;gap:10px;margin-top:16px;justify-content:flex-end;">
+            <button onclick="window.dongQuickDanhGia()"
+                    style="background:rgba(30,58,95,0.5);border:1px solid #2d4a6e;color:#94a3b8;padding:8px 20px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;">
+                Hủy
+            </button>
+            <button id="qd-submit-btn" onclick="window.guiQuickDanhGia()"
+                    style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);color:#fbbf24;padding:8px 20px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;font-weight:700;">
+                <i class="fa-solid fa-star"></i> Gửi đánh giá
             </button>
         </div>
     </div>
