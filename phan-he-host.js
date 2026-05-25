@@ -719,9 +719,6 @@
         const chi_phi_san_co_dinh = gia_thue_san_1h * so_gio_choi * so_san_mo;
         const tong_doanh_thu_du_kien = so_nguoi_nam * gia_nam + so_nguoi_nu * gia_nu;
 
-        // H-JS2: tính tổng chi phí sân và cầu trước khi build payload
-        const tong_chi_phi_san = gia_thue_san_1h * so_gio_choi * so_san_mo;  // = chi_phi_san_co_dinh
-
         // Danh sách cầu (JSONB) — tong_chi_phi_cau dùng _tinhChiPhiCau() cho kết quả đồng nhất
         const loai_cau_su_dung = window.shuttlecocksList.map(id => {
             const loai   = Number(document.getElementById(`scLoai_${id}`)?.value) || 12;
@@ -741,6 +738,9 @@
         // HH5: Số slot cần tuyển (tối đa)
         const tong_slot_can = Number(document.getElementById("input-total-slots")?.value) || null;
 
+        // H-JS2: Chỉ gửi field có trong schema ca_dau thực tế
+        // tong_chi_phi_san bị xóa (không có trong schema — dùng chi_phi_san_co_dinh)
+        // tong_slot_can chỉ gửi khi đã chạy SQL migration (ALTER TABLE ca_dau ADD COLUMN tong_slot_can)
         const payload = {
             ma_key_host: window.currentHostKey,
             vung_mien:   _xacDinhVungMien(tinh_thanh),
@@ -750,13 +750,13 @@
             gioi_tinh_can, yeu_cau_trinh_do,
             gia_nam, gia_nu, tien_ich_bao_gom,
             gia_thue_san_1h, chi_phi_san_co_dinh,
-            tong_chi_phi_san,   // H-JS2: alias của chi_phi_san_co_dinh
             loai_cau_su_dung, tong_chi_phi_cau, chi_phi_nuoc_khac,
             so_nguoi_nam, so_nguoi_nu, chenh_lech_gia,
             tong_doanh_thu_du_kien,
-            tong_slot_can,
             da_chot_ca: false
         };
+        // Gắn tong_slot_can sau khi chạy: ALTER TABLE ca_dau ADD COLUMN tong_slot_can INTEGER DEFAULT 0
+        if (tong_slot_can !== null && tong_slot_can > 0) payload.tong_slot_can = tong_slot_can;
 
         const btn = document.getElementById("btnDangCa");
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang đăng...'; }
@@ -1118,16 +1118,30 @@
         }
     };
 
-    /* C6 — Xác nhận tham gia qua checkbox */
+    /* H-JS3 / C6 — Xác nhận tham gia qua checkbox
+     * Fix: capNhatTrangThaiKhach swallow error nội bộ → rollback không bao giờ chạy.
+     * Giờ gọi dbEngine.ghi trực tiếp để kiểm soát lỗi và rollback đúng cách.
+     */
     window.xacNhanThamGia = async function (checkbox) {
         const guestId   = checkbox.dataset.guestId;
-        const trangThai = checkbox.checked ? "Đã tham gia" : "Chờ đánh";
+        const isChecked = checkbox.checked;                              // trạng thái người dùng vừa chọn
+        const trangThai = isChecked ? "Đã tham gia" : "Chờ đánh";
+        checkbox.disabled = true;                                        // ngăn click trùng trong lúc gọi API
+
         try {
-            await window.capNhatTrangThaiKhach(guestId, trangThai);
+            await window.dbEngine.ghi("dat_slot", { trang_thai_di_danh: trangThai }, { id: guestId });
+            window.hienToast("Đã cập nhật trạng thái", trangThai, "success");
+            // Reload modal và bảng ca đấu (background — không await để UI không bị freeze)
+            const overlay = document.getElementById("modalDanhSachKhachOverlay");
+            if (overlay?.dataset.slotId) window.moModalDanhSachKhach(overlay.dataset.slotId).catch(() => {});
+            _taiLichSuCaDau().catch(() => {});
         } catch (e) {
-            // Rollback visual state nếu lỗi
-            checkbox.checked = !checkbox.checked;
-            window.hienToast("Lỗi cập nhật", "Thử lại sau.", "danger");
+            // Rollback checkbox về trạng thái trước khi click
+            checkbox.checked = !isChecked;
+            console.error("Lỗi xacNhanThamGia:", e);
+            window.hienToast("Lỗi cập nhật", "Không thể lưu trạng thái. Thử lại sau.", "danger");
+        } finally {
+            checkbox.disabled = false;
         }
     };
 
