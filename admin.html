@@ -618,6 +618,25 @@
         }
         .mv-section-danger .mv-section-title { color: #f87171; }
 
+        /* A.4 — Nút "Quản lý" trong bảng thành viên (bg-slate-800, hover bg-slate-700) */
+        .mv-ql-btn {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #cbd5e1;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.15s, color 0.15s;
+            white-space: nowrap;
+        }
+        .mv-ql-btn:hover { background: #334155; color: #f1f5f9; }
+
         /* A.6 — Delete button: solid red-700 */
         .mv-btn-danger {
             background: #b91c1c;
@@ -1116,17 +1135,28 @@
         </div>
         <div class="ad-form-group">
             <label class="ad-label">Số Ngày Sử Dụng</label>
-            <!-- B.2: Giữ hidden input để luuKey() đọc được; 4 nút bấm thay thế select -->
+            <!-- B.2: Giữ hidden input để luuKey() đọc được; 6 nút bấm + custom input -->
             <input type="hidden" id="keyFormSoNgay" value="30">
-            <div class="kf-day-btns" id="keyFormSoNgayBtns">
+            <div class="kf-day-btns" id="keyFormSoNgayBtns" style="flex-wrap:wrap;">
+                <button type="button" class="kf-day-btn" data-val="1"
+                        onclick="window._chonSoNgay(1)">1 ngày</button>
+                <button type="button" class="kf-day-btn" data-val="3"
+                        onclick="window._chonSoNgay(3)">3 ngày</button>
                 <button type="button" class="kf-day-btn" data-val="7"
                         onclick="window._chonSoNgay(7)">7 ngày</button>
                 <button type="button" class="kf-day-btn kf-day-active" data-val="30"
                         onclick="window._chonSoNgay(30)">30 ngày</button>
                 <button type="button" class="kf-day-btn" data-val="90"
                         onclick="window._chonSoNgay(90)">90 ngày</button>
-                <button type="button" class="kf-day-btn" data-val="365"
-                        onclick="window._chonSoNgay(365)">365 ngày</button>
+                <button type="button" class="kf-day-btn" data-val="0"
+                        onclick="window._chonSoNgay(0)">∞ Vĩnh Viễn</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+                <input type="number" id="input-custom-days" class="ad-input"
+                       min="1" max="9999" placeholder="Số ngày tùy chỉnh"
+                       style="flex:1;"
+                       oninput="if(this.value>0)window._chonSoNgay(Number(this.value),true);">
+                <span style="font-size:0.78rem;color:#64748b;white-space:nowrap;">ngày tùy chỉnh</span>
             </div>
         </div>
         <div class="ad-form-group">

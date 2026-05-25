@@ -215,19 +215,20 @@
                 // Kiểm tra thiết bị đã liên kết chưa
                 const hasDevice = !!(k.id_thiet_bi && String(k.id_thiet_bi).trim() !== "");
 
-                // Badge trạng thái
+                // Badge trạng thái — B3: dùng inline style thay class để đảm bảo render đúng màu
+                const _bdgBase = "display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;white-space:nowrap;";
                 let badgeHTML;
                 if (trangThai === "Đang chạy" && !isExpired) {
-                    badgeHTML = `<span class="ad-badge-running"><i class="fa-solid fa-circle" style="font-size:0.45em;"></i> Đang chạy</span>`;
+                    badgeHTML = `<span style="${_bdgBase}background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.35);"><i class="fa-solid fa-circle" style="font-size:0.45em;"></i> Đang chạy</span>`;
                 } else if (trangThai === "Bị khóa") {
-                    badgeHTML = `<span class="ad-badge-locked"><i class="fa-solid fa-lock" style="font-size:0.7em;"></i> Bị khóa</span>`;
+                    badgeHTML = `<span style="${_bdgBase}background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.3);"><i class="fa-solid fa-lock" style="font-size:0.7em;"></i> Bị khóa</span>`;
                 } else if (isExpired) {
-                    badgeHTML = `<span class="ad-badge-inactive"><i class="fa-solid fa-hourglass-end" style="font-size:0.7em;"></i> Hết hạn</span>`;
+                    badgeHTML = `<span style="${_bdgBase}background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.3);"><i class="fa-solid fa-hourglass-end" style="font-size:0.7em;"></i> Hết hạn</span>`;
                 } else {
-                    badgeHTML = `<span class="ad-badge-inactive"><i class="fa-regular fa-clock" style="font-size:0.7em;"></i> Chưa kích hoạt</span>`;
+                    badgeHTML = `<span style="${_bdgBase}background:rgba(148,163,184,0.1);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);"><i class="fa-regular fa-clock" style="font-size:0.7em;"></i> Chưa kích hoạt</span>`;
                 }
                 if (isExpiring && trangThai === "Đang chạy") {
-                    badgeHTML += `<br><span class="ad-badge-expiring" style="margin-top:3px;">
+                    badgeHTML += `<br><span style="${_bdgBase}background:rgba(251,146,60,0.12);color:#fb923c;border:1px solid rgba(251,146,60,0.3);margin-top:3px;">
                         <i class="fa-solid fa-triangle-exclamation" style="font-size:0.7em;"></i> Sắp hết hạn</span>`;
                 }
 
@@ -237,13 +238,15 @@
                 ));
                 tr.setAttribute("data-expiry", expDate || "");
                 tr.innerHTML = `
-                <td class="mono" style="white-space:nowrap;">
-                    ${keyVal}
-                    <button class="mv-btn" title="Sao chép mã key"
-                        onclick="window.copyKey('${keyVal}')"
-                        style="margin-left:6px;padding:2px 7px;font-size:0.68rem;vertical-align:middle;">
-                        <i class="fa-regular fa-copy"></i>
-                    </button>
+                <td class="mono">
+                    <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="white-space:nowrap;letter-spacing:0.5px;">${keyVal}</span>
+                        <button class="mv-btn" title="Sao chép mã key"
+                            onclick="window.copyKey('${keyVal}')"
+                            style="padding:2px 8px;font-size:0.68rem;flex-shrink:0;line-height:1.6;">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
                 </td>
                 <td style="font-weight:600;">${k.ten_host || "--"}</td>
                 <td style="color:#9ca3af;">${k.sdt_host || "--"}</td>
@@ -682,7 +685,15 @@
                     </div>
                     <div>
                         <label class="mv-label">SĐT (khóa chính — không đổi được)</label>
-                        <input type="text" class="mv-input" value="${sdtAttr}" disabled>
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input type="text" id="mvSdtPK" class="mv-input" value="${sdtAttr}" readonly
+                                style="background:rgba(30,41,59,0.6);flex:1;cursor:default;">
+                            <button class="mv-btn" title="Sao chép SĐT"
+                                onclick="navigator.clipboard.writeText(document.getElementById('mvSdtPK').value||'').then(()=>window.hienToast('Đã sao chép 📋','SĐT đã vào clipboard','success')).catch(()=>{})"
+                                style="padding:0 10px;height:40px;flex-shrink:0;">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
                     </div>
                     <div>
                         <label class="mv-label">Số dư ví (đ)</label>
@@ -698,6 +709,11 @@
                         <label class="mv-label">SĐT Zalo liên lạc</label>
                         <input type="tel" id="mvSdtZalo" class="mv-input"
                             value="${_mvEsc(u.sdt_zalo)}" placeholder="0909...">
+                    </div>
+                    <div>
+                        <label class="mv-label">Telegram / Username</label>
+                        <input type="text" id="input-member-telegram" class="mv-input"
+                            value="${_mvEsc(u.telegram || '')}" placeholder="@username hoặc link t.me/...">
                     </div>
                 </div>
                 <button class="mv-btn mv-btn-primary" style="width:100%;"
@@ -733,7 +749,15 @@
                 <div class="mv-form-grid" style="margin-bottom:10px;">
                     <div>
                         <label class="mv-label">Mật khẩu mới (tối thiểu 6 ký tự)</label>
-                        <input type="password" id="mvNewPassword" class="mv-input" placeholder="••••••••">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                            <input type="password" id="mvNewPassword" class="mv-input" placeholder="••••••••"
+                                style="flex:1;">
+                            <button class="mv-btn" title="Sao chép mật khẩu"
+                                onclick="navigator.clipboard.writeText(document.getElementById('mvNewPassword').value||'').then(()=>window.hienToast('Đã sao chép 📋','Mật khẩu đã vào clipboard','success')).catch(()=>{})"
+                                style="padding:0 10px;height:40px;flex-shrink:0;">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
                     </div>
                     <div>
                         <label class="mv-label">Xác nhận mật khẩu</label>
@@ -792,18 +816,20 @@
         }
     };
 
-    // A — Lưu thông tin cơ bản
+    // A — Lưu thông tin cơ bản (A6: thêm Telegram field)
     window._luuThongTinTV = async function (sdt) {
-        const ten  = document.getElementById("mvTenKhach")?.value?.trim();
-        const sodu = document.getElementById("mvSoDu")?.value;
-        const fb   = document.getElementById("mvFacebook")?.value?.trim();
-        const zalo = document.getElementById("mvSdtZalo")?.value?.trim();
+        const ten      = document.getElementById("mvTenKhach")?.value?.trim();
+        const sodu     = document.getElementById("mvSoDu")?.value;
+        const fb       = document.getElementById("mvFacebook")?.value?.trim();
+        const zalo     = document.getElementById("mvSdtZalo")?.value?.trim();
+        const telegram = document.getElementById("input-member-telegram")?.value?.trim();
 
         const payload = {};
-        if (ten  !== undefined) payload.ten_khach    = ten  || null;
-        if (sodu !== undefined) payload.so_du_vi     = Number(sodu) || 0;
-        if (fb   !== undefined) payload.facebook_link = fb  || null;
-        if (zalo !== undefined) payload.sdt_zalo      = zalo || null;
+        if (ten      !== undefined) payload.ten_khach     = ten      || null;
+        if (sodu     !== undefined) payload.so_du_vi      = Number(sodu) || 0;
+        if (fb       !== undefined) payload.facebook_link = fb       || null;
+        if (zalo     !== undefined) payload.sdt_zalo      = zalo     || null;
+        if (telegram !== undefined) payload.telegram      = telegram || null;
 
         try {
             await window.dbEngine.ghi("nguoi_dung", payload, { sdt_khach: sdt });
@@ -1276,12 +1302,27 @@
      * B.2 — SEGMENTED BUTTON CHỌN SỐ NGÀY (thay select)
      * Cập nhật hidden input #keyFormSoNgay + highlight nút active
      * ═══════════════════════════════════════════════════ */
-    window._chonSoNgay = function(val) {
-        const hidden = document.getElementById("keyFormSoNgay");
-        if (hidden) hidden.value = String(val);
-        document.querySelectorAll(".kf-day-btn").forEach(b => {
-            b.classList.toggle("kf-day-active", Number(b.dataset.val) === Number(val));
-        });
+    /* B4 — Cập nhật: hỗ trợ isCustom (khi nhập tay số ngày tùy chỉnh)
+     *   val = 0  → Vĩnh Viễn (lưu 9999 vào hidden input)
+     *   isCustom = true → không highlight nút nào, không clear custom input
+     *   isCustom = false (mặc định) → highlight nút tương ứng, clear custom input */
+    window._chonSoNgay = function(val, isCustom) {
+        const hidden  = document.getElementById("keyFormSoNgay");
+        const custEl  = document.getElementById("input-custom-days");
+        // val=0 nghĩa là Vĩnh Viễn → lưu 9999 để luuKey() tính ngày_het_han xa
+        const stored  = (val === 0) ? 9999 : val;
+        if (hidden) hidden.value = String(stored);
+
+        if (isCustom) {
+            // Nhập tay: bỏ highlight tất cả nút
+            document.querySelectorAll(".kf-day-btn").forEach(b => b.classList.remove("kf-day-active"));
+        } else {
+            // Bấm nút: highlight đúng nút, xóa custom input
+            document.querySelectorAll(".kf-day-btn").forEach(b => {
+                b.classList.toggle("kf-day-active", Number(b.dataset.val) === Number(val));
+            });
+            if (custEl) custEl.value = "";
+        }
     };
 
     /* ═══════════════════════════════════════════════════
