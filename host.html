@@ -365,6 +365,38 @@
             height: 18px;
             cursor: pointer;
         }
+
+        /* ── H-CSS1: Bảng cầu mobile — scroll ngang ── */
+        #shuttlecockListContainer {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        @media (max-width: 768px) {
+            /* Cố định layout grid 1 hàng với min-width từng cột */
+            #shuttlecockListContainer .sc-row-grid {
+                display: grid !important;
+                /* TÊN CẦU 140px | QUY CÁCH 110px | GIÁ 100px | ĐÃ DÙNG 90px | Xóa auto */
+                grid-template-columns: 140px 110px 100px 90px auto !important;
+                gap: 8px;
+                min-width: 480px; /* buộc scroll ngang thay vì co ép */
+            }
+            /* H-CSS1 + H-CSS2: input luôn lấp đầy cột, không bị tràn */
+            #shuttlecockListContainer .form-control {
+                min-width: 0;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            /* H-CSS2: label không bị bẻ dòng */
+            #shuttlecockListContainer .form-label {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            /* H-CSS2: cột Đã dùng — input tối thiểu 80px */
+            #shuttlecockListContainer .form-group:nth-child(4) .form-control {
+                min-width: 80px;
+            }
+        }
     </style>
 </head>
 <body data-theme="dark">
@@ -656,7 +688,8 @@
                         <input type="text" class="hs-input" id="hostAccountingCourtPrice"
                             value="80.000" inputmode="numeric"
                             oninput="window._formatInputTienTe(this)" onchange="tinhToanPricingGoiY()">
-                        <span class="hs-hint">Tổng chi phí sân: <strong id="hostTotalCost" style="color:#fbbf24;">0đ</strong></span>
+                        <!-- H-JS1: #hostTotalCost hiển thị chi phí sân (giá/giờ × giờ × sân) -->
+                        <span class="hs-hint">Chi phí sân: <strong id="hostTotalCost" style="color:#fbbf24;">0đ</strong></span>
                     </div>
 
                     <!-- Danh sách cầu -->
@@ -701,6 +734,12 @@
                         <span class="hs-hint">Nhập 0 để chia đều. Âm = Nữ cao hơn Nam.</span>
                     </div>
 
+                </div>
+
+                <!-- H-JS1: Tổng chi phí ca đấu = sân + cầu + nước -->
+                <div style="margin-top:12px;padding:10px 14px;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.25);border-radius:10px;font-size:0.85rem;color:#94a3b8;display:flex;justify-content:space-between;align-items:center;">
+                    <span><i class="fa-solid fa-calculator" style="margin-right:6px;color:#fbbf24;"></i>Tổng chi phí ca đấu (Sân + Cầu + Nước):</span>
+                    <strong id="hostTotalAllCost" style="color:#fbbf24;font-size:1rem;">0đ</strong>
                 </div>
 
                 <!-- GỢI Ý THU TIỀN -->

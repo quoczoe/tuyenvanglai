@@ -543,39 +543,58 @@
     window.tinhToanPricingGoiY = _tinhGoiYGia;
 
     function _tinhGoiYGia() {
-        const dur     = parseFloat(document.getElementById("hostTotalDuration")?.value) || 0;
-        const soSan   = Number(document.getElementById("hostCourtQuantity")?.value) || 1;
+        // ── H-JS1: Đọc đúng input ID thực tế ──
+        const dur      = parseFloat(document.getElementById("hostTotalDuration")?.value) || 0;
+        const soSan    = Number(document.getElementById("hostCourtQuantity")?.value) || 1;
         const giaSanH  = _parseCurrency("hostAccountingCourtPrice");
         const tienNuoc = _parseCurrency("hostAccountingWaterCost");
         const soNam    = Number(document.getElementById("hostAccountingEstMale")?.value) || 0;
         const soNu     = Number(document.getElementById("hostAccountingEstFemale")?.value) || 0;
         const chenh    = _parseCurrency("hostAccountingGap");
 
-        // C3: công thức chuẩn — dùng _tinhChiPhiCau() (cũng cập nhật #tongChiPhiCau)
-        const tienSan = giaSanH * dur * soSan;             // tongChiPhiSan = tienThue1Gio * tongGioChoi * soLuongSan
-        const tienCau = _tinhChiPhiCau();                  // tongChiPhiCau — tính và hiển thị
-        const tongCP  = tienSan + tienCau + tienNuoc;      // tongChiPhiCaDau
+        // 1. Tiền sân = giá/giờ × số giờ × số sân
+        const tienSan = giaSanH * dur * soSan;
+        // 2. Tiền cầu — _tinhChiPhiCau() tính và cập nhật #tongChiPhiCau
+        const tienCau = _tinhChiPhiCau();
+        // 3. Tổng chi phí ca đấu = sân + cầu + nước
+        const tongCP  = tienSan + tienCau + tienNuoc;
         const tongNguoi = soNam + soNu;
 
-        const tongCPEl = document.getElementById("hostTotalCost");
+        // Cập nhật hiển thị: "Tổng chi phí sân" (#hostTotalCost) — chỉ tienSan
+        const tienSanEl = document.getElementById("hostTotalCost");
+        if (tienSanEl) tienSanEl.textContent = _formatVND(tienSan);
+
+        // Cập nhật tổng toàn bộ (nếu có element #hostTotalAllCost)
+        const tongCPEl = document.getElementById("hostTotalAllCost");
         if (tongCPEl) tongCPEl.textContent = _formatVND(tongCP);
 
         if (tongNguoi === 0) {
-            ["sugValBreakEven","sugValSmall","sugValBig"].forEach(id => {
+            ["sugBreakNam","sugBreakNu","sugBreakLai",
+             "sugSmallNam","sugSmallNu","sugSmallLai",
+             "sugBigNam",  "sugBigNu",  "sugBigLai"].forEach(id => {
                 const el = document.getElementById(id); if (el) el.textContent = "--";
             });
             return;
         }
 
+        // 4. Gợi ý giá — làm tròn LÊN hàng nghìn gần nhất (Math.ceil)
+        const _ceil1k = x => Math.ceil(Math.max(0, x) / 1000) * 1000;
+
+        // Giá đề xuất bình quân = tổng chi phí / số người
+        const giaDeXuat = tongCP / tongNguoi;
+
+        // Phân bổ Nam/Nữ theo chênh lệch cấu hình
+        // Công thức: soNam*giaNam + soNu*giaNu = tongDT → giaNu = (tongDT - soNam*chenh) / tongNguoi
         function tinhGiaNamNu(tongDT) {
-            const giaNu  = Math.round((tongDT - soNam * chenh) / tongNguoi / 1000) * 1000;
-            const giaNam = giaNu + chenh;
-            return { giaNam: Math.max(0, giaNam), giaNu: Math.max(0, giaNu) };
+            const giaNu_raw  = (tongDT - soNam * chenh) / tongNguoi;
+            const giaNu  = _ceil1k(giaNu_raw);
+            const giaNam = _ceil1k(giaNu_raw + chenh);
+            return { giaNam, giaNu };
         }
 
-        const beBreak = tinhGiaNamNu(tongCP);
-        const beSmall = tinhGiaNamNu(tongCP * 1.1);
-        const beBig   = tinhGiaNamNu(tongCP * 1.2);
+        const beBreak = tinhGiaNamNu(tongCP);             // Huê Vốn
+        const beSmall = tinhGiaNamNu(giaDeXuat * 1.1 * tongNguoi);  // Lãi Ít × 1.1
+        const beBig   = tinhGiaNamNu(giaDeXuat * 1.2 * tongNguoi);  // Lãi Nhiều × 1.2
 
         _calcBreakEvenMale = beBreak.giaNam; _calcBreakEvenFemale = beBreak.giaNu;
         _calcSmallMale = beSmall.giaNam;     _calcSmallFemale = beSmall.giaNu;
@@ -700,8 +719,10 @@
         const chi_phi_san_co_dinh = gia_thue_san_1h * so_gio_choi * so_san_mo;
         const tong_doanh_thu_du_kien = so_nguoi_nam * gia_nam + so_nguoi_nu * gia_nu;
 
-        // Danh sách cầu (JSONB)
-        let tong_chi_phi_cau = 0;
+        // H-JS2: tính tổng chi phí sân và cầu trước khi build payload
+        const tong_chi_phi_san = gia_thue_san_1h * so_gio_choi * so_san_mo;  // = chi_phi_san_co_dinh
+
+        // Danh sách cầu (JSONB) — tong_chi_phi_cau dùng _tinhChiPhiCau() cho kết quả đồng nhất
         const loai_cau_su_dung = window.shuttlecocksList.map(id => {
             const loai   = Number(document.getElementById(`scLoai_${id}`)?.value) || 12;
             const giaOng = Number(document.getElementById(`scGiaOng_${id}`)?.value) || 0;
@@ -709,12 +730,13 @@
             const ten    = document.getElementById(`scName_${id}`)?.value || "";
             const gia_qua = loai > 1 ? Math.round(giaOng / loai) : giaOng;
             const thanh_tien = gia_qua * daDung;
-            tong_chi_phi_cau += thanh_tien;
             const donViMap = { "12": "ống 12 quả", "6": "ống 6 quả", "1": "quả lẻ" };
             // C4: thêm quy_cach để phân biệt đơn vị tính khi đọc lại
             const quy_cach = loai === 12 ? "ong12" : loai === 6 ? "ong6" : "le1";
             return { ten, quy_cach, don_vi: donViMap[String(loai)] || "ống", gia_qua, so_luong: daDung, thanh_tien, gia_ong: giaOng, loai };
         });
+        // Dùng _tinhChiPhiCau() để đảm bảo tong_chi_phi_cau nhất quán với hiển thị
+        const tong_chi_phi_cau = _tinhChiPhiCau();
 
         // HH5: Số slot cần tuyển (tối đa)
         const tong_slot_can = Number(document.getElementById("input-total-slots")?.value) || null;
@@ -728,6 +750,7 @@
             gioi_tinh_can, yeu_cau_trinh_do,
             gia_nam, gia_nu, tien_ich_bao_gom,
             gia_thue_san_1h, chi_phi_san_co_dinh,
+            tong_chi_phi_san,   // H-JS2: alias của chi_phi_san_co_dinh
             loai_cau_su_dung, tong_chi_phi_cau, chi_phi_nuoc_khac,
             so_nguoi_nam, so_nguoi_nu, chenh_lech_gia,
             tong_doanh_thu_du_kien,
@@ -861,7 +884,7 @@
                     <div class="badge-slot-count"><i class="fa-solid fa-users" style="font-size:0.7rem;"></i> ${tongKhach}${slot.tong_slot_can > 0 ? ' / ' + slot.tong_slot_can : ''} đã đặt</div>
                     <div style="font-size:0.68rem;color:#94a3b8;">${daDen} đã tham gia</div>
                     <button class="btn-mini btn-mini-cyan" style="margin-top:6px;width:100%;"
-                        onclick="window.moModalDanhSachKhach('${slot.id}')">
+                        onclick="window.openGuestListModal('${slot.id}', '${(slot.ten_san || '').replace(/'/g, '\\x27')}')">
                         <i class="fa-solid fa-list-check"></i> DS Khách
                     </button>
                 </td>
@@ -1067,6 +1090,18 @@
     window.dongModalDanhSachKhach = function () {
         const overlay = document.getElementById("modalDanhSachKhachOverlay");
         if (overlay) overlay.style.display = "none";
+    };
+
+    /**
+     * H-JS3: openGuestListModal(matchId, matchTitle)
+     * Wrapper của moModalDanhSachKhach — nhận thêm tham số tiêu đề để hiển thị.
+     * onclick="window.openGuestListModal(id, tenSan)" từ bảng ca đấu.
+     */
+    window.openGuestListModal = async function (matchId, matchTitle) {
+        // Nếu có tiêu đề truyền vào, cập nhật trước khi tải dữ liệu
+        const header = document.getElementById("modalKhachHeader");
+        if (header && matchTitle) header.textContent = matchTitle;
+        await window.moModalDanhSachKhach(matchId);
     };
 
     /* Cập nhật trạng thái khách qua bảng dat_slot */
