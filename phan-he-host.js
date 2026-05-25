@@ -436,14 +436,15 @@
             <div class="form-group" style="margin-bottom:0;position:relative;">
                 <label class="form-label" style="font-size:0.7rem;">Tên cầu</label>
                 <input type="text" class="form-control" id="scName_${id}" value="${ten}"
-                    placeholder="Hải Yến, Victor..." oninput="window._goiYCau('${id}')">
+                    placeholder="Hải Yến, Victor..."
+                    oninput="window._goiYCau('${id}')"
+                    list="badminton-shuttles" autocomplete="off">
                 <div id="scSuggest_${id}" style="position:absolute;top:100%;left:0;right:0;background:hsl(var(--card));border:1px solid var(--border);border-radius:var(--radius-sm);max-height:140px;overflow-y:auto;z-index:50;display:none;"></div>
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label" style="font-size:0.7rem;">Loại mua</label>
+                <label class="form-label" style="font-size:0.7rem;">Quy cách</label>
                 <select class="form-control" id="scLoai_${id}" onchange="window._dongBoGia('${id}','loai')">
                     <option value="12" ${loai==="12"?"selected":""}>Ống 12 quả</option>
-                    <option value="6"  ${loai==="6"?"selected":""}>Ống 6 quả</option>
                     <option value="1"  ${loai==="1"?"selected":""}>Quả lẻ</option>
                 </select>
             </div>
@@ -701,6 +702,9 @@
             return { ten, don_vi: donViMap[String(loai)] || "ống", gia_qua, so_luong: daDung, thanh_tien, gia_ong: giaOng, loai };
         });
 
+        // HH5: Số slot cần tuyển (tối đa)
+        const tong_slot_can = Number(document.getElementById("input-total-slots")?.value) || null;
+
         const payload = {
             ma_key_host: window.currentHostKey,
             vung_mien:   _xacDinhVungMien(tinh_thanh),
@@ -713,6 +717,7 @@
             loai_cau_su_dung, tong_chi_phi_cau, chi_phi_nuoc_khac,
             so_nguoi_nam, so_nguoi_nu, chenh_lech_gia,
             tong_doanh_thu_du_kien,
+            tong_slot_can,
             da_chot_ca: false
         };
 
@@ -741,7 +746,8 @@
     function _resetFormDangCa() {
         window.currentEditingSlotId = null;
         const ids = ["hostProvince","hostDistrict","hostCourtName","hostCourtAddress","hostCourtNumber",
-                     "hostPublicPriceMale","hostPublicPriceFemale","hostMaleCustomLevel","hostFemaleCustomLevel"];
+                     "hostPublicPriceMale","hostPublicPriceFemale","hostMaleCustomLevel","hostFemaleCustomLevel",
+                     "input-total-slots"];
         ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ""; });
         // Ô tiền → dùng _setCurrencyInput để hiển thị đúng định dạng dấu chấm nghìn
         _setCurrencyInput("hostAccountingCourtPrice", 80000);
@@ -913,6 +919,8 @@
             _setCurrencyInput("hostAccountingGap",        slot.chenh_lech_gia     || 0);
             set("hostAccountingEstMale",  slot.so_nguoi_nam  || 0);
             set("hostAccountingEstFemale", slot.so_nguoi_nu  || 0);
+            // HH5: Số slot cần tuyển
+            set("input-total-slots", slot.tong_slot_can || "");
 
             // Giới tính — ngược map
             const gRev = { "Nam": "male", "Nữ": "female", "Cả hai": "both" };
@@ -1442,8 +1450,8 @@
             <i class="fa-solid fa-inbox fa-2x" style="margin-bottom:12px;opacity:0.4;"></i><br>
             Chưa có ca nào được chốt trong khoảng thời gian này.
         </div>` : `
-        <div class="table-responsive">
-        <table class="hs-table">
+        <div style="width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <table class="hs-table" style="min-width:560px;">
             <thead><tr>
                 <th>Ngày</th>
                 <th>Tên Sân</th>

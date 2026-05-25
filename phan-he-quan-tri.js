@@ -237,7 +237,14 @@
                 ));
                 tr.setAttribute("data-expiry", expDate || "");
                 tr.innerHTML = `
-                <td class="mono">${keyVal}</td>
+                <td class="mono" style="white-space:nowrap;">
+                    ${keyVal}
+                    <button class="mv-btn" title="Sao chép mã key"
+                        onclick="window.copyKey('${keyVal}')"
+                        style="margin-left:6px;padding:2px 7px;font-size:0.68rem;vertical-align:middle;">
+                        <i class="fa-regular fa-copy"></i>
+                    </button>
+                </td>
                 <td style="font-weight:600;">${k.ten_host || "--"}</td>
                 <td style="color:#9ca3af;">${k.sdt_host || "--"}</td>
                 <td>${badgeHTML}</td>
@@ -305,7 +312,7 @@
         if (el) { el.value = _sinhMaKey(); el.readOnly = false; }
         _setVal("keyFormTenHost", "");
         _setVal("keyFormSdtHost", "");
-        _setVal("keyFormSoNgay",  "30");
+        window._chonSoNgay(30); // B.2: dùng segmented button
         _setVal("keyFormStatus",  "Chưa kích hoạt");
         _st("modalKeyTitle", "Tạo Key Mới");
         _setDisplay("modalKeyOverlay", "flex");
@@ -328,7 +335,7 @@
             if (el) { el.value = k.ma_key || ""; el.readOnly = true; }
             _setVal("keyFormTenHost", k.ten_host          || "");
             _setVal("keyFormSdtHost", k.sdt_host          || "");
-            _setVal("keyFormSoNgay",  String(k.so_ngay_duoc_xai || 30));
+            window._chonSoNgay(k.so_ngay_duoc_xai || 30); // B.2: dùng segmented button
             _setVal("keyFormStatus",  k.trang_thai        || "Chưa kích hoạt");
             _st("modalKeyTitle", "Chỉnh Sửa Key");
             _setDisplay("modalKeyOverlay", "flex");
@@ -574,7 +581,7 @@
                     : `<span style="color:#6b7280;font-size:0.78rem;">Chưa có</span>`;
 
                 // Cell Hành động — nút đơn mở modal toàn diện
-                const hanhDongHTML = `<button class="mv-ql-btn" onclick="window.moModalQuanLyThanhVien('${sdtSafe}')">⚙️ Quản lý</button>`;
+                const hanhDongHTML = `<button class="mv-ql-btn" onclick="window.moModalQuanLyThanhVien('${sdtSafe}')"><i class="fa-solid fa-gear"></i> Quản lý</button>`;
 
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
@@ -583,8 +590,8 @@
                 <td style="text-align:center;">${_vaiTroBadge(g.vai_tro)}</td>
                 <td>
                     <a href="https://zalo.me/${g.sdt}" target="_blank"
-                        style="color:#00d4ff;font-size:0.82rem;text-decoration:none;">
-                        <i class="fa-solid fa-comment"></i> ${g.sdt}
+                        style="font-size:0.82rem;text-decoration:none;color:inherit;">
+                        <i class="fa-solid fa-comment" style="color:#00d4ff;"></i> ${g.sdt}
                     </a>
                 </td>
                 <td style="font-size:0.8rem;color:#94a3b8;">${d}</td>
@@ -662,6 +669,8 @@
             const isActive = u.is_active !== false; // mặc định true nếu cột chưa có
 
             bodyEl.innerHTML = `
+            <!-- A.3: Wrapper flex-column gap-16px -->
+            <div style="display:flex;flex-direction:column;gap:16px;">
             <!-- ── A: Thông tin cơ bản ── -->
             <div class="mv-section">
                 <div class="mv-section-title">✏️ Thông Tin Cơ Bản</div>
@@ -774,7 +783,8 @@
                     onclick="window._xoaTV('${sdtAttr}')">
                     🗑️ Xóa vĩnh viễn tài khoản này
                 </button>
-            </div>`;
+            </div>
+            </div><!-- /.flex-column.gap-16px -->`;
 
         } catch (e) {
             window.hienToast("Lỗi", "Không thể tải dữ liệu thành viên.", "danger");
@@ -1161,15 +1171,22 @@
                 String(Number(cfgMap["so_keo_hien_thi"]?.noi_dung_thong_bao) || 45));
             _setVal("adminConfigOnlinePlayers",
                 String(Number(cfgMap["so_thanh_vien"]?.noi_dung_thong_bao) || 1820));
+            // C.1: Đọc trạng thái bật/tắt popup
+            const popupEnabledEl = document.getElementById("adminPopupEnabled");
+            if (popupEnabledEl) {
+                popupEnabledEl.checked = cfgMap["popup_enabled"]?.noi_dung_thong_bao === "true";
+            }
         } catch (e) {
             console.error("[Admin] Lỗi tải cấu hình:", e);
         }
     }
 
     window.luuThongBaoAdmin = async function () {
-        const content = document.getElementById("adminAnnouncementContent")?.value?.trim() || "";
-        const total   = Number(document.getElementById("adminConfigTotalSlots")?.value)   || 45;
-        const online  = Number(document.getElementById("adminConfigOnlinePlayers")?.value) || 1820;
+        const content        = document.getElementById("adminAnnouncementContent")?.value?.trim() || "";
+        const total          = Number(document.getElementById("adminConfigTotalSlots")?.value)   || 45;
+        const online         = Number(document.getElementById("adminConfigOnlinePlayers")?.value) || 1820;
+        // C.1: Lưu trạng thái bật/tắt popup
+        const popupEnabled   = document.getElementById("adminPopupEnabled")?.checked ? "true" : "false";
 
         const btn = document.getElementById("btnLuuThongBao");
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
@@ -1182,7 +1199,10 @@
                 window.dbEngine.upsert("cau_hinh_he_thong",
                     { id: "so_keo_hien_thi", noi_dung_thong_bao: String(total) }),
                 window.dbEngine.upsert("cau_hinh_he_thong",
-                    { id: "so_thanh_vien",   noi_dung_thong_bao: String(online) })
+                    { id: "so_thanh_vien",   noi_dung_thong_bao: String(online) }),
+                // C.1: Lưu trạng thái bật/tắt popup
+                window.dbEngine.upsert("cau_hinh_he_thong",
+                    { id: "popup_enabled",   noi_dung_thong_bao: popupEnabled })
             ]);
             window.hienToast("Đã lưu cấu hình ✅", "Thông báo và số liệu trang chủ đã cập nhật.", "success");
         } catch (e) {
@@ -1231,5 +1251,77 @@
         }, 100);
     });
 
-    console.log("⚡ [Phân Hệ Admin v3.0]: Khởi động thành công — Supabase schema chuẩn.");
+    /* ═══════════════════════════════════════════════════
+     * B.1 — COPY MÃ KEY VÀO CLIPBOARD
+     * ═══════════════════════════════════════════════════ */
+    window.copyKey = async function(maKey) {
+        try {
+            await navigator.clipboard.writeText(maKey);
+            window.hienToast("Đã sao chép 📋", maKey, "success");
+        } catch {
+            // Fallback cho trình duyệt không hỗ trợ Clipboard API
+            const ta = document.createElement("textarea");
+            ta.value = maKey;
+            ta.style.position = "fixed";
+            ta.style.opacity  = "0";
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand("copy"); } catch (_) {}
+            document.body.removeChild(ta);
+            window.hienToast("Đã sao chép 📋", maKey, "success");
+        }
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * B.2 — SEGMENTED BUTTON CHỌN SỐ NGÀY (thay select)
+     * Cập nhật hidden input #keyFormSoNgay + highlight nút active
+     * ═══════════════════════════════════════════════════ */
+    window._chonSoNgay = function(val) {
+        const hidden = document.getElementById("keyFormSoNgay");
+        if (hidden) hidden.value = String(val);
+        document.querySelectorAll(".kf-day-btn").forEach(b => {
+            b.classList.toggle("kf-day-active", Number(b.dataset.val) === Number(val));
+        });
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * B.3 — TẠO NHIỀU KEY CÙNG LÚC (BATCH)
+     * Tối đa 20 key / lần — tên đánh số "#1", "#2"...
+     * ═══════════════════════════════════════════════════ */
+    window.taoNhieuKey = async function() {
+        const qty = Math.min(20, Math.max(1, Number(document.getElementById("keyFormBatchQty")?.value) || 1));
+        // Nếu chỉ 1 key → dùng luồng cũ luuKey()
+        if (qty === 1) { window.luuKey(); return; }
+
+        const tenBase = document.getElementById("keyFormTenHost")?.value?.trim() || "Host";
+        const sdt     = document.getElementById("keyFormSdtHost")?.value?.trim() || "";
+        const soNgay  = Number(document.getElementById("keyFormSoNgay")?.value) || 30;
+        const status  = document.getElementById("keyFormStatus")?.value || "Chưa kích hoạt";
+
+        const btn = document.querySelector('[onclick="window.taoNhieuKey()"]');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tạo...'; }
+
+        try {
+            const promises = [];
+            for (let i = 1; i <= qty; i++) {
+                const maKey = _sinhMaKey();
+                const tenI  = `${tenBase} #${i}`;
+                promises.push(window.dbEngine.upsert("quan_ly_key", {
+                    ma_key: maKey, ten_host: tenI, sdt_host: sdt,
+                    so_ngay_duoc_xai: soNgay, trang_thai: status,
+                    id_thiet_bi: null, ngay_kich_hoat: null, ngay_het_han: null
+                }));
+            }
+            await Promise.all(promises);
+            window.hienToast("Tạo hàng loạt thành công 🔑", `Đã tạo ${qty} key mới.`, "success");
+            window.dongModalKey();
+            await _taiDanhSachKey();
+        } catch (e) {
+            window.hienToast("Lỗi tạo hàng loạt", (e.message || "").slice(0, 80), "danger");
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-layer-group"></i> Tạo Hàng Loạt'; }
+        }
+    };
+
+    console.log("⚡ [Phân Hệ Admin v3.1]: B1-copyKey ✅ | B2-segDay ✅ | B3-batch ✅ | C1-popupEnabled ✅");
 })();

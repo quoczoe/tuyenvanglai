@@ -482,11 +482,31 @@
     </a>
 </header>
 
+<!-- H8: Overlay cho bottom sheet login (mobile only) -->
+<div id="login-overlay" onclick="closeLoginSheet()"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:998;"></div>
+
+<!-- J4: Tab mobile — chỉ hiện trên ≤767px -->
+<div class="kh-mobile-tab" id="khMobileTab">
+    <button id="tabTimKeo" class="kh-tab-btn kh-tab-active"
+            onclick="switchKhachTab('keo')">🏸 Tìm Kèo Đấu</button>
+    <button id="tabCaNhan" class="kh-tab-btn"
+            onclick="switchKhachTab('profile')">👤 Trang Cá Nhân</button>
+</div>
+
 <!-- LAYOUT CHÍNH -->
 <div class="kh-layout">
 
     <!-- ══ CỘT TRÁI: HỒ SƠ ══ -->
     <aside class="kh-sidebar">
+
+        <!-- H8: Wrapper bottom sheet login (mobile: fixed bottom sheet; desktop: static) -->
+        <div id="login-sheet">
+            <!-- Nút đóng sheet (chỉ hiện trên mobile) -->
+            <div id="close-login-sheet" onclick="closeLoginSheet()"
+                 style="display:none;text-align:right;margin-bottom:8px;">
+                <button style="background:none;border:none;color:#94a3b8;font-size:1.3rem;cursor:pointer;padding:4px 8px;line-height:1;">✕</button>
+            </div>
 
         <!-- PANEL ĐĂNG NHẬP / ĐĂNG KÝ — 1-CLICK AUTH (MODULE 2) -->
         <div class="kh-auth-card" id="guestAuthPanel">
@@ -514,19 +534,6 @@
                 onkeydown="if(event.key==='Enter') xacThucNguoiDung()">
             <span class="input-hint"></span>
 
-            <!-- Giới tính — Radio pill -->
-            <label class="kh-label" style="margin-top:10px;">Giới tính</label>
-            <div class="gender-pill-group" style="margin-bottom:14px;">
-                <label>
-                    <input type="radio" name="gioiTinh" value="male" checked>
-                    <span>👨 Nam</span>
-                </label>
-                <label>
-                    <input type="radio" name="gioiTinh" value="female">
-                    <span>👩 Nữ</span>
-                </label>
-            </div>
-
             <!-- Nút chính -->
             <button class="kh-btn-primary" id="btnXacNhan" onclick="xacThucNguoiDung()">
                 XÁC NHẬN →
@@ -547,6 +554,19 @@
                     placeholder="Vd: Nguyễn Văn A"
                     oninput="validateRealtime(this,'ten','Tên chỉ được chứa chữ cái tiếng Việt (2-50 ký tự)')">
                 <span class="input-hint"></span>
+
+                <!-- Giới tính — (chuyển từ form chính vào Thông tin bổ sung) -->
+                <label class="kh-label" style="margin-top:10px;">Giới tính</label>
+                <div class="gender-pill-group" style="margin-bottom:14px;">
+                    <label>
+                        <input type="radio" name="gioiTinh" value="male" checked>
+                        <span>👨 Nam</span>
+                    </label>
+                    <label>
+                        <input type="radio" name="gioiTinh" value="female">
+                        <span>👩 Nữ</span>
+                    </label>
+                </div>
 
                 <!-- Zalo -->
                 <label class="kh-label" style="margin-top:10px;">📱 Zalo</label>
@@ -604,6 +624,7 @@
                 </button>
             </div>
         </div>
+        </div><!-- /#login-sheet -->
 
         <!-- HỒ SƠ CÁ NHÂN -->
         <div class="kh-auth-card" id="guestProfileBlock" style="display:none;">

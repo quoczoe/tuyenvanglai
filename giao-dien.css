@@ -3198,3 +3198,232 @@ body::before {
     font-weight: 700;
     white-space: nowrap;
 }
+
+/* ═══════════════════════════════════════════════════
+   PHÂN HỆ A — Admin UI Polish
+   ═══════════════════════════════════════════════════ */
+
+/* A.2: Nút Quản lý — icon + gap */
+.mv-ql-btn { gap: 6px; display: inline-flex; align-items: center; }
+
+/* A.4: Input + primary button cải thiện */
+.mv-input { padding: 9px 13px; border-radius: 8px; }
+.mv-btn-primary { text-shadow: 0 0 8px rgba(0,212,255,0.4); }
+
+/* A.5: Role buttons — segmented tab style */
+.mv-role-btns {
+    gap: 0;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.mv-role-btns .mv-btn {
+    border-radius: 0;
+    border: none;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+}
+.mv-role-btns .mv-btn:last-child { border-right: none; }
+
+/* A.6: Delete zone — viền đỏ rõ hơn */
+.mv-section-danger {
+    border-color: rgba(239,68,68,0.4);
+    background: rgba(239,68,68,0.06);
+}
+.mv-section-danger .mv-section-title { color: #f87171; }
+
+/* ═══════════════════════════════════════════════════
+   PHÂN HỆ B — Key Form Polish
+   ═══════════════════════════════════════════════════ */
+
+/* B.2: Segmented button nhóm "Số ngày" */
+.kf-day-btns {
+    display: flex;
+    gap: 0;
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+.kf-day-btn {
+    flex: 1;
+    padding: 8px 4px;
+    background: rgba(255,255,255,0.03);
+    border: none;
+    border-right: 1px solid rgba(255,255,255,0.08);
+    color: #9ca3af;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, color 0.15s;
+    text-align: center;
+}
+.kf-day-btn:last-child { border-right: none; }
+.kf-day-btn:hover { background: rgba(255,255,255,0.08); color: #e2e8f0; }
+.kf-day-active {
+    background: rgba(0,255,136,0.12) !important;
+    color: #00ff88 !important;
+    font-weight: 700;
+}
+
+/* ═══════════════════════════════════════════════════
+   PHÂN HỆ HH — Host UI Polish
+   ═══════════════════════════════════════════════════ */
+
+/* HH2: Bảng cầu tiêu thụ mobile */
+@media (max-width: 600px) {
+    .sc-row-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+    .sc-row-grid > div:last-child {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: flex-end;
+    }
+}
+
+/* HH4: Ẩn spin button trên ô number trong bảng cầu, căn phải */
+#shuttlecockListContainer input[type="number"]::-webkit-inner-spin-button,
+#shuttlecockListContainer input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+#shuttlecockListContainer input[type="number"] {
+    -moz-appearance: textfield;
+    text-align: right;
+}
+
+/* HH6: Bộ lọc lịch trong tab Doanh Thu */
+#doanhThuFilter {
+    background: rgba(71,85,105,0.55);
+    color: #e2e8f0;
+    border-color: rgba(100,116,139,0.5);
+}
+#tabDoanhThu input[type="date"] {
+    background: rgba(71,85,105,0.5);
+    color: #e2e8f0;
+    border-color: rgba(100,116,139,0.5);
+}
+#tabDoanhThu input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.5);
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════════
+   PHÂN HỆ H/J — Khách UI Polish
+   ═══════════════════════════════════════════════════ */
+
+/* H2: Gender pill — chặn tap-highlight */
+.gender-pill-group label {
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* H3: Nút "ĐÃ ĐẶT" — restyle sang slate/emerald */
+.btn-da-dat {
+    background: rgba(30,41,59,0.9);
+    border: 1.5px solid rgba(71,85,105,0.5);
+    color: #34d399;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    cursor: not-allowed;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-family: inherit;
+    opacity: 0.9;
+    width: 100%;
+    box-sizing: border-box;
+    transition: none;
+}
+
+/* H4a: Khung trình độ — chiều cao tối thiểu */
+.kh-trinh-do-row { min-height: 75px; }
+
+/* H8: Bottom Sheet login (mobile only) */
+@media (max-width: 767px) {
+    #login-sheet {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 999;
+        background: #0f1e35;
+        border-radius: 20px 20px 0 0;
+        padding: 16px 20px 36px;
+        transform: translateY(100%);
+        transition: transform 0.3s ease;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 -4px 32px rgba(0,0,0,0.55);
+        border-top: 1px solid #1e3a5f;
+    }
+    #login-sheet.sheet-open { transform: translateY(0); }
+    #login-overlay { display: none; }
+    #login-overlay.sheet-open {
+        display: block !important;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.55);
+        z-index: 998;
+    }
+    #close-login-sheet { display: block !important; }
+    /* Ẩn auth card trong sidebar khi mobile — dùng bottom sheet thay */
+    .kh-sidebar > #login-sheet-placeholder { display: none; }
+}
+@media (min-width: 768px) {
+    #login-sheet {
+        position: static;
+        transform: none;
+        background: transparent;
+        padding: 0;
+        border-radius: 0;
+        box-shadow: none;
+        border-top: none;
+        max-height: none;
+        overflow-y: visible;
+    }
+    #login-overlay { display: none !important; }
+    #close-login-sheet { display: none !important; }
+}
+
+/* J4: Tab toggle mobile */
+.kh-mobile-tab { display: none; }
+@media (max-width: 767px) {
+    .kh-mobile-tab {
+        display: flex;
+        gap: 0;
+        background: rgba(26,40,68,0.95);
+        border-bottom: 1px solid #1e3a5f;
+        position: sticky;
+        top: 60px;
+        z-index: 100;
+    }
+    .kh-tab-btn {
+        flex: 1;
+        padding: 11px 8px;
+        background: transparent;
+        border: none;
+        color: #94a3b8;
+        font-size: 0.88rem;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        border-bottom: 2px solid transparent;
+        transition: color 0.2s, border-color 0.2s, background 0.2s;
+        text-align: center;
+    }
+    .kh-tab-active {
+        color: #00ff88;
+        border-bottom-color: #00ff88;
+        background: rgba(0,255,136,0.06);
+    }
+}

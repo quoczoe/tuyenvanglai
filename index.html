@@ -1234,11 +1234,14 @@
             try {
                 const cfgList = await window.dbEngine.doc("cau_hinh_he_thong");
                 // Tìm đúng row "popup_chinh" (không dùng cfgList[0] vì thứ tự có thể khác)
-                const popupRow = (cfgList || []).find(function(c) { return c.id === "popup_chinh"; })
+                const popupRow   = (cfgList || []).find(function(c) { return c.id === "popup_chinh"; })
                               || (cfgList || [])[0]
                               || {};
-                const msg = popupRow.noi_dung_thong_bao || popupRow.announcement || "";
-                if (msg.trim()) {
+                const msg        = popupRow.noi_dung_thong_bao || popupRow.announcement || "";
+                // C.2: Kiểm tra flag popup_enabled trước khi hiện — mặc định bật nếu chưa có row
+                const enabledRow = (cfgList || []).find(function(c) { return c.id === "popup_enabled"; });
+                const popupEnabled = enabledRow ? enabledRow.noi_dung_thong_bao === "true" : true;
+                if (msg.trim() && popupEnabled) {
                     const overlay  = document.getElementById("systemPopupOverlay");
                     const content  = document.getElementById("systemPopupContent");
                     const timeEl   = document.getElementById("systemPopupTime");

@@ -127,11 +127,10 @@
 
         const fromEl   = document.getElementById("statsDateFrom");
         const toEl     = document.getElementById("statsDateTo");
-        const filterEl = document.getElementById("filterDate");
 
-        if (fromEl   && !fromEl.value)   fromEl.value   = dauThang;
-        if (toEl     && !toEl.value)     toEl.value     = homNay;
-        if (filterEl && !filterEl.value) filterEl.value = homNay;
+        if (fromEl && !fromEl.value) fromEl.value = dauThang;
+        if (toEl   && !toEl.value)   toEl.value   = homNay;
+        // filterDate: để trống mặc định — không auto-fill
     }
 
     /* ═══════════════════════════════════════════════════
@@ -855,14 +854,17 @@
         const td = slot.yeu_cau_trinh_do || {};
         const mLevels = Array.isArray(td.nam) ? td.nam.join(", ") : (td.nam || "");
         const fLevels = Array.isArray(td.nu)  ? td.nu.join(", ")  : (td.nu  || "");
+        // H4b: Icon giới tính màu thay emoji 🏸
+        const ICON_NAM = '<span style="color:#60a5fa;font-style:normal;">&#9794;</span>'; // ♂ xanh dương
+        const ICON_NU  = '<span style="color:#f472b6;font-style:normal;">&#9792;</span>'; // ♀ hồng
         let levelHTML = "";
         if (slot.gioi_tinh_can === "Cả hai") {
-            levelHTML = `<span class="kh-trinh-do-line">🏸 Nam: ${mLevels || "--"}</span>`
-                      + `<span class="kh-trinh-do-line">🏸 Nữ: ${fLevels || "--"}</span>`;
+            levelHTML = `<span class="kh-trinh-do-line" style="display:flex;align-items:center;gap:4px;">${ICON_NAM} Nam: ${mLevels || "--"}</span>`
+                      + `<span class="kh-trinh-do-line" style="display:flex;align-items:center;gap:4px;">${ICON_NU} Nữ: ${fLevels || "--"}</span>`;
         } else if (slot.gioi_tinh_can === "Nữ") {
-            levelHTML = `<span class="kh-trinh-do-line">🏸 ${fLevels || "--"}</span>`;
+            levelHTML = `<span class="kh-trinh-do-line" style="display:flex;align-items:center;gap:4px;">${ICON_NU} ${fLevels || "--"}</span>`;
         } else {
-            levelHTML = `<span class="kh-trinh-do-line">🏸 ${mLevels || "--"}</span>`;
+            levelHTML = `<span class="kh-trinh-do-line" style="display:flex;align-items:center;gap:4px;">${ICON_NAM} ${mLevels || "--"}</span>`;
         }
 
         // Tiện ích từ JSONB tien_ich_bao_gom
@@ -946,7 +948,7 @@
                             <i class="fa-solid fa-ticket"></i> ĐẶT SLOT
                            </button>`)
                     : `<button class="btn-dat-slot btn-dat-slot-disabled" style="flex:1;"
-                        onclick="window.hienToast('Cần đăng nhập','Đăng nhập để đặt slot.','warning')">
+                        onclick="if(window.innerWidth < 768) window.openLoginSheet(); else window.hienToast('Cần đăng nhập','Đăng nhập hoặc đăng ký bên sidebar trái.','warning')">
                         <i class="fa-solid fa-lock"></i> ĐẶT SLOT
                        </button>`
                 }
@@ -1747,5 +1749,66 @@
         if (arrow) arrow.classList.toggle("open", !isOpen);
     };
 
-    console.log("⚡ [Phân Hệ Khách Chơi v4.1]: FIX4-toggle ✅ | FIX11-hostHint ✅ | FIX12-accordion ✅");
+    /* ═══════════════════════════════════════════════════
+     * J4 — TAB TOGGLE MOBILE (Tìm Kèo / Trang Cá Nhân)
+     * Chỉ hoạt động khi innerWidth < 768px; desktop không bị ảnh hưởng
+     * ═══════════════════════════════════════════════════ */
+    window.switchKhachTab = function(tab) {
+        const sidebar = document.querySelector(".kh-sidebar");
+        const right   = document.querySelector(".kh-right");
+        const btnKeo  = document.getElementById("tabTimKeo");
+        const btnP    = document.getElementById("tabCaNhan");
+
+        if (window.innerWidth >= 768) return; // Desktop: không làm gì
+
+        if (tab === "keo") {
+            if (sidebar) sidebar.style.display = "none";
+            if (right)   right.style.display   = "flex";
+            if (btnKeo) btnKeo.classList.add("kh-tab-active");
+            if (btnP)   btnP.classList.remove("kh-tab-active");
+        } else {
+            if (sidebar) sidebar.style.display = "flex";
+            if (right)   right.style.display   = "none";
+            if (btnP)   btnP.classList.add("kh-tab-active");
+            if (btnKeo) btnKeo.classList.remove("kh-tab-active");
+        }
+    };
+
+    // Khởi tạo: ẩn sidebar khi mobile mặc định (tab "Tìm Kèo" active)
+    (function _initMobileTab() {
+        if (window.innerWidth < 768) {
+            const sidebar = document.querySelector(".kh-sidebar");
+            if (sidebar) sidebar.style.display = "none";
+        }
+    })();
+
+    // Reset khi resize về desktop
+    window.addEventListener("resize", function() {
+        if (window.innerWidth >= 768) {
+            const sidebar = document.querySelector(".kh-sidebar");
+            const right   = document.querySelector(".kh-right");
+            if (sidebar) sidebar.style.display = "";
+            if (right)   right.style.display   = "";
+        }
+    });
+
+    /* ═══════════════════════════════════════════════════
+     * J5 — BOTTOM SHEET LOGIN (mobile only)
+     * Mở/đóng #login-sheet bằng class .sheet-open
+     * ═══════════════════════════════════════════════════ */
+    window.openLoginSheet = function() {
+        const sheet   = document.getElementById("login-sheet");
+        const overlay = document.getElementById("login-overlay");
+        if (sheet)   sheet.classList.add("sheet-open");
+        if (overlay) { overlay.style.display = "block"; overlay.classList.add("sheet-open"); }
+    };
+
+    window.closeLoginSheet = function() {
+        const sheet   = document.getElementById("login-sheet");
+        const overlay = document.getElementById("login-overlay");
+        if (sheet)   sheet.classList.remove("sheet-open");
+        if (overlay) { overlay.classList.remove("sheet-open"); overlay.style.display = "none"; }
+    };
+
+    console.log("⚡ [Phân Hệ Khách Chơi v4.2]: J4-tabToggle ✅ | J5-bottomSheet ✅ | H4b-genderIcon ✅ | J2-filterDate ✅");
 })();
