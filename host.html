@@ -32,9 +32,10 @@
             background: var(--bg-base);
             color: var(--text-main);
             overflow-y: auto;
-            /* TASK 4.1: Ngăn tràn ngang trên mobile */
+            /* R1: Ngăn tràn ngang toàn trang */
             overflow-x: hidden;
-            max-width: 100vw;
+            max-width: 100%;
+            width: 100%;
             min-height: 100vh;
         }
         .gateway-wrapper { height: auto; min-height: 100vh; overflow: visible; }
@@ -69,7 +70,13 @@
             padding: 1.5rem 2rem 3rem;
             box-sizing: border-box;
         }
-        @media (max-width: 768px) { .hs-main { padding: 1rem; } }
+        @media (max-width: 768px) {
+            .hs-main {
+                padding: 12px 12px 3rem;
+                overflow-x: hidden;
+                max-width: 100%;
+            }
+        }
 
         /* ══ COMMON COMPONENTS ══ */
         .hs-card {
@@ -366,35 +373,88 @@
             cursor: pointer;
         }
 
-        /* ── H-CSS1: Bảng cầu mobile — scroll ngang ── */
+        /* ── R1 + R2: Bảng cầu — PC ngang / Mobile dọc card ── */
+
+        /* R1: Bounded scroll container — overflow-x:auto chỉ hoạt động khi có max-width */
         #shuttlecockListContainer {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
+            max-width: 100%;
         }
-        @media (max-width: 768px) {
-            /* Cố định layout grid 1 hàng với min-width từng cột */
-            #shuttlecockListContainer .sc-row-grid {
-                display: grid !important;
-                /* TÊN CẦU 140px | QUY CÁCH 110px | GIÁ 100px | ĐÃ DÙNG 90px | Xóa auto */
-                grid-template-columns: 140px 110px 100px 90px auto !important;
-                gap: 8px;
-                min-width: 480px; /* buộc scroll ngang thay vì co ép */
-            }
-            /* H-CSS1 + H-CSS2: input luôn lấp đầy cột, không bị tràn */
+        /* R1: Bảng ca đấu — tương tự */
+        .hs-table-wrap {
+            max-width: 100%;
+        }
+
+        /* PC (≥769px): giữ nguyên layout grid ngang */
+        @media (min-width: 769px) {
             #shuttlecockListContainer .form-control {
                 min-width: 0;
                 width: 100%;
                 box-sizing: border-box;
             }
-            /* H-CSS2: label không bị bẻ dòng */
             #shuttlecockListContainer .form-label {
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                font-size: 0.7rem;
             }
-            /* H-CSS2: cột Đã dùng — input tối thiểu 80px */
-            #shuttlecockListContainer .form-group:nth-child(4) .form-control {
-                min-width: 80px;
+        }
+
+        /* R2: Mobile (≤768px) — chuyển mỗi loại cầu thành card dọc */
+        @media (max-width: 768px) {
+            /* Không cần scroll ngang nữa — layout thẳng đứng */
+            #shuttlecockListContainer {
+                overflow-x: visible;
+            }
+            /* Mỗi .sc-row-grid → cột flex dọc */
+            #shuttlecockListContainer .sc-row-grid {
+                display: flex !important;
+                flex-direction: column !important;
+                min-width: 0 !important;
+                gap: 0 !important;
+            }
+            /* Mỗi field = 1 dòng ngang: label bên trái + input bên phải */
+            #shuttlecockListContainer .sc-row-grid > .form-group {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 6px 0;
+                border-bottom: 1px solid rgba(255,255,255,0.06);
+                min-width: 0;
+            }
+            /* Label */
+            #shuttlecockListContainer .sc-row-grid .form-label {
+                font-size: 11px;
+                color: #94a3b8;
+                min-width: 110px;
+                flex-shrink: 0;
+                white-space: normal;
+                overflow: visible;
+                text-overflow: unset;
+            }
+            /* Input / Select */
+            #shuttlecockListContainer .sc-row-grid .form-control {
+                width: 100%;
+                max-width: 180px;
+                height: 36px;
+                padding: 0 10px;
+                border-radius: 8px;
+                min-width: 0;
+                flex: 1;
+                box-sizing: border-box;
+            }
+            /* Nút xóa dòng */
+            #shuttlecockListContainer .sc-row-grid > div:not(.form-group) {
+                display: flex;
+                justify-content: flex-end;
+                padding-top: 6px;
+            }
+            /* Đường phân cách giữa các loại cầu */
+            #shuttlecockListContainer .shuttlecock-row + .shuttlecock-row {
+                border-top: 1px solid rgba(255,255,255,0.08);
+                padding-top: 10px;
+                margin-top: 10px;
             }
         }
 
@@ -402,36 +462,37 @@
         .hidden { display: none !important; }
 
         /* ══════════════════════════════════════════════════
-           M1: Fix tràn khung toàn trang mobile
+           R1: Fix tràn ngang toàn trang mobile — triệt để
            ══════════════════════════════════════════════════ */
-        html, body {
-            /* Đảm bảo dùng max-width: 100% (không bao gồm scrollbar như 100vw) */
-            max-width: 100%;
-        }
         @media (max-width: 768px) {
+            /* Level 1: html + body */
             html, body {
+                overflow-x: hidden !important;
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+            /* Level 2: card + form containers — clip content thật sự */
+            .hs-card {
                 overflow-x: hidden;
                 max-width: 100%;
+                box-sizing: border-box;
             }
-            /* Đảm bảo container chính không tràn ngang */
-            .hs-main,
-            .hs-card,
             .hs-form-layout,
             .hs-console {
                 max-width: 100%;
                 box-sizing: border-box;
             }
-            /* Ngăn phần tử có min-width cứng làm tràn viewport */
-            [style*="min-width"] {
+            /* Level 3: flex children — min-width:auto là nguyên nhân flex item không co được */
+            .hs-card > *,
+            .hs-form-layout > * {
+                min-width: 0;
+            }
+            /* Level 4: inline min-width cứng không vượt viewport */
+            .hs-card [style*="min-width"],
+            .hs-main [style*="min-width"] {
                 max-width: 100%;
             }
         }
-
-        /* ══════════════════════════════════════════════════
-           M2: Bảng cầu mobile — đã được triển khai ở khối
-           H-CSS1/H-CSS2 bên trên (lines 369-399).
-           Không cần thêm CSS mới.
-           ══════════════════════════════════════════════════ */
 
         /* ══════════════════════════════════════════════════
            M3: Modal DS Khách — badge trạng thái không bẻ dòng

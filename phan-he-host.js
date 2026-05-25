@@ -506,7 +506,30 @@
         if (el) el.textContent = tongChi.toLocaleString('vi-VN') + 'đ';
         return tongChi;
     }
-    window.tinhChiPhiCau = _tinhChiPhiCau;
+    window.tinhChiPhiCau  = _tinhChiPhiCau;
+    window._tinhChiPhiCau = _tinhChiPhiCau; // alias cho inline oninput/onchange handlers trong template HTML
+
+    /* ── R3: Event delegation cho #shuttlecockListContainer ──
+     * Dùng document-level delegation để không cần lo thời điểm container được render.
+     * Bắt input/change từ các ô giá cầu + số lượng → tự động tính lại chi phí + gợi ý giá. */
+    (function _setupShuttlecockDelegation() {
+        function _handleSC(e) {
+            const id = (e.target && e.target.id) ? e.target.id : '';
+            if (
+                id.startsWith('scGiaOng_') ||
+                id.startsWith('scGiaLe_')  ||
+                id.startsWith('scDaDung_') ||
+                id.startsWith('scLoai_')   ||
+                id.startsWith('scName_')
+            ) {
+                _tinhChiPhiCau();
+                _tinhGoiYGia();
+            }
+        }
+        // Dùng capture=false (bubble) để bắt được từ input nested
+        document.addEventListener('input',  _handleSC, false);
+        document.addEventListener('change', _handleSC, false);
+    })();
 
     window.xoaLoaiCau = function (id) {
         if (window.shuttlecocksList.length <= 1) {
@@ -542,6 +565,7 @@
      * 7. BỘ MÁY KẾ TOÁN - GỢI Ý GIÁ
      * ═══════════════════════════════════════════════════ */
     window.tinhToanPricingGoiY = _tinhGoiYGia;
+    window._tinhGoiYGia        = _tinhGoiYGia; // alias cho inline oninput handlers trong template HTML
 
     function _tinhGoiYGia() {
         // ── H-JS1: Đọc đúng input ID thực tế ──
@@ -2039,6 +2063,8 @@
                 window.khoiTaoTheme();
                 window.khoiTaoHologramGlow();
                 window.khoiTaoTrangHost();
+                // R3: Tính chi phí cầu lần đầu sau khi form được render
+                setTimeout(_tinhChiPhiCau, 300);
             }
         }, 100);
     });
