@@ -215,20 +215,25 @@
                 // Kiểm tra thiết bị đã liên kết chưa
                 const hasDevice = !!(k.id_thiet_bi && String(k.id_thiet_bi).trim() !== "");
 
-                // Badge trạng thái — B3: dùng inline style thay class để đảm bảo render đúng màu
-                const _bdgBase = "display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:0.75rem;font-weight:600;white-space:nowrap;";
+                // Badge trạng thái — B3: inline style, 3 màu chuẩn
+                // Chưa kích hoạt = blue-400 | Đang chạy = emerald-400 | Bị khóa/Hết hạn = red-400
+                const _bdgBase = "display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:6px;font-size:0.75rem;font-weight:600;white-space:nowrap;";
                 let badgeHTML;
                 if (trangThai === "Đang chạy" && !isExpired) {
-                    badgeHTML = `<span style="${_bdgBase}background:rgba(59,130,246,0.15);color:#60a5fa;border:1px solid rgba(59,130,246,0.35);"><i class="fa-solid fa-circle" style="font-size:0.45em;"></i> Đang chạy</span>`;
+                    // emerald: bg-emerald-950/60 text-emerald-400 border-emerald-900/50
+                    badgeHTML = `<span style="${_bdgBase}background:rgba(2,44,34,0.6);color:#34d399;border:1px solid rgba(6,78,59,0.5);"><i class="fa-solid fa-circle" style="font-size:0.45em;"></i> Đang chạy</span>`;
                 } else if (trangThai === "Bị khóa") {
-                    badgeHTML = `<span style="${_bdgBase}background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.3);"><i class="fa-solid fa-lock" style="font-size:0.7em;"></i> Bị khóa</span>`;
+                    // red: bg-red-950/60 text-red-400 border-red-900/50
+                    badgeHTML = `<span style="${_bdgBase}background:rgba(69,10,10,0.6);color:#f87171;border:1px solid rgba(127,29,29,0.5);"><i class="fa-solid fa-lock" style="font-size:0.7em;"></i> Bị khóa</span>`;
                 } else if (isExpired) {
-                    badgeHTML = `<span style="${_bdgBase}background:rgba(239,68,68,0.12);color:#f87171;border:1px solid rgba(239,68,68,0.3);"><i class="fa-solid fa-hourglass-end" style="font-size:0.7em;"></i> Hết hạn</span>`;
+                    // red: bg-red-950/60 text-red-400 border-red-900/50
+                    badgeHTML = `<span style="${_bdgBase}background:rgba(69,10,10,0.6);color:#f87171;border:1px solid rgba(127,29,29,0.5);"><i class="fa-solid fa-hourglass-end" style="font-size:0.7em;"></i> Hết hạn</span>`;
                 } else {
-                    badgeHTML = `<span style="${_bdgBase}background:rgba(148,163,184,0.1);color:#94a3b8;border:1px solid rgba(148,163,184,0.25);"><i class="fa-regular fa-clock" style="font-size:0.7em;"></i> Chưa kích hoạt</span>`;
+                    // blue: bg-blue-950/60 text-blue-400 border-blue-900/50
+                    badgeHTML = `<span style="${_bdgBase}background:rgba(23,37,84,0.6);color:#60a5fa;border:1px solid rgba(30,58,138,0.5);"><i class="fa-regular fa-clock" style="font-size:0.7em;"></i> Chưa kích hoạt</span>`;
                 }
                 if (isExpiring && trangThai === "Đang chạy") {
-                    badgeHTML += `<br><span style="${_bdgBase}background:rgba(251,146,60,0.12);color:#fb923c;border:1px solid rgba(251,146,60,0.3);margin-top:3px;">
+                    badgeHTML += `<br><span style="${_bdgBase}background:rgba(69,26,3,0.6);color:#fb923c;border:1px solid rgba(154,52,18,0.5);margin-top:3px;">
                         <i class="fa-solid fa-triangle-exclamation" style="font-size:0.7em;"></i> Sắp hết hạn</span>`;
                 }
 
@@ -237,12 +242,13 @@
                     trangThai === "Đang chạy" ? "active" : trangThai === "Bị khóa" ? "locked" : "inactive"
                 ));
                 tr.setAttribute("data-expiry", expDate || "");
+                tr.setAttribute("data-key", keyVal); // B1: dùng để đọc key từ DOM
                 tr.innerHTML = `
                 <td class="mono">
-                    <div style="display:flex;align-items:center;gap:6px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
                         <span style="white-space:nowrap;letter-spacing:0.5px;">${keyVal}</span>
                         <button class="mv-btn" title="Sao chép mã key"
-                            onclick="window.copyKey('${keyVal}')"
+                            onclick="window.copyKey(this.closest('tr').dataset.key)"
                             style="padding:2px 8px;font-size:0.68rem;flex-shrink:0;line-height:1.6;">
                             <i class="fa-regular fa-copy"></i>
                         </button>
@@ -363,7 +369,9 @@
         const maKey   = document.getElementById("keyFormMaKey")?.value?.trim().toUpperCase();
         const tenHost = document.getElementById("keyFormTenHost")?.value?.trim();
         const sdtHost = document.getElementById("keyFormSdtHost")?.value?.trim();
-        const soNgay  = Number(document.getElementById("keyFormSoNgay")?.value) || 30;
+        // B4: ưu tiên ô tùy chỉnh keyCustomDays; fallback về hidden input
+        const customDays = parseInt(document.getElementById("keyCustomDays")?.value);
+        const soNgay  = customDays > 0 ? customDays : (Number(document.getElementById("keyFormSoNgay")?.value) || 30);
         const status  = document.getElementById("keyFormStatus")?.value || "Chưa kích hoạt";
 
         if (!maKey) {
@@ -401,6 +409,9 @@
                 await window.dbEngine.ghi("quan_ly_key", payload);
                 window.hienToast("Tạo Key thành công! 🔑", `Key ${maKey} — Host nhập key để kích hoạt.`, "success");
             }
+            // B4: reset ô nhập tùy chỉnh sau khi lưu thành công
+            const _cde = document.getElementById("keyCustomDays");
+            if (_cde) _cde.value = "";
             window.dongModalKey();
             await _taiDanhSachKey();
         } catch (e) {
@@ -1308,18 +1319,31 @@
      *   isCustom = false (mặc định) → highlight nút tương ứng, clear custom input */
     window._chonSoNgay = function(val, isCustom) {
         const hidden  = document.getElementById("keyFormSoNgay");
-        const custEl  = document.getElementById("input-custom-days");
+        const custEl  = document.getElementById("keyCustomDays");
         // val=0 nghĩa là Vĩnh Viễn → lưu 9999 để luuKey() tính ngày_het_han xa
         const stored  = (val === 0) ? 9999 : val;
         if (hidden) hidden.value = String(stored);
 
+        // B2: cập nhật inline style active/inactive cho từng nút segmented
+        const _applyBtnStyle = (btn, isActive) => {
+            if (isActive) {
+                btn.style.background = "#4f46e5"; // indigo-600 (K1: active)
+                btn.style.color      = "#fff";
+                btn.classList.add("kf-day-active");
+            } else {
+                btn.style.background = "#1e293b"; // slate-800 (K1: inactive)
+                btn.style.color      = "#cbd5e1"; // slate-300
+                btn.classList.remove("kf-day-active");
+            }
+        };
+
         if (isCustom) {
             // Nhập tay: bỏ highlight tất cả nút
-            document.querySelectorAll(".kf-day-btn").forEach(b => b.classList.remove("kf-day-active"));
+            document.querySelectorAll(".kf-day-btn").forEach(b => _applyBtnStyle(b, false));
         } else {
             // Bấm nút: highlight đúng nút, xóa custom input
             document.querySelectorAll(".kf-day-btn").forEach(b => {
-                b.classList.toggle("kf-day-active", Number(b.dataset.val) === Number(val));
+                _applyBtnStyle(b, Number(b.dataset.val) === Number(val));
             });
             if (custEl) custEl.value = "";
         }
@@ -1334,10 +1358,12 @@
         // Nếu chỉ 1 key → dùng luồng cũ luuKey()
         if (qty === 1) { window.luuKey(); return; }
 
-        const tenBase = document.getElementById("keyFormTenHost")?.value?.trim() || "Host";
-        const sdt     = document.getElementById("keyFormSdtHost")?.value?.trim() || "";
-        const soNgay  = Number(document.getElementById("keyFormSoNgay")?.value) || 30;
-        const status  = document.getElementById("keyFormStatus")?.value || "Chưa kích hoạt";
+        const tenBase    = document.getElementById("keyFormTenHost")?.value?.trim() || "Host";
+        const sdt        = document.getElementById("keyFormSdtHost")?.value?.trim() || "";
+        // B4: ưu tiên ô tùy chỉnh keyCustomDays
+        const _customB4  = parseInt(document.getElementById("keyCustomDays")?.value);
+        const soNgay     = _customB4 > 0 ? _customB4 : (Number(document.getElementById("keyFormSoNgay")?.value) || 30);
+        const status     = document.getElementById("keyFormStatus")?.value || "Chưa kích hoạt";
 
         const btn = document.querySelector('[onclick="window.taoNhieuKey()"]');
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tạo...'; }
@@ -1355,6 +1381,9 @@
             }
             await Promise.all(promises);
             window.hienToast("Tạo hàng loạt thành công 🔑", `Đã tạo ${qty} key mới.`, "success");
+            // B4: reset ô tùy chỉnh sau khi tạo
+            const _cde2 = document.getElementById("keyCustomDays");
+            if (_cde2) _cde2.value = "";
             window.dongModalKey();
             await _taiDanhSachKey();
         } catch (e) {

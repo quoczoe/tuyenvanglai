@@ -668,6 +668,10 @@
                             </button>
                         </div>
                         <div id="shuttlecockListContainer"></div>
+                        <!-- C1: Hiển thị tổng chi phí cầu dự kiến -->
+                        <div id="tongChiPhiCau" style="margin-top:8px;padding:8px 12px;background:rgba(255,255,255,0.03);border:1px solid #1e3a5f;border-radius:8px;font-size:0.85rem;color:#94a3b8;">
+                            Tổng chi phí cầu dự kiến: <span style="color:#00ff88;font-weight:700;">0đ</span>
+                        </div>
                     </div>
 
                     <!-- Tiền nước -->
@@ -829,13 +833,26 @@
             <button class="modal-close" onclick="dongModalDanhSachKhach()"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="modal-body">
+            <!-- C5: Hướng dẫn sử dụng checkbox xác nhận -->
+            <div style="margin-bottom:10px;padding:8px 12px;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.25);border-radius:8px;font-size:0.78rem;color:#94a3b8;">
+                <i class="fa-solid fa-circle-info" style="color:#60a5fa;margin-right:6px;"></i>
+                Tích chọn ô <b style="color:#e2e8f0;">Xác nhận tham gia</b> để xác thực khách đã đến sân. Bỏ tích để đặt lại trạng thái "Chờ đánh".
+            </div>
             <div class="hud-table-wrapper" style="max-height:400px;overflow-y:auto;">
                 <table class="hud-table">
                     <thead>
-                        <tr><th>Tên khách</th><th>SĐT Zalo</th><th>Mã slot</th><th>Trạng thái</th><th>Cập nhật</th></tr>
+                        <!-- C5: 6 cột mới — bỏ Mã slot, thêm STT + Giới Tính + Xác nhận tham gia -->
+                        <tr>
+                            <th style="width:40px;text-align:center;">STT</th>
+                            <th>Tên Khách</th>
+                            <th>SĐT</th>
+                            <th>Giới Tính</th>
+                            <th>Trạng Thái</th>
+                            <th style="text-align:center;">Xác nhận tham gia</th>
+                        </tr>
                     </thead>
                     <tbody id="danhSachKhachBody">
-                        <tr><td colspan="5" style="text-align:center;padding:16px;color:#64748b;">Đang tải...</td></tr>
+                        <tr><td colspan="6" style="text-align:center;padding:16px;color:#64748b;">Đang tải...</td></tr>
                     </tbody>
                 </table>
             </div>

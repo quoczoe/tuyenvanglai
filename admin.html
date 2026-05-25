@@ -657,6 +657,54 @@
         }
         .mv-btn-danger:hover { background: #dc2626; border-color: #dc2626; }
 
+        /* ── K1: Số ngày — nút chọn nhanh ── */
+        .kf-day-btn {
+            background: #1e293b;          /* slate-800 */
+            color: #cbd5e1;               /* slate-300 */
+            border: none;
+            border-radius: 8px;           /* rounded-lg */
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: color 0.15s, background 0.15s;
+            white-space: nowrap;
+        }
+        .kf-day-btn:not(.kf-day-active):hover { background: #334155; } /* slate-700 */
+        .kf-day-active {
+            background: #4f46e5 !important; /* indigo-600 */
+            color: #fff !important;
+        }
+
+        /* ── K2: Nút Tạo Hàng Loạt ── */
+        .ad-btn-secondary {
+            background: #334155;          /* slate-700 */
+            color: #cbd5e1;               /* slate-200 */
+            border: 1px solid #475569;
+            border-radius: 8px;           /* rounded-lg */
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s, color 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .ad-btn-secondary:hover { background: #475569; } /* slate-600 */
+
+        /* ── K3: Select dropdown nền tối ── */
+        .ad-select option {
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+        .ad-select {
+            background: rgba(30,41,59,0.9);
+            color: #e2e8f0;
+        }
+
     </style>
 </head>
 <body data-theme="dark">
@@ -1135,28 +1183,29 @@
         </div>
         <div class="ad-form-group">
             <label class="ad-label">Số Ngày Sử Dụng</label>
-            <!-- B.2: Giữ hidden input để luuKey() đọc được; 6 nút bấm + custom input -->
+            <!-- B2: Giữ hidden input để luuKey() đọc được; 6 nút segmented tab + custom input -->
             <input type="hidden" id="keyFormSoNgay" value="30">
-            <div class="kf-day-btns" id="keyFormSoNgayBtns" style="flex-wrap:wrap;">
+            <div id="keyFormSoNgayBtns"
+                 style="display:flex;flex-wrap:wrap;gap:6px;">
                 <button type="button" class="kf-day-btn" data-val="1"
-                        onclick="window._chonSoNgay(1)">1 ngày</button>
+                        onclick="window._chonSoNgay(1)">1 Ngày</button>
                 <button type="button" class="kf-day-btn" data-val="3"
-                        onclick="window._chonSoNgay(3)">3 ngày</button>
+                        onclick="window._chonSoNgay(3)">3 Ngày</button>
                 <button type="button" class="kf-day-btn" data-val="7"
-                        onclick="window._chonSoNgay(7)">7 ngày</button>
+                        onclick="window._chonSoNgay(7)">7 Ngày</button>
                 <button type="button" class="kf-day-btn kf-day-active" data-val="30"
-                        onclick="window._chonSoNgay(30)">30 ngày</button>
+                        onclick="window._chonSoNgay(30)">30 Ngày</button>
                 <button type="button" class="kf-day-btn" data-val="90"
-                        onclick="window._chonSoNgay(90)">90 ngày</button>
+                        onclick="window._chonSoNgay(90)">90 Ngày</button>
                 <button type="button" class="kf-day-btn" data-val="0"
                         onclick="window._chonSoNgay(0)">∞ Vĩnh Viễn</button>
             </div>
             <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-                <input type="number" id="input-custom-days" class="ad-input"
-                       min="1" max="9999" placeholder="Số ngày tùy chỉnh"
+                <span style="font-size:0.78rem;color:#64748b;white-space:nowrap;flex-shrink:0;">Hoặc nhập số ngày:</span>
+                <input type="number" id="keyCustomDays" class="ad-input"
+                       min="1" max="9999" placeholder="Vd: 180"
                        style="flex:1;"
                        oninput="if(this.value>0)window._chonSoNgay(Number(this.value),true);">
-                <span style="font-size:0.78rem;color:#64748b;white-space:nowrap;">ngày tùy chỉnh</span>
             </div>
         </div>
         <div class="ad-form-group">
@@ -1171,7 +1220,7 @@
         <!-- B.3: Tạo hàng loạt -->
         <div class="ad-form-group" style="margin-top:8px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
             <label class="ad-label">Số lượng Key tạo cùng lúc</label>
-            <div style="display:flex;gap:8px;align-items:center;">
+            <div style="display:flex;gap:8px;align-items:stretch;">
                 <input type="number" class="ad-input" id="keyFormBatchQty"
                        value="1" min="1" max="20" style="width:80px;flex-shrink:0;">
                 <button class="ad-btn-secondary" onclick="window.taoNhieuKey()" type="button"

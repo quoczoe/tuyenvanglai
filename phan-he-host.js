@@ -430,7 +430,7 @@
         const div   = document.createElement("div");
         div.className = "shuttlecock-row";
         div.id = `row_${id}`;
-        const giaLe = loai === "12" ? Math.round(gia / 12) : loai === "6" ? Math.round(gia / 6) : gia;
+        // C1: Bỏ cột "Giá 1 quả lẻ" — 3 option quy cách — label "Giá"
         div.innerHTML = `
         <div class="sc-row-grid">
             <div class="form-group" style="margin-bottom:0;position:relative;">
@@ -441,27 +441,27 @@
                     list="badminton-shuttles" autocomplete="off">
                 <div id="scSuggest_${id}" style="position:absolute;top:100%;left:0;right:0;background:hsl(var(--card));border:1px solid var(--border);border-radius:var(--radius-sm);max-height:140px;overflow-y:auto;z-index:50;display:none;"></div>
             </div>
-            <div class="form-group" style="margin-bottom:0;">
+            <div class="form-group" style="margin-bottom:0;min-width:130px;">
                 <label class="form-label" style="font-size:0.7rem;">Quy cách</label>
-                <select class="form-control" id="scLoai_${id}" onchange="window._dongBoGia('${id}','loai')">
+                <select class="form-control" id="scLoai_${id}"
+                    onchange="window._dongBoGia('${id}','loai');window._tinhChiPhiCau();">
                     <option value="12" ${loai==="12"?"selected":""}>Ống 12 quả</option>
-                    <option value="1"  ${loai==="1"?"selected":""}>Quả lẻ</option>
+                    <option value="6"  ${loai==="6" ?"selected":""}>Ống 6 quả</option>
+                    <option value="1"  ${loai==="1" ?"selected":""}>Lẻ 1 quả</option>
                 </select>
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label" style="font-size:0.7rem;">Giá/Ống hoặc /Quả lẻ</label>
+                <label class="form-label" style="font-size:0.7rem;">Giá</label>
                 <input type="number" class="form-control" id="scGiaOng_${id}" value="${gia}"
-                    placeholder="Giá ống" onchange="window._dongBoGia('${id}','ong')">
-            </div>
-            <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label" style="font-size:0.7rem;">Giá 1 quả lẻ</label>
-                <input type="number" class="form-control" id="scGiaLe_${id}" value="${giaLe}"
-                    placeholder="Auto tính" onchange="window._dongBoGia('${id}','le')">
+                    placeholder="Giá ống"
+                    onchange="window._dongBoGia('${id}','ong')"
+                    oninput="window._tinhChiPhiCau()">
             </div>
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label" style="font-size:0.7rem;">Đã dùng (quả)</label>
                 <input type="number" class="form-control" id="scDaDung_${id}" value="${daDung}"
-                    min="0" placeholder="0" oninput="_tinhGoiYGia()">
+                    min="0" placeholder="0"
+                    oninput="_tinhGoiYGia();window._tinhChiPhiCau();">
             </div>
             <div style="display:flex;align-items:flex-end;">
                 <button type="button" class="btn-remove-sc" onclick="window.xoaLoaiCau('${id}')" title="Xóa loại cầu này">
@@ -472,21 +472,40 @@
         ctr.appendChild(div);
         window.shuttlecocksList.push(id);
         _tinhGoiYGia();
+        _tinhChiPhiCau();
     }
 
+    // C1: scGiaLe_ đã bị xóa — _dongBoGia chỉ cần trigger tính toán lại
     window._dongBoGia = function (id, nguon) {
         const loaiEl  = document.getElementById(`scLoai_${id}`);
         const giOngEl = document.getElementById(`scGiaOng_${id}`);
-        const giLeEl  = document.getElementById(`scGiaLe_${id}`);
-        if (!loaiEl || !giOngEl || !giLeEl) return;
-        const loai = Number(loaiEl.value);
-        if (nguon === "ong" || nguon === "loai") {
-            if (loai > 1) giLeEl.value = Math.round(Number(giOngEl.value || 0) / loai);
-        } else if (nguon === "le") {
-            if (loai > 1) giOngEl.value = Math.round(Number(giLeEl.value || 0) * loai);
-        }
+        if (!loaiEl || !giOngEl) return;
+        // Không còn sync scGiaLe_ — chỉ cập nhật gợi ý giá
         _tinhGoiYGia();
+        _tinhChiPhiCau();
     };
+
+    /* ═══════════════════════════════════════════════════
+     * C2 — TÍNH CHI PHÍ CẦU TIÊU THỤ
+     * Lặp qua tất cả hàng cầu → tính tổng → cập nhật #tongChiPhiCau
+     * ═══════════════════════════════════════════════════ */
+    function _tinhChiPhiCau() {
+        let tongChi = 0;
+        (window.shuttlecocksList || []).forEach(scId => {
+            const loai  = document.getElementById(`scLoai_${scId}`)?.value || "12";
+            const gia   = Number(document.getElementById(`scGiaOng_${scId}`)?.value) || 0;
+            const soQua = parseInt(document.getElementById(`scDaDung_${scId}`)?.value) || 0;
+            let giaMoiQua = gia;
+            if      (loai === "12") giaMoiQua = gia / 12;
+            else if (loai === "6")  giaMoiQua = gia / 6;
+            // loai === "1" → giaMoiQua = gia (đã là giá 1 quả)
+            tongChi += Math.round(giaMoiQua * soQua);
+        });
+        const el = document.querySelector('#tongChiPhiCau span');
+        if (el) el.textContent = tongChi.toLocaleString('vi-VN') + 'đ';
+        return tongChi;
+    }
+    window.tinhChiPhiCau = _tinhChiPhiCau;
 
     window.xoaLoaiCau = function (id) {
         if (window.shuttlecocksList.length <= 1) {
@@ -532,17 +551,10 @@
         const soNu     = Number(document.getElementById("hostAccountingEstFemale")?.value) || 0;
         const chenh    = _parseCurrency("hostAccountingGap");
 
-        const tienSan = giaSanH * dur * soSan;
-        let tienCau = 0;
-        window.shuttlecocksList.forEach(id => {
-            const loai   = Number(document.getElementById(`scLoai_${id}`)?.value) || 12;
-            const giaOng = Number(document.getElementById(`scGiaOng_${id}`)?.value) || 0;
-            const daDung = Number(document.getElementById(`scDaDung_${id}`)?.value) || 0;
-            const giaLe  = loai > 1 ? giaOng / loai : giaOng;
-            tienCau += giaLe * daDung;
-        });
-
-        const tongCP    = tienSan + tienCau + tienNuoc;
+        // C3: công thức chuẩn — dùng _tinhChiPhiCau() (cũng cập nhật #tongChiPhiCau)
+        const tienSan = giaSanH * dur * soSan;             // tongChiPhiSan = tienThue1Gio * tongGioChoi * soLuongSan
+        const tienCau = _tinhChiPhiCau();                  // tongChiPhiCau — tính và hiển thị
+        const tongCP  = tienSan + tienCau + tienNuoc;      // tongChiPhiCaDau
         const tongNguoi = soNam + soNu;
 
         const tongCPEl = document.getElementById("hostTotalCost");
@@ -562,8 +574,8 @@
         }
 
         const beBreak = tinhGiaNamNu(tongCP);
-        const beSmall = tinhGiaNamNu(tongCP * 1.12);
-        const beBig   = tinhGiaNamNu(tongCP * 1.32);
+        const beSmall = tinhGiaNamNu(tongCP * 1.1);
+        const beBig   = tinhGiaNamNu(tongCP * 1.2);
 
         _calcBreakEvenMale = beBreak.giaNam; _calcBreakEvenFemale = beBreak.giaNu;
         _calcSmallMale = beSmall.giaNam;     _calcSmallFemale = beSmall.giaNu;
@@ -699,7 +711,9 @@
             const thanh_tien = gia_qua * daDung;
             tong_chi_phi_cau += thanh_tien;
             const donViMap = { "12": "ống 12 quả", "6": "ống 6 quả", "1": "quả lẻ" };
-            return { ten, don_vi: donViMap[String(loai)] || "ống", gia_qua, so_luong: daDung, thanh_tien, gia_ong: giaOng, loai };
+            // C4: thêm quy_cach để phân biệt đơn vị tính khi đọc lại
+            const quy_cach = loai === 12 ? "ong12" : loai === 6 ? "ong6" : "le1";
+            return { ten, quy_cach, don_vi: donViMap[String(loai)] || "ống", gia_qua, so_luong: daDung, thanh_tien, gia_ong: giaOng, loai };
         });
 
         // HH5: Số slot cần tuyển (tối đa)
@@ -998,7 +1012,7 @@
 
         overlay.dataset.slotId = slotId;
         overlay.style.display  = "flex";
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:#64748b;">Đang tải...</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:#64748b;">Đang tải...</td></tr>`;
 
         try {
             // Tải thông tin ca đấu và danh sách dat_slot song song
@@ -1015,32 +1029,38 @@
             }
 
             if (datSlotList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:#64748b;">Chưa có khách đăng ký.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:#64748b;">Chưa có khách đăng ký.</td></tr>`;
                 return;
             }
 
             tbody.innerHTML = "";
-            datSlotList.forEach(g => {
+            datSlotList.forEach((g, idx) => {
                 const tt = g.trang_thai_di_danh || "Chờ đánh";
                 const statusClass = tt === "Đã tham gia" ? "status-active" : tt === "Bùng kèo" ? "status-closed" : "status-pending";
+                // C6: icon giới tính
+                const gioiTinhHtml = g.gioi_tinh === "female"
+                    ? '<span style="color:#f472b6;">👩 Nữ</span>'
+                    : '<span style="color:#60a5fa;">👨 Nam</span>';
+                // C6: checkbox xác nhận tham gia (disabled khi đã chốt)
+                const cbChecked  = tt === "Đã tham gia" ? "checked" : "";
+                const cbDisabled = isChot ? "disabled" : "";
+                const cbHtml = `<input type="checkbox" ${cbChecked} ${cbDisabled}
+                    data-guest-id="${g.id}"
+                    onchange="window.xacNhanThamGia(this)"
+                    style="width:18px;height:18px;cursor:${isChot ? 'not-allowed' : 'pointer'};">`;
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
+                <td style="text-align:center;color:#64748b;font-size:0.78rem;">${idx + 1}</td>
                 <td style="font-size:0.82rem;font-weight:700;">${g.ten_khach || "--"}</td>
                 <td style="font-size:0.8rem;color:#94a3b8;">${g.sdt_khach || "--"}</td>
-                <td><span class="slot-code">${g.ma_slot || "--"}</span></td>
+                <td>${gioiTinhHtml}</td>
                 <td><span class="status-badge ${statusClass}">${tt}</span></td>
-                <td>
-                    ${!isChot ? `
-                    <div style="display:flex;gap:4px;flex-wrap:wrap;">
-                        <button class="btn-mini btn-mini-green" onclick="window.capNhatTrangThaiKhach('${g.id}', 'Đã tham gia')">✅ Đã đến</button>
-                        <button class="btn-mini btn-mini-red" onclick="window.capNhatTrangThaiKhach('${g.id}', 'Bùng kèo')">❌ Bùng</button>
-                    </div>` : "<span style='color:#64748b;font-size:0.72rem;'>Đã chốt</span>"}
-                </td>`;
+                <td style="text-align:center;">${cbHtml}</td>`;
                 tbody.appendChild(tr);
             });
         } catch (e) {
             console.error("Lỗi tải danh sách khách:", e);
-            tbody.innerHTML = `<tr><td colspan="5" style="color:red;padding:20px;">Lỗi tải dữ liệu.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" style="color:red;padding:20px;">Lỗi tải dữ liệu.</td></tr>`;
         }
     };
 
@@ -1060,6 +1080,19 @@
             await _taiLichSuCaDau();
         } catch (e) {
             window.hienToast("Lỗi", "Không thể cập nhật trạng thái.", "danger");
+        }
+    };
+
+    /* C6 — Xác nhận tham gia qua checkbox */
+    window.xacNhanThamGia = async function (checkbox) {
+        const guestId   = checkbox.dataset.guestId;
+        const trangThai = checkbox.checked ? "Đã tham gia" : "Chờ đánh";
+        try {
+            await window.capNhatTrangThaiKhach(guestId, trangThai);
+        } catch (e) {
+            // Rollback visual state nếu lỗi
+            checkbox.checked = !checkbox.checked;
+            window.hienToast("Lỗi cập nhật", "Thử lại sau.", "danger");
         }
     };
 
