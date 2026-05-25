@@ -738,9 +738,6 @@
         // HH5: Số slot cần tuyển (tối đa)
         const tong_slot_can = Number(document.getElementById("input-total-slots")?.value) || null;
 
-        // H-JS2: Chỉ gửi field có trong schema ca_dau thực tế
-        // tong_chi_phi_san bị xóa (không có trong schema — dùng chi_phi_san_co_dinh)
-        // tong_slot_can chỉ gửi khi đã chạy SQL migration (ALTER TABLE ca_dau ADD COLUMN tong_slot_can)
         const payload = {
             ma_key_host: window.currentHostKey,
             vung_mien:   _xacDinhVungMien(tinh_thanh),
@@ -750,13 +747,13 @@
             gioi_tinh_can, yeu_cau_trinh_do,
             gia_nam, gia_nu, tien_ich_bao_gom,
             gia_thue_san_1h, chi_phi_san_co_dinh,
+            tong_chi_phi_san: chi_phi_san_co_dinh,          // = gia_thue_san_1h × so_gio_choi × so_san_mo
             loai_cau_su_dung, tong_chi_phi_cau, chi_phi_nuoc_khac,
             so_nguoi_nam, so_nguoi_nu, chenh_lech_gia,
             tong_doanh_thu_du_kien,
+            tong_slot_can: tong_slot_can || 0,               // cột đã được ALTER TABLE thêm vào
             da_chot_ca: false
         };
-        // Gắn tong_slot_can sau khi chạy: ALTER TABLE ca_dau ADD COLUMN tong_slot_can INTEGER DEFAULT 0
-        if (tong_slot_can !== null && tong_slot_can > 0) payload.tong_slot_can = tong_slot_can;
 
         const btn = document.getElementById("btnDangCa");
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang đăng...'; }
@@ -1094,14 +1091,98 @@
 
     /**
      * H-JS3: openGuestListModal(matchId, matchTitle)
-     * Wrapper của moModalDanhSachKhach — nhận thêm tham số tiêu đề để hiển thị.
+     * Mở modal #modal-guest-list, fetch dat_slot từ DB, render bảng khách.
      * onclick="window.openGuestListModal(id, tenSan)" từ bảng ca đấu.
      */
     window.openGuestListModal = async function (matchId, matchTitle) {
-        // Nếu có tiêu đề truyền vào, cập nhật trước khi tải dữ liệu
-        const header = document.getElementById("modalKhachHeader");
-        if (header && matchTitle) header.textContent = matchTitle;
-        await window.moModalDanhSachKhach(matchId);
+        const modal   = document.getElementById("modal-guest-list");
+        const title   = document.getElementById("modal-guest-list-title");
+        const tbody   = document.getElementById("modal-guest-list-body");
+        const loading = document.getElementById("modal-guest-list-loading");
+        const empty   = document.getElementById("modal-guest-list-empty");
+        const table   = document.getElementById("modal-guest-list-table");
+        if (!modal) return;
+
+        // Ghi nhớ matchId trên modal để xacNhanThamGia có thể reload
+        modal.dataset.matchId = matchId;
+
+        // Cập nhật tiêu đề
+        if (title) title.textContent = matchTitle ? `DS Khách — ${matchTitle}` : "Danh Sách Khách";
+
+        // Xóa nội dung cũ, hiện loading
+        if (tbody)   tbody.innerHTML = "";
+        if (loading) loading.style.display = "block";
+        if (empty)   empty.style.display   = "none";
+        if (table)   table.style.display   = "none";
+
+        // Hiện modal
+        modal.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+
+        try {
+            // Fetch danh sách khách đăng ký ca này
+            const guests = await window.dbEngine.doc("dat_slot", { eq: { id_ca_dau: matchId } });
+
+            if (loading) loading.style.display = "none";
+
+            if (!guests || guests.length === 0) {
+                if (empty) empty.style.display = "block";
+                return;
+            }
+
+            // Render bảng
+            if (table) table.style.display = "table";
+            const rowsHTML = guests.map((g, idx) => {
+                const trangThai  = g.trang_thai_di_danh || "Chờ đánh";
+                const isActive   = trangThai === "Đã tham gia";
+                const isHuy      = trangThai === "Khách hủy" || trangThai === "Bùng kèo";
+                const gioiTinh   = g.gioi_tinh === "female" ? "Nữ" : "Nam";
+                const genderClr  = g.gioi_tinh === "female" ? "#f472b6" : "#60a5fa";
+
+                // Badge trạng thái
+                let badgeStyle = "background:rgba(100,116,139,0.2);color:#94a3b8;";
+                if (isActive) badgeStyle = "background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.3);";
+                else if (isHuy) badgeStyle = "background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);";
+
+                // Checkbox xác nhận — ẩn nếu đã hủy
+                const checkboxHTML = isHuy
+                    ? `<span style="color:#475569;font-size:0.75rem;">—</span>`
+                    : `<input type="checkbox"
+                            data-guest-id="${g.id}"
+                            data-ca-id="${matchId}"
+                            ${isActive ? "checked" : ""}
+                            onchange="window.xacNhanThamGia(this)"
+                            style="width:16px;height:16px;accent-color:#00ff88;cursor:pointer;">`;
+
+                return `<tr style="border-bottom:1px solid rgba(30,58,95,0.5);transition:background 0.12s;"
+                            onmouseover="this.style.background='rgba(30,58,95,0.35)'"
+                            onmouseout="this.style.background='transparent'">
+                    <td style="padding:10px;text-align:center;color:#64748b;">${idx + 1}</td>
+                    <td style="padding:10px;color:#e2e8f0;font-weight:500;">${g.ten_khach || "—"}</td>
+                    <td style="padding:10px;color:#94a3b8;font-family:monospace;">${g.sdt_khach || "—"}</td>
+                    <td style="padding:10px;text-align:center;color:${genderClr};">${gioiTinh}</td>
+                    <td style="padding:10px;text-align:center;">
+                        <span style="padding:3px 9px;border-radius:10px;font-size:0.75rem;font-weight:600;${badgeStyle}">${trangThai}</span>
+                    </td>
+                    <td style="padding:10px;text-align:center;">${checkboxHTML}</td>
+                </tr>`;
+            }).join("");
+
+            if (tbody) tbody.innerHTML = rowsHTML;
+
+        } catch (err) {
+            if (loading) loading.style.display = "none";
+            if (tbody)   tbody.innerHTML = `<tr><td colspan="6" style="padding:24px;text-align:center;color:#f87171;">Lỗi tải danh sách: ${(err.message || "").slice(0, 80)}</td></tr>`;
+            if (table)   table.style.display = "table";
+            console.error("openGuestListModal error:", err);
+        }
+    };
+
+    /** H-JS3: Đóng modal #modal-guest-list */
+    window.closeGuestListModal = function () {
+        const modal = document.getElementById("modal-guest-list");
+        if (modal) modal.classList.add("hidden");
+        document.body.style.overflow = "";
     };
 
     /* Cập nhật trạng thái khách qua bảng dat_slot */
@@ -1131,9 +1212,13 @@
         try {
             await window.dbEngine.ghi("dat_slot", { trang_thai_di_danh: trangThai }, { id: guestId });
             window.hienToast("Đã cập nhật trạng thái", trangThai, "success");
-            // Reload modal và bảng ca đấu (background — không await để UI không bị freeze)
-            const overlay = document.getElementById("modalDanhSachKhachOverlay");
-            if (overlay?.dataset.slotId) window.moModalDanhSachKhach(overlay.dataset.slotId).catch(() => {});
+            // Reload modal #modal-guest-list và bảng ca đấu (background — không await để UI không bị freeze)
+            const modal = document.getElementById("modal-guest-list");
+            if (modal?.dataset.matchId) {
+                const titleEl = document.getElementById("modal-guest-list-title");
+                const currentTitle = titleEl ? titleEl.textContent.replace(/^DS Khách — /, "") : "";
+                window.openGuestListModal(modal.dataset.matchId, currentTitle).catch(() => {});
+            }
             _taiLichSuCaDau().catch(() => {});
         } catch (e) {
             // Rollback checkbox về trạng thái trước khi click

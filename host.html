@@ -397,6 +397,9 @@
                 min-width: 80px;
             }
         }
+
+        /* H-JS3: helper ẩn/hiện modal */
+        .hidden { display: none !important; }
     </style>
 </head>
 <body data-theme="dark">
@@ -687,7 +690,7 @@
                         <label class="hs-label">Tiền thuê sân / 1 giờ (VNĐ)</label>
                         <input type="text" class="hs-input" id="hostAccountingCourtPrice"
                             value="80.000" inputmode="numeric"
-                            oninput="window._formatInputTienTe(this)" onchange="tinhToanPricingGoiY()">
+                            oninput="window._formatInputTienTe(this);tinhToanPricingGoiY();" onchange="tinhToanPricingGoiY()">
                         <!-- H-JS1: #hostTotalCost hiển thị chi phí sân (giá/giờ × giờ × sân) -->
                         <span class="hs-hint">Chi phí sân: <strong id="hostTotalCost" style="color:#fbbf24;">0đ</strong></span>
                     </div>
@@ -712,17 +715,17 @@
                         <label class="hs-label">Tiền nước / Chi phí phát sinh (VNĐ)</label>
                         <input type="text" class="hs-input" id="hostAccountingWaterCost"
                             value="30.000" inputmode="numeric"
-                            oninput="window._formatInputTienTe(this)" onchange="tinhToanPricingGoiY()">
+                            oninput="window._formatInputTienTe(this);tinhToanPricingGoiY();" onchange="tinhToanPricingGoiY()">
                     </div>
 
                     <!-- Số người -->
                     <div class="hs-form-group">
                         <label class="hs-label">Số Nam dự kiến</label>
-                        <input type="number" class="hs-input" id="hostAccountingEstMale" value="6" min="0" onchange="tinhToanPricingGoiY()">
+                        <input type="number" class="hs-input" id="hostAccountingEstMale" value="6" min="0" oninput="tinhToanPricingGoiY();" onchange="tinhToanPricingGoiY()">
                     </div>
                     <div class="hs-form-group">
                         <label class="hs-label">Số Nữ dự kiến</label>
-                        <input type="number" class="hs-input" id="hostAccountingEstFemale" value="4" min="0" onchange="tinhToanPricingGoiY()">
+                        <input type="number" class="hs-input" id="hostAccountingEstFemale" value="4" min="0" oninput="tinhToanPricingGoiY();" onchange="tinhToanPricingGoiY()">
                     </div>
 
                     <!-- Chênh lệch -->
@@ -730,7 +733,7 @@
                         <label class="hs-label">Chênh lệch Nam cao hơn Nữ (VNĐ)</label>
                         <input type="text" class="hs-input" id="hostAccountingGap"
                             value="5.000" inputmode="numeric"
-                            oninput="window._formatInputTienTe(this)" onchange="tinhToanPricingGoiY()">
+                            oninput="window._formatInputTienTe(this);tinhToanPricingGoiY();" onchange="tinhToanPricingGoiY()">
                         <span class="hs-hint">Nhập 0 để chia đều. Âm = Nữ cao hơn Nam.</span>
                     </div>
 
@@ -1036,5 +1039,61 @@ console.log=()=>{};
     <option value="Kawa King Kong 500">
     <option value="VNB M01">
 </datalist>
+
+<!-- ══════════════════════════════════════════════════════════
+     H-JS3: Modal danh sách khách — id="modal-guest-list"
+     Hiển thị/ẩn bằng classList.remove/add('hidden')
+     ══════════════════════════════════════════════════════════ -->
+<div id="modal-guest-list" class="hidden"
+     style="position:fixed;inset:0;z-index:1100;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.72);"
+     onclick="if(event.target===this)window.closeGuestListModal()">
+    <div style="background:#0f1e35;border:1px solid #1e3a5f;border-radius:14px;width:min(96vw,780px);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.6);">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px 14px;border-bottom:1px solid #1e3a5f;flex-shrink:0;">
+            <div>
+                <h3 id="modal-guest-list-title" style="margin:0;font-size:1.05rem;color:#e2e8f0;font-weight:700;">Danh Sách Khách</h3>
+                <p style="margin:4px 0 0;font-size:0.75rem;color:#64748b;">Tích chọn ô <strong style="color:#00ff88;">Xác nhận tham gia</strong> để xác thực người đã đến sân thực tế.</p>
+            </div>
+            <button onclick="window.closeGuestListModal()"
+                    style="background:rgba(100,116,139,0.2);border:1px solid rgba(100,116,139,0.4);color:#94a3b8;font-size:1.1rem;line-height:1;padding:6px 10px;border-radius:7px;cursor:pointer;font-family:inherit;transition:background 0.15s;"
+                    onmouseover="this.style.background='rgba(239,68,68,0.18)';this.style.color='#f87171'"
+                    onmouseout="this.style.background='rgba(100,116,139,0.2)';this.style.color='#94a3b8'">✕</button>
+        </div>
+        <!-- Body — scrollable -->
+        <div style="overflow-y:auto;flex:1;padding:16px 22px 20px;">
+            <div id="modal-guest-list-loading" style="text-align:center;padding:32px;color:#64748b;display:none;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;margin-bottom:8px;display:block;"></i>
+                Đang tải danh sách...
+            </div>
+            <div id="modal-guest-list-empty" style="text-align:center;padding:32px;color:#64748b;display:none;">
+                <i class="fa-solid fa-users-slash" style="font-size:2rem;display:block;margin-bottom:10px;"></i>
+                Chưa có khách nào đăng ký ca này.
+            </div>
+            <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+                <table style="width:100%;border-collapse:collapse;font-size:0.84rem;" id="modal-guest-list-table">
+                    <thead>
+                        <tr style="background:rgba(30,58,95,0.7);">
+                            <th style="padding:9px 10px;text-align:center;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">STT</th>
+                            <th style="padding:9px 10px;text-align:left;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">Tên Khách</th>
+                            <th style="padding:9px 10px;text-align:left;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">SĐT</th>
+                            <th style="padding:9px 10px;text-align:center;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">Giới Tính</th>
+                            <th style="padding:9px 10px;text-align:center;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">Trạng Thái</th>
+                            <th style="padding:9px 10px;text-align:center;color:#94a3b8;font-weight:600;border-bottom:1px solid #1e3a5f;white-space:nowrap;">Xác nhận tham gia</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modal-guest-list-body"></tbody>
+                </table>
+            </div>
+        </div>
+        <!-- Footer -->
+        <div style="padding:12px 22px;border-top:1px solid #1e3a5f;display:flex;justify-content:flex-end;flex-shrink:0;">
+            <button onclick="window.closeGuestListModal()"
+                    style="background:rgba(30,58,95,0.6);border:1px solid #2d4a6e;color:#94a3b8;padding:8px 20px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;">
+                Đóng
+            </button>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>
