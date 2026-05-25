@@ -401,60 +401,66 @@
             }
         }
 
-        /* R2: Mobile (≤768px) — chuyển mỗi loại cầu thành card dọc */
+        /* R2: Mobile (≤768px) — bảng cầu 2×2 grid, đều đẹp */
         @media (max-width: 768px) {
-            /* Không cần scroll ngang nữa — layout thẳng đứng */
             #shuttlecockListContainer {
                 overflow-x: visible;
             }
-            /* Mỗi .sc-row-grid → cột flex dọc */
+            /* Grid 2 cột đều nhau */
             #shuttlecockListContainer .sc-row-grid {
+                display: grid !important;
+                grid-template-columns: 1fr 1fr !important;
+                gap: 10px 12px !important;
+            }
+            /* TÊN CẦU (ô đầu tiên): chiếm full width */
+            #shuttlecockListContainer .sc-row-grid > .form-group:first-child {
+                grid-column: 1 / -1;
+            }
+            /* Nút xóa (ô cuối): chiếm full width, căn phải */
+            #shuttlecockListContainer .sc-row-grid > div:last-child {
+                grid-column: 1 / -1;
+                display: flex !important;
+                justify-content: flex-end;
+                align-items: center;
+                padding-top: 2px;
+            }
+            /* Mỗi field: label trên, input dưới */
+            #shuttlecockListContainer .sc-row-grid > .form-group {
                 display: flex !important;
                 flex-direction: column !important;
-                min-width: 0 !important;
-                gap: 0 !important;
-            }
-            /* Mỗi field = 1 dòng ngang: label bên trái + input bên phải */
-            #shuttlecockListContainer .sc-row-grid > .form-group {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                padding: 6px 0;
-                border-bottom: 1px solid rgba(255,255,255,0.06);
+                gap: 4px !important;
+                border-bottom: none !important;
+                padding: 0 !important;
                 min-width: 0;
             }
             /* Label */
             #shuttlecockListContainer .sc-row-grid .form-label {
-                font-size: 11px;
-                color: #94a3b8;
-                min-width: 110px;
-                flex-shrink: 0;
-                white-space: normal;
-                overflow: visible;
-                text-overflow: unset;
+                font-size: 0.65rem !important;
+                color: #94a3b8 !important;
+                font-weight: 600 !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.04em !important;
+                white-space: nowrap !important;
+                overflow: visible !important;
+                min-width: unset !important;
+                flex-shrink: unset !important;
             }
-            /* Input / Select */
+            /* Input / Select — full width của ô */
             #shuttlecockListContainer .sc-row-grid .form-control {
-                width: 100%;
-                max-width: 180px;
-                height: 36px;
-                padding: 0 10px;
-                border-radius: 8px;
-                min-width: 0;
-                flex: 1;
-                box-sizing: border-box;
-            }
-            /* Nút xóa dòng */
-            #shuttlecockListContainer .sc-row-grid > div:not(.form-group) {
-                display: flex;
-                justify-content: flex-end;
-                padding-top: 6px;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 38px !important;
+                padding: 0 10px !important;
+                border-radius: 8px !important;
+                min-width: 0 !important;
+                flex: unset !important;
+                box-sizing: border-box !important;
             }
             /* Đường phân cách giữa các loại cầu */
             #shuttlecockListContainer .shuttlecock-row + .shuttlecock-row {
                 border-top: 1px solid rgba(255,255,255,0.08);
-                padding-top: 10px;
-                margin-top: 10px;
+                padding-top: 12px;
+                margin-top: 8px;
             }
         }
 
@@ -882,13 +888,13 @@
                             oninput="window._formatInputTienTe(this)" onchange="tinhToanPricingGoiY()">
                     </div>
 
-                    <!-- HH5: Số slot cần tuyển -->
+                    <!-- HH5: Số slot cần tuyển — bắt buộc -->
                     <div class="hs-form-group">
-                        <label class="hs-label">Số Slot Cần Tuyển <span class="hs-hint" style="display:inline;font-size:0.7rem;">(tối đa)</span></label>
+                        <label class="hs-label">Số Slot Cần Tuyển <span style="color:#ef4444;font-size:0.8rem;">*</span> <span class="hs-hint" style="display:inline;font-size:0.7rem;">(tối đa)</span></label>
                         <input type="number" class="hs-input" id="input-total-slots"
-                            min="1" max="200" placeholder="Vd: 20"
+                            min="1" max="200" placeholder="Bắt buộc, Vd: 20" required
                             oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-                        <span class="hs-hint">Khi đủ slot → nút ĐẶT tự động bị khóa</span>
+                        <span class="hs-hint">Khi đủ slot hoặc đến giờ bắt đầu → nút ĐẶT bị khóa tự động</span>
                     </div>
 
                     <!-- Tiện ích -->
@@ -970,9 +976,9 @@
                 </div>
 
                 <!-- H-JS1: Tổng chi phí ca đấu = sân + cầu + nước -->
-                <div style="margin-top:12px;padding:10px 14px;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.25);border-radius:10px;font-size:0.85rem;color:#94a3b8;display:flex;justify-content:space-between;align-items:center;">
-                    <span><i class="fa-solid fa-calculator" style="margin-right:6px;color:#fbbf24;"></i>Tổng chi phí ca đấu (Sân + Cầu + Nước):</span>
-                    <strong id="hostTotalAllCost" style="color:#fbbf24;font-size:1rem;">0đ</strong>
+                <div style="margin-top:12px;padding:10px 14px;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.25);border-radius:10px;font-size:0.85rem;color:#94a3b8;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;">
+                    <span style="flex:1;min-width:180px;"><i class="fa-solid fa-calculator" style="margin-right:6px;color:#fbbf24;"></i>Tổng chi phí ca đấu (Sân + Cầu + Nước):</span>
+                    <strong id="hostTotalAllCost" style="color:#fbbf24;font-size:1.05rem;white-space:nowrap;">0đ</strong>
                 </div>
 
                 <!-- GỢI Ý THU TIỀN -->
@@ -1553,6 +1559,37 @@ console.log=()=>{};
             <button onclick="window.luuDanhGiaCa()"
                     style="background:linear-gradient(135deg,rgba(0,255,136,0.18),rgba(0,200,100,0.25));border:1px solid rgba(0,255,136,0.35);color:#00ff88;padding:8px 22px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;font-weight:700;">
                 <i class="fa-solid fa-floppy-disk"></i> Lưu
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     [FIX-1] Modal Xác Nhận Số Liệu Thực Tế Trước Khi Chốt Ca — z-index:1140
+     ══════════════════════════════════════════════════════════ -->
+<div id="modal-xacnhan-chot"
+     style="display:none;position:fixed;inset:0;z-index:1140;align-items:center;justify-content:center;background:rgba(0,0,0,0.8);padding:16px;"
+     onclick="if(event.target===this)window.dongModalXacNhanChot()">
+    <div style="background:#0f1e35;border:1px solid rgba(251,191,36,0.3);border-radius:14px;width:min(98vw,540px);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.7);">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0;">
+            <span style="font-size:0.95rem;font-weight:700;color:#fbbf24;display:flex;align-items:center;gap:8px;">
+                <i class="fa-solid fa-flag-checkered"></i> Xác Nhận Chốt Ca
+            </span>
+            <button onclick="window.dongModalXacNhanChot()"
+                style="background:rgba(100,116,139,0.2);border:1px solid rgba(100,116,139,0.4);color:#94a3b8;font-size:1.1rem;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">✕</button>
+        </div>
+        <!-- Body -->
+        <div id="modal-xacnhan-chot-body" style="overflow-y:auto;flex:1;padding:18px 20px 16px;"></div>
+        <!-- Footer -->
+        <div style="display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid rgba(255,255,255,0.07);flex-shrink:0;">
+            <button onclick="window.dongModalXacNhanChot()"
+                style="background:rgba(100,116,139,0.15);border:1px solid rgba(100,116,139,0.3);color:#94a3b8;padding:9px 20px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;">
+                Để sau
+            </button>
+            <button onclick="window.xacNhanVaChotCa()"
+                style="background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);color:#fbbf24;padding:9px 24px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;font-weight:700;">
+                <i class="fa-solid fa-lock"></i> Xác Nhận & Chốt Ca
             </button>
         </div>
     </div>

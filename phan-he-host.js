@@ -760,8 +760,13 @@
         // Dùng _tinhChiPhiCau() để đảm bảo tong_chi_phi_cau nhất quán với hiển thị
         const tong_chi_phi_cau = _tinhChiPhiCau();
 
-        // HH5: Số slot cần tuyển (tối đa)
-        const tong_slot_can = Number(document.getElementById("input-total-slots")?.value) || null;
+        // FEAT-4: Số slot cần tuyển — bắt buộc nhập
+        const tong_slot_can = Number(document.getElementById("input-total-slots")?.value) || 0;
+        if (!tong_slot_can || tong_slot_can < 1) {
+            window.hienToast("Thiếu thông tin", "Vui lòng nhập Số Slot Cần Tuyển (tối thiểu 1).", "danger");
+            document.getElementById("input-total-slots")?.focus();
+            return;
+        }
 
         const payload = {
             ma_key_host: window.currentHostKey,
@@ -874,7 +879,7 @@
                 return;
             }
 
-            // [6] AUTO-LOCK: Tìm ca hết giờ nhưng chưa chốt → tự động chốt
+            // [FIX-1] AUTO-LOCK: Tìm ca hết giờ nhưng chưa chốt → nhắc host xác nhận số liệu thực tế
             const _isExpired = (s) => {
                 if (!s.ngay_danh || !s.gio_ket_thuc) return false;
                 const [hh, mm] = s.gio_ket_thuc.split(":").map(Number);
@@ -884,18 +889,18 @@
             };
             const canAutoLock = mySlots.filter(s => !s.da_chot_ca && _isExpired(s));
             if (canAutoLock.length > 0) {
-                // Chốt hàng loạt trong nền (không await — không chặn UI)
-                Promise.all(canAutoLock.map(s =>
-                    window.dbEngine.ghi("ca_dau", { da_chot_ca: true }, { id: s.id }).catch(() => {})
-                )).then(() => {
+                // Nhắc từng ca — mở modal xác nhận lần lượt (không tự chốt ngay)
+                setTimeout(() => {
                     window.hienToast(
-                        `🔒 Đã tự động chốt ${canAutoLock.length} ca`,
-                        "Ca đấu đã qua giờ kết thúc được chốt tự động.",
+                        `⏰ ${canAutoLock.length} ca đã hết giờ`,
+                        "Vui lòng kiểm tra và xác nhận số liệu thực tế trước khi chốt ca.",
                         "warning"
                     );
-                    // Cập nhật trạng thái local để UI hiển thị đúng ngay
-                    canAutoLock.forEach(s => { s.da_chot_ca = true; });
-                });
+                    // Mở modal xác nhận cho ca đầu tiên trong danh sách
+                    if (canAutoLock.length > 0) {
+                        window.moModalXacNhanChotCa(canAutoLock[0].id, slotMap[canAutoLock[0].id] || []);
+                    }
+                }, 800);
             }
 
             tbody.innerHTML = "";
@@ -907,6 +912,8 @@
                 const daChot   = !!slot.da_chot_ca;
 
                 const tr = document.createElement("tr");
+                // BUG-3 fix: gán data-status để locDanhSachKeo() hoạt động
+                tr.dataset.status = daChot ? "closed" : "running";
                 tr.innerHTML = `
                 <td>
                     <div style="font-weight:700;font-size:0.85rem;">${_formatDate(slot.ngay_danh)}</div>
@@ -1054,7 +1061,6 @@
     window.chotCaDau = async function (id) {
         if (!confirm("⚠️ CHỐT CA - THAO TÁC KHÔNG THỂ ĐẢO NGƯỢC!\n\nSau khi chốt, bạn KHÔNG thể sửa hay xóa ca này.\nDữ liệu lưu vĩnh viễn.\n\nBạn chắc chắn muốn chốt ca này?")) return;
         try {
-            // Chỉ cần cập nhật da_chot_ca = true, không cần ghi lại toàn bộ
             await window.dbEngine.ghi("ca_dau", { da_chot_ca: true }, { id });
             window.hienToast("Đã chốt ca! 🔒", "Ca đấu đã được khóa vĩnh viễn. Bạn có thể đánh giá khách.", "success");
             await _taiLichSuCaDau();
@@ -1062,6 +1068,139 @@
             console.error("Lỗi chốt ca:", e);
             window.hienToast("Lỗi", "Không thể chốt ca. Thử lại.", "danger");
         }
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * 12B. MODAL XÁC NHẬN SỐ LIỆU THỰC TẾ TRƯỚC KHI CHỐT CA
+     *   (Hiện ra khi ca đã hết giờ nhưng chưa chốt)
+     * ═══════════════════════════════════════════════════ */
+    window.moModalXacNhanChotCa = async function (caId, slotsOfCa) {
+        const overlay = document.getElementById("modal-xacnhan-chot");
+        if (!overlay) return;
+        const body = document.getElementById("modal-xacnhan-chot-body");
+        if (!body) return;
+
+        // Lấy dữ liệu ca đấu
+        let caList;
+        try { caList = await window.dbEngine.doc("ca_dau", { eq: { id: caId } }); }
+        catch (_) { caList = []; }
+        const ca = caList[0];
+        if (!ca) return;
+
+        const _fmt = n => (n || 0).toLocaleString("vi-VN") + "đ";
+        const cauList = Array.isArray(ca.loai_cau_su_dung) ? ca.loai_cau_su_dung : [];
+        const cauRows = cauList.map((c, i) => `
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+                <span style="font-size:0.82rem;color:#e2e8f0;">${c.ten || 'Cầu ' + (i + 1)}</span>
+                <input type="number" class="xnc-input" data-sc-idx="${i}" data-field="so_luong"
+                    value="${c.so_luong || 0}" min="0" placeholder="quả"
+                    style="width:72px;background:rgba(30,58,95,0.8);border:1px solid #2d4a6e;border-radius:6px;padding:5px 8px;color:#e2e8f0;font-size:0.82rem;text-align:right;"
+                    oninput="_recalcXacNhan()">
+                <span style="font-size:0.72rem;color:#64748b;">quả</span>
+            </div>`).join("");
+
+        body.innerHTML = `
+            <div style="font-size:0.82rem;padding:10px 14px;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.25);border-radius:8px;margin-bottom:14px;color:#fbbf24;">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                Ca đấu <strong>${ca.ten_san || ""}</strong> ngày <strong>${ca.ngay_danh || ""}</strong> đã hết giờ.<br>
+                Hãy điền lại số liệu thực tế trước khi chốt khoá.
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+                <div>
+                    <label style="font-size:0.7rem;color:#94a3b8;display:block;margin-bottom:4px;">Tiền thuê sân thực tế (đ)</label>
+                    <input type="number" id="xnc_tien_san" class="xnc-input"
+                        value="${ca.chi_phi_san_co_dinh || 0}" min="0"
+                        style="width:100%;background:rgba(30,58,95,0.8);border:1px solid #2d4a6e;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;"
+                        oninput="_recalcXacNhan()">
+                </div>
+                <div>
+                    <label style="font-size:0.7rem;color:#94a3b8;display:block;margin-bottom:4px;">Nước / phát sinh khác (đ)</label>
+                    <input type="number" id="xnc_tien_nuoc" class="xnc-input"
+                        value="${ca.chi_phi_nuoc_khac || 0}" min="0"
+                        style="width:100%;background:rgba(30,58,95,0.8);border:1px solid #2d4a6e;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;"
+                        oninput="_recalcXacNhan()">
+                </div>
+            </div>
+
+            ${cauRows.length ? `
+            <div style="font-size:0.75rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">
+                Số cầu thực tế đã dùng
+            </div>
+            <div id="xnc-cau-list" data-ca-id="${caId}">${cauRows}</div>` : ""}
+
+            <div style="margin-top:14px;padding:10px 14px;background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:0.82rem;color:#94a3b8;"><i class="fa-solid fa-calculator" style="color:#00ff88;margin-right:6px;"></i>Tổng chi phí thực tế:</span>
+                <strong id="xnc-tong-chi" style="color:#00ff88;font-size:1rem;">${_fmt((ca.chi_phi_san_co_dinh || 0) + (ca.tong_chi_phi_cau || 0) + (ca.chi_phi_nuoc_khac || 0))}</strong>
+            </div>`;
+
+        // Lưu data để xử lý khi submit
+        overlay.dataset.caId = caId;
+        overlay.dataset.cauList = JSON.stringify(cauList);
+        overlay.style.display  = "flex";
+
+        // Recalc ngay sau khi render
+        window._recalcXacNhan = function () {
+            const tienSan  = Number(document.getElementById("xnc_tien_san")?.value)  || 0;
+            const tienNuoc = Number(document.getElementById("xnc_tien_nuoc")?.value) || 0;
+            // Tính tiền cầu từ các input số lượng
+            let tongCau = 0;
+            const cauListLocal = JSON.parse(overlay.dataset.cauList || "[]");
+            document.querySelectorAll(".xnc-input[data-field='so_luong']").forEach(inp => {
+                const idx = Number(inp.dataset.scIdx);
+                const cauItem = cauListLocal[idx];
+                if (cauItem) tongCau += (Number(inp.value) || 0) * (cauItem.gia_qua || 0);
+            });
+            const total = tienSan + tongCau + tienNuoc;
+            const el = document.getElementById("xnc-tong-chi");
+            if (el) el.textContent = total.toLocaleString("vi-VN") + "đ";
+        };
+    };
+
+    // Xác nhận & chốt ca với số liệu đã chỉnh
+    window.xacNhanVaChotCa = async function () {
+        const overlay = document.getElementById("modal-xacnhan-chot");
+        if (!overlay) return;
+        const caId = overlay.dataset.caId;
+        if (!caId) return;
+
+        if (!confirm("Xác nhận chốt ca? Sau khi chốt KHÔNG THỂ sửa nữa.")) return;
+
+        const tienSan  = Number(document.getElementById("xnc_tien_san")?.value)  || 0;
+        const tienNuoc = Number(document.getElementById("xnc_tien_nuoc")?.value) || 0;
+
+        // Cập nhật số lượng cầu thực tế
+        const cauListLocal = JSON.parse(overlay.dataset.cauList || "[]");
+        document.querySelectorAll(".xnc-input[data-field='so_luong']").forEach(inp => {
+            const idx = Number(inp.dataset.scIdx);
+            if (cauListLocal[idx] !== undefined) {
+                const soLuong = Number(inp.value) || 0;
+                const gia_qua = cauListLocal[idx].gia_qua || 0;
+                cauListLocal[idx].so_luong  = soLuong;
+                cauListLocal[idx].thanh_tien = soLuong * gia_qua;
+            }
+        });
+        const tong_chi_phi_cau = cauListLocal.reduce((s, c) => s + (c.thanh_tien || 0), 0);
+
+        try {
+            await window.dbEngine.ghi("ca_dau", {
+                chi_phi_san_co_dinh: tienSan,
+                chi_phi_nuoc_khac:   tienNuoc,
+                tong_chi_phi_cau,
+                loai_cau_su_dung:    cauListLocal,
+                da_chot_ca:          true
+            }, { id: caId });
+            window.hienToast("✅ Đã chốt ca!", "Số liệu thực tế đã được lưu và ca đấu đã khoá.", "success");
+            window.dongModalXacNhanChot();
+            await _taiLichSuCaDau();
+        } catch (e) {
+            window.hienToast("Lỗi chốt ca", (e.message || "Thử lại.").slice(0, 80), "danger");
+        }
+    };
+
+    window.dongModalXacNhanChot = function () {
+        const overlay = document.getElementById("modal-xacnhan-chot");
+        if (overlay) overlay.style.display = "none";
     };
 
     /* ═══════════════════════════════════════════════════

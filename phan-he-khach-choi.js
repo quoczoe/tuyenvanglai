@@ -55,7 +55,7 @@
         if (auth)    auth.style.display    = "block";
         if (profile) profile.style.display = "none";
         // Ẩn các card phụ chỉ dành cho khách đã đăng nhập
-        ["cardDaKySlot", "cardLichSuChiTieu", "cardDanhGiaVeToi"].forEach(id => {
+        ["cardDaKySlot", "cardLichSuChiTieu", "cardDanhGiaVeToi", "cardDanhGiaDaGui"].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = "none";
         });
@@ -101,20 +101,25 @@
             if (sectionHost)  sectionHost.style.display  = "none";
         }
 
+        // FEAT-1: Tích vàng xác minh Host — hiện kế bên tên
+        const hostBadgeEl = document.getElementById("profileHostBadge");
+        if (hostBadgeEl) hostBadgeEl.style.display = isHost ? "inline-flex" : "none";
+
         // 2F: Auto-fill ngày mặc định sau khi đăng nhập
         _dinhNgayMacDinh();
 
         _taiThongKeKhach();
         _taiDanhSachHostChoGuestDanhGia();
 
-        // Hiện và tải các card phụ GĐ3
-        ["cardDaKySlot", "cardLichSuChiTieu", "cardDanhGiaVeToi"].forEach(id => {
+        // Hiện và tải các card phụ GĐ3 + FEAT-2
+        ["cardDaKySlot", "cardLichSuChiTieu", "cardDanhGiaVeToi", "cardDanhGiaDaGui"].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = "block";
         });
         _taiDaKySlot();
         _taiLichSuChiTieu();
         _taiDanhGiaVeToi();
+        _taiDanhGiaDaGui(); // FEAT-2: đánh giá đã gửi về host
     }
 
     /**
@@ -742,9 +747,10 @@
                 });
             }
 
-            // Nhóm dat_slot theo id_ca_dau để đếm
+            // Nhóm dat_slot theo id_ca_dau để đếm (loại trừ "Khách hủy")
             const datSlotMap = {};
             allDatSlot.forEach(s => {
+                if (s.trang_thai_di_danh === "Khách hủy") return; // không đếm slot đã hủy
                 if (!datSlotMap[s.id_ca_dau]) datSlotMap[s.id_ca_dau] = [];
                 datSlotMap[s.id_ca_dau].push(s);
             });
@@ -840,9 +846,20 @@
         card.className = "slot-card";
         card.dataset.caId = slot.id; // Để query nút sau khi đặt slot thành công
 
-        const isToday = slot.ngay_danh === new Date().toLocaleDateString("sv-SE");
-        // J5: Kiểm tra slot đã full (tong_slot_can > 0 và đã đặt đủ)
+        const now     = new Date();
+        const isToday = slot.ngay_danh === now.toLocaleDateString("sv-SE");
+        // J5: Kiểm tra slot đã full (tong_slot_can > 0 và đã đặt đủ) — "Khách hủy" không tính
         const isFull = slot.tong_slot_can > 0 && soKhach >= slot.tong_slot_can;
+        // FEAT-5: Khóa đặt slot khi đã đến giờ bắt đầu
+        const isStarted = (() => {
+            if (!slot.ngay_danh || !slot.gio_bat_dau) return false;
+            const [hh, mm] = (slot.gio_bat_dau || "").split(":").map(Number);
+            const startTime = new Date(slot.ngay_danh);
+            startTime.setHours(hh || 0, mm || 0, 0, 0);
+            return startTime <= now;
+        })();
+        // Khóa nút ĐẶT nếu: full HOẶC đã bắt đầu
+        const isLocked = isFull || isStarted;
 
         // Badge giới tính (gioi_tinh_can = "Nam" | "Nữ" | "Cả hai")
         const genderMap = {
@@ -941,10 +958,16 @@
                 <button class="kh-btn-detail" onclick="window.moModalChiTietKeo('${slot.id}')">
                     <i class="fa-solid fa-circle-info"></i> Chi tiết
                 </button>
-                ${isFull
-                    ? `<button style="flex:1;background:#334155;border:1px solid #475569;color:#64748b;cursor:not-allowed;padding:10px 22px;border-radius:12px;font-size:0.88rem;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;" disabled>
-                           <i class="fa-solid fa-users-slash"></i> Đã full slot
-                       </button>`
+                ${isLocked
+                    // Đã full hoặc đã bắt đầu → khóa
+                    ? (isFull
+                        ? `<button style="flex:1;background:#334155;border:1px solid #475569;color:#64748b;cursor:not-allowed;padding:10px 22px;border-radius:12px;font-size:0.82rem;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;" disabled>
+                               <i class="fa-solid fa-users-slash"></i> Đã đủ slot
+                           </button>`
+                        : `<button style="flex:1;background:rgba(251,146,60,0.1);border:1px solid rgba(251,146,60,0.3);color:#fb923c;cursor:not-allowed;padding:10px 22px;border-radius:12px;font-size:0.82rem;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;" disabled>
+                               <i class="fa-solid fa-play"></i> Đang diễn ra
+                           </button>`)
+                    // Chưa bắt đầu + chưa full
                     : (window.currentGuest
                         ? (daDatSet.has(slot.id)
                             ? `<button class="btn-da-dat" style="flex:1;" disabled>
@@ -1278,9 +1301,10 @@
             Đang tải thông tin ca đấu...</div>`;
 
         try {
-            const [caDauList, datSlotList] = await Promise.all([
+            const [caDauList, datSlotList, reviewsOfCa] = await Promise.all([
                 window.dbEngine.doc("ca_dau", { eq: { id: idCaDau } }),
-                window.dbEngine.doc("dat_slot", { eq: { id_ca_dau: idCaDau } })
+                window.dbEngine.doc("dat_slot", { eq: { id_ca_dau: idCaDau } }),
+                window.dbEngine.doc("danh_gia_tin_dung", { eq: { id_ca_dau: idCaDau } }).catch(() => [])
             ]);
             const s = caDauList[0];
             if (!s) {
@@ -1401,7 +1425,52 @@
                 }
             </div>` : `<div style="text-align:center;padding:10px;font-size:0.82rem;color:#64748b;">
                 <i class="fa-solid fa-lock" style="color:#fbbf24;margin-right:6px;"></i>Ca đấu đã được chốt.
-            </div>`}`;
+            </div>`}
+
+            ${(() => {
+                // FEAT-3: Hiện đánh giá công khai về ca này (GuestToHost)
+                const gthReviews = reviewsOfCa.filter(r => r.loai_danh_gia === "GuestToHost");
+                if (gthReviews.length === 0) return "";
+                const avgSao = gthReviews.length > 0
+                    ? (gthReviews.reduce((acc, r) => acc + (r.so_sao || 0), 0) / gthReviews.length).toFixed(1)
+                    : null;
+                const reviewItems = gthReviews
+                    .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+                    .slice(0, 5)
+                    .map(r => {
+                        const ss   = Math.max(0, Math.min(5, r.so_sao || 0));
+                        const strs = Array(5).fill(0).map((_, i) =>
+                            `<i class="fa-solid fa-star" style="color:${i < ss ? "#fbbf24" : "#2d3748"};font-size:0.72rem;"></i>`
+                        ).join("");
+                        // Tên người viết (ẩn SĐT, chỉ hiện tên biệt danh từ sdt_nguoi_viet)
+                        const writerSdt  = r.sdt_nguoi_viet || "";
+                        const writerName = writerSdt
+                            ? `<a href="#" class="review-author-link"
+                                  onclick="event.preventDefault();window.xemHoSoCongKhai('${writerSdt.replace(/'/g,"\\'")}')">
+                                  ${writerSdt.slice(-4).padStart(writerSdt.length, '·')}
+                               </a>`
+                            : "Khách";
+                        return `<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
+                            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;flex-wrap:wrap;">
+                                <div style="display:flex;gap:2px;">${strs}</div>
+                                <span style="font-size:0.68rem;color:#9ca3af;">${writerName}</span>
+                                <span style="font-size:0.65rem;color:#64748b;margin-left:auto;">
+                                    ${r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : ""}
+                                </span>
+                            </div>
+                            ${r.nhan_xet ? `<div style="font-size:0.77rem;color:#e2e8f0;line-height:1.4;">"${r.nhan_xet}"</div>` : ""}
+                        </div>`;
+                    }).join("");
+                return `
+                <div class="kh-modal-section" style="margin-top:8px;">
+                    <div class="kh-modal-section-title">
+                        <i class="fa-solid fa-star" style="color:#fbbf24;"></i>
+                        Đánh Giá Về Ca Này
+                        ${avgSao ? `<span style="font-size:0.78rem;color:#fbbf24;font-weight:700;margin-left:auto;">⭐ ${avgSao} (${gthReviews.length})</span>` : ""}
+                    </div>
+                    ${reviewItems}
+                </div>`;
+            })()}`;
         } catch (e) {
             console.error("Lỗi tải chi tiết kèo:", e);
             body.innerHTML = `<p style="color:#ef4444;text-align:center;padding:20px;">Lỗi tải dữ liệu. Thử lại sau.</p>`;
@@ -1644,18 +1713,23 @@
         if (!container) return;
 
         try {
-            const [reviews, allCaDau] = await Promise.all([
+            const [reviews, allCaDau, allNguoiDung] = await Promise.all([
                 window.dbEngine.doc("danh_gia_tin_dung", {
                     eq: {
                         sdt_nguoi_bi_danh_gia: window.currentGuest.sdt_khach,
                         loai_danh_gia:         "HostToGuest"
                     }
                 }).catch(() => []),
-                window.dbEngine.doc("ca_dau").catch(() => [])
+                window.dbEngine.doc("ca_dau").catch(() => []),
+                window.dbEngine.doc("nguoi_dung").catch(() => [])
             ]);
 
             const caDauMap = {};
             allCaDau.forEach(c => { caDauMap[c.id] = c; });
+
+            // Map SĐT → tên người dùng (cho FEAT-3: clickable reviewer name)
+            const nguoiDungMap = {};
+            allNguoiDung.forEach(u => { if (u.sdt_khach) nguoiDungMap[u.sdt_khach] = u; });
 
             // Sắp xếp mới nhất trước
             reviews.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
@@ -1673,15 +1747,29 @@
                 ).join("");
                 const ca     = caDauMap[r.id_ca_dau];
                 const caInfo = ca ? `${ca.ten_san || ""}${ca.ngay_danh ? " · " + new Date(ca.ngay_danh).toLocaleDateString("vi-VN") : ""}` : "";
-                const nhanXet = r.nhan_xet || "";
+
+                // FEAT-3: Hiện tên người viết đánh giá (host) với link xem hồ sơ
+                const reviewerSdt  = r.sdt_nguoi_viet || "";
+                const reviewerUser = nguoiDungMap[reviewerSdt];
+                const reviewerName = reviewerUser?.ten_khach || ca?.ten_san || "Chủ sân";
+                const reviewerLink = reviewerSdt
+                    ? `<a href="#" class="review-author-link"
+                          onclick="event.preventDefault();window.xemHoSoCongKhai('${reviewerSdt.replace(/'/g,"\\'")}')">
+                          <i class="fa-solid fa-user" style="font-size:0.62rem;margin-right:3px;"></i>${reviewerName}
+                       </a>`
+                    : `<span style="color:#9ca3af;">${reviewerName}</span>`;
 
                 return `<div class="kh-review-about">
-                    <div class="kh-review-stars">${stars}</div>
-                    ${caInfo ? `<div style="font-size:0.7rem;color:#64748b;margin-bottom:3px;"><i class="fa-solid fa-table-tennis-paddle-ball" style="color:#00ff88;margin-right:4px;"></i>${caInfo}</div>` : ""}
-                    ${nhanXet ? `<div style="font-size:0.78rem;color:var(--text-main);line-height:1.5;">"${nhanXet}"</div>` : `<div style="font-size:0.75rem;color:#64748b;font-style:italic;">Không có nhận xét</div>`}
-                    <div style="font-size:0.68rem;color:#64748b;margin-top:4px;">
-                        ${r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : ""}
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+                        <div class="kh-review-stars">${stars}</div>
+                        <span style="font-size:0.68rem;color:#64748b;margin-left:auto;">${r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : ""}</span>
                     </div>
+                    ${caInfo ? `<div style="font-size:0.7rem;color:#64748b;margin-bottom:3px;">
+                        <i class="fa-solid fa-table-tennis-paddle-ball" style="color:#00ff88;margin-right:4px;"></i>${caInfo}</div>` : ""}
+                    <div style="font-size:0.72rem;color:#9ca3af;margin-bottom:4px;">Từ Host: ${reviewerLink}</div>
+                    ${r.nhan_xet
+                        ? `<div style="font-size:0.78rem;color:var(--text-main);line-height:1.5;">"${r.nhan_xet}"</div>`
+                        : `<div style="font-size:0.75rem;color:#64748b;font-style:italic;">Không có nhận xét</div>`}
                 </div>`;
             }).join("");
         } catch (e) {
@@ -1816,5 +1904,238 @@
         if (overlay) { overlay.classList.remove("sheet-open"); overlay.style.display = "none"; }
     };
 
-    console.log("⚡ [Phân Hệ Khách Chơi v4.2]: J4-tabToggle ✅ | J5-bottomSheet ✅ | H4b-genderIcon ✅ | J2-filterDate ✅");
+    /* ═══════════════════════════════════════════════════
+     * FEAT-1: Toggle tooltip badge host trên mobile
+     * (desktop dùng :hover; mobile cần onclick)
+     * ═══════════════════════════════════════════════════ */
+    window._toggleBadgeTooltip = function () {
+        const badge = document.getElementById("profileHostBadge");
+        if (!badge) return;
+        badge.classList.toggle("tooltip-open");
+        // Tự đóng sau 3 giây nếu đang mở
+        if (badge.classList.contains("tooltip-open")) {
+            setTimeout(() => badge.classList.remove("tooltip-open"), 3000);
+        }
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * FEAT-2: TẢI ĐÁNH GIÁ TÔI ĐÃ GỬI (GuestToHost)
+     * Query danh_gia_tin_dung WHERE sdt_nguoi_viet = myPhone
+     * AND loai_danh_gia = "GuestToHost"
+     * Hiện tên Host (FEAT-3) với link xem hồ sơ công khai
+     * ═══════════════════════════════════════════════════ */
+    async function _taiDanhGiaDaGui() {
+        if (!window.currentGuest) return;
+        const container = document.getElementById("danhGiaDaGuiList");
+        if (!container) return;
+
+        try {
+            const [reviews, allCaDau, allNguoiDung] = await Promise.all([
+                window.dbEngine.doc("danh_gia_tin_dung", {
+                    eq: {
+                        sdt_nguoi_viet: window.currentGuest.sdt_khach,
+                        loai_danh_gia:  "GuestToHost"
+                    }
+                }).catch(() => []),
+                window.dbEngine.doc("ca_dau").catch(() => []),
+                window.dbEngine.doc("nguoi_dung").catch(() => [])
+            ]);
+
+            const caDauMap = {};
+            allCaDau.forEach(c => { caDauMap[c.id] = c; });
+
+            // Map SĐT → user (để hiện tên host bị đánh giá — FEAT-3)
+            const nguoiDungMap = {};
+            allNguoiDung.forEach(u => { if (u.sdt_khach) nguoiDungMap[u.sdt_khach] = u; });
+
+            // Sắp xếp mới nhất trước
+            reviews.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+            if (reviews.length === 0) {
+                container.innerHTML = `<p style="font-size:0.78rem;color:#64748b;text-align:center;padding:10px 0;">
+                    Bạn chưa gửi đánh giá nào cho Host.</p>`;
+                return;
+            }
+
+            container.innerHTML = reviews.map(r => {
+                const soSao = Math.max(0, Math.min(5, r.so_sao || 0));
+                const stars = Array(5).fill(0).map((_, i) =>
+                    `<i class="fa-solid fa-star" style="color:${i < soSao ? "#fbbf24" : "#2d3748"};font-size:0.78rem;"></i>`
+                ).join("");
+
+                const ca     = caDauMap[r.id_ca_dau];
+                const caInfo = ca
+                    ? `${ca.ten_san || ""}${ca.ngay_danh ? " · " + new Date(ca.ngay_danh).toLocaleDateString("vi-VN") : ""}`
+                    : "";
+
+                // FEAT-3: Tên Host bị đánh giá + link hồ sơ công khai
+                const hostSdt  = r.sdt_nguoi_bi_danh_gia || "";
+                const hostUser = nguoiDungMap[hostSdt];
+                const hostName = hostUser?.ten_khach || ca?.ten_san || "Host";
+                const hostLink = hostSdt
+                    ? `<a href="#" class="review-author-link"
+                          onclick="event.preventDefault();window.xemHoSoCongKhai('${hostSdt.replace(/'/g,"\\'")}')">
+                          <i class="fa-solid fa-store" style="font-size:0.62rem;margin-right:3px;"></i>${hostName}
+                       </a>`
+                    : `<span style="color:#9ca3af;">${hostName}</span>`;
+
+                return `<div class="kh-review-about">
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+                        <div class="kh-review-stars">${stars}</div>
+                        <span style="font-size:0.68rem;color:#64748b;margin-left:auto;">${r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : ""}</span>
+                    </div>
+                    ${caInfo ? `<div style="font-size:0.7rem;color:#64748b;margin-bottom:4px;">
+                        <i class="fa-solid fa-table-tennis-paddle-ball" style="color:#00ff88;margin-right:4px;"></i>${caInfo}</div>` : ""}
+                    <div style="font-size:0.72rem;color:#9ca3af;margin-bottom:4px;">Gửi đến Host: ${hostLink}</div>
+                    ${r.nhan_xet
+                        ? `<div style="font-size:0.78rem;color:var(--text-main);line-height:1.5;">"${r.nhan_xet}"</div>`
+                        : `<div style="font-size:0.75rem;color:#64748b;font-style:italic;">Không có nhận xét</div>`}
+                </div>`;
+            }).join("");
+        } catch (e) {
+            console.error("Lỗi tải đánh giá đã gửi:", e);
+            container.innerHTML = `<p style="font-size:0.78rem;color:#ef4444;">Lỗi tải dữ liệu.</p>`;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════
+     * FEAT-3: HỒ SƠ CÔNG KHAI — xem thông tin bất kỳ user
+     * Mở modal #modalHoSoCongKhaiOverlay với dữ liệu của sdt
+     * ═══════════════════════════════════════════════════ */
+    window.xemHoSoCongKhai = async function (sdt) {
+        const overlay = document.getElementById("modalHoSoCongKhaiOverlay");
+        const body    = document.getElementById("modalHoSoBody");
+        const title   = document.getElementById("modalHoSoTitle");
+        if (!overlay || !body) return;
+
+        overlay.style.display = "flex";
+        body.innerHTML = `<div style="text-align:center;padding:30px;color:#64748b;">
+            <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px;"></i>
+            Đang tải hồ sơ...</div>`;
+
+        try {
+            const [userList, reviews, datSlots] = await Promise.all([
+                window.dbEngine.doc("nguoi_dung", { eq: { sdt_khach: sdt } }).catch(() => []),
+                window.dbEngine.doc("danh_gia_tin_dung", { eq: { sdt_nguoi_bi_danh_gia: sdt } }).catch(() => []),
+                window.dbEngine.doc("dat_slot", { eq: { sdt_khach: sdt } }).catch(() => [])
+            ]);
+
+            const user       = userList[0];
+            const isHost     = user?.vai_tro === "host";
+            const tenHienThi = user?.ten_khach || sdt;
+            const joinDate   = user?.ngay_tham_gia
+                ? new Date(user.ngay_tham_gia).toLocaleDateString("vi-VN") : "--";
+
+            // Cập nhật tiêu đề modal
+            if (title) title.innerHTML = `
+                <i class="fa-solid fa-user-circle" style="color:#60a5fa;"></i>
+                ${tenHienThi}
+                ${isHost ? `<span class="hsck-host-badge">
+                    <i class="fa-solid fa-circle-check"></i> Host Sân
+                </span>` : ""}`;
+
+            // Tính rating trung bình
+            const validReviews = reviews.filter(r => r.so_sao >= 1 && r.so_sao <= 5);
+            const avgSao = validReviews.length > 0
+                ? (validReviews.reduce((s, r) => s + r.so_sao, 0) / validReviews.length).toFixed(1)
+                : null;
+
+            // Thống kê buổi tham gia (đã xác nhận đi đánh)
+            const daThamGia = datSlots.filter(s => s.trang_thai_di_danh === "Đã tham gia").length;
+
+            // Lấy 8 đánh giá mới nhất
+            const recentReviews = [...validReviews]
+                .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+                .slice(0, 8);
+
+            const reviewsHTML = recentReviews.length === 0
+                ? `<p style="font-size:0.8rem;color:#64748b;text-align:center;padding:10px;">Chưa có đánh giá nào.</p>`
+                : recentReviews.map(r => {
+                    const soSao = Math.max(1, Math.min(5, r.so_sao));
+                    const stars = Array(5).fill(0).map((_, i) =>
+                        `<i class="fa-solid fa-star" style="color:${i < soSao ? "#fbbf24" : "#2d3748"};font-size:0.72rem;"></i>`
+                    ).join("");
+                    const loaiLabel = r.loai_danh_gia === "GuestToHost"
+                        ? `<span style="font-size:0.63rem;background:rgba(0,255,136,0.1);color:#00ff88;
+                                border:1px solid rgba(0,255,136,0.3);padding:1px 6px;border-radius:10px;">Từ: Khách</span>`
+                        : `<span style="font-size:0.63rem;background:rgba(96,165,250,0.1);color:#60a5fa;
+                                border:1px solid rgba(96,165,250,0.3);padding:1px 6px;border-radius:10px;">Từ: Host</span>`;
+                    return `<div class="hsck-review-item">
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+                            <div style="display:flex;gap:2px;">${stars}</div>
+                            ${loaiLabel}
+                            <span style="font-size:0.63rem;color:#64748b;margin-left:auto;">
+                                ${r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : ""}
+                            </span>
+                        </div>
+                        ${r.nhan_xet
+                            ? `<div style="font-size:0.78rem;color:#e2e8f0;line-height:1.5;">"${r.nhan_xet}"</div>`
+                            : `<em style="font-size:0.73rem;color:#6b7280;">Không có nhận xét</em>`}
+                    </div>`;
+                }).join("");
+
+            body.innerHTML = `
+            <!-- Avatar + Thông tin cơ bản -->
+            <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
+                <div style="width:56px;height:56px;border-radius:50%;
+                            background:linear-gradient(135deg,#1a3a6e,#0f2d53);
+                            border:2.5px solid ${isHost ? "#fbbf24" : "#1e3a5f"};
+                            display:flex;align-items:center;justify-content:center;
+                            font-size:1.6rem;flex-shrink:0;box-shadow:${isHost ? "0 0 14px rgba(251,191,36,0.3)" : "none"};">
+                    ${isHost ? "🏟️" : "🏸"}
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-size:1rem;font-weight:700;color:#e2e8f0;
+                                display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                        ${tenHienThi}
+                        ${isHost ? `<span class="hsck-host-badge">
+                            <i class="fa-solid fa-circle-check"></i> Host
+                        </span>` : ""}
+                    </div>
+                    <div style="font-size:0.73rem;color:#9ca3af;margin-top:3px;">
+                        <i class="fa-regular fa-calendar" style="margin-right:4px;"></i>Gia nhập: ${joinDate}
+                    </div>
+                    ${avgSao ? `<div style="font-size:0.78rem;color:#fbbf24;margin-top:3px;font-weight:700;">
+                        ⭐ ${avgSao} / 5.0
+                        <span style="color:#9ca3af;font-weight:400;font-size:0.7rem;">&nbsp;(${validReviews.length} đánh giá)</span>
+                    </div>` : ""}
+                </div>
+            </div>
+
+            <!-- Thống kê nhanh -->
+            <div class="hsck-stat-grid">
+                <div class="hsck-stat-card">
+                    <div class="hsck-stat-val" style="color:#00ff88;">${daThamGia}</div>
+                    <div class="hsck-stat-lbl">🏸 Buổi đã đánh</div>
+                </div>
+                <div class="hsck-stat-card">
+                    <div class="hsck-stat-val" style="color:#fbbf24;">${avgSao || "—"}</div>
+                    <div class="hsck-stat-lbl">⭐ Sao TB</div>
+                </div>
+            </div>
+
+            ${validReviews.length > 0 ? `
+            <!-- Tiêu đề đánh giá gần đây -->
+            <div style="font-size:0.74rem;font-weight:700;color:#9ca3af;
+                        text-transform:uppercase;letter-spacing:0.05em;
+                        margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+                <i class="fa-solid fa-star" style="color:#fbbf24;"></i> Đánh Giá Gần Đây
+            </div>
+            ${reviewsHTML}
+            ` : `<div style="text-align:center;padding:20px;color:#64748b;font-size:0.82rem;">
+                <i class="fa-regular fa-face-smile" style="display:block;font-size:1.4rem;margin-bottom:8px;"></i>
+                Chưa có đánh giá nào.</div>`}
+            `;
+        } catch (e) {
+            console.error("Lỗi tải hồ sơ công khai:", e);
+            body.innerHTML = `<p style="color:#ef4444;text-align:center;padding:20px;">Lỗi tải dữ liệu. Thử lại sau.</p>`;
+        }
+    };
+
+    window.dongModalHoSoCongKhai = function () {
+        const overlay = document.getElementById("modalHoSoCongKhaiOverlay");
+        if (overlay) overlay.style.display = "none";
+    };
+
+    console.log("⚡ [Phân Hệ Khách Chơi v4.3]: FEAT-1-hostBadge ✅ | FEAT-2-guiDanhGia ✅ | FEAT-3-hoSoCongKhai ✅ | J4-tabToggle ✅ | J5-bottomSheet ✅");
 })();

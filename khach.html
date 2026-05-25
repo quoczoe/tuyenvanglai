@@ -479,6 +479,147 @@
 
         /* H4-layout — Khung trình độ: cố định chiều cao tối thiểu */
         .kh-trinh-do-row { min-height: 75px; }
+
+        /* ══ FEAT-1: Host Verification Badge ══ */
+        .host-verify-badge {
+            display: inline-flex;
+            align-items: center;
+            position: relative;
+            cursor: pointer;
+            margin-left: 4px;
+            vertical-align: middle;
+            color: #fbbf24;          /* vàng gold */
+            font-size: 1.05rem;
+            transition: transform 0.2s, filter 0.2s;
+            flex-shrink: 0;
+        }
+        .host-verify-badge:hover,
+        .host-verify-badge:focus { transform: scale(1.2); filter: brightness(1.2); outline: none; }
+        .host-badge-tooltip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0f1e35;
+            border: 1px solid rgba(251,191,36,0.5);
+            color: #e2e8f0;
+            font-size: 0.68rem;
+            font-weight: 500;
+            white-space: nowrap;
+            padding: 5px 10px;
+            border-radius: 8px;
+            z-index: 300;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            pointer-events: none;
+            line-height: 1.4;
+        }
+        .host-badge-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(251,191,36,0.5);
+        }
+        .host-verify-badge:hover .host-badge-tooltip,
+        .host-verify-badge.tooltip-open .host-badge-tooltip { display: block; }
+
+        /* ══ FEAT-3: Modal Hồ Sơ Công Khai ══ */
+        #modalHoSoCongKhaiOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.78);
+            z-index: 1200;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        #modalHoSoCongKhai {
+            background: #1a2844;
+            border: 1px solid #1e3a5f;
+            border-radius: 16px;
+            max-width: 480px;
+            width: 100%;
+            max-height: 88vh;
+            overflow-y: auto;
+            position: relative;
+        }
+        .hsck-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid #1e3a5f;
+            position: sticky;
+            top: 0;
+            background: #1a2844;
+            z-index: 1;
+        }
+        .hsck-title {
+            font-weight: 700;
+            font-size: 0.98rem;
+            color: #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .hsck-close {
+            background: none;
+            border: none;
+            color: #9ca3af;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: color 0.2s;
+        }
+        .hsck-close:hover { color: #e2e8f0; }
+        .hsck-body { padding: 18px; }
+        .hsck-stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .hsck-stat-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid #1e3a5f;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+        }
+        .hsck-stat-val { font-size: 1.25rem; font-weight: 700; }
+        .hsck-stat-lbl { font-size: 0.68rem; color: #9ca3af; margin-top: 2px; }
+        .hsck-review-item {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .hsck-review-item:last-child { border-bottom: none; }
+        .hsck-host-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(251,191,36,0.12);
+            border: 1px solid rgba(251,191,36,0.4);
+            color: #fbbf24;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 20px;
+            white-space: nowrap;
+        }
+        /* Link người đánh giá trong review card */
+        .review-author-link {
+            color: #60a5fa;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.74rem;
+            transition: color 0.2s;
+        }
+        .review-author-link:hover { color: #93c5fd; text-decoration: underline; }
     </style>
 </head>
 <body data-theme="dark">
@@ -655,7 +796,19 @@
             <div class="kh-profile-top">
                 <div class="kh-profile-avatar">🏸</div>
                 <div style="flex:1;min-width:0;">
-                    <div class="kh-profile-name" id="profileGuestName">--</div>
+                    <!-- FEAT-1: Name + Host verification badge -->
+                    <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
+                        <div class="kh-profile-name" id="profileGuestName">--</div>
+                        <!-- Tích vàng xác minh Host — chỉ hiện khi vai_tro='host' -->
+                        <span id="profileHostBadge" class="host-verify-badge" style="display:none;"
+                              onclick="window._toggleBadgeTooltip()" tabindex="0"
+                              onblur="this.classList.remove('tooltip-open')">
+                            <i class="fa-solid fa-circle-check"></i>
+                            <span class="host-badge-tooltip">
+                                ✅ Host Sân đã xác minh<br>tại TUYENVANGLAI.IO.VN
+                            </span>
+                        </span>
+                    </div>
                     <!-- FIX B: Banner nút "Trở thành Host Sân" — nổi bật, 1 dòng, neon border -->
                     <!-- Chỉ hiện khi vai_tro='guest'; ẩn khi là host -->
                     <a href="host.html" id="btnNangCapHostHint"
@@ -815,6 +968,24 @@
             </div>
         </div>
 
+        <!-- ĐÁNH GIÁ TÔI ĐÃ GỬI — FEAT-2: accordion, mặc định thu gọn -->
+        <div class="kh-auth-card" id="cardDanhGiaDaGui" style="display:none;">
+            <div class="acc-header kh-card-title" onclick="window.toggleAccordion('bodyDanhGiaDaGui', this)">
+                <span><i class="fa-solid fa-paper-plane" style="color:#60a5fa;"></i> Đánh Giá Tôi Đã Gửi</span>
+                <span class="acc-arrow">▼</span>
+            </div>
+            <div class="acc-body" id="bodyDanhGiaDaGui">
+                <p style="font-size:0.75rem;color:var(--text-muted);margin:10px 0;line-height:1.5;">
+                    Các đánh giá bạn đã gửi về Host Sân sau các buổi tham gia.
+                </p>
+                <div id="danhGiaDaGuiList">
+                    <div style="text-align:center;padding:16px;color:#64748b;font-size:0.82rem;">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </aside>
 
     <!-- ══ CỘT PHẢI: TÌM KÈO ══ -->
@@ -933,6 +1104,28 @@
             <div style="text-align:center;padding:30px;color:#64748b;">
                 <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px;"></i>
                 Đang tải thông tin ca đấu...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL HỒ SƠ CÔNG KHAI — FEAT-3: xem thông tin public của bất kỳ user nào -->
+<div id="modalHoSoCongKhaiOverlay"
+     onclick="if(event.target===this) window.dongModalHoSoCongKhai()">
+    <div id="modalHoSoCongKhai">
+        <div class="hsck-head">
+            <div class="hsck-title" id="modalHoSoTitle">
+                <i class="fa-solid fa-user-circle" style="color:#60a5fa;"></i>
+                Hồ Sơ Cá Nhân
+            </div>
+            <button class="hsck-close" onclick="window.dongModalHoSoCongKhai()">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="hsck-body" id="modalHoSoBody">
+            <div style="text-align:center;padding:30px;color:#64748b;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:10px;"></i>
+                Đang tải hồ sơ...
             </div>
         </div>
     </div>
