@@ -513,6 +513,123 @@
                 min-width: 680px;
             }
         }
+
+        /* ══════════════════════════════════════════════════
+           HD: Hướng Dẫn Sử Dụng — collapsible sections
+           ══════════════════════════════════════════════════ */
+        .hd-section {
+            border: 1px solid rgba(45,74,110,0.7);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background: rgba(26,40,68,0.5);
+            overflow: hidden;
+            transition: border-color 0.2s;
+        }
+        .hd-section[open] {
+            border-color: rgba(0,212,255,0.3);
+        }
+        .hd-summary {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #e2e8f0;
+            font-size: 0.92rem;
+            list-style: none;
+            user-select: none;
+            transition: background 0.15s;
+        }
+        .hd-summary::-webkit-details-marker { display: none; }
+        .hd-summary:hover { background: rgba(255,255,255,0.04); }
+        .hd-section[open] .hd-summary { color: #00d4ff; }
+        .hd-step-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px; height: 28px;
+            border-radius: 50%;
+            background: rgba(0,212,255,0.12);
+            border: 1px solid rgba(0,212,255,0.3);
+            color: #00d4ff;
+            font-size: 0.8rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .hd-chevron {
+            margin-left: auto;
+            font-size: 0.7rem;
+            color: #64748b;
+            transition: transform 0.25s;
+        }
+        .hd-section[open] .hd-chevron { transform: rotate(180deg); }
+        .hd-body {
+            padding: 4px 18px 18px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            line-height: 1.7;
+        }
+        .hd-body p { margin: 0 0 10px; }
+        .hd-list {
+            margin: 0 0 12px;
+            padding-left: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .hd-list li { color: #c8d6e5; }
+        .hd-list li strong { color: #e2e8f0; }
+        .hd-list li em { color: #94a3b8; font-style: normal; }
+        .hd-list li code {
+            background: rgba(0,212,255,0.1);
+            color: #00d4ff;
+            padding: 1px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.82rem;
+        }
+        .hd-tip {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            padding: 10px 14px;
+            background: rgba(0,255,136,0.06);
+            border: 1px solid rgba(0,255,136,0.2);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #86efac;
+            margin-top: 4px;
+        }
+        .hd-tip i { color: #00ff88; margin-top: 1px; flex-shrink: 0; }
+        .hd-warning {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            padding: 10px 14px;
+            background: rgba(239,68,68,0.07);
+            border: 1px solid rgba(239,68,68,0.25);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #fca5a5;
+            margin-top: 4px;
+        }
+        .hd-warning i { color: #f87171; margin-top: 1px; flex-shrink: 0; }
+        .hd-faq-item {
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 10px 0;
+        }
+        .hd-faq-item:last-child { border-bottom: none; }
+        .hd-faq-q {
+            font-weight: 600;
+            color: #e2e8f0;
+            margin-bottom: 5px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        .hd-faq-q i { color: #60a5fa; margin-top: 3px; flex-shrink: 0; }
+        .hd-faq-a { color: #94a3b8; padding-left: 22px; }
     </style>
 </head>
 <body data-theme="dark">
@@ -918,6 +1035,10 @@
                         onclick="window.chuyenTabDoanhThu()">
                         <i class="fa-solid fa-chart-line"></i> 📊 Doanh Thu
                     </button>
+                    <button id="tabBtnHuongDan" class="hs-tab-btn"
+                        onclick="window.chuyenTabHuongDan()">
+                        <i class="fa-solid fa-circle-question"></i> Hướng Dẫn
+                    </button>
                 </div>
                 <button class="hs-btn-ghost" onclick="loadLichSuCaDauHost()" style="font-size:0.8rem;padding:6px 12px;">
                     <i class="fa-solid fa-rotate-right"></i> Làm mới
@@ -966,6 +1087,194 @@
                 <div style="text-align:center;padding:32px;color:#64748b;">
                     <i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>
                     Đang tải dashboard doanh thu...
+                </div>
+            </div>
+
+            <!-- Tab: Hướng Dẫn Sử Dụng -->
+            <div id="tabHuongDan" class="hs-tab-panel" style="display:none;">
+                <div style="max-width:780px;margin:0 auto;">
+
+                    <!-- Tiêu đề -->
+                    <div style="text-align:center;margin-bottom:24px;">
+                        <div style="font-size:2rem;margin-bottom:6px;">📖</div>
+                        <div style="font-size:1.15rem;font-weight:700;color:#e2e8f0;">Hướng Dẫn Sử Dụng</div>
+                        <div style="font-size:0.82rem;color:#64748b;margin-top:4px;">Trạm Chủ Sân — TUYENVANGLAI.IO.VN</div>
+                    </div>
+
+                    <!-- Step 1 -->
+                    <details class="hd-section" open>
+                        <summary class="hd-summary">
+                            <span class="hd-step-num">1</span>
+                            <span>Kích Hoạt Key & Đăng Nhập</span>
+                            <i class="fa-solid fa-chevron-down hd-chevron"></i>
+                        </summary>
+                        <div class="hd-body">
+                            <p>Để sử dụng Trạm Chủ Sân, bạn cần có một <strong>Mã Key</strong> hợp lệ được cấp bởi Admin hệ thống.</p>
+                            <ol class="hd-list">
+                                <li>Nhận mã Key từ Admin (định dạng <code>TVL-XXXXX-XXXX</code>).</li>
+                                <li>Nhập mã Key vào ô "Mã Key" trên màn hình đăng nhập và bấm <strong>Kích Hoạt</strong>.</li>
+                                <li>Hệ thống sẽ liên kết Key với thiết bị của bạn — từ lần sau chỉ cần nhấn <strong>Đăng Nhập</strong>.</li>
+                                <li>Nếu đổi điện thoại, liên hệ Admin để <strong>Reset thiết bị</strong> trên Key của bạn.</li>
+                            </ol>
+                            <div class="hd-tip">
+                                <i class="fa-solid fa-lightbulb"></i>
+                                <span>Key có thời hạn sử dụng. Khi hết hạn hoặc bị khóa, bạn sẽ bị ngắt đăng nhập tự động. Liên hệ Admin để gia hạn.</span>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Step 2 -->
+                    <details class="hd-section">
+                        <summary class="hd-summary">
+                            <span class="hd-step-num">2</span>
+                            <span>Đăng Kèo Mới (Tìm Khách)</span>
+                            <i class="fa-solid fa-chevron-down hd-chevron"></i>
+                        </summary>
+                        <div class="hd-body">
+                            <p>Kèo đấu là thông tin bạn đăng công khai để Khách vãng lai tìm kiếm và đặt slot.</p>
+                            <ol class="hd-list">
+                                <li>Bấm nút <strong>+ Đăng Kèo Mới</strong> ở góc trên phải.</li>
+                                <li>Điền đầy đủ <strong>Thông Tin Công Khai</strong>: địa điểm, ngày giờ, giới tính cần tuyển, trình độ, giá tiền.</li>
+                                <li>Điền <strong>Kế Toán Nội Bộ</strong>: tiền thuê sân, tiền cầu, chi phí khác — phần này Khách <em>không nhìn thấy</em>.</li>
+                                <li>Hệ thống tự gợi ý 3 mức giá (Huề vốn / Lãi ít / Lãi nhiều) — bấm chọn để tự điền vào ô giá.</li>
+                                <li>Bấm <strong>Đăng Kèo</strong> để công bố. Kèo sẽ hiện ngay trên Sàn Khách.</li>
+                            </ol>
+                            <div class="hd-tip">
+                                <i class="fa-solid fa-lightbulb"></i>
+                                <span>Điền đầy đủ địa chỉ sân và chọn trên bản đồ để Khách dễ tìm hơn. Ô "Số Slot Cần Tuyển" giúp khóa nút ĐẶT khi đủ người.</span>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Step 3 -->
+                    <details class="hd-section">
+                        <summary class="hd-summary">
+                            <span class="hd-step-num">3</span>
+                            <span>Quản Lý Khách Đăng Ký</span>
+                            <i class="fa-solid fa-chevron-down hd-chevron"></i>
+                        </summary>
+                        <div class="hd-body">
+                            <p>Khi Khách đặt slot vào kèo của bạn, bạn sẽ thấy họ trong bảng danh sách ca đấu.</p>
+                            <ol class="hd-list">
+                                <li>Bấm nút <strong>DS Khách</strong> trên hàng ca đấu để xem toàn bộ người đã đăng ký.</li>
+                                <li>Trong modal DS Khách, bấm vào <strong>tên Khách</strong> để xem <em>Hồ Sơ Tín Dụng</em>: lịch sử đi đánh, số sao trung bình, số lần bùng kèo.</li>
+                                <li>Sau khi ca diễn ra, cập nhật trạng thái từng Khách:
+                                    <ul style="margin-top:6px;padding-left:20px;display:flex;flex-direction:column;gap:4px;">
+                                        <li><span style="color:#00ff88;font-weight:600;">Đã tham gia</span> — Khách đến đánh đầy đủ.</li>
+                                        <li><span style="color:#f87171;font-weight:600;">Bùng kèo</span> — Khách không đến, không báo. Nhập tiền phạt nếu có.</li>
+                                        <li><span style="color:#fb923c;font-weight:600;">Chờ đánh</span> — Chưa cập nhật (mặc định).</li>
+                                    </ul>
+                                </li>
+                            </ol>
+                            <div class="hd-tip">
+                                <i class="fa-solid fa-lightbulb"></i>
+                                <span>Cập nhật trạng thái khách chính xác trước khi Chốt Ca để doanh thu được tính đúng.</span>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Step 4 -->
+                    <details class="hd-section">
+                        <summary class="hd-summary">
+                            <span class="hd-step-num">4</span>
+                            <span>Chốt Ca (Đóng Băng Dữ Liệu)</span>
+                            <i class="fa-solid fa-chevron-down hd-chevron"></i>
+                        </summary>
+                        <div class="hd-body">
+                            <p>Sau khi thu tiền và kết thúc ca đấu, bạn cần <strong>Chốt Ca</strong> để lưu vào lịch sử doanh thu.</p>
+                            <ol class="hd-list">
+                                <li>Bấm nút <strong>Chốt Ca</strong> trên hàng ca đấu trong bảng Danh Sách.</li>
+                                <li>Xác nhận 2 lần → Ca sẽ bị <strong>khóa vĩnh viễn</strong> — không thể sửa hay xóa nữa.</li>
+                                <li>Ca đã chốt sẽ hiện trong tab <strong>Doanh Thu</strong> với đầy đủ số liệu.</li>
+                                <li>Ca chưa qua giờ kết thúc sẽ <em>tự động chốt</em> khi bạn mở lại trang (nếu đã quá giờ).</li>
+                            </ol>
+                            <div class="hd-warning">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                                <span><strong>KHÔNG THỂ ĐẢO NGƯỢC.</strong> Chỉ Admin mới có thể can thiệp dữ liệu sau khi chốt. Hãy cập nhật trạng thái khách đầy đủ trước khi bấm Chốt Ca.</span>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Step 5 -->
+                    <details class="hd-section">
+                        <summary class="hd-summary">
+                            <span class="hd-step-num">5</span>
+                            <span>Tab Doanh Thu & Báo Cáo</span>
+                            <i class="fa-solid fa-chevron-down hd-chevron"></i>
+                        </summary>
+                        <div class="hd-body">
+                            <p>Tab <strong>Doanh Thu</strong> tổng hợp toàn bộ ca đấu đã chốt thành báo cáo tài chính.</p>
+                            <ol class="hd-list">
+                                <li>4 metric card trên cùng hiện tổng quan: số ca chốt, số khách, tổng thu, lời/lỗ.</li>
+                                <li>Bảng bên dưới hiển thị từng ca với các cột: <strong>Tổng Chi</strong> (sân + cầu + khác), <strong>Tổng Thu</strong> (tiền khách + phạt bùng), <strong>Lời/Lỗ</strong> (xanh = lãi, đỏ = lỗ).</li>
+                                <li>Bấm <strong>Chi tiết</strong> trên mỗi dòng để xem bảng kế toán đầy đủ.</li>
+                                <li>Bấm <strong>CSV</strong> để tải xuống file Excel-compatible.</li>
+                                <li>Bộ lọc ngày hoặc chọn Tuần/Tháng/Năm để xem báo cáo theo kỳ.</li>
+                            </ol>
+                        </div>
+                    </details>
+
+                    <!-- Step 6 -->
+                    <details class="hd-section">
+                        <summary class="hd-summary">
+                            <span class="hd-step-num">6</span>
+                            <span>Đánh Giá Khách (Tín Dụng)</span>
+                            <i class="fa-solid fa-chevron-down hd-chevron"></i>
+                        </summary>
+                        <div class="hd-body">
+                            <p>Sau khi Chốt Ca, bạn có thể đánh giá các Khách đã <em>tham gia</em> ca đó.</p>
+                            <ol class="hd-list">
+                                <li>Trong bảng Danh Sách Ca Đấu, tìm ca đã chốt → bấm nút <strong>Đánh giá</strong>.</li>
+                                <li>Chọn Khách cần đánh giá → chọn số sao (1–5) → nhập nhận xét (tùy chọn).</li>
+                                <li>Bấm <strong>Gửi Đánh Giá</strong>. Sau khi gửi, bài đánh giá bị <em>khóa cứng vĩnh viễn</em>.</li>
+                            </ol>
+                            <div class="hd-tip">
+                                <i class="fa-solid fa-lightbulb"></i>
+                                <span>Điều kiện đánh giá: Ca đã Chốt + Khách có trạng thái "Đã tham gia". Đánh giá trung thực giúp cộng đồng cùng phát triển.</span>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- FAQ -->
+                    <details class="hd-section">
+                        <summary class="hd-summary">
+                            <span class="hd-step-num" style="background:rgba(251,191,36,0.15);color:#fbbf24;border-color:rgba(251,191,36,0.3);">❓</span>
+                            <span>Câu Hỏi Thường Gặp (FAQ)</span>
+                            <i class="fa-solid fa-chevron-down hd-chevron"></i>
+                        </summary>
+                        <div class="hd-body">
+                            <div class="hd-faq-item">
+                                <div class="hd-faq-q"><i class="fa-solid fa-circle-question"></i> Key của tôi bị báo "Sai thiết bị"?</div>
+                                <div class="hd-faq-a">Key bị ràng buộc với thiết bị đầu tiên dùng để kích hoạt. Nếu bạn đổi điện thoại, liên hệ Admin để Reset thiết bị trên Key của bạn.</div>
+                            </div>
+                            <div class="hd-faq-item">
+                                <div class="hd-faq-q"><i class="fa-solid fa-circle-question"></i> Tôi có thể sửa kèo sau khi đăng không?</div>
+                                <div class="hd-faq-a">Có — bấm nút <strong>Sửa</strong> trên hàng ca đấu. Tuy nhiên, sau khi Chốt Ca thì không thể sửa nữa (chỉ Admin can thiệp được).</div>
+                            </div>
+                            <div class="hd-faq-item">
+                                <div class="hd-faq-q"><i class="fa-solid fa-circle-question"></i> Khách đặt rồi hủy — tôi có thể phạt không?</div>
+                                <div class="hd-faq-a">Khi cập nhật trạng thái Khách thành "Bùng kèo", bạn có thể nhập số tiền phạt vào ô tương ứng. Tiền phạt sẽ được cộng vào Tổng Thu trong báo cáo Doanh Thu.</div>
+                            </div>
+                            <div class="hd-faq-item">
+                                <div class="hd-faq-q"><i class="fa-solid fa-circle-question"></i> Tại sao ca đấu tự động chốt?</div>
+                                <div class="hd-faq-a">Hệ thống tự động chốt ca khi đã qua Giờ Kết Thúc (ngay khi bạn mở lại trang). Điều này giúp bảo toàn dữ liệu và không cần chốt thủ công mỗi lần.</div>
+                            </div>
+                            <div class="hd-faq-item">
+                                <div class="hd-faq-q"><i class="fa-solid fa-circle-question"></i> File CSV xuất ra có mở được trên Excel không?</div>
+                                <div class="hd-faq-a">Có. File CSV có BOM UTF-8 để Excel đọc đúng tiếng Việt. Mở bằng Excel → Mã hóa UTF-8. Hoặc dùng Google Sheets để import trực tiếp.</div>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Liên hệ hỗ trợ -->
+                    <div style="margin-top:20px;padding:16px 20px;background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:10px;display:flex;align-items:center;gap:14px;">
+                        <i class="fa-brands fa-square-whatsapp" style="font-size:2rem;color:#00d4ff;flex-shrink:0;"></i>
+                        <div>
+                            <div style="font-weight:700;color:#e2e8f0;margin-bottom:3px;">Cần hỗ trợ thêm?</div>
+                            <div style="font-size:0.82rem;color:#94a3b8;">Liên hệ Admin qua Zalo hoặc gửi email. Admin có thể can thiệp dữ liệu, gia hạn Key, hoặc xử lý tranh chấp đánh giá.</div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -1055,10 +1364,10 @@
 <!-- Modal Google Maps đã được thay bằng link mở thẳng Google Maps Search -->
 <!-- Không cần modal giả lập nữa -->
 
-<script src="ket-noi-supabase.js?v=5.1"></script>
-<script src="bo-may-du-lieu.js?v=5.1"></script>
-<script src="hieu-ung-giao-dien.js?v=5.1"></script>
-<script src="phan-he-host.js?v=5.1"></script>
+<script src="ket-noi-supabase.js?v=5.2"></script>
+<script src="bo-may-du-lieu.js?v=5.2"></script>
+<script src="hieu-ung-giao-dien.js?v=5.2"></script>
+<script src="phan-he-host.js?v=5.2"></script>
 
 <script>
 // Filter danh sách kèo theo tab
@@ -1244,6 +1553,60 @@ console.log=()=>{};
             <button onclick="window.luuDanhGiaCa()"
                     style="background:linear-gradient(135deg,rgba(0,255,136,0.18),rgba(0,200,100,0.25));border:1px solid rgba(0,255,136,0.35);color:#00ff88;padding:8px 22px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;font-weight:700;">
                 <i class="fa-solid fa-floppy-disk"></i> Lưu
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     [3] Modal Chi Tiết Ca Đấu — z-index:1150
+     ══════════════════════════════════════════════════════════ -->
+<div id="modal-ca-detail" class="hidden"
+     style="position:fixed;inset:0;z-index:1150;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);"
+     onclick="if(event.target===this)window.dongModalCaDetail()">
+    <div style="background:#0f1e35;border:1px solid #1e3a5f;border-radius:14px;width:min(98vw,820px);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.7);">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px 12px;border-bottom:1px solid #1e3a5f;flex-shrink:0;">
+            <h3 style="margin:0;font-size:1rem;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:8px;">
+                <i class="fa-solid fa-chart-pie" style="color:#22d3ee;"></i> Chi Tiết Ca Đấu
+            </h3>
+            <button onclick="window.dongModalCaDetail()"
+                    style="background:rgba(100,116,139,0.2);border:1px solid rgba(100,116,139,0.4);color:#94a3b8;font-size:1.1rem;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">✕</button>
+        </div>
+        <!-- Body scrollable -->
+        <div id="modal-ca-detail-body" style="overflow-y:auto;flex:1;padding:18px 22px 20px;"></div>
+        <!-- Footer -->
+        <div style="padding:10px 22px;border-top:1px solid #1e3a5f;display:flex;justify-content:flex-end;flex-shrink:0;">
+            <button onclick="window.dongModalCaDetail()"
+                    style="background:rgba(30,58,95,0.6);border:1px solid #2d4a6e;color:#94a3b8;padding:7px 20px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;">
+                Đóng
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     [1] Modal Hồ Sơ Khách — z-index:1150 (trên DS Khách 1100)
+     ══════════════════════════════════════════════════════════ -->
+<div id="modal-ho-so-khach" class="hidden"
+     style="position:fixed;inset:0;z-index:1150;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);"
+     onclick="if(event.target===this)window.dongModalHoSoKhach()">
+    <div style="background:#0f1e35;border:1px solid #1e3a5f;border-radius:14px;width:min(98vw,640px);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.7);">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px 12px;border-bottom:1px solid #1e3a5f;flex-shrink:0;">
+            <h3 style="margin:0;font-size:1rem;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:8px;">
+                <i class="fa-solid fa-id-card" style="color:#60a5fa;"></i> Hồ Sơ Tín Dụng Khách
+            </h3>
+            <button onclick="window.dongModalHoSoKhach()"
+                    style="background:rgba(100,116,139,0.2);border:1px solid rgba(100,116,139,0.4);color:#94a3b8;font-size:1.1rem;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">✕</button>
+        </div>
+        <!-- Body scrollable -->
+        <div id="modal-ho-so-khach-body" style="overflow-y:auto;flex:1;padding:18px 22px 20px;"></div>
+        <!-- Footer -->
+        <div style="padding:10px 22px;border-top:1px solid #1e3a5f;display:flex;justify-content:flex-end;flex-shrink:0;">
+            <button onclick="window.dongModalHoSoKhach()"
+                    style="background:rgba(30,58,95,0.6);border:1px solid #2d4a6e;color:#94a3b8;padding:7px 20px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;">
+                Đóng
             </button>
         </div>
     </div>

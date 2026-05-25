@@ -50,7 +50,7 @@
         _setDisplay("adminConsole",   "block");
         // Khôi phục tab từ URL hash nếu có, mặc định "keys"
         const hashTab   = (location.hash || "").replace("#tab-", "");
-        const validTabs = ["keys", "guests", "reviews", "config", "stats"];
+        const validTabs = ["keys", "guests", "reviews", "config", "stats", "cadau"];
         window.chuyenTabAdmin(validTabs.includes(hashTab) ? hashTab : "keys");
     }
 
@@ -107,6 +107,7 @@
         else if (tabName === "reviews") _taiDanhSachDanhGia();
         else if (tabName === "config")  _taiThongBao();
         else if (tabName === "stats")   _taiThongKe();
+        else if (tabName === "cadau")   _taiDanhSachCaDauAdmin();
     };
 
     /* ═══════════════════════════════════════════════════
@@ -174,6 +175,311 @@
     function _st(id, val) {
         const el = document.getElementById(id);
         if (el) el.textContent = val;
+    }
+
+    /* ═══════════════════════════════════════════════════
+     * 4B. CA ĐẤU — ADMIN QUẢN LÝ TOÀN HỆ THỐNG
+     * ═══════════════════════════════════════════════════ */
+
+    // Dữ liệu ca đấu đã tải — dùng cho filter + search
+    let _allCaDauAdmin = [];
+    let _keyHostMap    = {}; // ma_key → ten_host
+    let _datSlotCountMap = {}; // id_ca_dau → số slot đã đặt (tất cả trạng thái trừ Khách hủy)
+    // ID ca đang chỉnh sửa
+    let _editingCaId   = null;
+
+    async function _taiDanhSachCaDauAdmin() {
+        const tbody = document.getElementById("adminCaDauBody");
+        if (!tbody) return;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:28px;color:#64748b;">
+            <i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu ca đấu...</td></tr>`;
+        try {
+            // Tải song song: ca_dau + quan_ly_key + dat_slot
+            const [caDauList, keys, datSlots] = await Promise.all([
+                window.dbEngine.doc("ca_dau"),
+                window.dbEngine.doc("quan_ly_key"),
+                window.dbEngine.doc("dat_slot")
+            ]);
+
+            // Tạo map host key → tên host
+            _keyHostMap = {};
+            keys.forEach(k => { if (k.ma_key) _keyHostMap[k.ma_key] = k.ten_host || k.ma_key; });
+
+            // Tạo map id_ca_dau → số khách (loại trừ "Khách hủy")
+            _datSlotCountMap = {};
+            datSlots.forEach(s => {
+                if (s.trang_thai_di_danh !== "Khách hủy") {
+                    _datSlotCountMap[s.id_ca_dau] = (_datSlotCountMap[s.id_ca_dau] || 0) + 1;
+                }
+            });
+
+            // Sắp xếp: mới nhất trước
+            caDauList.sort((a, b) => new Date(b.ngay_danh || 0) - new Date(a.ngay_danh || 0));
+            _allCaDauAdmin = caDauList;
+
+            _renderCaDauAdmin(caDauList);
+        } catch (e) {
+            if (tbody) tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:28px;color:#ef4444;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Lỗi tải dữ liệu: ${e.message || "Không rõ"}</td></tr>`;
+        }
+    }
+
+    function _renderCaDauAdmin(list) {
+        const tbody = document.getElementById("adminCaDauBody");
+        if (!tbody) return;
+
+        if (!list.length) {
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:#64748b;">
+                <i class="fa-solid fa-calendar-xmark" style="font-size:1.5rem;display:block;margin-bottom:8px;"></i>
+                Không tìm thấy ca đấu nào.</td></tr>`;
+            return;
+        }
+
+        const _vnd = (n) => (n || 0).toLocaleString("vi-VN") + "đ";
+
+        tbody.innerHTML = list.map(c => {
+            const tenHost    = _keyHostMap[c.ma_key_host] || c.ma_key_host || "—";
+            const soKhach    = _datSlotCountMap[c.id] || 0;
+            const trangThai  = c.da_chot_ca
+                ? `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(100,116,139,0.15);color:#94a3b8;padding:3px 10px;border-radius:12px;font-size:0.75rem;font-weight:600;"><i class="fa-solid fa-lock" style="font-size:0.65em;"></i> Đã chốt</span>`
+                : `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(0,255,136,0.12);color:#00ff88;padding:3px 10px;border-radius:12px;font-size:0.75rem;font-weight:600;"><i class="fa-solid fa-circle" style="font-size:0.5em;"></i> Đang mở</span>`;
+            const ngay       = c.ngay_danh ? new Date(c.ngay_danh).toLocaleDateString("vi-VN") : "—";
+            const gio        = `${c.gio_bat_dau || "--:--"} – ${c.gio_ket_thuc || "--:--"}`;
+            const tinh       = [c.tinh_thanh, c.quan_huyen].filter(Boolean).join(" / ") || "—";
+
+            return `<tr>
+                <td style="white-space:nowrap;font-weight:600;color:#e2e8f0;">${ngay}</td>
+                <td>
+                    <div style="font-size:0.8rem;color:#60a5fa;font-weight:600;">${_escHtml(tenHost)}</div>
+                    <div style="font-size:0.7rem;color:#64748b;font-family:monospace;">${c.ma_key_host || ""}</div>
+                </td>
+                <td style="font-weight:500;color:#e2e8f0;">${_escHtml(c.ten_san || "—")}</td>
+                <td style="font-size:0.8rem;color:#9ca3af;">${_escHtml(tinh)}</td>
+                <td style="font-size:0.82rem;color:#94a3b8;white-space:nowrap;">${gio}</td>
+                <td style="text-align:center;">
+                    <span style="background:rgba(99,102,241,0.15);color:#a78bfa;padding:3px 10px;border-radius:12px;font-size:0.8rem;font-weight:700;">${soKhach}</span>
+                </td>
+                <td style="font-size:0.8rem;white-space:nowrap;">
+                    <span style="color:#00ff88;">Nam: ${_vnd(c.gia_nam)}</span><br>
+                    <span style="color:#f472b6;">Nữ: ${_vnd(c.gia_nu)}</span>
+                </td>
+                <td>${trangThai}</td>
+                <td>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <button class="btn-mini" onclick="window.suaCaDauAdmin('${c.id}')"
+                            style="background:rgba(96,165,250,0.1);color:#60a5fa;border:1px solid rgba(96,165,250,0.3);">
+                            <i class="fa-solid fa-pen-to-square"></i> Sửa
+                        </button>
+                        <button class="btn-mini" onclick="window.xoaCaDauAdmin('${c.id}','${_escHtml(c.ten_san || c.id)}')"
+                            style="background:rgba(239,68,68,0.08);color:#f87171;border:1px solid rgba(239,68,68,0.25);">
+                            <i class="fa-solid fa-trash-can"></i> Xóa
+                        </button>
+                        ${c.da_chot_ca
+                            ? `<button class="btn-mini" onclick="window.moChocCaDauAdmin('${c.id}', false)"
+                                style="background:rgba(251,146,60,0.1);color:#fb923c;border:1px solid rgba(251,146,60,0.3);">
+                                <i class="fa-solid fa-lock-open"></i> Mở lại
+                               </button>`
+                            : `<button class="btn-mini" onclick="window.moChocCaDauAdmin('${c.id}', true)"
+                                style="background:rgba(100,116,139,0.1);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);">
+                                <i class="fa-solid fa-lock"></i> Chốt
+                               </button>`
+                        }
+                    </div>
+                </td>
+            </tr>`;
+        }).join("");
+    }
+
+    // Hàm tìm kiếm ca đấu theo text
+    window.locCaDauAdmin = function () {
+        const q = (document.getElementById("adminCaDauSearch")?.value || "").toLowerCase();
+        if (!q) { _renderCaDauAdmin(_allCaDauAdmin); return; }
+        const filtered = _allCaDauAdmin.filter(c => {
+            const tenHost = (_keyHostMap[c.ma_key_host] || "").toLowerCase();
+            return (c.ten_san   || "").toLowerCase().includes(q)
+                || (c.tinh_thanh || "").toLowerCase().includes(q)
+                || (c.quan_huyen || "").toLowerCase().includes(q)
+                || tenHost.includes(q)
+                || (c.ma_key_host || "").toLowerCase().includes(q);
+        });
+        _renderCaDauAdmin(filtered);
+    };
+
+    // Hàm lọc theo trạng thái
+    window.locCaDauTheoTrangThai = function (loai, btnEl) {
+        document.querySelectorAll("#adminTab_cadau .ad-pill").forEach(b => b.classList.remove("active"));
+        if (btnEl) btnEl.classList.add("active");
+
+        const today = new Date().toISOString().split("T")[0];
+        let filtered;
+        if      (loai === "open")   filtered = _allCaDauAdmin.filter(c => !c.da_chot_ca);
+        else if (loai === "closed") filtered = _allCaDauAdmin.filter(c => c.da_chot_ca);
+        else if (loai === "today")  filtered = _allCaDauAdmin.filter(c => c.ngay_danh === today);
+        else                        filtered = _allCaDauAdmin;
+
+        _renderCaDauAdmin(filtered);
+    };
+
+    // Mở modal sửa ca đấu
+    window.suaCaDauAdmin = async function (caId) {
+        _editingCaId = caId;
+        const body = document.getElementById("modalSuaCaDauBody");
+        if (!body) return;
+        body.innerHTML = `<div style="text-align:center;padding:28px;color:#64748b;">
+            <i class="fa-solid fa-spinner fa-spin fa-lg"></i><br><br>Đang tải thông tin...</div>`;
+
+        // Hiện modal
+        const overlay = document.getElementById("modalSuaCaDauOverlay");
+        if (overlay) { overlay.style.display = "flex"; }
+
+        try {
+            const list = await window.dbEngine.doc("ca_dau", { eq: { id: caId } });
+            const c    = list[0];
+            if (!c) {
+                body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">Không tìm thấy ca đấu.</div>`;
+                return;
+            }
+
+            const tenHost = _keyHostMap[c.ma_key_host] || c.ma_key_host || "—";
+
+            body.innerHTML = `
+                <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:8px;margin-bottom:4px;">
+                    <i class="fa-solid fa-circle-info" style="color:#60a5fa;"></i>
+                    <div>
+                        <div style="font-size:0.78rem;color:#64748b;">Host</div>
+                        <div style="font-weight:700;color:#60a5fa;">${_escHtml(tenHost)}</div>
+                    </div>
+                </div>
+
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="ad-form-group">
+                        <label class="ad-label">Tên Sân</label>
+                        <input type="text" class="ad-input" id="editCaTenSan" value="${_escHtml(c.ten_san || '')}">
+                    </div>
+                    <div class="ad-form-group">
+                        <label class="ad-label">Ngày Đánh</label>
+                        <input type="date" class="ad-input" id="editCaNgayDanh" value="${c.ngay_danh || ''}">
+                    </div>
+                    <div class="ad-form-group">
+                        <label class="ad-label">Giờ Bắt Đầu</label>
+                        <input type="time" class="ad-input" id="editCaGioBatDau" value="${(c.gio_bat_dau || '').substring(0,5)}">
+                    </div>
+                    <div class="ad-form-group">
+                        <label class="ad-label">Giờ Kết Thúc</label>
+                        <input type="time" class="ad-input" id="editCaGioKetThuc" value="${(c.gio_ket_thuc || '').substring(0,5)}">
+                    </div>
+                    <div class="ad-form-group">
+                        <label class="ad-label">Giá Nam (VNĐ)</label>
+                        <input type="number" class="ad-input" id="editCaGiaNam" value="${c.gia_nam || 0}" min="0">
+                    </div>
+                    <div class="ad-form-group">
+                        <label class="ad-label">Giá Nữ (VNĐ)</label>
+                        <input type="number" class="ad-input" id="editCaGiaNu" value="${c.gia_nu || 0}" min="0">
+                    </div>
+                    <div class="ad-form-group">
+                        <label class="ad-label">Tỉnh / Thành Phố</label>
+                        <input type="text" class="ad-input" id="editCaTinh" value="${_escHtml(c.tinh_thanh || '')}">
+                    </div>
+                    <div class="ad-form-group">
+                        <label class="ad-label">Quận / Huyện</label>
+                        <input type="text" class="ad-input" id="editCaQuan" value="${_escHtml(c.quan_huyen || '')}">
+                    </div>
+                </div>
+
+                <div class="ad-form-group">
+                    <label class="ad-label">Địa Chỉ Sân</label>
+                    <input type="text" class="ad-input" id="editCaDiaChi" value="${_escHtml(c.dia_chi_san || '')}">
+                </div>
+
+                <div class="ad-form-group">
+                    <label class="ad-label" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                        <input type="checkbox" id="editCaDaChot" ${c.da_chot_ca ? "checked" : ""}
+                            style="width:16px;height:16px;cursor:pointer;accent-color:#00ff88;">
+                        <span>Ca đấu đã chốt (da_chot_ca)</span>
+                    </label>
+                    <div style="font-size:0.72rem;color:#64748b;margin-top:4px;">
+                        ⚠️ Thay đổi trạng thái chốt ca sẽ khóa/mở khóa toàn bộ thao tác của Host.
+                    </div>
+                </div>`;
+        } catch (e) {
+            body.innerHTML = `<div style="color:#ef4444;text-align:center;padding:20px;">
+                Lỗi: ${e.message || "Không thể tải thông tin"}</div>`;
+        }
+    };
+
+    // Lưu thay đổi ca đấu (Admin)
+    window.luuSuaCaDauAdmin = async function () {
+        if (!_editingCaId) return;
+        const payload = {
+            ten_san:           document.getElementById("editCaTenSan")?.value?.trim()   || undefined,
+            ngay_danh:         document.getElementById("editCaNgayDanh")?.value         || undefined,
+            gio_bat_dau:       document.getElementById("editCaGioBatDau")?.value        || undefined,
+            gio_ket_thuc:      document.getElementById("editCaGioKetThuc")?.value       || undefined,
+            gia_nam:           Number(document.getElementById("editCaGiaNam")?.value)   || 0,
+            gia_nu:            Number(document.getElementById("editCaGiaNu")?.value)    || 0,
+            tinh_thanh:        document.getElementById("editCaTinh")?.value?.trim()     || undefined,
+            quan_huyen:        document.getElementById("editCaQuan")?.value?.trim()     || undefined,
+            dia_chi_san:       document.getElementById("editCaDiaChi")?.value?.trim()   || undefined,
+            da_chot_ca:        !!document.getElementById("editCaDaChot")?.checked,
+        };
+        // Xóa key undefined để không ghi đè bằng undefined
+        Object.keys(payload).forEach(k => { if (payload[k] === undefined) delete payload[k]; });
+
+        try {
+            await window.dbEngine.ghi("ca_dau", payload, { id: _editingCaId });
+            window.hienToast("Đã lưu", "Ca đấu đã được cập nhật thành công.", "success");
+            window.dongModalSuaCaDau();
+            _taiDanhSachCaDauAdmin(); // Reload bảng
+        } catch (e) {
+            window.hienToast("Lỗi lưu", (e.message || "Không thể lưu ca đấu").slice(0, 80), "danger");
+        }
+    };
+
+    // Đóng modal sửa ca đấu
+    window.dongModalSuaCaDau = function () {
+        const overlay = document.getElementById("modalSuaCaDauOverlay");
+        if (overlay) overlay.style.display = "none";
+        _editingCaId = null;
+    };
+
+    // Xóa ca đấu (double confirm)
+    window.xoaCaDauAdmin = async function (caId, tenSan) {
+        if (!confirm(`Xóa ca đấu "${tenSan}"?\nToàn bộ slot đặt trong ca này SẼ BỊ XÓA. Hành động KHÔNG THỂ hoàn tác!`)) return;
+        if (!confirm(`Xác nhận lần 2: Xóa vĩnh viễn ca đấu "${tenSan}"?`)) return;
+        try {
+            // Xóa các dat_slot liên quan trước
+            const slotsOfCa = await window.dbEngine.doc("dat_slot", { eq: { id_ca_dau: caId } });
+            await Promise.all(slotsOfCa.map(s => window.dbEngine.xoa("dat_slot", { id: s.id }).catch(() => {})));
+            // Xóa ca đấu
+            await window.dbEngine.xoa("ca_dau", { id: caId });
+            window.hienToast("Đã xóa", `Ca đấu "${tenSan}" và ${slotsOfCa.length} slot liên quan đã bị xóa.`, "warning");
+            _taiDanhSachCaDauAdmin();
+        } catch (e) {
+            window.hienToast("Lỗi xóa", (e.message || "Không thể xóa").slice(0, 80), "danger");
+        }
+    };
+
+    // Chốt / Mở lại ca đấu (Admin)
+    window.moChocCaDauAdmin = async function (caId, daChot) {
+        const label = daChot ? "Chốt" : "Mở lại";
+        if (!confirm(`${label} ca đấu này?`)) return;
+        try {
+            await window.dbEngine.ghi("ca_dau", { da_chot_ca: daChot }, { id: caId });
+            window.hienToast(`Đã ${label}`, `Ca đấu đã được ${label.toLowerCase()} thành công.`, daChot ? "warning" : "success");
+            _taiDanhSachCaDauAdmin();
+        } catch (e) {
+            window.hienToast("Lỗi", (e.message || "Không thể thực hiện").slice(0, 80), "danger");
+        }
+    };
+
+    // Escape HTML để tránh XSS trong template literal
+    function _escHtml(str) {
+        return String(str || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#39;");
     }
 
     /* ═══════════════════════════════════════════════════

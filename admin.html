@@ -859,6 +859,9 @@
             <button class="ad-tab-btn" data-tab="stats" onclick="chuyenTabAdmin('stats')">
                 <i class="fa-solid fa-chart-bar"></i> Thống Kê
             </button>
+            <button class="ad-tab-btn" data-tab="cadau" onclick="chuyenTabAdmin('cadau')">
+                <i class="fa-solid fa-calendar-days"></i> Ca Đấu
+            </button>
         </div>
 
         <!-- ════════════════════════════════════════════
@@ -1140,6 +1143,74 @@
                     <i class="fa-solid fa-arrows-rotate"></i> Làm Mới Thống Kê
                 </button>
             </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════
+             TAB 6: CA ĐẤU — ADMIN QUẢN LÝ TOÀN BỘ
+             ════════════════════════════════════════════ -->
+        <div class="ad-tab-content" id="adminTab_cadau">
+            <!-- Toolbar -->
+            <div class="ad-toolbar">
+                <div class="ad-toolbar-left">
+                    <span style="font-size:1rem;font-weight:700;color:var(--text-main);">
+                        <i class="fa-solid fa-calendar-days" style="color:#60a5fa;"></i>
+                        Quản Lý Ca Đấu Toàn Hệ Thống
+                    </span>
+                    <span style="font-size:0.78rem;color:#64748b;margin-left:8px;">
+                        Xem, sửa, xóa ca đấu của bất kỳ Host nào
+                    </span>
+                </div>
+                <div class="ad-search-wrap">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" class="ad-search-input" id="adminCaDauSearch"
+                        placeholder="Tìm tên sân, host, tỉnh thành..." oninput="locCaDauAdmin()">
+                </div>
+            </div>
+
+            <!-- Bộ lọc trạng thái ca đấu -->
+            <div class="ad-filter-pills">
+                <button class="ad-pill active" onclick="locCaDauTheoTrangThai('all', this)">
+                    Tất cả
+                </button>
+                <button class="ad-pill" onclick="locCaDauTheoTrangThai('open', this)">
+                    <i class="fa-solid fa-circle" style="color:#00ff88;font-size:0.5em;"></i> Đang mở
+                </button>
+                <button class="ad-pill" onclick="locCaDauTheoTrangThai('closed', this)">
+                    <i class="fa-solid fa-lock" style="color:#64748b;font-size:0.8em;"></i> Đã chốt
+                </button>
+                <button class="ad-pill" onclick="locCaDauTheoTrangThai('today', this)">
+                    <i class="fa-solid fa-calendar-day" style="color:#f59e0b;font-size:0.8em;"></i> Hôm nay
+                </button>
+            </div>
+
+            <!-- Bảng danh sách ca đấu -->
+            <div class="table-responsive">
+                <table class="ad-table">
+                    <thead>
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Host</th>
+                            <th>Tên Sân</th>
+                            <th>Tỉnh / Quận</th>
+                            <th>Giờ</th>
+                            <th>Khách</th>
+                            <th>Giá Nam / Nữ</th>
+                            <th>Trạng thái</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminCaDauBody">
+                        <tr>
+                            <td colspan="9" style="text-align:center;padding:28px;color:#64748b;">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Phân trang -->
+            <div id="adminCaDauPagination" style="display:flex;justify-content:center;gap:8px;margin-top:16px;flex-wrap:wrap;"></div>
         </div>
 
     </div><!-- /adminConsole -->
@@ -1580,6 +1651,34 @@ input, textarea, [contenteditable] { user-select: text; -webkit-user-select: tex
         </div>
         <!-- Body (nội dung inject bởi JS) -->
         <div id="modalThanhVienBody" style="padding:20px;overflow-y:auto;flex:1;">
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL CHỈNH SỬA CA ĐẤU — Admin can edit any ca đấu
+     ══════════════════════════════════════════════════════ -->
+<div id="modalSuaCaDauOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:2100;align-items:center;justify-content:center;padding:16px;"
+     onclick="if(event.target===this)window.dongModalSuaCaDau()">
+    <div style="background:#1a2844;border:1px solid #2d4a6e;border-radius:14px;width:100%;max-width:640px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,0.7);">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid #2d4a6e;flex-shrink:0;">
+            <span style="display:flex;align-items:center;gap:10px;font-size:1rem;font-weight:700;color:#e2e8f0;">
+                <i class="fa-solid fa-pen-to-square" style="color:#60a5fa;"></i>
+                Chỉnh Sửa Ca Đấu
+            </span>
+            <button onclick="window.dongModalSuaCaDau()" style="background:none;border:none;color:#64748b;font-size:1.3rem;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;" title="Đóng">✕</button>
+        </div>
+        <!-- Body -->
+        <div id="modalSuaCaDauBody" style="padding:22px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;">
+            <!-- Nội dung inject bởi JS -->
+        </div>
+        <!-- Footer -->
+        <div style="display:flex;justify-content:flex-end;gap:10px;padding:14px 22px;border-top:1px solid #2d4a6e;flex-shrink:0;">
+            <button class="ad-btn-ghost" onclick="window.dongModalSuaCaDau()" style="padding:9px 20px;">Hủy</button>
+            <button class="ad-btn-primary" onclick="window.luuSuaCaDauAdmin()" style="padding:9px 24px;">
+                <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
+            </button>
         </div>
     </div>
 </div>

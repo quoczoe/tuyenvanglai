@@ -874,11 +874,36 @@
                 return;
             }
 
+            // [6] AUTO-LOCK: Tìm ca hết giờ nhưng chưa chốt → tự động chốt
+            const _isExpired = (s) => {
+                if (!s.ngay_danh || !s.gio_ket_thuc) return false;
+                const [hh, mm] = s.gio_ket_thuc.split(":").map(Number);
+                const end = new Date(s.ngay_danh);
+                end.setHours(hh, mm, 0, 0);
+                return end < new Date();
+            };
+            const canAutoLock = mySlots.filter(s => !s.da_chot_ca && _isExpired(s));
+            if (canAutoLock.length > 0) {
+                // Chốt hàng loạt trong nền (không await — không chặn UI)
+                Promise.all(canAutoLock.map(s =>
+                    window.dbEngine.ghi("ca_dau", { da_chot_ca: true }, { id: s.id }).catch(() => {})
+                )).then(() => {
+                    window.hienToast(
+                        `🔒 Đã tự động chốt ${canAutoLock.length} ca`,
+                        "Ca đấu đã qua giờ kết thúc được chốt tự động.",
+                        "warning"
+                    );
+                    // Cập nhật trạng thái local để UI hiển thị đúng ngay
+                    canAutoLock.forEach(s => { s.da_chot_ca = true; });
+                });
+            }
+
             tbody.innerHTML = "";
             mySlots.forEach(slot => {
                 const guests   = slotMap[slot.id] || [];
                 const daDen    = guests.filter(g => g.trang_thai_di_danh === "Đã tham gia").length;
                 const tongKhach = guests.length;
+                // Tính daChot có tính đến auto-lock ở trên
                 const daChot   = !!slot.da_chot_ca;
 
                 const tr = document.createElement("tr");
@@ -925,6 +950,10 @@
                         <button class="btn-mini btn-mini-green hs-action-btn" onclick="window.chotCaDau('${slot.id}')">
                             <i class="fa-solid fa-flag-checkered"></i> Chốt Ca
                         </button>` : `
+                        <button class="btn-mini hs-action-btn" style="background:rgba(34,211,238,0.1);color:#22d3ee;border:1px solid rgba(34,211,238,0.3);"
+                            onclick="window.xemChiTietCaDau('${slot.id}')">
+                            <i class="fa-solid fa-eye"></i> Chi tiết
+                        </button>
                         <button class="btn-mini btn-mini-cyan hs-action-btn" onclick="window.moModalDanhGiaCa('${slot.id}','${(slot.ten_san||'').replace(/'/g,'\\x27')}')">
                             <i class="fa-solid fa-star"></i> Đánh giá
                         </button>
@@ -1273,7 +1302,12 @@
                             onmouseover="this.style.background='rgba(30,58,95,0.35)'"
                             onmouseout="this.style.background='transparent'">
                     <td style="padding:10px;text-align:center;color:#64748b;">${idx + 1}</td>
-                    <td style="padding:10px;color:#e2e8f0;font-weight:500;">${g.ten_khach || "—"}</td>
+                    <td style="padding:10px;">
+                        <button onclick="window.xemHoSoKhach('${sdtKhachEsc}','${tenKhachEsc}','${matchId}')"
+                                style="background:none;border:none;color:#60a5fa;font-weight:500;cursor:pointer;padding:0;font-family:inherit;font-size:inherit;text-decoration:underline;text-underline-offset:2px;text-align:left;">
+                            ${g.ten_khach || "—"}
+                        </button>
+                    </td>
                     <td style="padding:10px;color:#94a3b8;font-family:monospace;">${g.sdt_khach || "—"}</td>
                     <td style="padding:10px;text-align:center;color:${genderClr};">${gioiTinh}</td>
                     <td style="padding:10px;text-align:center;">
@@ -1822,6 +1856,17 @@
         await _taiDoanhThuHost();
     };
 
+    /* ── [7] Tab Hướng Dẫn Sử Dụng ── */
+    window.chuyenTabHuongDan = function () {
+        document.querySelectorAll(".hs-tab-btn").forEach(b => b.classList.remove("active"));
+        const tabBtn = document.getElementById("tabBtnHuongDan");
+        if (tabBtn) tabBtn.classList.add("active");
+
+        document.querySelectorAll(".hs-tab-panel").forEach(p => p.style.display = "none");
+        const panel = document.getElementById("tabHuongDan");
+        if (panel) panel.style.display = "block";
+    };
+
     async function _taiDoanhThuHost(tuNgay, denNgay) {
         const panel = document.getElementById("tabDoanhThu");
         if (!panel) return;
@@ -1898,20 +1943,29 @@
 
         // Tính metrics
         let tongCa = caDauHienThi.length;
-        let tongCaChotted = 0, tongKhach = 0, tongDoanhThu = 0;
+        let tongCaChotted = 0, tongKhach = 0, tongDoanhThu = 0, tongLoiLo = 0;
 
         const doanhThuRows = caDauHienThi.map(c => {
             const slots = slotMap[c.id] || [];
             const slotsDiDanh = slots.filter(s => s.trang_thai_di_danh === "Đã tham gia");
-            const soKhach = slotsDiDanh.length;
-            const doanhThu = slotsDiDanh.reduce((sum, s) =>
+            const soKhach    = slotsDiDanh.length;
+            const doanhThuVe = slotsDiDanh.reduce((sum, s) =>
                 sum + (s.gioi_tinh === "female" ? (c.gia_nu || 0) : (c.gia_nam || 0)), 0);
+            // Cộng thêm tiền thu từ bùng kèo (phạt bùng)
+            const tienBungThu = slots
+                .filter(s => s.trang_thai_di_danh === "Bùng kèo")
+                .reduce((sum, s) => sum + (s.tien_thu_bung || 0), 0);
+            const tongThu = doanhThuVe + tienBungThu;
+            // Tổng chi phí nội bộ (sân + cầu + nước)
+            const tongChi = (c.chi_phi_san_co_dinh || 0) + (c.tong_chi_phi_cau || 0) + (c.chi_phi_nuoc_khac || 0);
+            const loiLo   = tongThu - tongChi;
             if (c.da_chot_ca) {
                 tongCaChotted++;
-                tongKhach   += soKhach;
-                tongDoanhThu += doanhThu;
+                tongKhach    += soKhach;
+                tongDoanhThu += tongThu;
+                tongLoiLo    += loiLo;
             }
-            return { ...c, soKhach, doanhThu };
+            return { ...c, soKhach, doanhThu: tongThu, tongThu, tongChi, loiLo };
         });
 
         // Chỉ hiện ca đã chốt trong bảng lịch sử
@@ -1959,7 +2013,10 @@
             <div class="stat-card">
                 <div class="stat-icon" style="color:#f59e0b;"><i class="fa-solid fa-coins"></i></div>
                 <div class="stat-value" style="font-size:1.3rem;color:#f59e0b;">${_formatVND(tongDoanhThu)}</div>
-                <div class="stat-label">Doanh Thu Thực Thu</div>
+                <div class="stat-label">Tổng Thu Thực Tế</div>
+                <div style="margin-top:5px;font-size:0.78rem;font-weight:700;color:${tongLoiLo >= 0 ? '#00ff88' : '#f87171'};">
+                    Lời/Lỗ: ${tongLoiLo >= 0 ? '+' : '−'}${_formatVND(Math.abs(tongLoiLo))}
+                </div>
             </div>
         </div>
 
@@ -1977,17 +2034,25 @@
             Chưa có ca nào được chốt trong khoảng thời gian này.
         </div>` : `
         <div style="width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;">
-        <table class="hs-table" style="min-width:560px;">
+        <table class="hs-table" style="min-width:860px;">
             <thead><tr>
                 <th>Ngày</th>
                 <th>Tên Sân</th>
-                <th>Số Khách</th>
-                <th>Doanh Thu</th>
+                <th style="text-align:center;">Khách</th>
+                <th>Tổng Chi</th>
+                <th>Tổng Thu</th>
+                <th>Lời / Lỗ</th>
                 <th>Thao Tác</th>
             </tr></thead>
             <tbody>
-                ${caChoTted.map((c, i) => `
-                <tr style="${i % 2 === 0 ? "" : "background:rgba(255,255,255,0.02)"}">
+                ${caChoTted.map((c, i) => {
+                    const loiLoColor  = (c.loiLo || 0) >= 0 ? "#00ff88" : "#f87171";
+                    const loiLoPrefix = (c.loiLo || 0) >= 0 ? "+" : "−";
+                    const loiLoAbs    = _formatVND(Math.abs(c.loiLo || 0));
+                    const chiSan      = _formatVND(c.chi_phi_san_co_dinh || 0);
+                    const chiCau      = _formatVND(c.tong_chi_phi_cau    || 0);
+                    const chiNuoc     = _formatVND(c.chi_phi_nuoc_khac   || 0);
+                    return `<tr style="${i % 2 === 0 ? "" : "background:rgba(255,255,255,0.02)"}">
                     <td style="white-space:nowrap;">
                         <div style="font-weight:600;font-size:0.85rem;">${_formatDate(c.ngay_danh)}</div>
                         <div style="font-size:0.72rem;color:#94a3b8;">${c.gio_bat_dau||""} – ${c.gio_ket_thuc||""}</div>
@@ -2000,11 +2065,23 @@
                         <span style="font-size:1.1rem;font-weight:700;color:#60a5fa;">${c.soKhach}</span>
                         <span style="font-size:0.72rem;color:#64748b;"> người</span>
                     </td>
+                    <td style="white-space:nowrap;">
+                        <div style="font-size:0.85rem;font-weight:700;color:#e2e8f0;">${_formatVND(c.tongChi || 0)}</div>
+                        <div style="font-size:0.68rem;color:#64748b;margin-top:3px;line-height:1.65;">
+                            🏟 Sân: ${chiSan}<br>🏸 Cầu: ${chiCau}<br>💧 Khác: ${chiNuoc}
+                        </div>
+                    </td>
                     <td>
-                        <span style="font-size:0.9rem;font-weight:700;color:#f59e0b;">${_formatVND(c.doanhThu)}</span>
+                        <span style="font-size:0.9rem;font-weight:700;color:#f59e0b;">${_formatVND(c.tongThu || 0)}</span>
+                    </td>
+                    <td>
+                        <span style="font-size:1rem;font-weight:700;color:${loiLoColor};">${loiLoPrefix}${loiLoAbs}</span>
                     </td>
                     <td>
                         <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                            <button class="btn-mini btn-mini-cyan" onclick="window.xemChiTietCaDau('${c.id}')" title="Xem chi tiết ca đấu">
+                                <i class="fa-solid fa-eye"></i> Chi tiết
+                            </button>
                             <button class="btn-mini btn-mini-gold" onclick="window.xuatCSVCaDau('${c.id}')" title="Xuất CSV">
                                 <i class="fa-solid fa-file-csv"></i> CSV
                             </button>
@@ -2014,7 +2091,8 @@
                             </button>
                         </div>
                     </td>
-                </tr>`).join("")}
+                </tr>`;
+                }).join("")}
             </tbody>
         </table>
         </div>`}`;
@@ -2034,6 +2112,359 @@
         const tuNgay  = document.getElementById("doanhThuTuNgay")?.value;
         const denNgay = document.getElementById("doanhThuDenNgay")?.value;
         _taiDoanhThuHost(tuNgay || undefined, denNgay || undefined);
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * [3] CHI TIẾT CA ĐẤU — modal xem đầy đủ thu/chi + cầu + khách
+     * Gọi từ: nút "Chi tiết" trong bảng ca đấu + tab Doanh Thu
+     * ═══════════════════════════════════════════════════ */
+    window.xemChiTietCaDau = async function (caId) {
+        const modal = document.getElementById("modal-ca-detail");
+        if (!modal) { window.hienToast("Lỗi", "Không tìm thấy modal chi tiết ca.", "danger"); return; }
+        const body = document.getElementById("modal-ca-detail-body");
+        if (body) body.innerHTML = `<div style="text-align:center;padding:40px;color:#64748b;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Đang tải...</div>`;
+        modal.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+
+        try {
+            const [caList, slots] = await Promise.all([
+                window.dbEngine.doc("ca_dau", { eq: { id: caId } }),
+                window.dbEngine.doc("dat_slot", { eq: { id_ca_dau: caId } }).catch(() => [])
+            ]);
+            const ca = caList[0];
+            if (!ca) {
+                if (body) body.innerHTML = `<p style="color:#f87171;text-align:center;padding:32px;">Không tìm thấy ca đấu.</p>`;
+                return;
+            }
+
+            // Phân loại slot
+            const slotsDiDanh = slots.filter(s => s.trang_thai_di_danh === "Đã tham gia");
+            const slotsBung   = slots.filter(s => s.trang_thai_di_danh === "Bùng kèo");
+            const slotsHuy    = slots.filter(s => s.trang_thai_di_danh === "Khách hủy");
+            const slotsCho    = slots.filter(s => !["Đã tham gia","Bùng kèo","Khách hủy"].includes(s.trang_thai_di_danh));
+
+            // Tính toán tài chính
+            const doanhThuVe  = slotsDiDanh.reduce((sum, s) =>
+                sum + (s.gioi_tinh === "female" ? (ca.gia_nu || 0) : (ca.gia_nam || 0)), 0);
+            const tienBung    = slotsBung.reduce((sum, s) => sum + (s.tien_thu_bung || 0), 0);
+            const tongThu     = doanhThuVe + tienBung;
+            const tongChi     = (ca.chi_phi_san_co_dinh || 0) + (ca.tong_chi_phi_cau || 0) + (ca.chi_phi_nuoc_khac || 0);
+            const loiLo       = tongThu - tongChi;
+            const loiLoColor  = loiLo >= 0 ? "#00ff88" : "#f87171";
+            const loiLoPrefix = loiLo >= 0 ? "+" : "−";
+
+            // Bảng cầu tiêu thụ
+            const cauList  = Array.isArray(ca.loai_cau_su_dung) ? ca.loai_cau_su_dung : [];
+            const cauHTML  = cauList.length === 0
+                ? `<p style="color:#64748b;text-align:center;padding:12px;border:1px dashed #1e3a5f;border-radius:8px;">Không có dữ liệu cầu.</p>`
+                : `<div style="overflow-x:auto;"><table class="hs-table" style="min-width:380px;font-size:0.8rem;">
+                    <thead><tr>
+                        <th>Loại cầu</th><th>Quy cách</th>
+                        <th style="text-align:right;">Giá/quả</th>
+                        <th style="text-align:right;">Đã dùng</th>
+                        <th style="text-align:right;">Thành tiền</th>
+                    </tr></thead>
+                    <tbody>${cauList.map(cb => `<tr>
+                        <td>${cb.ten || "--"}</td>
+                        <td style="color:#94a3b8;">${cb.don_vi || cb.quy_cach || "--"}</td>
+                        <td style="text-align:right;">${_formatVND(cb.gia_qua || 0)}</td>
+                        <td style="text-align:right;">${cb.so_luong || 0} quả</td>
+                        <td style="text-align:right;color:#f59e0b;">${_formatVND(cb.thanh_tien || 0)}</td>
+                    </tr>`).join("")}</tbody>
+                </table></div>`;
+
+            // Bảng khách
+            const guestHTML = slots.length === 0
+                ? `<p style="color:#64748b;text-align:center;padding:12px;border:1px dashed #1e3a5f;border-radius:8px;">Không có khách đăng ký.</p>`
+                : `<div style="overflow-x:auto;"><table class="hs-table" style="min-width:360px;font-size:0.8rem;">
+                    <thead><tr><th>Tên</th><th>SĐT</th><th style="text-align:center;">GT</th><th style="text-align:center;">Trạng thái</th><th style="text-align:right;">Tiền</th></tr></thead>
+                    <tbody>${slots.map(s => {
+                        const gt    = s.gioi_tinh === "female" ? "Nữ" : "Nam";
+                        const gtClr = s.gioi_tinh === "female" ? "#f472b6" : "#60a5fa";
+                        const tt    = s.trang_thai_di_danh || "Chờ đánh";
+                        const ttClr = tt === "Đã tham gia" ? "#00ff88" : tt === "Bùng kèo" ? "#fb923c" : tt === "Khách hủy" ? "#f87171" : "#94a3b8";
+                        let tienText = "—";
+                        if (tt === "Đã tham gia") {
+                            const gia = s.gioi_tinh === "female" ? (ca.gia_nu || 0) : (ca.gia_nam || 0);
+                            tienText = `<span style="color:#f59e0b;">${_formatVND(gia)}</span>`;
+                        } else if (tt === "Bùng kèo" && s.tien_thu_bung > 0) {
+                            tienText = `<span style="color:#fb923c;">${_formatVND(s.tien_thu_bung)}</span>`;
+                        }
+                        return `<tr>
+                            <td>${s.ten_khach || "—"}</td>
+                            <td style="font-family:monospace;color:#94a3b8;font-size:0.75rem;">${s.sdt_khach || "—"}</td>
+                            <td style="text-align:center;color:${gtClr};">${gt}</td>
+                            <td style="text-align:center;"><span style="color:${ttClr};font-weight:600;">${tt}</span></td>
+                            <td style="text-align:right;">${tienText}</td>
+                        </tr>`;
+                    }).join("")}</tbody>
+                </table></div>`;
+
+            if (body) body.innerHTML = `
+                <!-- Thông tin ca -->
+                <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:10px;padding:14px 18px;margin-bottom:18px;">
+                    <div style="font-size:1rem;font-weight:700;color:#e2e8f0;margin-bottom:4px;">
+                        ${ca.ten_san || "—"}
+                        <span style="font-size:0.75rem;color:#64748b;font-weight:400;"> — ${ca.quan_huyen||""}, ${ca.tinh_thanh||""}</span>
+                    </div>
+                    <div style="font-size:0.82rem;color:#94a3b8;">
+                        📅 ${_formatDate(ca.ngay_danh)} &nbsp;|&nbsp; ⏰ ${ca.gio_bat_dau||""} – ${ca.gio_ket_thuc||""} (${ca.so_gio_choi||"?"} giờ)
+                        &nbsp;|&nbsp; 🏟 ${ca.so_san_mo||1} sân${ca.so_san_cu_the ? " ("+ca.so_san_cu_the+")" : ""}
+                    </div>
+                    ${ca.dia_chi_san ? `<div style="font-size:0.75rem;color:#64748b;margin-top:4px;">📍 ${ca.dia_chi_san}</div>` : ""}
+                </div>
+
+                <!-- 3 card tài chính -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;">
+                    <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:12px;text-align:center;">
+                        <div style="font-size:0.68rem;color:#f87171;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">TỔNG CHI</div>
+                        <div style="font-size:1rem;font-weight:700;color:#fca5a5;">${_formatVND(tongChi)}</div>
+                        <div style="font-size:0.65rem;color:#64748b;margin-top:5px;line-height:1.7;">
+                            🏟 Sân: ${_formatVND(ca.chi_phi_san_co_dinh||0)}<br>
+                            🏸 Cầu: ${_formatVND(ca.tong_chi_phi_cau||0)}<br>
+                            💧 Khác: ${_formatVND(ca.chi_phi_nuoc_khac||0)}
+                        </div>
+                    </div>
+                    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:12px;text-align:center;">
+                        <div style="font-size:0.68rem;color:#f59e0b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">TỔNG THU</div>
+                        <div style="font-size:1rem;font-weight:700;color:#fcd34d;">${_formatVND(tongThu)}</div>
+                        <div style="font-size:0.65rem;color:#64748b;margin-top:5px;line-height:1.7;">
+                            👤 Tham gia: ${_formatVND(doanhThuVe)}<br>
+                            ❌ Phạt bùng: ${_formatVND(tienBung)}
+                        </div>
+                    </div>
+                    <div style="background:rgba(${loiLo >= 0 ? "0,255,136" : "239,68,68"},0.08);border:1px solid rgba(${loiLo >= 0 ? "0,255,136" : "239,68,68"},0.25);border-radius:8px;padding:12px;text-align:center;">
+                        <div style="font-size:0.68rem;color:${loiLoColor};font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">LỜI / LỖ</div>
+                        <div style="font-size:1.2rem;font-weight:700;color:${loiLoColor};">${loiLoPrefix}${_formatVND(Math.abs(loiLo))}</div>
+                        <div style="font-size:0.7rem;color:#64748b;margin-top:5px;">${loiLo >= 0 ? "🎉 Có lời" : "⚠️ Lỗ buổi này"}</div>
+                    </div>
+                </div>
+
+                <!-- Thống kê khách -->
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+                    <span style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.25);padding:3px 12px;border-radius:20px;font-size:0.75rem;">✅ Tham gia: ${slotsDiDanh.length}</span>
+                    <span style="background:rgba(251,146,60,0.1);color:#fb923c;border:1px solid rgba(251,146,60,0.25);padding:3px 12px;border-radius:20px;font-size:0.75rem;">❌ Bùng kèo: ${slotsBung.length}</span>
+                    <span style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);padding:3px 12px;border-radius:20px;font-size:0.75rem;">🚫 Khách hủy: ${slotsHuy.length}</span>
+                    ${slotsCho.length > 0 ? `<span style="background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:3px 12px;border-radius:20px;font-size:0.75rem;">⏳ Chờ: ${slotsCho.length}</span>` : ""}
+                </div>
+
+                <!-- Bảng cầu -->
+                <h4 style="color:#e2e8f0;font-size:0.82rem;margin:0 0 8px;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-feather" style="color:#00ff88;"></i> Cầu tiêu thụ (${cauList.length} loại)
+                </h4>
+                <div style="margin-bottom:16px;">${cauHTML}</div>
+
+                <!-- Bảng khách -->
+                <h4 style="color:#e2e8f0;font-size:0.82rem;margin:0 0 8px;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-users" style="color:#60a5fa;"></i> Danh sách khách (${slots.length} người)
+                </h4>
+                ${guestHTML}`;
+
+        } catch(e) {
+            console.error("xemChiTietCaDau error:", e);
+            if (body) body.innerHTML = `<p style="color:#f87171;text-align:center;padding:32px;">Lỗi tải dữ liệu: ${(e.message||"").slice(0,60)}</p>`;
+        }
+    };
+
+    window.dongModalCaDetail = function () {
+        const modal = document.getElementById("modal-ca-detail");
+        if (modal) modal.classList.add("hidden");
+        document.body.style.overflow = "";
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * [1] HỒ SƠ KHÁCH — click tên khách trong DS Khách
+     *     Mở modal xem lịch sử, stats, đánh giá của khách tại sân
+     * ═══════════════════════════════════════════════════ */
+    window.xemHoSoKhach = async function (sdt, ten, _currentCaId) {
+        const modal = document.getElementById("modal-ho-so-khach");
+        if (!modal) { window.hienToast("Lỗi", "Không tìm thấy modal hồ sơ khách.", "danger"); return; }
+        // Lưu sdt + ten vào modal dataset để huySlotTuHoSo có thể reload
+        modal.dataset.sdt = sdt;
+        modal.dataset.ten = ten || "";
+        const body = document.getElementById("modal-ho-so-khach-body");
+        if (body) body.innerHTML = `<div style="text-align:center;padding:40px;color:#64748b;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Đang tải hồ sơ...</div>`;
+        modal.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+
+        try {
+            // Fetch song song: tất cả slot của sdt + ca của host hiện tại + reviews về sdt này
+            const [allSlots, myCaDau, reviews] = await Promise.all([
+                window.dbEngine.doc("dat_slot", { eq: { sdt_khach: sdt } }).catch(() => []),
+                window.dbEngine.doc("ca_dau",   { eq: { ma_key_host: window.currentHostKey } }).catch(() => []),
+                window.dbEngine.doc("danh_gia_tin_dung", {
+                    eq: { sdt_nguoi_bi_danh_gia: sdt, loai_danh_gia: "HostToGuest" }
+                }).catch(() => [])
+            ]);
+
+            // Chỉ xem slot liên quan đến ca của HOST này
+            const caMap = {};
+            myCaDau.forEach(c => { caMap[c.id] = c; });
+            const hostSlots   = allSlots.filter(s => caMap[s.id_ca_dau]);
+            const sortedSlots = [...hostSlots].sort((a, b) =>
+                new Date(b.thoi_gian_dat || 0) - new Date(a.thoi_gian_dat || 0));
+
+            // Stats
+            const totalSessions = hostSlots.length;
+            const attended  = hostSlots.filter(s => s.trang_thai_di_danh === "Đã tham gia").length;
+            const bung      = hostSlots.filter(s => s.trang_thai_di_danh === "Bùng kèo").length;
+
+            // Tổng tiền đã chi (chỉ ca chốt + tham gia)
+            const tongChiTieu = hostSlots
+                .filter(s => s.trang_thai_di_danh === "Đã tham gia")
+                .reduce((sum, s) => {
+                    const ca = caMap[s.id_ca_dau];
+                    if (!ca?.da_chot_ca) return sum;
+                    return sum + (s.gioi_tinh === "female" ? (ca.gia_nu || 0) : (ca.gia_nam || 0));
+                }, 0);
+
+            // Sao TB từ reviews của host này
+            const hostPhone = window.currentHostInfo?.sdt_host || window.currentHostKey;
+            const myReviews = reviews.filter(r => r.sdt_nguoi_viet === hostPhone);
+            const avgStars  = myReviews.length > 0
+                ? (myReviews.reduce((s, r) => s + (r.so_sao || 0), 0) / myReviews.length).toFixed(1)
+                : null;
+            const avgNum    = parseFloat(avgStars || 0);
+            const starStr   = avgStars
+                ? `<span style="color:#fbbf24;font-size:0.95rem;">${"★".repeat(Math.round(avgNum))}${"☆".repeat(5-Math.round(avgNum))}</span>
+                   <span style="color:#94a3b8;font-size:0.75rem;margin-left:4px;">${avgStars}/5 (${myReviews.length} đánh giá)</span>`
+                : `<span style="font-size:0.78rem;color:#64748b;">Chưa có đánh giá của bạn</span>`;
+
+            // Render từng dòng lịch sử
+            const historyRows = sortedSlots.map(s => {
+                const ca  = caMap[s.id_ca_dau];
+                const tt  = s.trang_thai_di_danh || "Chờ đánh";
+                const ttClr = tt === "Đã tham gia" ? "#00ff88" : tt === "Bùng kèo" ? "#fb923c" : tt === "Khách hủy" ? "#f87171" : "#94a3b8";
+                const caInfo = ca
+                    ? `<div style="font-size:0.8rem;font-weight:600;color:#e2e8f0;">${ca.ten_san || "—"}</div>
+                       <div style="font-size:0.68rem;color:#64748b;">${_formatDate(ca.ngay_danh)} ${ca.gio_bat_dau||""}</div>`
+                    : `<em style="color:#64748b;font-size:0.75rem;">Ca đấu khác</em>`;
+                let tienText;
+                if (tt === "Đã tham gia" && ca?.da_chot_ca) {
+                    const gia = s.gioi_tinh === "female" ? (ca.gia_nu || 0) : (ca.gia_nam || 0);
+                    tienText = `<span style="color:#f59e0b;">${_formatVND(gia)}</span>`;
+                } else if (tt === "Bùng kèo" && (s.tien_thu_bung || 0) > 0) {
+                    tienText = `<span style="color:#fb923c;">${_formatVND(s.tien_thu_bung)}</span>`;
+                } else if (tt === "Đã tham gia") {
+                    tienText = `<span style="color:#64748b;font-size:0.7rem;">Chờ chốt</span>`;
+                } else {
+                    tienText = `<span style="color:#475569;">—</span>`;
+                }
+                const canCancel = ca && !ca.da_chot_ca && (tt === "Chờ đánh" || tt === "Đã tham gia");
+                const tenEsc    = (ten || "").replace(/'/g, "\\x27");
+                const cancelBtn = canCancel
+                    ? `<button onclick="window.huySlotTuHoSo('${s.id}','${sdt}','${tenEsc}')"
+                               style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#f87171;
+                                      padding:3px 10px;border-radius:6px;cursor:pointer;font-size:0.72rem;font-family:inherit;">
+                           Hủy slot
+                       </button>`
+                    : `<span style="color:#475569;font-size:0.72rem;">—</span>`;
+                return `<tr style="border-bottom:1px solid rgba(30,58,95,0.4);">
+                    <td style="padding:8px;">${caInfo}</td>
+                    <td style="padding:8px;text-align:center;"><span style="color:${ttClr};font-weight:600;font-size:0.78rem;">${tt}</span></td>
+                    <td style="padding:8px;text-align:right;">${tienText}</td>
+                    <td style="padding:8px;text-align:center;">${cancelBtn}</td>
+                </tr>`;
+            }).join("");
+
+            if (body) body.innerHTML = `
+                <!-- Avatar + tên -->
+                <div style="display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:1px solid #1e3a5f;margin-bottom:14px;">
+                    <div style="width:50px;height:50px;background:linear-gradient(135deg,#1e3a5f,#2d4a6e);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">👤</div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-size:1.05rem;font-weight:700;color:#e2e8f0;">${ten || "—"}</div>
+                        <div style="font-size:0.8rem;color:#94a3b8;font-family:monospace;">${sdt}</div>
+                        <div style="margin-top:4px;">${starStr}</div>
+                    </div>
+                </div>
+                <!-- 4 stats -->
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
+                    <div style="background:rgba(26,40,68,0.8);border:1px solid #2d4a6e;border-radius:8px;padding:10px;text-align:center;">
+                        <div style="font-size:1.3rem;font-weight:700;color:#e2e8f0;">${totalSessions}</div>
+                        <div style="font-size:0.65rem;color:#64748b;margin-top:2px;">Lần đặt slot</div>
+                    </div>
+                    <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:8px;padding:10px;text-align:center;">
+                        <div style="font-size:1.3rem;font-weight:700;color:#00ff88;">${attended}</div>
+                        <div style="font-size:0.65rem;color:#64748b;margin-top:2px;">Đã tham gia</div>
+                    </div>
+                    <div style="background:rgba(251,146,60,0.06);border:1px solid rgba(251,146,60,0.2);border-radius:8px;padding:10px;text-align:center;">
+                        <div style="font-size:1.3rem;font-weight:700;color:#fb923c;">${bung}</div>
+                        <div style="font-size:0.65rem;color:#64748b;margin-top:2px;">Bùng kèo</div>
+                    </div>
+                    <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px;text-align:center;">
+                        <div style="font-size:1rem;font-weight:700;color:#f59e0b;">${_formatVND(tongChiTieu)}</div>
+                        <div style="font-size:0.65rem;color:#64748b;margin-top:2px;">Tổng chi tiêu</div>
+                    </div>
+                </div>
+                <!-- Lịch sử -->
+                <h4 style="color:#e2e8f0;font-size:0.82rem;margin:0 0 8px;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-clock-rotate-left" style="color:#60a5fa;"></i>
+                    Lịch sử tại sân của bạn (${hostSlots.length})
+                </h4>
+                ${hostSlots.length === 0
+                    ? `<p style="color:#64748b;text-align:center;padding:16px;border:1px dashed #1e3a5f;border-radius:8px;font-size:0.85rem;">Chưa có lịch sử tại sân của bạn.</p>`
+                    : `<div style="overflow-x:auto;">
+                        <table class="hs-table" style="min-width:380px;font-size:0.8rem;">
+                            <thead><tr>
+                                <th>Ca đấu</th>
+                                <th style="text-align:center;">Trạng thái</th>
+                                <th style="text-align:right;">Tiền</th>
+                                <th style="text-align:center;">Thao tác</th>
+                            </tr></thead>
+                            <tbody>${historyRows}</tbody>
+                        </table>
+                       </div>`}
+                <!-- Đánh giá đã gửi -->
+                ${myReviews.length > 0 ? `
+                <h4 style="color:#e2e8f0;font-size:0.82rem;margin:14px 0 8px;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-star" style="color:#fbbf24;"></i> Đánh giá bạn đã gửi (${myReviews.length})
+                </h4>
+                <div style="display:flex;flex-direction:column;gap:8px;max-height:180px;overflow-y:auto;">
+                    ${myReviews.map(r => `
+                    <div style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:10px 14px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                            <span style="color:#fbbf24;">${"★".repeat(r.so_sao||0)}${"☆".repeat(5-(r.so_sao||0))}</span>
+                            <span style="font-size:0.68rem;color:#64748b;">${r.so_sao}/5 sao</span>
+                        </div>
+                        ${r.nhan_xet ? `<div style="font-size:0.8rem;color:#e2e8f0;">${r.nhan_xet}</div>` : ""}
+                    </div>`).join("")}
+                </div>` : ""}`;
+
+        } catch(e) {
+            console.error("xemHoSoKhach error:", e);
+            if (body) body.innerHTML = `<p style="color:#f87171;text-align:center;padding:32px;">Lỗi tải dữ liệu: ${(e.message||"").slice(0,60)}</p>`;
+        }
+    };
+
+    window.dongModalHoSoKhach = function () {
+        const modal = document.getElementById("modal-ho-so-khach");
+        if (modal) modal.classList.add("hidden");
+        document.body.style.overflow = "";
+    };
+
+    /** Hủy slot từ modal hồ sơ khách */
+    window.huySlotTuHoSo = async function (datSlotId, sdt, ten) {
+        if (!confirm(`Hủy slot của khách "${ten}" (${sdt})?\nTrạng thái sẽ đổi thành "Khách hủy". Không thể hoàn tác.`)) return;
+        try {
+            await window.dbEngine.ghi("dat_slot", { trang_thai_di_danh: "Khách hủy" }, { id: datSlotId });
+            window.hienToast("Đã hủy slot", `Slot của ${ten} đã được hủy.`, "warning");
+            // Reload hồ sơ khách
+            const modal = document.getElementById("modal-ho-so-khach");
+            if (modal?.dataset.sdt) {
+                window.xemHoSoKhach(modal.dataset.sdt, modal.dataset.ten || ten, null).catch(() => {});
+            }
+            // Reload DS Khách modal nếu đang mở
+            const guestModal = document.getElementById("modal-guest-list");
+            if (guestModal?.dataset.matchId) {
+                const titleEl = document.getElementById("modal-guest-list-title");
+                const currentTitle = (titleEl?.textContent || "").replace(/^DS Khách — /, "");
+                window.openGuestListModal(guestModal.dataset.matchId, currentTitle).catch(() => {});
+            }
+            _taiLichSuCaDau().catch(() => {});
+        } catch(e) {
+            console.error("huySlotTuHoSo error:", e);
+            window.hienToast("Lỗi hủy slot", "Không thể hủy slot. Thử lại sau.", "danger");
+        }
     };
 
     /* ═══════════════════════════════════════════════════
