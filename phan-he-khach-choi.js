@@ -57,6 +57,26 @@
         // Ẩn khu vực Lịch Sử Đấu
         const lichSuSection = document.getElementById("lichSuDauSection");
         if (lichSuSection) lichSuSection.style.display = "none";
+
+        /* ── FIX-LOGOUT: Trên mobile, #guestAuthPanel nằm bên trong #login-sheet
+           (position:fixed, đang ẩn ngoài màn hình). Cần chuyển sang tab Cá Nhân
+           và tự động mở bottom sheet để user thấy form đăng nhập/đăng ký.
+           Trên desktop: #login-sheet là position:static nên hiện bình thường. ── */
+        if (window.innerWidth < 768) {
+            // Reset tab về Cá Nhân
+            const sidebar = document.querySelector(".kh-sidebar");
+            const right   = document.querySelector(".kh-right");
+            const btnKeo  = document.getElementById("tabTimKeo");
+            const btnP    = document.getElementById("tabCaNhan");
+            const btnLs   = document.getElementById("tabLichSu");
+            if (sidebar) sidebar.style.display = "flex";
+            if (right)   right.style.display   = "none";
+            if (lichSuSection) lichSuSection.style.display = "none";
+            [btnKeo, btnP, btnLs].forEach(b => b?.classList.remove("kh-tab-active"));
+            btnP?.classList.add("kh-tab-active");
+            // Mở login sheet để user thấy form đăng nhập
+            setTimeout(() => window.openLoginSheet?.(), 50); // Timeout nhỏ để DOM update trước
+        }
     }
 
     function _hienThiDashboardKhach() {

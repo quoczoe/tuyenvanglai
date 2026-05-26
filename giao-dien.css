@@ -3439,11 +3439,28 @@ body::before {
     #close-login-sheet { display: none !important; }
 }
 
-/* BUG-4 FIX: Thêm padding-top cho #lichSuDauSection trên mobile để không bị
-   thanh tab bar (sticky, top:60px, height ~42px) che khuất phần tiêu đề */
+/* FIX-3 (DEFINITIVE): Trên mobile, biến #lichSuDauSection thành
+   một scrollable panel cố định nằm NGAY DƯỚI tab bar.
+   Vì vậy content KHÔNG BAO GIỜ scroll lên sau tab bar (z-index: 100).
+   Panel bắt đầu tại top = nav(60px) + tab-bar(~42px) = 102px.
+   ── Desktop (>= 768px): position:static, không áp dụng. ── */
 @media (max-width: 767px) {
     #lichSuDauSection {
-        padding-top: 48px;
+        padding-top: 0 !important;
+        position: fixed !important;
+        top: 102px;   /* nav-height(60) + tab-bar-height(~42) */
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        background: #0f1e35; /* = var(--bg-main) */
+        z-index: 50;          /* Below tab bar (z:100) but above page content */
+        /* Phần đệm trong panel */
+    }
+    #lichSuDauSection .kh-ls-outer {
+        padding: 12px 1rem 4rem; /* Ghi đè padding mặc định cho mobile */
+        min-height: 100%;
     }
 }
 

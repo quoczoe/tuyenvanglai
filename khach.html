@@ -506,53 +506,45 @@
             box-shadow: 0 0 0 3px rgba(24,119,242,0.5), 0 4px 16px rgba(24,119,242,0.4);
             outline: none;
         }
-        /* Tooltip hiện khi hover/focus/mobile-tap */
+        /* FIX-2: Tooltip hiện PHÍA DƯỚI badge trên mọi viewport
+           — tránh bị cắt khi badge gần đỉnh trang (sidebar top) */
         .host-badge-tooltip {
             display: none;
             position: absolute;
-            bottom: calc(100% + 10px);
-            left: 50%;
-            transform: translateX(-50%);
+            /* Hiện phía DƯỚI badge thay vì phía trên */
+            bottom: auto;
+            top: calc(100% + 8px);
+            /* Căn trái theo badge, không dùng left:50% + translateX để
+               tránh tooltip vượt ra ngoài sidebar bên trái */
+            left: 0;
+            transform: none;
             background: #0f1e35;
             border: 1px solid rgba(24,119,242,0.5);
             color: #e2e8f0;
             font-size: 0.7rem;
             font-weight: 500;
-            white-space: normal;   /* Cho phép xuống dòng — tránh tràn viewport */
+            white-space: normal;
             padding: 8px 13px;
             border-radius: 10px;
             z-index: 300;
             box-shadow: 0 4px 20px rgba(0,0,0,0.6);
             pointer-events: none;
             line-height: 1.55;
-            text-align: center;
-            min-width: 130px;
-            max-width: 210px;      /* Giới hạn chiều ngang */
+            text-align: left;
+            min-width: 150px;
+            max-width: 220px;
             word-break: break-word;
         }
+        /* Mũi tên chỉ LÊN (tooltip ở dưới badge) */
         .host-badge-tooltip::after {
             content: '';
             position: absolute;
-            top: 100%;
-            left: 50%;
-            transform: translateX(-50%);
+            top: auto;
+            bottom: 100%;   /* Đặt mũi tên phía trên tooltip */
+            left: 14px;     /* Căn theo góc trái tooltip, không giữa */
+            transform: none;
             border: 6px solid transparent;
-            border-top-color: rgba(24,119,242,0.5);
-        }
-        /* Mobile: tooltip xuất hiện PHÍA DƯỚI badge để không bị cắt trên cùng */
-        @media (max-width: 767px) {
-            .host-badge-tooltip {
-                bottom: auto;
-                top: calc(100% + 10px);
-                left: 0;
-                transform: none;
-            }
-            .host-badge-tooltip::after {
-                top: auto;
-                bottom: 100%;
-                border-top-color: transparent;
-                border-bottom-color: rgba(24,119,242,0.5);
-            }
+            border-bottom-color: rgba(24,119,242,0.5); /* Mũi tên màu blue pointing up */
         }
         .host-verify-badge:hover .host-badge-tooltip,
         .host-verify-badge:focus .host-badge-tooltip,
@@ -560,15 +552,10 @@
             display: block;
             animation: fadeInTooltip 0.15s ease;
         }
+        /* Animation: fade + slide DOWN (không còn nhảy lên trên) */
         @keyframes fadeInTooltip {
-            from { opacity: 0; transform: translateX(-50%) translateY(4px); }
-            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
-        @media (max-width: 767px) {
-            @keyframes fadeInTooltip {
-                from { opacity: 0; transform: translateY(-4px); }
-                to   { opacity: 1; transform: translateY(0); }
-            }
+            from { opacity: 0; transform: translateY(-4px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
         /* ══ FEAT-3: Modal Hồ Sơ Công Khai ══ */
