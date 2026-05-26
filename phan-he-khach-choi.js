@@ -1650,7 +1650,7 @@
                 return `<div class="kh-slot-row">
                     <div class="kh-slot-info">
                         <div class="kh-slot-san">${tenSan}</div>
-                        <div class="kh-slot-meta">${ngayDanh}${gioBD ? " · " + gioBD : ""} · <span style="color:${ttColor};font-weight:600;">${slot.trang_thai_di_danh}</span></div>
+                        <div class="kh-slot-meta">${ngayDanh}${gioBD ? " · " + gioBD : ""} · <span style="color:${ttColor};font-weight:600;">${slot.trang_thai_di_danh === "Khách hủy" ? "Đã Huỷ" : slot.trang_thai_di_danh}</span></div>
                         <div class="kh-slot-meta" style="color:#64748b;">${slot.ma_slot || ""}</div>
                     </div>
                     ${coTheHuy
@@ -2252,12 +2252,13 @@
                 return;
             }
 
-            // Map màu & icon theo trạng thái
+            // Map màu, icon, nhãn hiển thị theo trạng thái
+            // Chú ý: key = giá trị DB, label = text hiển thị cho khách
             const ttMap = {
-                "Đã tham gia": { color: "#00ff88", bg: "rgba(0,255,136,0.1)",   icon: "fa-circle-check"         },
-                "Chờ đánh":    { color: "#fbbf24", bg: "rgba(251,191,36,0.1)",  icon: "fa-clock"                },
-                "Khách hủy":   { color: "#9ca3af", bg: "rgba(156,163,175,0.1)", icon: "fa-circle-xmark"         },
-                "Bùng kèo":    { color: "#ef4444", bg: "rgba(239,68,68,0.1)",   icon: "fa-triangle-exclamation" },
+                "Đã tham gia": { color: "#00ff88", bg: "rgba(0,255,136,0.1)",   icon: "fa-circle-check",         label: "Đã Tham Gia" },
+                "Chờ đánh":    { color: "#fbbf24", bg: "rgba(251,191,36,0.1)",  icon: "fa-clock",                label: "Chờ Đánh"    },
+                "Khách hủy":   { color: "#9ca3af", bg: "rgba(156,163,175,0.1)", icon: "fa-circle-xmark",         label: "Đã Huỷ"      },
+                "Bùng kèo":    { color: "#ef4444", bg: "rgba(239,68,68,0.1)",   icon: "fa-triangle-exclamation", label: "Bùng Kèo"    },
             };
 
             // Render timeline items
@@ -2266,7 +2267,7 @@
                     ? new Date(ca.ngay_danh).toLocaleDateString("vi-VN", {
                         weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })
                     : "--";
-                const tt      = ttMap[slot.trang_thai_di_danh] || { color: "#9ca3af", bg: "rgba(156,163,175,0.1)", icon: "fa-question" };
+                const tt      = ttMap[slot.trang_thai_di_danh] || { color: "#9ca3af", bg: "rgba(156,163,175,0.1)", icon: "fa-question", label: slot.trang_thai_di_danh };
                 const itemId  = "lsItem_" + slot.id;
                 const baoGom  = ca.tien_ich_bao_gom || {};
                 const tichArr = [];
@@ -2343,7 +2344,7 @@
                                   border-radius:20px;background:${tt.bg};color:${tt.color};
                                   font-size:0.67rem;font-weight:700;white-space:nowrap;flex-shrink:0;">
                                 <i class="fa-solid ${tt.icon}" style="font-size:0.58rem;"></i>
-                                ${slot.trang_thai_di_danh}
+                                ${tt.label}
                             </span>
                             <div style="min-width:0;flex:1;">
                                 <div style="font-weight:700;color:#e2e8f0;font-size:0.88rem;
@@ -2492,28 +2493,30 @@
             const lichSu  = document.getElementById("lichSuDauSection");
             if (sidebar) sidebar.style.display = "none";
             if (right)   right.style.display   = "flex";
-            if (lichSu)  lichSu.style.display  = "none";
+            if (lichSu)  lichSu.classList.add("lich-su-hidden");
         }
     })();
 
     // Xử lý khi resize: cả hai chiều (PC→mobile và mobile→PC)
     window.addEventListener("resize", function() {
+        const lichSu  = document.getElementById("lichSuDauSection");
         if (window.innerWidth >= 768) {
             // Desktop: reset sidebar và right về CSS mặc định
             const sidebar = document.querySelector(".kh-sidebar");
             const right   = document.querySelector(".kh-right");
             if (sidebar) sidebar.style.display = "";
             if (right)   right.style.display   = "";
-            // Hiện lịch sử đấu nếu đã đăng nhập
-            const lichSu = document.getElementById("lichSuDauSection");
-            if (lichSu && window.currentGuest) {
-                lichSu.style.display = "block";
-            }
+            // Desktop: modal lịch sử đóng khi resize về desktop (tránh trạng thái lộn xộn)
+            if (lichSu) lichSu.classList.add("lich-su-hidden");
+            document.body.style.overflow = "";
         } else {
-            // Mobile → áp dụng trạng thái tab đang active
+            // Mobile → đóng modal lịch sử nếu đang mở (dùng tab thay thế)
+            if (lichSu) lichSu.classList.add("lich-su-hidden");
+            document.body.style.overflow = "";
+            // Áp dụng trạng thái tab đang active
             const activeBtn = document.querySelector(".kh-tab-btn.kh-tab-active");
             if (activeBtn) {
-                if (activeBtn.id === "tabCaNhan")   window.switchKhachTab("profile");
+                if (activeBtn.id === "tabCaNhan")      window.switchKhachTab("profile");
                 else if (activeBtn.id === "tabLichSu") window.switchKhachTab("history");
                 else window.switchKhachTab("keo");
             } else {
@@ -2808,11 +2811,12 @@
                     const caDate = ca?.ngay_danh ? new Date(ca.ngay_danh).toLocaleDateString("vi-VN") : "--";
                     const st = s.trang_thai_di_danh || "Chờ đánh";
                     const stColor = slotStatusColor[st] || "#94a3b8";
+                    const stLabel = st === "Khách hủy" ? "Đã Huỷ" : st;
                     return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;
                                 border-bottom:1px solid rgba(255,255,255,0.04);">
                         <span style="font-size:0.63rem;font-weight:700;color:${stColor};
                                      background:rgba(255,255,255,0.04);padding:2px 6px;
-                                     border-radius:10px;white-space:nowrap;flex-shrink:0;">${st}</span>
+                                     border-radius:10px;white-space:nowrap;flex-shrink:0;">${stLabel}</span>
                         <div style="flex:1;min-width:0;">
                             <div style="font-size:0.78rem;color:#e2e8f0;white-space:nowrap;
                                         overflow:hidden;text-overflow:ellipsis;">${caName}</div>

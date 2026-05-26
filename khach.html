@@ -1247,8 +1247,12 @@
 
 <!-- ══ LỊCH SỬ ĐẤU: Modal overlay (desktop) / Tab panel (mobile) ══ -->
 <style>
+/* Global: ẩn section khi có class này (áp dụng cả mobile lẫn desktop) */
+.lich-su-hidden { display: none !important; }
+
 @media (min-width: 768px) {
-    #lichSuDauSection {
+    /* Desktop: bỏ hidden → hiện dạng fullscreen modal overlay */
+    #lichSuDauSection:not(.lich-su-hidden) {
         position: fixed !important;
         inset: 0 !important;
         z-index: 1100 !important;
@@ -1258,52 +1262,52 @@
         display: flex !important;
         align-items: flex-start !important;
         justify-content: center !important;
-        padding: 40px 20px 40px !important;
+        padding: 32px 24px 40px !important;
         overflow-y: auto !important;
     }
-    #lichSuDauSection.lich-su-hidden {
-        display: none !important;
-    }
     #lichSuDauSection .kh-ls-outer {
-        max-width: 860px;
+        max-width: min(1200px, calc(100vw - 48px));
         width: 100%;
         position: relative;
-        border: 1px solid rgba(0,255,136,0.2);
+        border: 1px solid rgba(0,255,136,0.22);
         border-radius: 16px;
         background: #0a1628;
-        padding: 28px 28px 24px;
-        box-shadow: 0 8px 48px rgba(0,0,0,0.6), 0 0 32px rgba(0,255,136,0.06);
+        padding: 24px 28px 28px;
+        box-shadow: 0 8px 48px rgba(0,0,0,0.65), 0 0 36px rgba(0,255,136,0.06);
     }
     #btnCloseLichSu {
         display: flex !important;
     }
 }
 @media (max-width: 767px) {
+    #lichSuDauSection:not(.lich-su-hidden) { display: block !important; }
     #btnCloseLichSu { display: none !important; }
 }
 </style>
 <div id="lichSuDauSection" class="lich-su-hidden" onclick="if(event.target===this)window.toggleLichSuDesktop()">
     <div class="kh-ls-outer">
 
-        <!-- Header + bộ lọc thời gian -->
-        <div class="kh-ls-header" style="position:relative;">
-            <h2 class="kh-ls-title">
+        <!-- Header modal: hàng 1 = title + nút đóng; hàng 2 = filters -->
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding-bottom:10px;border-bottom:1px solid var(--border);margin-bottom:14px;">
+            <h2 class="kh-ls-title" style="margin:0;">
                 <i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Đấu
             </h2>
             <!-- Nút đóng modal (desktop only) -->
             <button id="btnCloseLichSu" onclick="window.toggleLichSuDesktop()"
-                style="display:none;position:absolute;top:0;right:0;
+                style="display:none;
                 background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
                 border-radius:8px;color:#94a3b8;font-size:1rem;cursor:pointer;
-                width:32px;height:32px;align-items:center;justify-content:center;">
+                width:34px;height:34px;align-items:center;justify-content:center;flex-shrink:0;">
                 <i class="fa-solid fa-xmark"></i>
             </button>
-            <div class="kh-time-filters" style="margin:0;">
-                <button class="kh-time-btn kh-ls-filter-btn" onclick="window.locLichSuDau('week',this)">Tuần</button>
-                <button class="kh-time-btn kh-ls-filter-btn" onclick="window.locLichSuDau('month',this)">Tháng</button>
-                <button class="kh-time-btn kh-ls-filter-btn" onclick="window.locLichSuDau('year',this)">Năm</button>
-                <button class="kh-time-btn kh-ls-filter-btn active" onclick="window.locLichSuDau('all',this)">Tất cả</button>
-            </div>
+        </div>
+        <!-- Filters — hàng riêng biệt, không đè nút đóng -->
+        <div class="kh-time-filters" style="margin-bottom:16px;">
+            <button class="kh-time-btn kh-ls-filter-btn" onclick="window.locLichSuDau('week',this)">Tuần</button>
+            <button class="kh-time-btn kh-ls-filter-btn" onclick="window.locLichSuDau('month',this)">Tháng</button>
+            <button class="kh-time-btn kh-ls-filter-btn" onclick="window.locLichSuDau('year',this)">Năm</button>
+            <button class="kh-time-btn kh-ls-filter-btn active" onclick="window.locLichSuDau('all',this)">Tất cả</button>
         </div>
 
         <!-- Thống kê nhanh -->
