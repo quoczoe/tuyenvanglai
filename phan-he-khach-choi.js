@@ -24,6 +24,7 @@
     window.currentGuest = null;
     let _guestRatingVal = 5;
     let _filterTimeout  = null;
+    let _pendingCaId    = null; // ID ca đấu chờ mở modal sau khi đăng nhập (từ share link ?ca=)
     // Tên bảng người dùng đang dùng — tự động detect khi đăng nhập/đăng ký
     // Mặc định "nguoi_dung" (sau migration), fallback "khach_vang_lai" (trước migration)
     let _bangND = "nguoi_dung";
@@ -32,6 +33,12 @@
      * 1. KHỞI TẠO TRANG KHÁCH
      * ═══════════════════════════════════════════════════ */
     window.khoiTaoTrangKhach = function () {
+        // Ẩn nút TÌM KÈO NGAY khi đang ở tab Kèo mặc định (mobile)
+        if (window.innerWidth < 768) {
+            const btnTK = document.getElementById("btnTimKeoMobile");
+            if (btnTK) btnTK.classList.add("hidden-by-tab");
+        }
+
         const saved = localStorage.getItem("tvl_guest");
         if (saved) {
             try {
@@ -206,6 +213,16 @@
         const label = luuLau ? "Đã lưu 7 ngày" : "Phiên 1 ngày";
         window.hienToast(`🏸 Chào ${ten}!`, `Đã vào sàn vãng lai. ${label}.`, "success");
         _hienThiDashboardKhach();
+
+        // Nếu có share link đang chờ → mở lại modal chi tiết ca đấu đó
+        if (_pendingCaId) {
+            const caId = _pendingCaId;
+            _pendingCaId = null;
+            setTimeout(() => {
+                window.closeLoginSheet?.();
+                window.moModalChiTietKeo(caId);
+            }, 400);
+        }
     }
 
     /**
@@ -1392,12 +1409,28 @@
     };
 
     // Tự động mở modal chi tiết nếu URL có tham số ?ca=<id>
+    // Nếu chưa đăng nhập → lưu vào _pendingCaId, sau khi đăng nhập sẽ tự mở lại
     (function _autoOpenFromUrl() {
         const params = new URLSearchParams(window.location.search);
         const caId = params.get('ca');
-        if (caId) {
-            // Đợi một chút để trang load xong rồi mở modal
+        if (!caId) return;
+
+        if (window.currentGuest) {
+            // Đã đăng nhập → mở luôn
             setTimeout(() => window.moModalChiTietKeo(caId), 600);
+        } else {
+            // Chưa đăng nhập → lưu pending, mở sau khi login
+            _pendingCaId = caId;
+            // Thông báo nhẹ để user biết cần đăng nhập
+            setTimeout(() => {
+                window.hienToast(
+                    '🔗 Link kèo đấu',
+                    'Vui lòng đăng nhập để xem chi tiết ca đấu này.',
+                    'info'
+                );
+                // Mobile: mở bottom sheet login
+                if (window.innerWidth < 768) window.openLoginSheet?.();
+            }, 800);
         }
     })();
 
@@ -1549,9 +1582,19 @@
                        </div>`
                     : `<div style="padding-top:8px;border-top:1px solid var(--border);margin-top:8px;">
                         ${window.currentGuest
-                            ? `<button class="btn-dat-slot" style="width:100%;" onclick="window.datSlot('${s.id}');window.dongModalChiTietKeo()">
-                                <i class="fa-solid fa-ticket"></i> ĐẶT SLOT THAM GIA
-                               </button>`
+                            ? (() => {
+                                const alreadyBooked = datSlotList.some(
+                                    sl => sl.sdt_khach === window.currentGuest.sdt_khach
+                                          && sl.trang_thai_di_danh !== "Khách hủy"
+                                );
+                                return alreadyBooked
+                                    ? `<button class="btn-da-dat" style="width:100%;" disabled>
+                                           <i class="fa-solid fa-circle-check"></i> ĐÃ ĐẶT SLOT
+                                       </button>`
+                                    : `<button class="btn-dat-slot" style="width:100%;" onclick="window.datSlot('${s.id}');window.dongModalChiTietKeo()">
+                                           <i class="fa-solid fa-ticket"></i> ĐẶT SLOT THAM GIA
+                                       </button>`;
+                              })()
                             : `<p style="text-align:center;font-size:0.82rem;color:#64748b;">
                                 <a href="#" onclick="window.dongModalChiTietKeo()" style="color:#00ff88;">Đăng nhập</a>
                                 để đặt slot tham gia ca này.</p>`
@@ -2544,9 +2587,6 @@
             if (sidebar) sidebar.style.display = "none";
             if (right)   right.style.display   = "flex";
             if (lichSu)  lichSu.classList.add("lich-su-hidden");
-            // Ẩn nút TÌM KÈO NGAY khi đang ở tab kèo (mặc định)
-            const btnTK = document.getElementById("btnTimKeoMobile");
-            if (btnTK) btnTK.classList.add("hidden-by-tab");
         }
     })();
 
