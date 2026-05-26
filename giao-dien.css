@@ -2734,7 +2734,8 @@ body::before {
     box-shadow: 0 6px 28px rgba(0,212,122,0.55);
 }
 @media (max-width: 900px) {
-    #btnTimKeoMobile { display: flex !important; }
+    #btnTimKeoMobile { display: flex; }
+    #btnTimKeoMobile.hidden-by-tab { display: none !important; }
 }
 @media (min-width: 901px) {
     #btnTimKeoMobile { display: none !important; }

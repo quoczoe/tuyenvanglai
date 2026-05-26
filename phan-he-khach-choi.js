@@ -2493,13 +2493,13 @@
             if (right)   right.style.display   = "flex";
             if (lichSu)  lichSu.classList.add("lich-su-hidden");
             btnKeo?.classList.add("kh-tab-active");
-            if (btnTimKeoMobile) btnTimKeoMobile.style.display = "none";
+            if (btnTimKeoMobile) btnTimKeoMobile.classList.add("hidden-by-tab");
         } else if (tab === "profile") {
             if (sidebar) sidebar.style.display = "flex";
             if (right)   right.style.display   = "none";
             if (lichSu)  lichSu.classList.add("lich-su-hidden");
             btnP?.classList.add("kh-tab-active");
-            if (btnTimKeoMobile) btnTimKeoMobile.style.display = "";
+            if (btnTimKeoMobile) btnTimKeoMobile.classList.remove("hidden-by-tab");
             // Nếu chưa đăng nhập → mở bottom sheet login để user thấy form
             if (!window.currentGuest) setTimeout(() => window.openLoginSheet?.(), 80);
         } else if (tab === "history") {
@@ -2507,7 +2507,7 @@
             if (right)   right.style.display   = "none";
             if (lichSu)  lichSu.classList.remove("lich-su-hidden");
             btnLs?.classList.add("kh-tab-active");
-            if (btnTimKeoMobile) btnTimKeoMobile.style.display = "";
+            if (btnTimKeoMobile) btnTimKeoMobile.classList.remove("hidden-by-tab");
             if (window.currentGuest) {
                 _taiLichSuDau();
             } else {
@@ -2546,7 +2546,7 @@
             if (lichSu)  lichSu.classList.add("lich-su-hidden");
             // Ẩn nút TÌM KÈO NGAY khi đang ở tab kèo (mặc định)
             const btnTK = document.getElementById("btnTimKeoMobile");
-            if (btnTK) btnTK.style.display = "none";
+            if (btnTK) btnTK.classList.add("hidden-by-tab");
         }
     })();
 
