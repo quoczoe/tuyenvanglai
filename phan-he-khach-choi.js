@@ -2231,19 +2231,23 @@
                 else if (tt === "Bùng kèo")    { daBung++; }
             });
 
-            // Render stats grid
+            // Render stats grid — hàng 1: 2 card lớn; hàng 2: 3 card nhỏ cùng tổng width
             if (statsEl) {
-                statsEl.innerHTML = [
-                    { val: soThamGia,            color: "#00ff88", icon: "fa-flag-checkered",        lbl: "Đã tham gia" },
-                    { val: _formatVND(tongChi),  color: "#60a5fa", icon: "fa-wallet",                lbl: "Tổng chi"    },
-                    { val: choDanh,              color: "#fbbf24", icon: "fa-clock",                  lbl: "Chờ đánh"   },
-                    { val: daHuy,                color: "#9ca3af", icon: "fa-circle-xmark",            lbl: "Đã hủy"     },
-                    { val: daBung,               color: "#ef4444", icon: "fa-triangle-exclamation",    lbl: "Đã bùng"    },
-                ].map(({ val, color, icon, lbl }) => `
-                    <div class="kh-stat-badge">
+                const _card = (val, color, icon, lbl) =>
+                    `<div class="kh-stat-badge">
                         <div class="kh-stat-val" style="color:${color};">${val}</div>
                         <div class="kh-stat-lbl"><i class="fa-solid ${icon}"></i> ${lbl}</div>
-                    </div>`).join("");
+                    </div>`;
+                statsEl.innerHTML = `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+                        ${_card(soThamGia,           "#00ff88", "fa-flag-checkered",      "Đã tham gia")}
+                        ${_card(_formatVND(tongChi), "#60a5fa", "fa-wallet",              "Tổng chi"   )}
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+                        ${_card(choDanh, "#fbbf24", "fa-clock",                "Chờ đánh")}
+                        ${_card(daBung,  "#ef4444", "fa-triangle-exclamation", "Đã bùng" )}
+                        ${_card(daHuy,   "#9ca3af", "fa-circle-xmark",         "Đã hủy"  )}
+                    </div>`;
             }
 
             if (withCa.length === 0) {
