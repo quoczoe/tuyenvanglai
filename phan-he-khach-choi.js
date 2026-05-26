@@ -35,8 +35,16 @@
         const saved = localStorage.getItem("tvl_guest");
         if (saved) {
             try {
-                window.currentGuest = JSON.parse(saved);
-                _hienThiDashboardKhach();
+                const parsed = JSON.parse(saved);
+                // Kiểm tra hạn session — tự đăng xuất nếu quá hạn
+                if (parsed._expires_at && Date.now() > parsed._expires_at) {
+                    localStorage.removeItem("tvl_guest");
+                    window.currentGuest = null;
+                    _hienManDangNhap();
+                } else {
+                    window.currentGuest = parsed;
+                    _hienThiDashboardKhach();
+                }
             } catch {
                 window.currentGuest = null;
                 _hienManDangNhap();
@@ -175,18 +183,26 @@
      */
     function _luuSessionVaDangNhap(user) {
         window.currentGuest = user;
+
+        // Đọc tuỳ chọn "Lưu trạng thái đăng nhập"
+        const luuLau = document.getElementById("chkLuuDangNhap")?.checked ?? false;
+        const ngayMs = luuLau ? 7 : 1; // 7 ngày hoặc 1 ngày
+        const expiresAt = Date.now() + ngayMs * 24 * 60 * 60 * 1000;
+
         // Lưu đủ field để host routing và display hoạt động không cần fetch lại
         localStorage.setItem("tvl_guest", JSON.stringify({
-            ten_khach:     user.ten_khach || "",
-            sdt_khach:     user.sdt_khach || "",
-            gioi_tinh:     user.gioi_tinh || "male",
-            vai_tro:       user.vai_tro || "guest",
-            ma_key_host:   user.ma_key_host || null,
-            telegram_id:   user.telegram_id || null,
-            ngay_tham_gia: user.ngay_tham_gia || null
+            ten_khach:      user.ten_khach || "",
+            sdt_khach:      user.sdt_khach || "",
+            gioi_tinh:      user.gioi_tinh || "male",
+            vai_tro:        user.vai_tro || "guest",
+            ma_key_host:    user.ma_key_host || null,
+            telegram_id:    user.telegram_id || null,
+            ngay_tham_gia:  user.ngay_tham_gia || null,
+            _expires_at:    expiresAt   // timestamp hết hạn (ms)
         }));
         const ten = user.ten_khach || "Lông thủ";
-        window.hienToast(`🏸 Chào ${ten}!`, "Đã vào sàn vãng lai. Chúc bạn tìm được kèo ưng ý!", "success");
+        const label = luuLau ? "Đã lưu 7 ngày" : "Phiên 1 ngày";
+        window.hienToast(`🏸 Chào ${ten}!`, `Đã vào sàn vãng lai. ${label}.`, "success");
         _hienThiDashboardKhach();
     }
 

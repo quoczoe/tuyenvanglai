@@ -846,8 +846,22 @@
                 onkeydown="if(event.key==='Enter') xacThucNguoiDung()">
             <span class="input-hint"></span>
 
+            <!-- Tuỳ chọn lưu trạng thái đăng nhập -->
+            <label style="display:flex;align-items:center;gap:9px;margin-top:12px;margin-bottom:2px;
+                          cursor:pointer;user-select:none;-webkit-user-select:none;">
+                <input type="checkbox" id="chkLuuDangNhap"
+                       style="width:16px;height:16px;accent-color:#00ff88;cursor:pointer;flex-shrink:0;">
+                <span style="font-size:0.78rem;color:var(--text-muted);line-height:1.4;">
+                    Lưu trạng thái đăng nhập
+                    <span style="font-size:0.7rem;color:#64748b;display:block;">
+                        ✅ Tích: lưu 7 ngày &nbsp;|&nbsp; ☐ Không tích: tự đăng xuất sau 1 ngày
+                    </span>
+                </span>
+            </label>
+
             <!-- Nút chính -->
-            <button class="kh-btn-primary" id="btnXacNhan" onclick="xacThucNguoiDung()">
+            <button class="kh-btn-primary" id="btnXacNhan" onclick="xacThucNguoiDung()"
+                    style="margin-top:10px;">
                 XÁC NHẬN →
             </button>
             <div style="text-align:center;margin-top:10px;">
