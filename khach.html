@@ -1037,8 +1037,8 @@
                     <div class="kh-stat-lbl"><i class="fa-solid fa-wallet"></i> Tổng chi</div>
                 </div>
                 <div class="kh-stat-badge">
-                    <div class="kh-stat-val" id="statsTotalHosts" style="color:#a78bfa;">0</div>
-                    <div class="kh-stat-lbl"><i class="fa-solid fa-handshake"></i> Hosts</div>
+                    <div class="kh-stat-val" id="statsBungKeo" style="color:#f87171;">0</div>
+                    <div class="kh-stat-lbl"><i class="fa-solid fa-person-running"></i> Đã Bùng</div>
                 </div>
                 <div class="kh-stat-badge">
                     <div class="kh-stat-val" id="statsPending" style="color:#fbbf24;">0</div>
@@ -1066,13 +1066,20 @@
                  Desktop → toggle section #lichSuDauSection ngay bên dưới -->
             <button id="btnLichSuDesktop"
                 onclick="if(window.innerWidth<768){window.switchKhachTab('history');}else{window.toggleLichSuDesktop();}"
-                style="width:100%;margin-top:14px;padding:10px 14px;
-                background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);
-                border-radius:10px;font-size:0.85rem;font-weight:600;
-                color:#00ff88;cursor:pointer;font-family:inherit;
-                display:flex;align-items:center;justify-content:center;gap:8px;
-                transition:background 0.15s,border-color 0.15s;">
-                <i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Đấu
+                style="width:100%;margin-top:16px;padding:13px 16px;
+                background:linear-gradient(135deg,rgba(0,255,136,0.12),rgba(26,115,232,0.12));
+                border:1.5px solid rgba(0,255,136,0.35);
+                border-radius:12px;font-size:0.88rem;font-weight:700;
+                color:#00ff88;cursor:pointer;font-family:inherit;letter-spacing:0.02em;
+                display:flex;align-items:center;justify-content:center;gap:9px;
+                box-shadow:0 2px 12px rgba(0,255,136,0.1);
+                transition:all 0.2s;"
+                onmouseover="this.style.background='linear-gradient(135deg,rgba(0,255,136,0.2),rgba(26,115,232,0.18))';this.style.borderColor='rgba(0,255,136,0.6)';this.style.boxShadow='0 4px 20px rgba(0,255,136,0.18)'"
+                onmouseout="this.style.background='linear-gradient(135deg,rgba(0,255,136,0.12),rgba(26,115,232,0.12))';this.style.borderColor='rgba(0,255,136,0.35)';this.style.boxShadow='0 2px 12px rgba(0,255,136,0.1)'">
+                <i class="fa-solid fa-clock-rotate-left" style="font-size:1rem;"></i>
+                <span>📋 Lịch Sử Đấu</span>
+                <i class="fa-solid fa-chevron-down" id="iconLichSuChevron"
+                   style="margin-left:auto;font-size:0.7rem;opacity:0.7;transition:transform 0.2s;"></i>
             </button>
 
             <!-- ══ ĐÁNH GIÁ VỀ TÔI — hiện danh sách đánh giá từ host + số sao TB ══ -->

@@ -705,10 +705,12 @@
         if (lichSuSection) lichSuSection.style.display = "none";
         const btnLs = document.getElementById("btnLichSuDesktop");
         if (btnLs) {
-            btnLs.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Đấu';
-            btnLs.style.background = "rgba(0,255,136,0.06)";
-            btnLs.style.borderColor = "rgba(0,255,136,0.2)";
+            btnLs.style.background  = "linear-gradient(135deg,rgba(0,255,136,0.12),rgba(26,115,232,0.12))";
+            btnLs.style.borderColor = "rgba(0,255,136,0.35)";
+            btnLs.style.boxShadow   = "0 2px 12px rgba(0,255,136,0.1)";
         }
+        const chevron = document.getElementById("iconLichSuChevron");
+        if (chevron) chevron.style.transform = "rotate(0deg)";
         window.hienToast("Đã đăng xuất", "Hẹn gặp lại lông thủ!", "info");
         _hienManDangNhap();
     };
@@ -969,7 +971,7 @@
                     </h4>
                     <p class="slot-court-address">${slot.dia_chi_san || ""}</p>
                     <p class="slot-location">${slot.quan_huyen || ""}, ${slot.tinh_thanh || ""}</p>
-                    ${slot.so_san_cu_the ? `<p style="font-size:0.75rem;color:#64748b;">Sân số: ${slot.so_san_cu_the} (${slot.so_san_mo || 1} sân)</p>` : ""}
+                    ${slot.so_san_cu_the ? `<p style="font-size:0.75rem;color:#64748b;">${_formatSanSo(slot.so_san_cu_the)} (${slot.so_san_mo || 1} sân)</p>` : ""}
                 </div>
 
                 <!-- Wrap trình độ + badge để đảm bảo chiều cao đồng đều giữa các card -->
@@ -1126,9 +1128,7 @@
             const caDauMap = {};
             allCaDau.forEach(c => { caDauMap[c.id] = c; });
 
-            let soCaBuoi = 0, tongChiTieu = 0;
-            const hostSet = new Set();
-            let soCho = 0;
+            let soCaBuoi = 0, tongChiTieu = 0, soBung = 0, soCho = 0;
 
             myDatSlots.forEach(slot => {
                 const caDau = caDauMap[slot.id_ca_dau];
@@ -1139,9 +1139,10 @@
                 if (toDate   && caDau.ngay_danh && caDau.ngay_danh > toDate)   return;
 
                 // Đang chờ đánh (chưa chốt ca)
-                if (!caDau.da_chot_ca && slot.trang_thai_di_danh === "Chờ đánh") {
-                    soCho++;
-                }
+                if (!caDau.da_chot_ca && slot.trang_thai_di_danh === "Chờ đánh") soCho++;
+
+                // Đã bùng kèo
+                if (slot.trang_thai_di_danh === "Bùng kèo") soBung++;
 
                 // Đã tham gia
                 if (slot.trang_thai_di_danh === "Đã tham gia") {
@@ -1150,7 +1151,6 @@
                     if (caDau.da_chot_ca) {
                         const gia = slot.gioi_tinh === "female" ? (caDau.gia_nu || 0) : (caDau.gia_nam || 0);
                         tongChiTieu += gia;
-                        if (caDau.ma_key_host) hostSet.add(caDau.ma_key_host);
                     }
                 }
             });
@@ -1158,11 +1158,11 @@
             // Cập nhật UI
             const el1 = document.getElementById("statsTotalSlots");
             const el2 = document.getElementById("statsTotalCost");
-            const el3 = document.getElementById("statsTotalHosts");
+            const el3 = document.getElementById("statsBungKeo");
             const el4 = document.getElementById("statsPending");
             if (el1) el1.textContent = `${soCaBuoi} Ca`;
             if (el2) el2.textContent = _formatVND(tongChiTieu);
-            if (el3) el3.textContent = `${hostSet.size} Host`;
+            if (el3) el3.textContent = `${soBung} Lần`;
             if (el4) el4.textContent = `${soCho} Ca`;
 
         } catch (e) { console.error("Lỗi tải thống kê:", e); }
@@ -1455,7 +1455,7 @@
                     </div>
                     <div class="kh-modal-info-item">
                         <div class="kh-modal-info-lbl">Sân số</div>
-                        <div class="kh-modal-info-val">${s.so_san_cu_the || "--"} (${s.so_san_mo || 1} sân)</div>
+                        <div class="kh-modal-info-val">${s.so_san_cu_the ? _formatSanSo(s.so_san_cu_the) : "--"} (${s.so_san_mo || 1} sân)</div>
                     </div>
                     <div class="kh-modal-info-item">
                         <div class="kh-modal-info-lbl">Giá Nam ♂</div>
@@ -1966,6 +1966,29 @@
      * ═══════════════════════════════════════════════════ */
     function _formatVND(n) {
         return Number(n || 0).toLocaleString("vi-VN") + "đ";
+    }
+
+    /**
+     * Chuẩn hóa chuỗi "sân số" nhập tự do thành dạng đẹp.
+     * Các input hỗ trợ:
+     *   "1,2"              → "Sân 1, Sân 2"
+     *   "1.2"              → "Sân 1, Sân 2"
+     *   "sân 1, sân 2"     → "Sân 1, Sân 2"
+     *   "sân số 1, sân số 2" → "Sân 1, Sân 2"
+     *   "3"                → "Sân 3"
+     *   "A, B"             → "Sân A, Sân B"
+     */
+    function _formatSanSo(raw) {
+        if (!raw || !raw.trim()) return "";
+        // Tách bằng dấu phẩy HOẶC dấu chấm (dùng làm separator)
+        const parts = raw
+            .split(/[,，.]+/)
+            .map(p => p.trim())
+            // Loại bỏ tiền tố "sân số", "sân", "san so", "san" (không phân biệt hoa thường)
+            .map(p => p.replace(/^(sân\s+số|sân|san\s+so|san)\s*/i, "").trim())
+            .filter(p => p.length > 0);
+        if (parts.length === 0) return raw;
+        return parts.map(p => `Sân ${p}`).join(", ");
     }
 
     /* ═══════════════════════════════════════════════════
@@ -2502,25 +2525,29 @@
      * ═══════════════════════════════════════════════════ */
     window.toggleLichSuDesktop = function () {
         if (!window.currentGuest) return;
-        const section = document.getElementById("lichSuDauSection");
-        const btn     = document.getElementById("btnLichSuDesktop");
+        const section  = document.getElementById("lichSuDauSection");
+        const btn      = document.getElementById("btnLichSuDesktop");
+        const chevron  = document.getElementById("iconLichSuChevron");
         if (!section) return;
 
         const isOpen = section.style.display === "block";
         section.style.display = isOpen ? "none" : "block";
 
+        if (chevron) chevron.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
+
         if (btn) {
             if (isOpen) {
-                btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Đấu';
-                btn.style.background = "rgba(0,255,136,0.06)";
-                btn.style.borderColor = "rgba(0,255,136,0.2)";
+                // Trạng thái đóng
+                btn.style.background  = "linear-gradient(135deg,rgba(0,255,136,0.12),rgba(26,115,232,0.12))";
+                btn.style.borderColor = "rgba(0,255,136,0.35)";
+                btn.style.boxShadow   = "0 2px 12px rgba(0,255,136,0.1)";
             } else {
-                btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> Ẩn Lịch Sử';
-                btn.style.background = "rgba(0,255,136,0.15)";
-                btn.style.borderColor = "rgba(0,255,136,0.5)";
-                // Tải dữ liệu khi mở lần đầu
+                // Trạng thái mở — sáng hơn
+                btn.style.background  = "linear-gradient(135deg,rgba(0,255,136,0.22),rgba(26,115,232,0.2))";
+                btn.style.borderColor = "rgba(0,255,136,0.6)";
+                btn.style.boxShadow   = "0 4px 20px rgba(0,255,136,0.2)";
+                // Tải dữ liệu khi mở
                 _taiLichSuDau();
-                // Scroll đến section
                 setTimeout(() => section.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
             }
         }
