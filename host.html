@@ -423,11 +423,11 @@
             #shuttlecockListContainer {
                 overflow-x: visible;
             }
-            /* Grid 2 cột — TÊN CẦU chiếm phần lớn, DELETE chiếm auto */
+            /* Grid 2 cột — col 2 cố định 68px: TÊN CẦU/QUY CÁCH rộng hơn, GIÁ/DELETE gọn hơn */
             #shuttlecockListContainer .sc-row-grid {
                 display: grid !important;
-                grid-template-columns: 1fr auto !important;
-                gap: 8px 10px !important;
+                grid-template-columns: 1fr 68px !important;
+                gap: 8px 8px !important;
                 align-items: end !important;
             }
             /* Row 1 col 1: TÊN CẦU thu ngắn, nhường chỗ cho DELETE */
@@ -452,11 +452,11 @@
                 grid-row: 2 !important;
                 min-width: 0 !important;
             }
-            /* Row 2 col 2: GIÁ — span đến cột 2 của grid (auto) */
+            /* Row 2 col 2: GIÁ — 68px cố định từ grid-template-columns */
             #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(3) {
                 grid-column: 2 !important;
                 grid-row: 2 !important;
-                min-width: 80px !important;
+                min-width: 0 !important;
             }
             /* Row 3: ĐÃ DÙNG chiếm full width */
             #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(4) {
