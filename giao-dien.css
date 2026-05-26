@@ -2816,12 +2816,19 @@ body::before {
     }
 }
 
-/* ── Fix 6: wrapper trình độ + badge cùng chiều cao trên mọi card ── */
+/* ── Fix 6: wrapper trình độ + badge — badge luôn dính đáy wrapper ── */
 .slot-level-badge-wrap {
     min-height: 88px;        /* đủ chứa 2 dòng trình độ + badge */
     display: flex;
     flex-direction: column;
-    justify-content: flex-start;
+}
+/* Phần trình độ chiếm hết không gian còn lại → đẩy badge xuống đáy */
+.slot-level-badge-wrap .slot-details-row {
+    flex: 1;
+}
+/* Badge luôn dính đáy nhờ margin-top: auto */
+.slot-level-badge-wrap .kh-da-dang-ky-badge {
+    margin-top: auto;
 }
 
 /* ── TASK 3.6: Trình độ tách dòng + badge đăng ký riêng ── */

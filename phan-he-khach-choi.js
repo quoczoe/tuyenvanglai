@@ -80,6 +80,9 @@
     }
 
     function _hienThiDashboardKhach() {
+        // Đóng bottom sheet login nếu đang mở (tránh khung trắng trống còn hiện sau đăng nhập)
+        window.closeLoginSheet?.();
+
         const auth    = document.getElementById("guestAuthPanel");
         const profile = document.getElementById("guestProfileBlock");
         if (auth)    auth.style.display    = "none";
@@ -680,6 +683,9 @@
     window.dangXuatKhach = function () {
         localStorage.removeItem("tvl_guest");
         window.currentGuest = null;
+        // Xóa nội dung lịch sử cũ để không hiện lại sau đăng xuất
+        const timeline = document.getElementById("lichSuTimeline");
+        if (timeline) timeline.innerHTML = "";
         window.hienToast("Đã đăng xuất", "Hẹn gặp lại lông thủ!", "info");
         _hienManDangNhap();
     };
@@ -2388,7 +2394,22 @@
             if (window.currentGuest) {
                 _taiLichSuDau();
             } else {
-                // Chưa đăng nhập → mở bottom sheet login
+                // Chưa đăng nhập → xóa nội dung cũ, hiện prompt đăng nhập
+                const timeline = document.getElementById("lichSuTimeline");
+                if (timeline) {
+                    timeline.innerHTML = `
+                    <div style="text-align:center;padding:40px 20px;">
+                        <i class="fa-solid fa-lock" style="font-size:2.5rem;color:#334155;display:block;margin-bottom:14px;"></i>
+                        <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px;">Đăng nhập để xem lịch sử đấu của bạn.</p>
+                        <button onclick="window.switchKhachTab('profile')"
+                            style="background:linear-gradient(135deg,#00d97a,#00a855);border:none;color:#fff;
+                            font-size:0.88rem;font-weight:700;padding:10px 24px;border-radius:10px;
+                            cursor:pointer;font-family:inherit;">
+                            <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập / Đăng ký
+                        </button>
+                    </div>`;
+                }
+                // Mở bottom sheet login
                 setTimeout(() => window.openLoginSheet?.(), 80);
             }
         }
