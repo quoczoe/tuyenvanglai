@@ -1409,29 +1409,18 @@
     };
 
     // Tự động mở modal chi tiết nếu URL có tham số ?ca=<id>
-    // Nếu chưa đăng nhập → lưu vào _pendingCaId, sau khi đăng nhập sẽ tự mở lại
+    // Luôn mở modal ngay — modal tự xử lý trạng thái đăng nhập/chưa đăng nhập
+    // Nếu chưa đăng nhập → lưu _pendingCaId, sau login sẽ gọi lại moModalChiTietKeo
     (function _autoOpenFromUrl() {
         const params = new URLSearchParams(window.location.search);
         const caId = params.get('ca');
         if (!caId) return;
 
-        if (window.currentGuest) {
-            // Đã đăng nhập → mở luôn
-            setTimeout(() => window.moModalChiTietKeo(caId), 600);
-        } else {
-            // Chưa đăng nhập → lưu pending, mở sau khi login
-            _pendingCaId = caId;
-            // Thông báo nhẹ để user biết cần đăng nhập
-            setTimeout(() => {
-                window.hienToast(
-                    '🔗 Link kèo đấu',
-                    'Vui lòng đăng nhập để xem chi tiết ca đấu này.',
-                    'info'
-                );
-                // Mobile: mở bottom sheet login
-                if (window.innerWidth < 768) window.openLoginSheet?.();
-            }, 800);
-        }
+        // Nếu chưa đăng nhập → lưu pending để sau login re-open modal tự động
+        if (!window.currentGuest) _pendingCaId = caId;
+
+        // Mở modal ngay (dù chưa đăng nhập — modal hiện nút "Đăng nhập để đặt slot")
+        setTimeout(() => window.moModalChiTietKeo(caId), 600);
     })();
 
     window.moModalChiTietKeo = async function (idCaDau) {
@@ -1595,9 +1584,13 @@
                                            <i class="fa-solid fa-ticket"></i> ĐẶT SLOT THAM GIA
                                        </button>`;
                               })()
-                            : `<p style="text-align:center;font-size:0.82rem;color:#64748b;">
-                                <a href="#" onclick="window.dongModalChiTietKeo()" style="color:#00ff88;">Đăng nhập</a>
-                                để đặt slot tham gia ca này.</p>`
+                            : `<div style="text-align:center;padding:4px 0;">
+                                <p style="font-size:0.82rem;color:#64748b;margin-bottom:10px;">Đăng nhập để đặt slot tham gia ca này.</p>
+                                <button class="btn-dat-slot" style="width:100%;"
+                                    onclick="window.dongModalChiTietKeo();setTimeout(()=>{if(window.innerWidth<768)window.openLoginSheet?.();else{var s=document.getElementById('guestAuthPanel');if(s)s.scrollIntoView({behavior:'smooth'});}},200)">
+                                    <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập / Đăng ký
+                                </button>
+                               </div>`
                         }
                        </div>`
             }
