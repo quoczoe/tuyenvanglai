@@ -1047,18 +1047,19 @@
                 <a href="host.html" class="btn-go-host">Vào Trang Host →</a>
             </div>
 
-            <!-- Ghi chú nhỏ: Lịch sử đăng ký & đánh giá host xem ở tab "📋 Lịch Sử" -->
-            <!-- BUG-1 FIX: Thêm onclick để navigate sang tab Lịch Sử -->
-            <div onclick="if(window.innerWidth<768){window.switchKhachTab('history');}else{var s=document.getElementById('lichSuDauSection');if(s)s.scrollIntoView({behavior:'smooth'});}"
-                 style="cursor:pointer;margin-top:14px;padding:10px 12px;background:rgba(0,255,136,0.04);
-                 border:1px solid rgba(0,255,136,0.15);border-radius:8px;font-size:0.75rem;
-                 color:var(--text-muted);display:flex;align-items:center;gap:8px;
-                 transition:background 0.15s,border-color 0.15s;"
-                 onmouseover="this.style.background='rgba(0,255,136,0.08)';this.style.borderColor='rgba(0,255,136,0.3)'"
-                 onmouseout="this.style.background='rgba(0,255,136,0.04)';this.style.borderColor='rgba(0,255,136,0.15)'">
-                <i class="fa-solid fa-clock-rotate-left" style="color:#00ff88;flex-shrink:0;"></i>
-                <span>Xem lịch sử đăng ký, chi tiêu và đánh giá host tại tab <strong style="color:#00ff88;">📋 Lịch Sử →</strong></span>
-            </div>
+            <!-- Nút Lịch Sử Đấu:
+                 Mobile → chuyển sang tab LỊCH SỬ
+                 Desktop → toggle section #lichSuDauSection ngay bên dưới -->
+            <button id="btnLichSuDesktop"
+                onclick="if(window.innerWidth<768){window.switchKhachTab('history');}else{window.toggleLichSuDesktop();}"
+                style="width:100%;margin-top:14px;padding:10px 14px;
+                background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);
+                border-radius:10px;font-size:0.85rem;font-weight:600;
+                color:#00ff88;cursor:pointer;font-family:inherit;
+                display:flex;align-items:center;justify-content:center;gap:8px;
+                transition:background 0.15s,border-color 0.15s;">
+                <i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Đấu
+            </button>
 
             <!-- ══ ĐÁNH GIÁ VỀ TÔI — hiện danh sách đánh giá từ host + số sao TB ══ -->
             <hr class="kh-divider" style="margin:14px 0 10px;">

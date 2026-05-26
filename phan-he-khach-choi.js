@@ -133,13 +133,9 @@
         _taiDanhGiaVeToi();    // Đánh giá về tôi (HostToGuest) — cập nhật ngay khi mở tab Cá Nhân
         _taiDaGuiDanhGia();    // Đánh giá tôi đã gửi (GuestToHost)
 
-        // Hiện khu vực Lịch Sử Đấu
+        // Ẩn #lichSuDauSection — Desktop: dùng nút bấm riêng để mở; Mobile: tab điều khiển
         const lichSuSection = document.getElementById("lichSuDauSection");
-        if (lichSuSection) {
-            // Desktop: luôn hiện phía dưới grid; Mobile: tab mới kiểm soát
-            lichSuSection.style.display = window.innerWidth >= 768 ? "block" : "none";
-        }
-        _taiLichSuDau();
+        if (lichSuSection) lichSuSection.style.display = "none";
     }
 
     /**
@@ -683,9 +679,20 @@
     window.dangXuatKhach = function () {
         localStorage.removeItem("tvl_guest");
         window.currentGuest = null;
-        // Xóa nội dung lịch sử cũ để không hiện lại sau đăng xuất
+        // Xóa toàn bộ nội dung lịch sử cũ để không hiện lại sau đăng xuất
         const timeline = document.getElementById("lichSuTimeline");
         if (timeline) timeline.innerHTML = "";
+        const stats = document.getElementById("lichSuStats");
+        if (stats) stats.innerHTML = "";
+        // Đóng section lịch sử + reset nút trạng thái
+        const lichSuSection = document.getElementById("lichSuDauSection");
+        if (lichSuSection) lichSuSection.style.display = "none";
+        const btnLs = document.getElementById("btnLichSuDesktop");
+        if (btnLs) {
+            btnLs.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Đấu';
+            btnLs.style.background = "rgba(0,255,136,0.06)";
+            btnLs.style.borderColor = "rgba(0,255,136,0.2)";
+        }
         window.hienToast("Đã đăng xuất", "Hẹn gặp lại lông thủ!", "info");
         _hienManDangNhap();
     };
@@ -2394,23 +2401,26 @@
             if (window.currentGuest) {
                 _taiLichSuDau();
             } else {
-                // Chưa đăng nhập → xóa nội dung cũ, hiện prompt đăng nhập
+                // Chưa đăng nhập → hiện prompt inline trong section lịch sử
+                // KHÔNG gọi openLoginSheet() để tránh overlay tối toggle
                 const timeline = document.getElementById("lichSuTimeline");
+                const stats    = document.getElementById("lichSuStats");
+                if (stats) stats.innerHTML = "";
                 if (timeline) {
                     timeline.innerHTML = `
-                    <div style="text-align:center;padding:40px 20px;">
-                        <i class="fa-solid fa-lock" style="font-size:2.5rem;color:#334155;display:block;margin-bottom:14px;"></i>
-                        <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px;">Đăng nhập để xem lịch sử đấu của bạn.</p>
+                    <div style="text-align:center;padding:50px 20px;">
+                        <i class="fa-solid fa-user-lock" style="font-size:2.5rem;color:#334155;display:block;margin-bottom:16px;"></i>
+                        <p style="color:#94a3b8;font-size:0.92rem;margin-bottom:20px;line-height:1.5;">
+                            Vui lòng đăng nhập để<br>xem lịch sử đấu của bạn.
+                        </p>
                         <button onclick="window.switchKhachTab('profile')"
                             style="background:linear-gradient(135deg,#00d97a,#00a855);border:none;color:#fff;
-                            font-size:0.88rem;font-weight:700;padding:10px 24px;border-radius:10px;
-                            cursor:pointer;font-family:inherit;">
+                            font-size:0.9rem;font-weight:700;padding:12px 28px;border-radius:12px;
+                            cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:8px;">
                             <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập / Đăng ký
                         </button>
                     </div>`;
                 }
-                // Mở bottom sheet login
-                setTimeout(() => window.openLoginSheet?.(), 80);
             }
         }
     };
@@ -2469,6 +2479,35 @@
         const overlay = document.getElementById("login-overlay");
         if (sheet)   sheet.classList.remove("sheet-open");
         if (overlay) { overlay.classList.remove("sheet-open"); overlay.style.display = "none"; }
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * PC: Toggle mở/đóng #lichSuDauSection khi bấm nút "📋 Lịch Sử Đấu"
+     * ═══════════════════════════════════════════════════ */
+    window.toggleLichSuDesktop = function () {
+        if (!window.currentGuest) return;
+        const section = document.getElementById("lichSuDauSection");
+        const btn     = document.getElementById("btnLichSuDesktop");
+        if (!section) return;
+
+        const isOpen = section.style.display === "block";
+        section.style.display = isOpen ? "none" : "block";
+
+        if (btn) {
+            if (isOpen) {
+                btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Đấu';
+                btn.style.background = "rgba(0,255,136,0.06)";
+                btn.style.borderColor = "rgba(0,255,136,0.2)";
+            } else {
+                btn.innerHTML = '<i class="fa-solid fa-clock-rotate-left"></i> Ẩn Lịch Sử';
+                btn.style.background = "rgba(0,255,136,0.15)";
+                btn.style.borderColor = "rgba(0,255,136,0.5)";
+                // Tải dữ liệu khi mở lần đầu
+                _taiLichSuDau();
+                // Scroll đến section
+                setTimeout(() => section.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+            }
+        }
     };
 
     /* ═══════════════════════════════════════════════════
