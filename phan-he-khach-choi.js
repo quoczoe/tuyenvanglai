@@ -1034,6 +1034,9 @@
                 <button class="kh-btn-detail" onclick="window.moModalChiTietKeo('${slot.id}')">
                     <i class="fa-solid fa-circle-info"></i> Chi tiết
                 </button>
+                <button class="kh-btn-share" onclick="window.shareKeo('${slot.id}')" title="Sao chép link chia sẻ">
+                    <i class="fa-solid fa-share-nodes"></i>
+                </button>
                 ${isLocked
                     // Đã full hoặc đã bắt đầu → khóa
                     ? (isFull
@@ -1363,6 +1366,41 @@
      * Hiện toàn bộ thông tin: địa chỉ, Maps, trình độ, giá,
      * tiện ích, danh sách người đã đăng ký (ẩn SĐT), nút ĐẶT SLOT
      * ═══════════════════════════════════════════════════ */
+    /* ═══════════════════════════════════════════════════
+     * SHARE KEO — Sao chép link ca đấu để chia sẻ
+     * URL format: ?ca=<id> — tự động mở modal khi load trang
+     * ═══════════════════════════════════════════════════ */
+    window.shareKeo = async function (idCaDau) {
+        const url = window.location.origin + window.location.pathname + '?ca=' + idCaDau;
+        try {
+            if (navigator.share) {
+                await navigator.share({ title: 'Kèo cầu lông', url });
+            } else {
+                await navigator.clipboard.writeText(url);
+                window.hienToast('Đã sao chép link!', 'Dán link vào Zalo/Facebook để chia sẻ.', 'success');
+            }
+        } catch {
+            // Fallback nếu clipboard API không có
+            const ta = document.createElement('textarea');
+            ta.value = url;
+            ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            window.hienToast('Đã sao chép link!', 'Dán link vào Zalo/Facebook để chia sẻ.', 'success');
+        }
+    };
+
+    // Tự động mở modal chi tiết nếu URL có tham số ?ca=<id>
+    (function _autoOpenFromUrl() {
+        const params = new URLSearchParams(window.location.search);
+        const caId = params.get('ca');
+        if (caId) {
+            // Đợi một chút để trang load xong rồi mở modal
+            setTimeout(() => window.moModalChiTietKeo(caId), 600);
+        }
+    })();
+
     window.moModalChiTietKeo = async function (idCaDau) {
         const overlay = document.getElementById("modalChiTietKeoOverlay");
         const body    = document.getElementById("modalKeoBody");
@@ -2447,16 +2485,21 @@
         // Reset tất cả tab buttons
         [btnKeo, btnP, btnLs].forEach(b => b?.classList.remove("kh-tab-active"));
 
+        // Nút TÌM KÈO NGAY: ẩn khi đang ở tab kèo, hiện khi ở tab khác
+        const btnTimKeoMobile = document.getElementById("btnTimKeoMobile");
+
         if (tab === "keo") {
             if (sidebar) sidebar.style.display = "none";
             if (right)   right.style.display   = "flex";
             if (lichSu)  lichSu.classList.add("lich-su-hidden");
             btnKeo?.classList.add("kh-tab-active");
+            if (btnTimKeoMobile) btnTimKeoMobile.style.display = "none";
         } else if (tab === "profile") {
             if (sidebar) sidebar.style.display = "flex";
             if (right)   right.style.display   = "none";
             if (lichSu)  lichSu.classList.add("lich-su-hidden");
             btnP?.classList.add("kh-tab-active");
+            if (btnTimKeoMobile) btnTimKeoMobile.style.display = "";
             // Nếu chưa đăng nhập → mở bottom sheet login để user thấy form
             if (!window.currentGuest) setTimeout(() => window.openLoginSheet?.(), 80);
         } else if (tab === "history") {
@@ -2464,6 +2507,7 @@
             if (right)   right.style.display   = "none";
             if (lichSu)  lichSu.classList.remove("lich-su-hidden");
             btnLs?.classList.add("kh-tab-active");
+            if (btnTimKeoMobile) btnTimKeoMobile.style.display = "";
             if (window.currentGuest) {
                 _taiLichSuDau();
             } else {
@@ -2500,6 +2544,9 @@
             if (sidebar) sidebar.style.display = "none";
             if (right)   right.style.display   = "flex";
             if (lichSu)  lichSu.classList.add("lich-su-hidden");
+            // Ẩn nút TÌM KÈO NGAY khi đang ở tab kèo (mặc định)
+            const btnTK = document.getElementById("btnTimKeoMobile");
+            if (btnTK) btnTK.style.display = "none";
         }
     })();
 

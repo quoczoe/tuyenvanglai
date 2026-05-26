@@ -3547,8 +3547,12 @@ body::before {
         border-bottom: 1px solid #1e3a5f;
         position: sticky;
         top: 60px;
-        z-index: 100;
+        z-index: 180; /* Cao hơn mọi content (header=200, login-overlay=998) */
     }
+    /* Đảm bảo layout content không tạo stacking context vượt qua tab bar */
+    .kh-layout  { isolation: isolate; z-index: 0 !important; }
+    .kh-right   { position: relative; z-index: 0; }
+    .kh-filter-bar, .filter-section { z-index: 5 !important; }
     .kh-tab-btn {
         flex: 1;
         padding: 10px 4px;
