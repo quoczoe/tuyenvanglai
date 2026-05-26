@@ -3439,13 +3439,13 @@ body::before {
     #close-login-sheet { display: none !important; }
 }
 
-/* J4: Tab toggle mobile */
+/* J4: Tab toggle mobile (3 tabs: Tìm Kèo / Cá Nhân / Lịch Sử) */
 .kh-mobile-tab { display: none; }
 @media (max-width: 767px) {
     .kh-mobile-tab {
         display: flex;
         gap: 0;
-        background: rgba(26,40,68,0.95);
+        background: rgba(26,40,68,0.97);
         border-bottom: 1px solid #1e3a5f;
         position: sticky;
         top: 60px;
@@ -3453,17 +3453,20 @@ body::before {
     }
     .kh-tab-btn {
         flex: 1;
-        padding: 11px 8px;
+        padding: 10px 4px;
         background: transparent;
         border: none;
         color: #94a3b8;
-        font-size: 0.88rem;
+        font-size: 0.78rem;  /* Nhỏ hơn để 3 tab vừa màn hình hẹp */
         font-weight: 600;
         cursor: pointer;
         font-family: inherit;
         border-bottom: 2px solid transparent;
         transition: color 0.2s, border-color 0.2s, background 0.2s;
         text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     .kh-tab-active {
         color: #00ff88;

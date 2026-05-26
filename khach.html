@@ -518,15 +518,17 @@
             color: #e2e8f0;
             font-size: 0.7rem;
             font-weight: 500;
-            white-space: nowrap;
-            padding: 7px 12px;
+            white-space: normal;   /* Cho phép xuống dòng — tránh tràn viewport */
+            padding: 8px 13px;
             border-radius: 10px;
             z-index: 300;
             box-shadow: 0 4px 20px rgba(0,0,0,0.6);
             pointer-events: none;
-            line-height: 1.5;
+            line-height: 1.55;
             text-align: center;
-            min-width: 150px;
+            min-width: 130px;
+            max-width: 210px;      /* Giới hạn chiều ngang */
+            word-break: break-word;
         }
         .host-badge-tooltip::after {
             content: '';
@@ -537,15 +539,36 @@
             border: 6px solid transparent;
             border-top-color: rgba(24,119,242,0.5);
         }
+        /* Mobile: tooltip xuất hiện PHÍA DƯỚI badge để không bị cắt trên cùng */
+        @media (max-width: 767px) {
+            .host-badge-tooltip {
+                bottom: auto;
+                top: calc(100% + 10px);
+                left: 0;
+                transform: none;
+            }
+            .host-badge-tooltip::after {
+                top: auto;
+                bottom: 100%;
+                border-top-color: transparent;
+                border-bottom-color: rgba(24,119,242,0.5);
+            }
+        }
         .host-verify-badge:hover .host-badge-tooltip,
         .host-verify-badge:focus .host-badge-tooltip,
         .host-verify-badge.tooltip-open .host-badge-tooltip {
             display: block;
-            animation: fadeInUp 0.15s ease;
+            animation: fadeInTooltip 0.15s ease;
         }
-        @keyframes fadeInUp {
+        @keyframes fadeInTooltip {
             from { opacity: 0; transform: translateX(-50%) translateY(4px); }
             to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        @media (max-width: 767px) {
+            @keyframes fadeInTooltip {
+                from { opacity: 0; transform: translateY(-4px); }
+                to   { opacity: 1; transform: translateY(0); }
+            }
         }
 
         /* ══ FEAT-3: Modal Hồ Sơ Công Khai ══ */
@@ -654,6 +677,107 @@
             transition: color 0.2s;
         }
         .review-author-link:hover { color: #93c5fd; text-decoration: underline; }
+
+        /* ══ LỊCH SỬ ĐẤU SECTION ══ */
+        .kh-ls-outer {
+            max-width: 1680px;
+            margin: 0 auto;
+            padding: 0 2rem 3rem;
+            box-sizing: border-box;
+        }
+        @media (max-width: 900px) { .kh-ls-outer { padding: 0 1rem 2rem; } }
+
+        .kh-ls-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding: 1rem 0 14px;
+            border-bottom: 1px solid var(--border);
+        }
+        .kh-ls-title {
+            font-size: 1.1rem; font-weight: 700; color: var(--text-main);
+            display: flex; align-items: center; gap: 9px; margin: 0;
+        }
+        .kh-ls-title i { color: var(--accent-green); }
+
+        /* Card timeline */
+        .kh-ls-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            transition: border-color 0.2s;
+        }
+        .kh-ls-item:hover { border-color: rgba(0,255,136,0.25); }
+        .kh-ls-item-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .kh-ls-item-body {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.05);
+        }
+        .kh-ls-inline-review {
+            background: rgba(251,191,36,0.04);
+            border: 1px solid rgba(251,191,36,0.2);
+            border-radius: 10px;
+            padding: 12px 14px;
+            margin-top: 8px;
+        }
+        .kh-ls-inline-review textarea {
+            width: 100%;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 10px;
+            color: var(--text-main);
+            font-size: 0.82rem;
+            font-family: inherit;
+            resize: vertical;
+            box-sizing: border-box;
+            margin-bottom: 4px;
+        }
+        .kh-ls-inline-review textarea:focus {
+            outline: none;
+            border-color: #fbbf24;
+        }
+        .kh-ls-inline-review .kh-stars { font-size: 1.4rem; margin-bottom: 8px; }
+        .kh-ls-char-count {
+            font-size: 0.68rem; color: #64748b;
+            text-align: right; margin-bottom: 8px;
+        }
+        .kh-ls-btn-review {
+            width: 100%; padding: 9px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            border: none; color: #0a1628;
+            font-weight: 700; font-size: 0.85rem;
+            cursor: pointer; font-family: inherit;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .kh-ls-btn-review:hover { filter: brightness(1.08); }
+        .kh-ls-expand-btn {
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.72rem;
+            cursor: pointer;
+            font-family: inherit;
+            white-space: nowrap;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+        .kh-ls-expand-btn:hover { border-color: #60a5fa; color: #60a5fa; }
     </style>
 </head>
 <body data-theme="dark">
@@ -688,9 +812,11 @@
 <!-- J4: Tab mobile — chỉ hiện trên ≤767px -->
 <div class="kh-mobile-tab" id="khMobileTab">
     <button id="tabTimKeo" class="kh-tab-btn kh-tab-active"
-            onclick="switchKhachTab('keo')">🏸 Tìm Kèo Đấu</button>
+            onclick="switchKhachTab('keo')">🏸 Tìm Kèo</button>
     <button id="tabCaNhan" class="kh-tab-btn"
-            onclick="switchKhachTab('profile')">👤 Trang Cá Nhân</button>
+            onclick="switchKhachTab('profile')">👤 Cá Nhân</button>
+    <button id="tabLichSu" class="kh-tab-btn"
+            onclick="switchKhachTab('history')">📋 Lịch Sử</button>
 </div>
 
 <!-- LAYOUT CHÍNH -->
@@ -934,92 +1060,12 @@
                 <a href="host.html" class="btn-go-host">Vào Trang Host →</a>
             </div>
 
-            <hr class="kh-divider" style="margin:14px 0;">
-
-            <!-- Đánh giá Host -->
-            <div class="kh-section-title">
-                <i class="fa-solid fa-star" style="color:#fbbf24;"></i> Đánh Giá Host Sân
-            </div>
-            <p style="font-size:0.78rem;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">
-                Chỉ được đánh giá sau khi ca chốt & Host xác nhận "Đã tham gia".
-            </p>
-            <label class="kh-label">Chọn ca đấu cần đánh giá</label>
-            <select class="kh-input" id="guestReviewHostSelect" style="margin-bottom:10px;">
-                <option value="">-- Đang tải danh sách... --</option>
-            </select>
-            <label class="kh-label">Điểm đánh giá (1–5 sao)</label>
-            <div class="kh-stars" id="guestRatingStars" style="margin-bottom:10px;"></div>
-            <label class="kh-label">Nhận xét (tuỳ chọn)</label>
-            <textarea class="kh-input" id="guestReviewComment" rows="3" style="resize:vertical;"
-                placeholder="Sân đẹp, host nhiệt tình, cầu tốt..."></textarea>
-            <button class="kh-btn-primary" onclick="guiDanhGiaHost()">
-                <i class="fa-solid fa-paper-plane"></i> Gửi Đánh Giá
-            </button>
-        </div>
-
-        <!-- CA ĐÃ ĐĂNG KÝ — FIX 12: Accordion (mặc định thu gọn) -->
-        <div class="kh-auth-card" id="cardDaKySlot" style="display:none;">
-            <div class="acc-header kh-card-title" onclick="window.toggleAccordion('bodyDaKySlot', this)">
-                <span><i class="fa-solid fa-list-check"></i> Ca Đã Đăng Ký</span>
-                <span class="acc-arrow">▼</span>
-            </div>
-            <div class="acc-body" id="bodyDaKySlot">
-                <div id="danhSachDaKySlot" style="padding-top:10px;">
-                    <div style="text-align:center;padding:16px;color:#64748b;font-size:0.82rem;">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- LỊCH SỬ CHI TIÊU — FIX 12: Accordion -->
-        <div class="kh-auth-card" id="cardLichSuChiTieu" style="display:none;">
-            <div class="acc-header kh-card-title" onclick="window.toggleAccordion('bodyLichSuChiTieu', this)">
-                <span><i class="fa-solid fa-receipt"></i> Lịch Sử Chi Tiêu</span>
-                <span class="acc-arrow">▼</span>
-            </div>
-            <div class="acc-body" id="bodyLichSuChiTieu">
-                <div id="chiTietLichSuChiTieu" style="padding-top:10px;">
-                    <div style="text-align:center;padding:16px;color:#64748b;font-size:0.82rem;">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ĐÁNH GIÁ VỀ TÔI — FIX 12: Accordion -->
-        <div class="kh-auth-card" id="cardDanhGiaVeToi" style="display:none;">
-            <div class="acc-header kh-card-title" onclick="window.toggleAccordion('bodyDanhGiaVeToi', this)">
-                <span><i class="fa-solid fa-star" style="color:#fbbf24;"></i> Đánh Giá Về Tôi</span>
-                <span class="acc-arrow">▼</span>
-            </div>
-            <div class="acc-body" id="bodyDanhGiaVeToi">
-                <p style="font-size:0.75rem;color:var(--text-muted);margin:10px 0;line-height:1.5;">
-                    Nhận xét từ chủ sân sau các ca bạn đã tham gia.
-                </p>
-                <div id="danhGiaVeToiList">
-                    <div style="text-align:center;padding:16px;color:#64748b;font-size:0.82rem;">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ĐÁNH GIÁ TÔI ĐÃ GỬI — FEAT-2: accordion, mặc định thu gọn -->
-        <div class="kh-auth-card" id="cardDanhGiaDaGui" style="display:none;">
-            <div class="acc-header kh-card-title" onclick="window.toggleAccordion('bodyDanhGiaDaGui', this)">
-                <span><i class="fa-solid fa-paper-plane" style="color:#60a5fa;"></i> Đánh Giá Tôi Đã Gửi</span>
-                <span class="acc-arrow">▼</span>
-            </div>
-            <div class="acc-body" id="bodyDanhGiaDaGui">
-                <p style="font-size:0.75rem;color:var(--text-muted);margin:10px 0;line-height:1.5;">
-                    Các đánh giá bạn đã gửi về Host Sân sau các buổi tham gia.
-                </p>
-                <div id="danhGiaDaGuiList">
-                    <div style="text-align:center;padding:16px;color:#64748b;font-size:0.82rem;">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
-                    </div>
-                </div>
+            <!-- Ghi chú nhỏ: Lịch sử đăng ký & đánh giá host xem ở tab "📋 Lịch Sử" -->
+            <div style="margin-top:14px;padding:10px 12px;background:rgba(0,255,136,0.04);
+                 border:1px solid rgba(0,255,136,0.15);border-radius:8px;font-size:0.75rem;
+                 color:var(--text-muted);display:flex;align-items:center;gap:8px;">
+                <i class="fa-solid fa-clock-rotate-left" style="color:#00ff88;flex-shrink:0;"></i>
+                <span>Xem lịch sử đăng ký, chi tiêu và đánh giá host tại tab <strong style="color:#00ff88;">📋 Lịch Sử</strong></span>
             </div>
         </div>
 
@@ -1121,6 +1167,37 @@
     </div><!-- end kh-right -->
 
 </div><!-- end kh-layout -->
+
+<!-- ══ LỊCH SỬ ĐẤU SECTION: Full-width (desktop) / Tab 3 (mobile) ══ -->
+<div id="lichSuDauSection" style="display:none;">
+    <div class="kh-ls-outer">
+
+        <!-- Header + bộ lọc thời gian -->
+        <div class="kh-ls-header">
+            <h2 class="kh-ls-title">
+                <i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Đấu
+            </h2>
+            <div class="kh-time-filters" style="margin:0;">
+                <button class="kh-time-btn kh-ls-filter-btn" onclick="window.locLichSuDau('week',this)">Tuần</button>
+                <button class="kh-time-btn kh-ls-filter-btn" onclick="window.locLichSuDau('month',this)">Tháng</button>
+                <button class="kh-time-btn kh-ls-filter-btn" onclick="window.locLichSuDau('year',this)">Năm</button>
+                <button class="kh-time-btn kh-ls-filter-btn active" onclick="window.locLichSuDau('all',this)">Tất cả</button>
+            </div>
+        </div>
+
+        <!-- Thống kê nhanh -->
+        <div class="kh-stats-grid kh-ls-stats" id="lichSuStats" style="margin-bottom:16px;"></div>
+
+        <!-- Danh sách -->
+        <div id="lichSuTimeline">
+            <div class="kh-loading">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                Đang tải lịch sử...
+            </div>
+        </div>
+
+    </div>
+</div>
 
 <!-- TOAST -->
 <div class="toast-container" id="toastContainer"></div>

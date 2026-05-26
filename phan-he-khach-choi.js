@@ -54,11 +54,9 @@
         const profile = document.getElementById("guestProfileBlock");
         if (auth)    auth.style.display    = "block";
         if (profile) profile.style.display = "none";
-        // Ẩn các card phụ chỉ dành cho khách đã đăng nhập
-        ["cardDaKySlot", "cardLichSuChiTieu", "cardDanhGiaVeToi", "cardDanhGiaDaGui"].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = "none";
-        });
+        // Ẩn khu vực Lịch Sử Đấu
+        const lichSuSection = document.getElementById("lichSuDauSection");
+        if (lichSuSection) lichSuSection.style.display = "none";
     }
 
     function _hienThiDashboardKhach() {
@@ -109,17 +107,14 @@
         _dinhNgayMacDinh();
 
         _taiThongKeKhach();
-        _taiDanhSachHostChoGuestDanhGia();
 
-        // Hiện và tải các card phụ GĐ3 + FEAT-2
-        ["cardDaKySlot", "cardLichSuChiTieu", "cardDanhGiaVeToi", "cardDanhGiaDaGui"].forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.style.display = "block";
-        });
-        _taiDaKySlot();
-        _taiLichSuChiTieu();
-        _taiDanhGiaVeToi();
-        _taiDanhGiaDaGui(); // FEAT-2: đánh giá đã gửi về host
+        // Hiện khu vực Lịch Sử Đấu
+        const lichSuSection = document.getElementById("lichSuDauSection");
+        if (lichSuSection) {
+            // Desktop: luôn hiện phía dưới grid; Mobile: tab mới kiểm soát
+            lichSuSection.style.display = window.innerWidth >= 768 ? "block" : "none";
+        }
+        _taiLichSuDau();
     }
 
     /**
@@ -1501,7 +1496,7 @@
             await window.dbEngine.ghi("dat_slot", { trang_thai_di_danh: "Khách hủy" }, { id: datSlotId });
             window.hienToast("Đã huỷ đăng ký", "Bạn đã huỷ tham gia ca này thành công.", "info");
             // Reload các section liên quan
-            await Promise.all([_taiDaKySlot(), _taiThongKeKhach(), _taiLichSuChiTieu()]);
+            await Promise.all([_taiThongKeKhach(), _taiLichSuDau()]);
             window.timKiemCaDau();
         } catch (e) {
             console.error("Lỗi huỷ slot:", e);
@@ -1699,7 +1694,6 @@
     // Gán cho window để time filter có thể gọi
     window.locThongKeKhach = function() {
         _taiThongKeKhach();
-        _taiLichSuChiTieu();
     };
 
     /* ═══════════════════════════════════════════════════
@@ -1844,45 +1838,436 @@
     };
 
     /* ═══════════════════════════════════════════════════
+     * LỊCH SỬ ĐẤU — Tổng hợp lịch sử, chi tiêu, đánh giá
+     * Gộp: CA ĐÃ ĐĂNG KÝ + LỊCH SỬ CHI TIÊU + ĐÁNH GIÁ HOST
+     * ═══════════════════════════════════════════════════ */
+    let _lsdFromDate = null;
+    let _lsdToDate   = null;
+
+    /**
+     * Bộ lọc thời gian cho lịch sử đấu — gọi khi bấm các nút Tuần/Tháng/Năm/Tất cả
+     */
+    window.locLichSuDau = function(type, btn) {
+        // Cập nhật active cho filter buttons lịch sử
+        document.querySelectorAll(".kh-ls-filter-btn").forEach(b => b.classList.remove("active"));
+        if (btn) btn.classList.add("active");
+
+        const now   = new Date();
+        const today = now.toISOString().split("T")[0];
+
+        if (type === "week") {
+            const mon = new Date(now);
+            mon.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // Thứ 2 tuần này
+            _lsdFromDate = mon.toISOString().split("T")[0];
+            _lsdToDate   = today;
+        } else if (type === "month") {
+            _lsdFromDate = today.substring(0, 7) + "-01";
+            _lsdToDate   = today;
+        } else if (type === "year") {
+            _lsdFromDate = today.substring(0, 4) + "-01-01";
+            _lsdToDate   = today;
+        } else {
+            _lsdFromDate = null;
+            _lsdToDate   = null;
+        }
+
+        _taiLichSuDau();
+    };
+
+    /**
+     * Render inline star rating cho inline review form
+     */
+    function _renderInlineStars(container, rating, slotId) {
+        if (!container) return;
+        container.innerHTML = Array(5).fill(0).map((_, i) =>
+            `<span class="kh-star ${i < rating ? "filled" : ""}"
+                  onclick="window._setInlineStar('${slotId}', ${i + 1})"
+                  style="cursor:pointer;font-size:1.5rem;">★</span>`
+        ).join("");
+        container.dataset.rating = String(rating);
+    }
+
+    window._setInlineStar = function(slotId, val) {
+        const starEl = document.getElementById("stars_" + slotId);
+        if (starEl) _renderInlineStars(starEl, val, slotId);
+    };
+
+    /**
+     * Toggle mở/đóng phần chi tiết của một item lịch sử
+     */
+    window._toggleLsItem = function(itemId) {
+        const body = document.getElementById("body_" + itemId);
+        const icon = document.getElementById("icon_" + itemId);
+        if (!body) return;
+        const isOpen = body.style.display !== "none";
+        body.style.display = isOpen ? "none" : "block";
+        if (icon) icon.className = isOpen ? "fa-solid fa-chevron-down" : "fa-solid fa-chevron-up";
+    };
+
+    /**
+     * Gửi đánh giá host từ inline form trong LỊCH SỬ ĐẤU
+     */
+    window.guiDanhGiaHostInline = async function(caDauId, slotId) {
+        if (!window.currentGuest) {
+            window.hienToast("Chưa đăng nhập", "Vui lòng đăng nhập trước.", "warning");
+            return;
+        }
+
+        const starEl    = document.getElementById("stars_" + slotId);
+        const commentEl = document.getElementById("comment_" + slotId);
+        const soSao     = parseInt(starEl?.dataset?.rating || "5", 10);
+        const comment   = (commentEl?.value || "").trim() || null;
+        const myPhone   = window.currentGuest.sdt_khach;
+
+        try {
+            // Kiểm tra đã đánh giá chưa
+            const existed = await window.dbEngine.doc("danh_gia_tin_dung", {
+                eq: { id_ca_dau: caDauId, sdt_nguoi_viet: myPhone, loai_danh_gia: "GuestToHost" }
+            }).catch(() => []);
+            if (existed.length > 0) {
+                window.hienToast("Đã đánh giá", "Bạn đã gửi đánh giá cho ca này rồi.", "warning");
+                return;
+            }
+
+            // Lấy SĐT host từ ca_dau → quan_ly_key
+            const caDauList = await window.dbEngine.doc("ca_dau", { eq: { id: caDauId } });
+            const caDau     = caDauList[0];
+            let hostPhone   = caDau?.ma_key_host || "";
+            if (caDau?.ma_key_host) {
+                const keyList = await window.dbEngine.doc("quan_ly_key",
+                    { eq: { ma_key: caDau.ma_key_host } }).catch(() => []);
+                if (keyList[0]?.sdt_host) hostPhone = keyList[0].sdt_host;
+            }
+
+            await window.dbEngine.ghi("danh_gia_tin_dung", {
+                id_ca_dau:             caDauId,
+                sdt_nguoi_viet:        myPhone,
+                sdt_nguoi_bi_danh_gia: hostPhone,
+                loai_danh_gia:         "GuestToHost",
+                so_sao:                soSao,
+                nhan_xet:              comment
+            });
+
+            window.hienToast("Đánh giá thành công! ⭐", `Đã gửi ${soSao} sao cho chủ sân.`, "success");
+            _taiLichSuDau(); // Reload để cập nhật trạng thái
+        } catch (e) {
+            console.error("Lỗi gửi đánh giá inline:", e);
+            window.hienToast("Lỗi", "Không gửi được đánh giá.", "danger");
+        }
+    };
+
+    /**
+     * Tải và render toàn bộ LỊCH SỬ ĐẤU
+     */
+    async function _taiLichSuDau() {
+        if (!window.currentGuest) return;
+        const timeline = document.getElementById("lichSuTimeline");
+        const statsEl  = document.getElementById("lichSuStats");
+        if (!timeline) return;
+
+        timeline.innerHTML = `<div class="kh-loading">
+            <i class="fa-solid fa-spinner fa-spin"></i> Đang tải lịch sử...</div>`;
+
+        try {
+            const myPhone = window.currentGuest.sdt_khach;
+            const [myDatSlots, allCaDau, myReviews] = await Promise.all([
+                window.dbEngine.doc("dat_slot", { eq: { sdt_khach: myPhone } }),
+                window.dbEngine.doc("ca_dau"),
+                window.dbEngine.doc("danh_gia_tin_dung", {
+                    eq: { sdt_nguoi_viet: myPhone, loai_danh_gia: "GuestToHost" }
+                }).catch(() => [])
+            ]);
+
+            const caDauMap   = {};
+            allCaDau.forEach(c => { caDauMap[c.id] = c; });
+
+            // Set ID ca đấu đã review
+            const reviewedSet = new Set(myReviews.map(r => r.id_ca_dau));
+
+            // Join + filter theo khoảng thời gian
+            const withCa = myDatSlots
+                .map(slot => ({ slot, ca: caDauMap[slot.id_ca_dau] }))
+                .filter(({ ca }) => {
+                    if (!ca) return false;
+                    if (_lsdFromDate && ca.ngay_danh && ca.ngay_danh < _lsdFromDate) return false;
+                    if (_lsdToDate   && ca.ngay_danh && ca.ngay_danh > _lsdToDate)   return false;
+                    return true;
+                })
+                .sort((a, b) => {
+                    const da = a.ca?.ngay_danh || "";
+                    const db = b.ca?.ngay_danh || "";
+                    return db.localeCompare(da);
+                });
+
+            // Tính stats nhanh
+            let soThamGia = 0, tongChi = 0, choDanh = 0, daHuy = 0;
+            withCa.forEach(({ slot, ca }) => {
+                const tt = slot.trang_thai_di_danh;
+                if (tt === "Đã tham gia") {
+                    soThamGia++;
+                    if (ca.da_chot_ca) {
+                        tongChi += slot.gioi_tinh === "female" ? (ca.gia_nu || 0) : (ca.gia_nam || 0);
+                    }
+                } else if (tt === "Chờ đánh")  { choDanh++; }
+                else if (tt === "Khách hủy")   { daHuy++; }
+            });
+
+            // Render stats grid
+            if (statsEl) {
+                statsEl.innerHTML = [
+                    { val: soThamGia,            color: "#00ff88", icon: "fa-flag-checkered", lbl: "Đã tham gia" },
+                    { val: _formatVND(tongChi),  color: "#60a5fa", icon: "fa-wallet",         lbl: "Tổng chi"    },
+                    { val: choDanh,              color: "#fbbf24", icon: "fa-clock",           lbl: "Chờ đánh"   },
+                    { val: daHuy,                color: "#9ca3af", icon: "fa-circle-xmark",    lbl: "Đã hủy"     },
+                ].map(({ val, color, icon, lbl }) => `
+                    <div class="kh-stat-badge">
+                        <div class="kh-stat-val" style="color:${color};">${val}</div>
+                        <div class="kh-stat-lbl"><i class="fa-solid ${icon}"></i> ${lbl}</div>
+                    </div>`).join("");
+            }
+
+            if (withCa.length === 0) {
+                timeline.innerHTML = `<div class="kh-empty">
+                    <i class="fa-solid fa-calendar-xmark"></i>
+                    <p>Chưa có lịch sử đấu trong khoảng thời gian này.</p>
+                </div>`;
+                return;
+            }
+
+            // Map màu & icon theo trạng thái
+            const ttMap = {
+                "Đã tham gia": { color: "#00ff88", bg: "rgba(0,255,136,0.1)",   icon: "fa-circle-check"         },
+                "Chờ đánh":    { color: "#fbbf24", bg: "rgba(251,191,36,0.1)",  icon: "fa-clock"                },
+                "Khách hủy":   { color: "#9ca3af", bg: "rgba(156,163,175,0.1)", icon: "fa-circle-xmark"         },
+                "Bùng kèo":    { color: "#ef4444", bg: "rgba(239,68,68,0.1)",   icon: "fa-triangle-exclamation" },
+            };
+
+            // Render timeline items
+            timeline.innerHTML = withCa.map(({ slot, ca }) => {
+                const ngayStr = ca.ngay_danh
+                    ? new Date(ca.ngay_danh).toLocaleDateString("vi-VN", {
+                        weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })
+                    : "--";
+                const tt      = ttMap[slot.trang_thai_di_danh] || { color: "#9ca3af", bg: "rgba(156,163,175,0.1)", icon: "fa-question" };
+                const itemId  = "lsItem_" + slot.id;
+                const baoGom  = ca.tien_ich_bao_gom || {};
+                const tichArr = [];
+                if (baoGom.san)    tichArr.push("🏟️ Sân");
+                if (baoGom.cau)    tichArr.push("🏸 Cầu");
+                if (baoGom.nuoc)   tichArr.push("💧 Nước");
+                if (baoGom.gui_xe) tichArr.push("🏍️ Xe");
+
+                // Giá tiền hiển thị
+                let priceHTML = "";
+                if (ca.da_chot_ca && slot.trang_thai_di_danh === "Đã tham gia") {
+                    const gia = slot.gioi_tinh === "female" ? (ca.gia_nu || 0) : (ca.gia_nam || 0);
+                    priceHTML = `<span style="font-weight:700;color:#00ff88;font-size:0.88rem;">${_formatVND(gia)}</span>`;
+                } else if (!ca.da_chot_ca && slot.trang_thai_di_danh === "Đã tham gia") {
+                    priceHTML = `<span style="color:#fbbf24;font-size:0.72rem;">Chờ chốt</span>`;
+                } else if (slot.trang_thai_di_danh === "Khách hủy") {
+                    priceHTML = `<span style="color:#9ca3af;font-size:0.72rem;">Đã hủy</span>`;
+                }
+
+                // Điều kiện đánh giá host
+                const coTheReview = ca.da_chot_ca
+                    && slot.trang_thai_di_danh === "Đã tham gia"
+                    && !reviewedSet.has(ca.id);
+                const daReview    = reviewedSet.has(ca.id);
+
+                // Inline review form (chỉ hiện khi đủ điều kiện)
+                let reviewSection = "";
+                if (coTheReview) {
+                    reviewSection = `
+                    <div class="kh-ls-inline-review">
+                        <div style="font-size:0.78rem;font-weight:700;color:#fbbf24;margin-bottom:8px;">
+                            <i class="fa-solid fa-star"></i> Đánh giá Host Sân
+                        </div>
+                        <div class="kh-stars" id="stars_${slot.id}" style="margin-bottom:8px;"></div>
+                        <textarea id="comment_${slot.id}" rows="3" maxlength="1000"
+                            placeholder="Sân đẹp, host nhiệt tình, cầu tốt... (tối đa 1000 ký tự)"
+                        ></textarea>
+                        <div class="kh-ls-char-count" id="charCount_${slot.id}">0 / 1000 ký tự</div>
+                        <button class="kh-ls-btn-review"
+                                onclick="window.guiDanhGiaHostInline('${ca.id}','${slot.id}')">
+                            <i class="fa-solid fa-paper-plane"></i> Gửi Đánh Giá
+                        </button>
+                    </div>`;
+                } else if (daReview) {
+                    reviewSection = `
+                    <div style="font-size:0.78rem;color:#00ff88;display:flex;align-items:center;gap:6px;margin-top:6px;">
+                        <i class="fa-solid fa-circle-check"></i> Đã đánh giá ca này
+                    </div>`;
+                } else if (slot.trang_thai_di_danh === "Đã tham gia" && !ca.da_chot_ca) {
+                    reviewSection = `
+                    <div style="font-size:0.72rem;color:#fbbf24;display:flex;align-items:center;gap:6px;margin-top:6px;">
+                        <i class="fa-regular fa-clock"></i> Chờ Host chốt ca mới có thể đánh giá
+                    </div>`;
+                }
+
+                // Nút hủy slot (nếu đang chờ và ca chưa chốt)
+                const nutHuy = (!ca.da_chot_ca && slot.trang_thai_di_danh === "Chờ đánh")
+                    ? `<button onclick="window.huyDatSlot('${slot.id}','${slot.id_ca_dau}')"
+                           style="margin-top:6px;padding:4px 10px;border-radius:6px;
+                                  border:1px solid rgba(239,68,68,0.5);background:rgba(239,68,68,0.06);
+                                  color:#ef4444;font-size:0.72rem;cursor:pointer;font-family:inherit;
+                                  display:inline-flex;align-items:center;gap:5px;">
+                           <i class="fa-solid fa-xmark"></i> Huỷ đăng ký
+                       </button>`
+                    : "";
+
+                return `
+                <div class="kh-ls-item" id="${itemId}">
+                    <!-- Đầu dòng: badge + tên sân + giá + nút mở rộng -->
+                    <div class="kh-ls-item-head">
+                        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
+                            <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;
+                                  border-radius:20px;background:${tt.bg};color:${tt.color};
+                                  font-size:0.67rem;font-weight:700;white-space:nowrap;flex-shrink:0;">
+                                <i class="fa-solid ${tt.icon}" style="font-size:0.58rem;"></i>
+                                ${slot.trang_thai_di_danh}
+                            </span>
+                            <div style="min-width:0;flex:1;">
+                                <div style="font-weight:700;color:#e2e8f0;font-size:0.88rem;
+                                     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                    ${ca.ten_san || "Ca đấu"}
+                                </div>
+                                <div style="font-size:0.7rem;color:#9ca3af;margin-top:1px;">
+                                    ${ngayStr}${ca.gio_bat_dau ? " · " + ca.gio_bat_dau : ""}${ca.tinh_thanh ? " · " + ca.tinh_thanh : ""}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                            ${priceHTML}
+                            <button class="kh-ls-expand-btn" onclick="window._toggleLsItem('${itemId}')"
+                                    title="Xem chi tiết">
+                                <i class="fa-solid fa-chevron-down" id="icon_${itemId}"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Body chi tiết (ẩn mặc định) -->
+                    <div class="kh-ls-item-body" id="body_${itemId}" style="display:none;">
+                        <div style="font-size:0.78rem;color:#9ca3af;margin-bottom:8px;">
+                            <i class="fa-solid fa-map-pin" style="color:#00ff88;margin-right:4px;"></i>
+                            ${ca.dia_chi_san || "Chưa có địa chỉ"}
+                            ${ca.quan_huyen  ? " · " + ca.quan_huyen  : ""}
+                            ${ca.tinh_thanh  ? " · " + ca.tinh_thanh  : ""}
+                        </div>
+                        ${tichArr.length > 0 ? `<div style="font-size:0.72rem;color:#9ca3af;margin-bottom:8px;">
+                            Bao gồm: ${tichArr.join(" · ")}</div>` : ""}
+                        <div style="font-size:0.75rem;color:#64748b;margin-bottom:4px;">
+                            Mã slot: <code style="color:#e2e8f0;background:rgba(255,255,255,0.05);
+                                padding:2px 6px;border-radius:4px;">${slot.ma_slot || "--"}</code>
+                        </div>
+                        ${nutHuy}
+                        ${reviewSection}
+                    </div>
+                </div>`;
+            }).join("");
+
+            // Khởi tạo star rating cho các inline form
+            withCa.forEach(({ slot, ca }) => {
+                const coTheReview = ca.da_chot_ca
+                    && slot.trang_thai_di_danh === "Đã tham gia"
+                    && !reviewedSet.has(ca.id);
+                if (!coTheReview) return;
+
+                const starEl = document.getElementById("stars_" + slot.id);
+                if (starEl) _renderInlineStars(starEl, 5, slot.id);
+
+                const textEl = document.getElementById("comment_" + slot.id);
+                const cntEl  = document.getElementById("charCount_" + slot.id);
+                if (textEl && cntEl) {
+                    textEl.addEventListener("input", () => {
+                        cntEl.textContent = `${textEl.value.length} / 1000 ký tự`;
+                    });
+                }
+            });
+
+        } catch (e) {
+            console.error("Lỗi tải lịch sử đấu:", e);
+            if (timeline) {
+                timeline.innerHTML = `<div class="kh-empty">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <p>Lỗi tải dữ liệu. Thử lại sau.</p>
+                </div>`;
+            }
+        }
+    }
+    // Gán ra ngoài để huyDatSlot và locThongKeKhach có thể gọi lại
+    window._taiLichSuDau = function() { _taiLichSuDau(); };
+
+    /* ═══════════════════════════════════════════════════
      * J4 — TAB TOGGLE MOBILE (Tìm Kèo / Trang Cá Nhân)
      * Chỉ hoạt động khi innerWidth < 768px; desktop không bị ảnh hưởng
      * ═══════════════════════════════════════════════════ */
     window.switchKhachTab = function(tab) {
         const sidebar = document.querySelector(".kh-sidebar");
         const right   = document.querySelector(".kh-right");
+        const lichSu  = document.getElementById("lichSuDauSection");
         const btnKeo  = document.getElementById("tabTimKeo");
         const btnP    = document.getElementById("tabCaNhan");
+        const btnLs   = document.getElementById("tabLichSu");
 
         if (window.innerWidth >= 768) return; // Desktop: không làm gì
+
+        // Reset tất cả tab buttons
+        [btnKeo, btnP, btnLs].forEach(b => b?.classList.remove("kh-tab-active"));
 
         if (tab === "keo") {
             if (sidebar) sidebar.style.display = "none";
             if (right)   right.style.display   = "flex";
-            if (btnKeo) btnKeo.classList.add("kh-tab-active");
-            if (btnP)   btnP.classList.remove("kh-tab-active");
-        } else {
+            if (lichSu)  lichSu.style.display  = "none";
+            btnKeo?.classList.add("kh-tab-active");
+        } else if (tab === "profile") {
             if (sidebar) sidebar.style.display = "flex";
             if (right)   right.style.display   = "none";
-            if (btnP)   btnP.classList.add("kh-tab-active");
-            if (btnKeo) btnKeo.classList.remove("kh-tab-active");
+            if (lichSu)  lichSu.style.display  = "none";
+            btnP?.classList.add("kh-tab-active");
+        } else if (tab === "history") {
+            if (sidebar) sidebar.style.display = "none";
+            if (right)   right.style.display   = "none";
+            if (lichSu)  lichSu.style.display  = "block";
+            btnLs?.classList.add("kh-tab-active");
+            // Tải lịch sử nếu đã đăng nhập
+            if (window.currentGuest) _taiLichSuDau();
         }
     };
 
-    // Khởi tạo: ẩn sidebar khi mobile mặc định (tab "Tìm Kèo" active)
+    // Khởi tạo: ẩn sidebar, hiện right khi mobile mặc định (tab "Tìm Kèo" active)
     (function _initMobileTab() {
         if (window.innerWidth < 768) {
             const sidebar = document.querySelector(".kh-sidebar");
+            const right   = document.querySelector(".kh-right");
+            const lichSu  = document.getElementById("lichSuDauSection");
             if (sidebar) sidebar.style.display = "none";
+            if (right)   right.style.display   = "flex";
+            if (lichSu)  lichSu.style.display  = "none";
         }
     })();
 
-    // Reset khi resize về desktop
+    // Xử lý khi resize: cả hai chiều (PC→mobile và mobile→PC)
     window.addEventListener("resize", function() {
         if (window.innerWidth >= 768) {
+            // Desktop: reset sidebar và right về CSS mặc định
             const sidebar = document.querySelector(".kh-sidebar");
             const right   = document.querySelector(".kh-right");
             if (sidebar) sidebar.style.display = "";
             if (right)   right.style.display   = "";
+            // Hiện lịch sử đấu nếu đã đăng nhập
+            const lichSu = document.getElementById("lichSuDauSection");
+            if (lichSu && window.currentGuest) {
+                lichSu.style.display = "block";
+            }
+        } else {
+            // Mobile → áp dụng trạng thái tab đang active
+            const activeBtn = document.querySelector(".kh-tab-btn.kh-tab-active");
+            if (activeBtn) {
+                if (activeBtn.id === "tabCaNhan")   window.switchKhachTab("profile");
+                else if (activeBtn.id === "tabLichSu") window.switchKhachTab("history");
+                else window.switchKhachTab("keo");
+            } else {
+                window.switchKhachTab("keo");
+            }
         }
     });
 
