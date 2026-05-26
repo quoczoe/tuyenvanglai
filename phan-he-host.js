@@ -434,13 +434,11 @@
         const giaFormatted = (gia || 0).toLocaleString('vi-VN');
         div.innerHTML = `
         <div class="sc-row-grid">
-            <div class="form-group" style="margin-bottom:0;position:relative;">
+            <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label" style="font-size:0.7rem;">Tên cầu</label>
                 <input type="text" class="form-control" id="scName_${id}" value="${ten}"
                     placeholder="Hải Yến, Victor..."
-                    autocomplete="off"
-                    oninput="window._goiYCau('${id}')">
-                <div id="scSuggest_${id}" style="position:absolute;top:calc(100% + 2px);left:0;right:0;background:#0f1e35;border:1px solid #2d4a6e;border-radius:8px;max-height:160px;overflow-y:auto;z-index:200;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.5);"></div>
+                    autocomplete="off">
             </div>
             <div class="form-group" style="margin-bottom:0;min-width:0;">
                 <label class="form-label" style="font-size:0.7rem;">Quy cách</label>
@@ -551,35 +549,7 @@
         _tinhGoiYGia();
     };
 
-    window._goiYCau = function (id) {
-        const inp = document.getElementById(`scName_${id}`);
-        const box = document.getElementById(`scSuggest_${id}`);
-        if (!inp || !box) return;
-        const q = inp.value.toLowerCase().trim();
-        box.innerHTML = "";
-        if (!q) { box.style.display = "none"; return; }
-        const matched = (window.SHUTTLECOCK_BRANDS || []).filter(b => b.toLowerCase().includes(q));
-        if (matched.length === 0) { box.style.display = "none"; return; }
-        box.style.display = "block";
-        matched.forEach((b, idx) => {
-            const d = document.createElement("div");
-            const isLast = idx === matched.length - 1;
-            d.style.cssText = `display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;font-size:0.82rem;color:#e2e8f0;transition:background 0.12s;${isLast ? '' : 'border-bottom:1px solid rgba(45,74,110,0.6);'}`;
-            d.innerHTML = `<i class="fa-solid fa-shuttle-space" style="color:#00ff88;font-size:0.7rem;flex-shrink:0;"></i><span>${b}</span>`;
-            d.onmouseenter = () => { d.style.background = "rgba(0,255,136,0.07)"; d.style.color = "#00ff88"; };
-            d.onmouseleave = () => { d.style.background = ""; d.style.color = "#e2e8f0"; };
-            d.onmousedown = (e) => { e.preventDefault(); inp.value = b; box.style.display = "none"; _tinhGoiYGia(); };
-            box.appendChild(d);
-        });
-    };
-    /* Đóng dropdown gợi ý cầu khi click ra ngoài */
-    document.addEventListener("click", function(e) {
-        document.querySelectorAll('[id^="scSuggest_"]').forEach(box => {
-            if (!box.contains(e.target) && !e.target.id?.startsWith("scName_")) {
-                box.style.display = "none";
-            }
-        });
-    });
+    // _goiYCau đã bị xoá — khách tự nhập tên cầu không có gợi ý
 
     /* ═══════════════════════════════════════════════════
      * 7. BỘ MÁY KẾ TOÁN - GỢI Ý GIÁ

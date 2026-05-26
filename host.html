@@ -415,54 +415,54 @@
         /* ══════════════════════════════════════════════════════════
            R2: Mobile (≤768px) — bảng cầu layout gọn, đều, đẹp
            Layout:
-             Row 1: [TÊN CẦU          ] (full width)
-             Row 2: [QUY CÁCH] [GIÁ   ]
-             Row 3: [ĐÃ DÙNG ] [DELETE]
+             Row 1: [TÊN CẦU (co lại)] [DELETE]
+             Row 2: [QUY CÁCH        ] [GIÁ   ]
+             Row 3: [ĐÃ DÙNG (full)          ]
            ══════════════════════════════════════════════════════════ */
         @media (max-width: 768px) {
             #shuttlecockListContainer {
                 overflow-x: visible;
             }
-            /* Grid 2 cột đều — override tất cả */
+            /* Grid 2 cột — TÊN CẦU chiếm phần lớn, DELETE chiếm auto */
             #shuttlecockListContainer .sc-row-grid {
                 display: grid !important;
-                grid-template-columns: 1fr 1fr !important;
+                grid-template-columns: 1fr auto !important;
                 gap: 8px 10px !important;
                 align-items: end !important;
             }
-            /* Row 1: TÊN CẦU chiếm full width */
+            /* Row 1 col 1: TÊN CẦU thu ngắn, nhường chỗ cho DELETE */
             #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(1) {
-                grid-column: 1 / -1 !important;
+                grid-column: 1 !important;
                 grid-row: 1 !important;
                 min-width: 0 !important;
             }
-            /* Row 2: QUY CÁCH (col 1) */
-            #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(2) {
-                grid-column: 1 !important;
-                grid-row: 2 !important;
-                min-width: 0 !important;
-            }
-            /* Row 2: GIÁ (col 2) */
-            #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(3) {
-                grid-column: 2 !important;
-                grid-row: 2 !important;
-                min-width: 0 !important;
-            }
-            /* Row 3: ĐÃ DÙNG (col 1) */
-            #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(4) {
-                grid-column: 1 !important;
-                grid-row: 3 !important;
-                min-width: 0 !important;
-            }
-            /* Row 3: DELETE button (col 2) — căn giữa theo chiều dọc ô */
+            /* Row 1 col 2: DELETE button cùng hàng TÊN CẦU */
             #shuttlecockListContainer .sc-row-grid > div:last-child {
                 grid-column: 2 !important;
-                grid-row: 3 !important;
+                grid-row: 1 !important;
                 display: flex !important;
                 align-items: flex-end !important;
                 justify-content: center !important;
                 padding-bottom: 2px;
                 z-index: 1;
+            }
+            /* Row 2 col 1: QUY CÁCH */
+            #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(2) {
+                grid-column: 1 !important;
+                grid-row: 2 !important;
+                min-width: 0 !important;
+            }
+            /* Row 2 col 2: GIÁ — span đến cột 2 của grid (auto) */
+            #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(3) {
+                grid-column: 2 !important;
+                grid-row: 2 !important;
+                min-width: 80px !important;
+            }
+            /* Row 3: ĐÃ DÙNG chiếm full width */
+            #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(4) {
+                grid-column: 1 / -1 !important;
+                grid-row: 3 !important;
+                min-width: 0 !important;
             }
             /* Mỗi field: label trên, input dưới */
             #shuttlecockListContainer .sc-row-grid > .form-group {
@@ -1484,57 +1484,6 @@ setInterval(()=>console.clear(),100);
 console.log=()=>{};
 </script>
 
-<!-- HH8: Datalist gợi ý tên cầu lông -->
-<datalist id="badminton-shuttles">
-    <option value="Yonex Aerosensa 10">
-    <option value="Yonex Aerosensa 20">
-    <option value="Yonex Aerosensa 30">
-    <option value="Yonex Aerosensa 40">
-    <option value="Yonex Aerosensa 50">
-    <option value="Yonex Aeroclear 10">
-    <option value="Yonex Aeroclear 20">
-    <option value="Yonex Aeroclear 30">
-    <option value="Yonex Mavis 10">
-    <option value="Yonex Mavis 200">
-    <option value="Yonex Mavis 300">
-    <option value="Yonex Mavis 350">
-    <option value="Victor Lark 4">
-    <option value="Victor Lark 5">
-    <option value="Victor Champion No.1">
-    <option value="Victor Champion No.3">
-    <option value="Victor Master Ace">
-    <option value="Victor Gold Champion">
-    <option value="Victor Queen">
-    <option value="Victor NCS">
-    <option value="RSL 84">
-    <option value="RSL Classic Tourney">
-    <option value="RSL No.3">
-    <option value="RSL No.4">
-    <option value="Li-Ning A+90">
-    <option value="Li-Ning A+60">
-    <option value="Li-Ning G200">
-    <option value="Li-Ning G600">
-    <option value="Li-Ning G800">
-    <option value="Basao Pro-X">
-    <option value="Hải Yến S70">
-    <option value="Hải Yến S90">
-    <option value="Hải Yến Xanh Dương">
-    <option value="Hải Yến Đỏ">
-    <option value="Thành Công">
-    <option value="Vina Star Đen">
-    <option value="Vina Star Xanh">
-    <option value="Taro 3in1">
-    <option value="Taro C01">
-    <option value="Taro Xanh">
-    <option value="Lê Quang Gold G7">
-    <option value="Lê Quang Gold G8">
-    <option value="Lê Quang 43">
-    <option value="Cầu 88">
-    <option value="Hải Âu">
-    <option value="Sao Mai">
-    <option value="Kawa King Kong 500">
-    <option value="VNB M01">
-</datalist>
 
 <!-- ══════════════════════════════════════════════════════════
      H-JS3: Modal danh sách khách — id="modal-guest-list"
