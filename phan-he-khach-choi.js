@@ -64,7 +64,7 @@
         if (profile) profile.style.display = "none";
         // Ẩn khu vực Lịch Sử Đấu
         const lichSuSection = document.getElementById("lichSuDauSection");
-        if (lichSuSection) lichSuSection.style.display = "none";
+        if (lichSuSection) lichSuSection.classList.add("lich-su-hidden");
 
         /* ── FIX-LOGOUT: Trên mobile, #guestAuthPanel nằm bên trong #login-sheet
            (position:fixed, đang ẩn ngoài màn hình). Cần chuyển sang tab Cá Nhân
@@ -79,7 +79,7 @@
             const btnLs   = document.getElementById("tabLichSu");
             if (sidebar) sidebar.style.display = "flex";
             if (right)   right.style.display   = "none";
-            if (lichSuSection) lichSuSection.style.display = "none";
+            if (lichSuSection) lichSuSection.classList.add("lich-su-hidden");
             [btnKeo, btnP, btnLs].forEach(b => b?.classList.remove("kh-tab-active"));
             btnP?.classList.add("kh-tab-active");
             // Mở login sheet để user thấy form đăng nhập
@@ -122,7 +122,8 @@
             if (hintBtn)      hintBtn.style.display      = "none";
             if (sectionGuest) sectionGuest.style.display = "none";
             if (sectionHost)  sectionHost.style.display  = "flex";
-            if (keyDisplay)   keyDisplay.textContent      = g.ma_key_host || "";
+            // Hiện key + tải hạn sử dụng từ DB
+            _capNhatUIHostDaKichHoat(g.ma_key_host || "");
         } else {
             // Còn là guest → hiện nút hint ?, ẩn badge host
             if (hintBtn)      hintBtn.style.display      = "flex";
@@ -141,9 +142,10 @@
         _taiDanhGiaVeToi();    // Đánh giá về tôi (HostToGuest) — cập nhật ngay khi mở tab Cá Nhân
         _taiDaGuiDanhGia();    // Đánh giá tôi đã gửi (GuestToHost)
 
-        // Ẩn #lichSuDauSection — Desktop: dùng nút bấm riêng để mở; Mobile: tab điều khiển
+        // Ẩn #lichSuDauSection — Desktop: modal overlay; Mobile: tab điều khiển
         const lichSuSection = document.getElementById("lichSuDauSection");
-        if (lichSuSection) lichSuSection.style.display = "none";
+        if (lichSuSection) lichSuSection.classList.add("lich-su-hidden");
+        document.body.style.overflow = "";
     }
 
     /**
@@ -677,14 +679,39 @@
 
     /**
      * Cập nhật UI sau khi kích hoạt Key thành công.
+     * Cũng tải hạn sử dụng từ DB để hiển thị.
      */
-    function _capNhatUIHostDaKichHoat(key) {
-        const sectionGuest = document.getElementById("sectionNangCapHost");
-        const sectionHost  = document.getElementById("sectionHostDaKichHoat");
-        const keyDisplay   = document.getElementById("profileHostKey");
+    function _capNhatUIHostDaKichHoat(key, ngayHetHanRaw) {
+        const sectionGuest  = document.getElementById("sectionNangCapHost");
+        const sectionHost   = document.getElementById("sectionHostDaKichHoat");
+        const keyDisplay    = document.getElementById("profileHostKey");
+        const expiryDisplay = document.getElementById("profileHostExpiry");
         if (sectionGuest) sectionGuest.style.display = "none";
         if (sectionHost)  sectionHost.style.display  = "flex";
         if (keyDisplay)   keyDisplay.textContent      = key;
+        if (expiryDisplay) {
+            if (ngayHetHanRaw) {
+                const d = new Date(ngayHetHanRaw);
+                expiryDisplay.textContent = d.toLocaleDateString("vi-VN");
+                const conLai = Math.ceil((d - Date.now()) / 86400000);
+                expiryDisplay.style.color = conLai <= 7 ? "#f87171" : "#fbbf24";
+            } else {
+                // Nếu không có sẵn → tải từ DB
+                window.dbEngine.doc("quan_ly_key", { eq: { ma_key: key } })
+                    .then(rows => {
+                        const row = rows?.[0];
+                        if (row?.ngay_het_han) {
+                            const d = new Date(row.ngay_het_han);
+                            expiryDisplay.textContent = d.toLocaleDateString("vi-VN");
+                            const conLai = Math.ceil((d - Date.now()) / 86400000);
+                            expiryDisplay.style.color = conLai <= 7 ? "#f87171" : "#fbbf24";
+                        } else {
+                            expiryDisplay.textContent = "Chưa kích hoạt";
+                            expiryDisplay.style.color = "#94a3b8";
+                        }
+                    }).catch(() => { expiryDisplay.textContent = "--"; });
+            }
+        }
     }
 
     /**
@@ -700,17 +727,10 @@
         if (timeline) timeline.innerHTML = "";
         const stats = document.getElementById("lichSuStats");
         if (stats) stats.innerHTML = "";
-        // Đóng section lịch sử + reset nút trạng thái
+        // Đóng modal lịch sử
         const lichSuSection = document.getElementById("lichSuDauSection");
-        if (lichSuSection) lichSuSection.style.display = "none";
-        const btnLs = document.getElementById("btnLichSuDesktop");
-        if (btnLs) {
-            btnLs.style.background  = "linear-gradient(135deg,rgba(0,255,136,0.12),rgba(26,115,232,0.12))";
-            btnLs.style.borderColor = "rgba(0,255,136,0.35)";
-            btnLs.style.boxShadow   = "0 2px 12px rgba(0,255,136,0.1)";
-        }
-        const chevron = document.getElementById("iconLichSuChevron");
-        if (chevron) chevron.style.transform = "rotate(0deg)";
+        if (lichSuSection) lichSuSection.classList.add("lich-su-hidden");
+        document.body.style.overflow = "";
         window.hienToast("Đã đăng xuất", "Hẹn gặp lại lông thủ!", "info");
         _hienManDangNhap();
     };
@@ -2423,19 +2443,19 @@
         if (tab === "keo") {
             if (sidebar) sidebar.style.display = "none";
             if (right)   right.style.display   = "flex";
-            if (lichSu)  lichSu.style.display  = "none";
+            if (lichSu)  lichSu.classList.add("lich-su-hidden");
             btnKeo?.classList.add("kh-tab-active");
         } else if (tab === "profile") {
             if (sidebar) sidebar.style.display = "flex";
             if (right)   right.style.display   = "none";
-            if (lichSu)  lichSu.style.display  = "none";
+            if (lichSu)  lichSu.classList.add("lich-su-hidden");
             btnP?.classList.add("kh-tab-active");
             // Nếu chưa đăng nhập → mở bottom sheet login để user thấy form
             if (!window.currentGuest) setTimeout(() => window.openLoginSheet?.(), 80);
         } else if (tab === "history") {
             if (sidebar) sidebar.style.display = "none";
             if (right)   right.style.display   = "none";
-            if (lichSu)  lichSu.style.display  = "block";
+            if (lichSu)  lichSu.classList.remove("lich-su-hidden");
             btnLs?.classList.add("kh-tab-active");
             if (window.currentGuest) {
                 _taiLichSuDau();
@@ -2526,30 +2546,30 @@
     window.toggleLichSuDesktop = function () {
         if (!window.currentGuest) return;
         const section  = document.getElementById("lichSuDauSection");
-        const btn      = document.getElementById("btnLichSuDesktop");
-        const chevron  = document.getElementById("iconLichSuChevron");
+        const inner    = document.getElementById("btnLichSuInner");
         if (!section) return;
 
-        const isOpen = section.style.display === "block";
-        section.style.display = isOpen ? "none" : "block";
+        const isOpen = !section.classList.contains("lich-su-hidden");
 
-        if (chevron) chevron.style.transform = isOpen ? "rotate(0deg)" : "rotate(180deg)";
-
-        if (btn) {
-            if (isOpen) {
-                // Trạng thái đóng
-                btn.style.background  = "linear-gradient(135deg,rgba(0,255,136,0.12),rgba(26,115,232,0.12))";
-                btn.style.borderColor = "rgba(0,255,136,0.35)";
-                btn.style.boxShadow   = "0 2px 12px rgba(0,255,136,0.1)";
-            } else {
-                // Trạng thái mở — sáng hơn
-                btn.style.background  = "linear-gradient(135deg,rgba(0,255,136,0.22),rgba(26,115,232,0.2))";
-                btn.style.borderColor = "rgba(0,255,136,0.6)";
-                btn.style.boxShadow   = "0 4px 20px rgba(0,255,136,0.2)";
-                // Tải dữ liệu khi mở
-                _taiLichSuDau();
-                setTimeout(() => section.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+        if (isOpen) {
+            // Đóng modal
+            section.classList.add("lich-su-hidden");
+            if (inner) {
+                inner.style.borderColor = "rgba(0,255,136,0.5)";
+                inner.style.boxShadow   = "0 0 18px rgba(0,255,136,0.18),0 0 4px rgba(0,255,136,0.08) inset";
             }
+            document.body.style.overflow = "";
+        } else {
+            // Mở modal
+            section.classList.remove("lich-su-hidden");
+            if (inner) {
+                inner.style.borderColor = "rgba(0,255,136,0.85)";
+                inner.style.boxShadow   = "0 0 28px rgba(0,255,136,0.35),0 0 8px rgba(0,255,136,0.15) inset";
+            }
+            // Khoá scroll body khi modal mở (desktop)
+            if (window.innerWidth >= 768) document.body.style.overflow = "hidden";
+            // Tải dữ liệu khi mở
+            _taiLichSuDau();
         }
     };
 

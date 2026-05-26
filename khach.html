@@ -161,7 +161,7 @@
         .kh-stat-lbl { font-size: 0.68rem; color: var(--text-muted); margin-top: 3px; }
 
         /* Bộ lọc thời gian */
-        .kh-time-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+        .kh-time-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; justify-content: center; }
         .kh-time-btn {
             padding: 5px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
             border: 1px solid var(--border); background: transparent; color: var(--text-muted);
@@ -1052,34 +1052,67 @@
             <div id="sectionNangCapHost" style="display:none;"></div>
 
             <!-- Badge Host đã kích hoạt -->
-            <div id="sectionHostDaKichHoat" class="profile-host-badge" style="display:none;">
-                <span style="color:var(--accent-green);font-size:1.2rem;">🏟️</span>
-                <div>
-                    <div style="font-weight:700;color:var(--accent-green);">Đã là Host Sân</div>
-                    <div id="profileHostKey" style="font-family:monospace;font-size:0.82rem;color:var(--text-muted);"></div>
+            <div id="sectionHostDaKichHoat" class="profile-host-badge" style="display:none;
+                flex-direction:column;gap:10px;padding:14px 16px;
+                background:linear-gradient(135deg,rgba(0,255,136,0.07),rgba(26,115,232,0.07));
+                border:1.5px solid rgba(0,255,136,0.3);border-radius:12px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:38px;height:38px;border-radius:50%;
+                         background:rgba(0,255,136,0.15);border:1.5px solid rgba(0,255,136,0.4);
+                         display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">🏟️</div>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-weight:700;color:#00ff88;font-size:0.82rem;
+                             text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;">✅ Đã Là Host Sân</div>
+                        <div style="display:flex;align-items:center;gap:4px;font-size:0.72rem;color:var(--text-muted);">
+                            <span style="color:#64748b;">Key:</span>
+                            <span id="profileHostKey" style="font-family:monospace;color:#94a3b8;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;"></span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:4px;font-size:0.72rem;margin-top:2px;">
+                            <span style="color:#64748b;">Hạn:</span>
+                            <span id="profileHostExpiry" style="color:#fbbf24;font-weight:600;"></span>
+                        </div>
+                    </div>
                 </div>
-                <a href="host.html" class="btn-go-host">Vào Trang Host →</a>
+                <a href="host.html" class="btn-go-host" style="width:100%;text-align:center;
+                   padding:8px 12px;border-radius:8px;font-size:0.82rem;font-weight:700;
+                   background:rgba(0,255,136,0.12);border:1px solid rgba(0,255,136,0.3);
+                   color:#00ff88;text-decoration:none;display:block;
+                   transition:background 0.2s,border-color 0.2s;">🏟️ Vào Trang Host →</a>
             </div>
 
             <!-- Nút Lịch Sử Đấu:
                  Mobile → chuyển sang tab LỊCH SỬ
-                 Desktop → toggle section #lichSuDauSection ngay bên dưới -->
+                 Desktop → mở modal #lichSuDauSection -->
             <button id="btnLichSuDesktop"
                 onclick="if(window.innerWidth<768){window.switchKhachTab('history');}else{window.toggleLichSuDesktop();}"
-                style="width:100%;margin-top:16px;padding:13px 16px;
-                background:linear-gradient(135deg,rgba(0,255,136,0.12),rgba(26,115,232,0.12));
-                border:1.5px solid rgba(0,255,136,0.35);
-                border-radius:12px;font-size:0.88rem;font-weight:700;
-                color:#00ff88;cursor:pointer;font-family:inherit;letter-spacing:0.02em;
-                display:flex;align-items:center;justify-content:center;gap:9px;
-                box-shadow:0 2px 12px rgba(0,255,136,0.1);
-                transition:all 0.2s;"
-                onmouseover="this.style.background='linear-gradient(135deg,rgba(0,255,136,0.2),rgba(26,115,232,0.18))';this.style.borderColor='rgba(0,255,136,0.6)';this.style.boxShadow='0 4px 20px rgba(0,255,136,0.18)'"
-                onmouseout="this.style.background='linear-gradient(135deg,rgba(0,255,136,0.12),rgba(26,115,232,0.12))';this.style.borderColor='rgba(0,255,136,0.35)';this.style.boxShadow='0 2px 12px rgba(0,255,136,0.1)'">
-                <i class="fa-solid fa-clock-rotate-left" style="font-size:1rem;"></i>
-                <span>📋 Lịch Sử Đấu</span>
-                <i class="fa-solid fa-chevron-down" id="iconLichSuChevron"
-                   style="margin-left:auto;font-size:0.7rem;opacity:0.7;transition:transform 0.2s;"></i>
+                style="width:100%;margin-top:16px;padding:0;
+                background:none;border:none;cursor:pointer;font-family:inherit;outline:none;">
+                <div style="position:relative;border-radius:14px;overflow:hidden;
+                     background:linear-gradient(135deg,#0d2d1a 0%,#0a1f35 100%);
+                     border:1.5px solid rgba(0,255,136,0.5);
+                     box-shadow:0 0 18px rgba(0,255,136,0.18),0 0 4px rgba(0,255,136,0.08) inset;
+                     padding:14px 16px;
+                     display:flex;align-items:center;gap:10px;
+                     transition:all 0.22s;
+                     " id="btnLichSuInner">
+                    <!-- Glow strip top -->
+                    <div style="position:absolute;top:0;left:12px;right:12px;height:1px;
+                         background:linear-gradient(90deg,transparent,rgba(0,255,136,0.7),transparent);"></div>
+                    <!-- Icon vòng tròn -->
+                    <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
+                         background:rgba(0,255,136,0.12);
+                         border:1.5px solid rgba(0,255,136,0.5);
+                         display:flex;align-items:center;justify-content:center;">
+                        <i class="fa-solid fa-clock-rotate-left" style="color:#00ff88;font-size:0.95rem;"></i>
+                    </div>
+                    <div style="flex:1;text-align:left;">
+                        <div style="font-size:0.9rem;font-weight:800;color:#00ff88;letter-spacing:0.04em;
+                             text-shadow:0 0 10px rgba(0,255,136,0.5);">LỊCH SỬ ĐẤU</div>
+                        <div style="font-size:0.68rem;color:#4ade80;opacity:0.7;margin-top:1px;">Xem toàn bộ lịch sử thi đấu</div>
+                    </div>
+                    <i class="fa-solid fa-arrow-up-right-from-square" id="iconLichSuChevron"
+                       style="color:#00ff88;font-size:0.8rem;opacity:0.7;"></i>
+                </div>
             </button>
 
             <!-- ══ ĐÁNH GIÁ VỀ TÔI — hiện danh sách đánh giá từ host + số sao TB ══ -->
@@ -1212,15 +1245,59 @@
 
 </div><!-- end kh-layout -->
 
-<!-- ══ LỊCH SỬ ĐẤU SECTION: Full-width (desktop) / Tab 3 (mobile) ══ -->
-<div id="lichSuDauSection" style="display:none;">
+<!-- ══ LỊCH SỬ ĐẤU: Modal overlay (desktop) / Tab panel (mobile) ══ -->
+<style>
+@media (min-width: 768px) {
+    #lichSuDauSection {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 1100 !important;
+        background: rgba(4, 12, 26, 0.88) !important;
+        backdrop-filter: blur(6px) !important;
+        -webkit-backdrop-filter: blur(6px) !important;
+        display: flex !important;
+        align-items: flex-start !important;
+        justify-content: center !important;
+        padding: 40px 20px 40px !important;
+        overflow-y: auto !important;
+    }
+    #lichSuDauSection.lich-su-hidden {
+        display: none !important;
+    }
+    #lichSuDauSection .kh-ls-outer {
+        max-width: 860px;
+        width: 100%;
+        position: relative;
+        border: 1px solid rgba(0,255,136,0.2);
+        border-radius: 16px;
+        background: #0a1628;
+        padding: 28px 28px 24px;
+        box-shadow: 0 8px 48px rgba(0,0,0,0.6), 0 0 32px rgba(0,255,136,0.06);
+    }
+    #btnCloseLichSu {
+        display: flex !important;
+    }
+}
+@media (max-width: 767px) {
+    #btnCloseLichSu { display: none !important; }
+}
+</style>
+<div id="lichSuDauSection" class="lich-su-hidden" onclick="if(event.target===this)window.toggleLichSuDesktop()">
     <div class="kh-ls-outer">
 
         <!-- Header + bộ lọc thời gian -->
-        <div class="kh-ls-header">
+        <div class="kh-ls-header" style="position:relative;">
             <h2 class="kh-ls-title">
                 <i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Đấu
             </h2>
+            <!-- Nút đóng modal (desktop only) -->
+            <button id="btnCloseLichSu" onclick="window.toggleLichSuDesktop()"
+                style="display:none;position:absolute;top:0;right:0;
+                background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
+                border-radius:8px;color:#94a3b8;font-size:1rem;cursor:pointer;
+                width:32px;height:32px;align-items:center;justify-content:center;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
             <div class="kh-time-filters" style="margin:0;">
                 <button class="kh-time-btn kh-ls-filter-btn" onclick="window.locLichSuDau('week',this)">Tuần</button>
                 <button class="kh-time-btn kh-ls-filter-btn" onclick="window.locLichSuDau('month',this)">Tháng</button>
