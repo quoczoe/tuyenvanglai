@@ -747,11 +747,15 @@
         const timeFrame  = document.getElementById("filterTimeFrame")?.value || "";
 
         try {
-            // Tải ca_dau và dat_slot song song để đếm khách + kiểm tra đã đặt chưa
-            const [allCaDau, allDatSlot] = await Promise.all([
+            // Tải ca_dau, dat_slot và quan_ly_key song song
+            const [allCaDau, allDatSlot, allKeys] = await Promise.all([
                 window.dbEngine.doc("ca_dau"),
-                window.dbEngine.doc("dat_slot").catch(() => [])
+                window.dbEngine.doc("dat_slot").catch(() => []),
+                window.dbEngine.doc("quan_ly_key").catch(() => [])
             ]);
+            // Map ma_key → {ten_host, sdt_host} để hiển thị tên chủ sân
+            const hostMap = {};
+            allKeys.forEach(k => { hostMap[k.ma_key] = { ten: k.ten_host || "", sdt: k.sdt_host || "" }; });
 
             // Set các ca_dau mà user hiện tại đã đặt slot (không bị hủy)
             const daDatSet = new Set();
@@ -837,17 +841,18 @@
 
             if (results.length === 0) {
                 container.innerHTML = `
-                <div style="text-align:center;padding:40px 20px;color:#64748b;">
+                <div style="text-align:center;padding:40px 20px;color:#64748b;width:100%;grid-column:1/-1;">
                     <i class="fa-solid fa-magnifying-glass" style="font-size:2rem;margin-bottom:12px;display:block;opacity:0.4;"></i>
-                    <p style="font-size:0.9rem;">Không tìm thấy kèo phù hợp.</p>
-                    <p style="font-size:0.8rem;margin-top:4px;">Thử thay đổi bộ lọc hoặc xem tất cả kèo.</p>
+                    <p style="font-size:0.9rem;text-align:center;">Không tìm thấy kèo phù hợp.</p>
+                    <p style="font-size:0.8rem;margin-top:4px;text-align:center;">Thử thay đổi bộ lọc hoặc xem tất cả kèo.</p>
                 </div>`;
                 return;
             }
 
             results.forEach(slot => {
                 const soKhach = (datSlotMap[slot.id] || []).length;
-                const card = _taoCaCard(slot, soKhach, daDatSet);
+                const hostInfo = hostMap[slot.ma_key_host] || null;
+                const card = _taoCaCard(slot, soKhach, daDatSet, hostInfo);
                 container.appendChild(card);
             });
         } catch (e) {
@@ -858,7 +863,7 @@
         }
     }
 
-    function _taoCaCard(slot, soKhach = 0, daDatSet = new Set()) {
+    function _taoCaCard(slot, soKhach = 0, daDatSet = new Set(), hostInfo = null) {
         const card = document.createElement("div");
         card.className = "slot-card";
         card.dataset.caId = slot.id; // Để query nút sau khi đặt slot thành công
@@ -938,15 +943,18 @@
                     ${slot.so_san_cu_the ? `<p style="font-size:0.75rem;color:#64748b;">Sân số: ${slot.so_san_cu_the} (${slot.so_san_mo || 1} sân)</p>` : ""}
                 </div>
 
-                <div class="slot-details-row">
-                    <div class="slot-detail-item" style="flex:1;">
-                        <span class="detail-label">Trình độ yêu cầu</span>
-                        <div class="kh-trinh-do-row">${levelHTML}</div>
+                <!-- Wrap trình độ + badge để đảm bảo chiều cao đồng đều giữa các card -->
+                <div class="slot-level-badge-wrap">
+                    <div class="slot-details-row">
+                        <div class="slot-detail-item" style="flex:1;">
+                            <span class="detail-label">Trình độ yêu cầu</span>
+                            <div class="kh-trinh-do-row">${levelHTML}</div>
+                        </div>
                     </div>
-                </div>
-                <!-- TASK 3.6: badge "Đã đăng ký" tách thành dòng riêng -->
-                <div class="kh-da-dang-ky-badge">
-                    <i class="fa-solid fa-users" style="margin-right:4px;opacity:0.7;"></i>${soKhach} người đã đăng ký
+                    <!-- TASK 3.6: badge "Đã đăng ký" tách thành dòng riêng -->
+                    <div class="kh-da-dang-ky-badge">
+                        <i class="fa-solid fa-users" style="margin-right:4px;opacity:0.7;"></i>${soKhach} người đã đăng ký
+                    </div>
                 </div>
 
                 <div class="slot-price-row">
@@ -964,7 +972,7 @@
 
                 <div class="slot-host-row">
                     <i class="fa-solid fa-user-tie" style="color:#64748b;font-size:0.8rem;"></i>
-                    <span style="font-size:0.78rem;color:#94a3b8;">Chủ sân: ${slot.ma_key_host || "--"}</span>
+                    <span style="font-size:0.78rem;color:#94a3b8;">Chủ sân: ${hostInfo?.ten || "Ẩn danh"}${hostInfo?.sdt ? ` · ${hostInfo.sdt}` : ""}</span>
                     ${slot.link_maps ? `<a href="${slot.link_maps}" target="_blank" rel="noopener noreferrer"
                         style="font-size:0.76rem;color:#00ff88;margin-left:8px;">
                         <i class="fa-solid fa-map-location-dot"></i> Bản đồ</a>` : ""}
@@ -1346,8 +1354,21 @@
                 ? s.link_maps
                 : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.dia_chi_san || s.ten_san || "")}`;
 
+            // Kiểm tra trạng thái ĐANG DIỄN RA (trùng logic với _taoCaCard)
+            const nowModal = new Date();
+            const isStartedModal = (() => {
+                if (!s.ngay_danh || !s.gio_bat_dau) return false;
+                const [hh, mm] = (s.gio_bat_dau || "").split(":").map(Number);
+                const st = new Date(s.ngay_danh);
+                st.setHours(hh || 0, mm || 0, 0, 0);
+                return st <= nowModal;
+            })();
+            const khoachDaKyAll = datSlotList.filter(g => g.trang_thai_di_danh !== "Khách hủy");
+            const isFullModal = s.tong_slot_can > 0 && khoachDaKyAll.length >= s.tong_slot_can;
+            const isLockedModal = isStartedModal || isFullModal;
+
             // Danh sách khách đã đăng ký (ẩn SĐT)
-            const khoachDaKy = datSlotList.filter(g => g.trang_thai_di_danh !== "Khách hủy");
+            const khoachDaKy = khoachDaKyAll;
             const guestListHTML = khoachDaKy.length > 0
                 ? khoachDaKy.map(g => `
                     <div class="kh-modal-guest-row">
@@ -1430,19 +1451,26 @@
             </div>
 
             <!-- Nút ĐẶT SLOT -->
-            ${!s.da_chot_ca ? `
-            <div style="padding-top:8px;border-top:1px solid var(--border);margin-top:8px;">
-                ${window.currentGuest
-                    ? `<button class="btn-dat-slot" style="width:100%;" onclick="window.datSlot('${s.id}');window.dongModalChiTietKeo()">
-                        <i class="fa-solid fa-ticket"></i> ĐẶT SLOT THAM GIA
-                       </button>`
-                    : `<p style="text-align:center;font-size:0.82rem;color:#64748b;">
-                        <a href="#" onclick="window.dongModalChiTietKeo()" style="color:#00ff88;">Đăng nhập</a>
-                        để đặt slot tham gia ca này.</p>`
-                }
-            </div>` : `<div style="text-align:center;padding:10px;font-size:0.82rem;color:#64748b;">
-                <i class="fa-solid fa-lock" style="color:#fbbf24;margin-right:6px;"></i>Ca đấu đã được chốt.
-            </div>`}
+            ${s.da_chot_ca
+                ? `<div style="text-align:center;padding:10px;font-size:0.82rem;color:#64748b;">
+                    <i class="fa-solid fa-lock" style="color:#fbbf24;margin-right:6px;"></i>Ca đấu đã được chốt.
+                   </div>`
+                : isLockedModal
+                    ? `<div style="text-align:center;padding:10px;font-size:0.82rem;color:#64748b;background:rgba(71,85,105,0.2);border-radius:8px;border:1px solid rgba(71,85,105,0.3);">
+                        <i class="fa-solid fa-hourglass-half" style="color:#fbbf24;margin-right:6px;"></i>
+                        ${isStartedModal ? "Ca đấu đang diễn ra — không nhận thêm đăng ký." : "Đã đủ slot tham gia."}
+                       </div>`
+                    : `<div style="padding-top:8px;border-top:1px solid var(--border);margin-top:8px;">
+                        ${window.currentGuest
+                            ? `<button class="btn-dat-slot" style="width:100%;" onclick="window.datSlot('${s.id}');window.dongModalChiTietKeo()">
+                                <i class="fa-solid fa-ticket"></i> ĐẶT SLOT THAM GIA
+                               </button>`
+                            : `<p style="text-align:center;font-size:0.82rem;color:#64748b;">
+                                <a href="#" onclick="window.dongModalChiTietKeo()" style="color:#00ff88;">Đăng nhập</a>
+                                để đặt slot tham gia ca này.</p>`
+                        }
+                       </div>`
+            }
 
             ${(() => {
                 // FEAT-3: Hiện đánh giá công khai về ca này (GuestToHost)
@@ -2350,13 +2378,19 @@
             if (right)   right.style.display   = "none";
             if (lichSu)  lichSu.style.display  = "none";
             btnP?.classList.add("kh-tab-active");
+            // Nếu chưa đăng nhập → mở bottom sheet login để user thấy form
+            if (!window.currentGuest) setTimeout(() => window.openLoginSheet?.(), 80);
         } else if (tab === "history") {
             if (sidebar) sidebar.style.display = "none";
             if (right)   right.style.display   = "none";
             if (lichSu)  lichSu.style.display  = "block";
             btnLs?.classList.add("kh-tab-active");
-            // Tải lịch sử nếu đã đăng nhập
-            if (window.currentGuest) _taiLichSuDau();
+            if (window.currentGuest) {
+                _taiLichSuDau();
+            } else {
+                // Chưa đăng nhập → mở bottom sheet login
+                setTimeout(() => window.openLoginSheet?.(), 80);
+            }
         }
     };
 

@@ -69,13 +69,13 @@
         /* ══ LAYOUT CHÍNH — FIX A: FULL-WIDTH PC ══ */
         .kh-layout {
             display: grid;
-            /* Sidebar: tối thiểu 300px, tối đa 28% màn hình — tự co giãn thông minh */
-            grid-template-columns: minmax(300px, 28%) 1fr;
+            /* Sidebar: cố định 320px, content chiếm hết phần còn lại */
+            grid-template-columns: 320px 1fr;
             gap: 1.5rem;
-            max-width: 1680px;   /* Tăng từ 1280 → 1680 để tận dụng màn PC rộng */
+            max-width: 100%;     /* Full width — lấp đầy toàn bộ màn hình */
             width: 100%;
             margin: 0 auto;
-            padding: 1.5rem 2rem 3rem;
+            padding: 1.5rem 1.5rem 3rem;
             box-sizing: border-box;
             align-items: start;  /* Sidebar và content cùng top, không kéo dài nhau */
         }

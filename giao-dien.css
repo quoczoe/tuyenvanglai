@@ -2816,6 +2816,14 @@ body::before {
     }
 }
 
+/* ── Fix 6: wrapper trình độ + badge cùng chiều cao trên mọi card ── */
+.slot-level-badge-wrap {
+    min-height: 88px;        /* đủ chứa 2 dòng trình độ + badge */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
 /* ── TASK 3.6: Trình độ tách dòng + badge đăng ký riêng ── */
 .kh-trinh-do-row {
     display: flex;
@@ -3442,13 +3450,21 @@ body::before {
         padding: 0 !important;
     }
     /* Input và button trong sheet hiển thị rõ ràng */
-    #login-sheet input[type="text"],
-    #login-sheet input[type="tel"],
-    #login-sheet input[type="password"] {
-        background: rgba(255,255,255,0.1) !important;
-        color: #e2e8f0 !important;
-        border: 1.5px solid rgba(45,106,176,0.6) !important;
-        -webkit-text-fill-color: #e2e8f0;
+    #login-sheet .kh-input {
+        background: rgba(20,50,90,0.95) !important;   /* nền xanh đậm, không trong suốt */
+        color: #f1f5f9 !important;
+        border: 1.5px solid rgba(96,165,250,0.5) !important;
+        -webkit-text-fill-color: #f1f5f9 !important;  /* iOS override autofill text */
+        caret-color: #f1f5f9;
+    }
+    /* Chống iOS autofill đổi màu nền thành trắng */
+    #login-sheet .kh-input:-webkit-autofill,
+    #login-sheet .kh-input:-webkit-autofill:hover,
+    #login-sheet .kh-input:-webkit-autofill:focus {
+        -webkit-text-fill-color: #f1f5f9 !important;
+        -webkit-box-shadow: 0 0 0px 1000px #0f2d52 inset !important;
+        background-color: #0f2d52 !important;
+        caret-color: #f1f5f9;
     }
     #login-sheet .kh-btn-primary,
     #login-sheet #btnXacNhan,
