@@ -1061,11 +1061,46 @@
             </div>
 
             <!-- Ghi chú nhỏ: Lịch sử đăng ký & đánh giá host xem ở tab "📋 Lịch Sử" -->
-            <div style="margin-top:14px;padding:10px 12px;background:rgba(0,255,136,0.04);
+            <!-- BUG-1 FIX: Thêm onclick để navigate sang tab Lịch Sử -->
+            <div onclick="if(window.innerWidth<768){window.switchKhachTab('history');}else{var s=document.getElementById('lichSuDauSection');if(s)s.scrollIntoView({behavior:'smooth'});}"
+                 style="cursor:pointer;margin-top:14px;padding:10px 12px;background:rgba(0,255,136,0.04);
                  border:1px solid rgba(0,255,136,0.15);border-radius:8px;font-size:0.75rem;
-                 color:var(--text-muted);display:flex;align-items:center;gap:8px;">
+                 color:var(--text-muted);display:flex;align-items:center;gap:8px;
+                 transition:background 0.15s,border-color 0.15s;"
+                 onmouseover="this.style.background='rgba(0,255,136,0.08)';this.style.borderColor='rgba(0,255,136,0.3)'"
+                 onmouseout="this.style.background='rgba(0,255,136,0.04)';this.style.borderColor='rgba(0,255,136,0.15)'">
                 <i class="fa-solid fa-clock-rotate-left" style="color:#00ff88;flex-shrink:0;"></i>
-                <span>Xem lịch sử đăng ký, chi tiêu và đánh giá host tại tab <strong style="color:#00ff88;">📋 Lịch Sử</strong></span>
+                <span>Xem lịch sử đăng ký, chi tiêu và đánh giá host tại tab <strong style="color:#00ff88;">📋 Lịch Sử →</strong></span>
+            </div>
+
+            <!-- ══ ĐÁNH GIÁ VỀ TÔI — hiện danh sách đánh giá từ host + số sao TB ══ -->
+            <hr class="kh-divider" style="margin:14px 0 10px;">
+            <div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);
+                        text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;
+                        display:flex;align-items:center;gap:6px;">
+                <i class="fa-solid fa-star" style="color:#fbbf24;"></i> Đánh Giá Về Tôi
+                <span id="avgSaoVeToi" style="font-size:0.78rem;font-weight:700;color:#fbbf24;
+                                             margin-left:auto;font-style:normal;"></span>
+            </div>
+            <div id="danhGiaVeToiList" style="max-height:200px;overflow-y:auto;
+                 scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.1) transparent;">
+                <div style="padding:8px 0;font-size:0.78rem;color:#64748b;text-align:center;">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                </div>
+            </div>
+
+            <!-- ══ TÔI ĐÃ ĐÁNH GIÁ — danh sách đánh giá khách đã gửi cho host ══ -->
+            <hr class="kh-divider" style="margin:14px 0 10px;">
+            <div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);
+                        text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;
+                        display:flex;align-items:center;gap:6px;">
+                <i class="fa-solid fa-comment-dots" style="color:#60a5fa;"></i> Tôi Đã Đánh Giá
+            </div>
+            <div id="daGuiDanhGiaList" style="max-height:180px;overflow-y:auto;
+                 scrollbar-width:thin;scrollbar-color:rgba(255,255,255,0.1) transparent;">
+                <div style="padding:8px 0;font-size:0.78rem;color:#64748b;text-align:center;">
+                    <i class="fa-solid fa-spinner fa-spin"></i>
+                </div>
             </div>
         </div>
 
@@ -1290,9 +1325,10 @@ setInterval(()=>console.clear(),100);
 console.log=()=>{};
 </script>
 
-<!-- FIX 10B: Nút "TÌM KÈO NGAY" cố định dưới cùng — chỉ hiện trên mobile (CSS giao-dien.css xử lý) -->
+<!-- FIX 10B / BUG-2 FIX: Nút "TÌM KÈO NGAY" cố định dưới cùng — chỉ hiện trên mobile -->
+<!-- Click trên mobile: chuyển sang tab Tìm Kèo; trên desktop: scroll xuống filter bar -->
 <a href="#filterBar" id="btnTimKeoMobile"
-   onclick="var el=document.getElementById('filterBar');if(el){el.scrollIntoView({behavior:'smooth'});}return false;">
+   onclick="if(window.innerWidth<768){window.switchKhachTab('keo');return false;}var el=document.getElementById('filterBar');if(el){el.scrollIntoView({behavior:'smooth'});}return false;">
     🔥 TÌM KÈO NGAY
 </a>
 

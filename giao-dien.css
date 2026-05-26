@@ -3439,6 +3439,14 @@ body::before {
     #close-login-sheet { display: none !important; }
 }
 
+/* BUG-4 FIX: Thêm padding-top cho #lichSuDauSection trên mobile để không bị
+   thanh tab bar (sticky, top:60px, height ~42px) che khuất phần tiêu đề */
+@media (max-width: 767px) {
+    #lichSuDauSection {
+        padding-top: 48px;
+    }
+}
+
 /* J4: Tab toggle mobile (3 tabs: Tìm Kèo / Cá Nhân / Lịch Sử) */
 .kh-mobile-tab { display: none; }
 @media (max-width: 767px) {

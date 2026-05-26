@@ -107,6 +107,8 @@
         _dinhNgayMacDinh();
 
         _taiThongKeKhach();
+        _taiDanhGiaVeToi();    // Đánh giá về tôi (HostToGuest) — cập nhật ngay khi mở tab Cá Nhân
+        _taiDaGuiDanhGia();    // Đánh giá tôi đã gửi (GuestToHost)
 
         // Hiện khu vực Lịch Sử Đấu
         const lichSuSection = document.getElementById("lichSuDauSection");
@@ -1728,9 +1730,20 @@
             // Sắp xếp mới nhất trước
             reviews.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
 
+            // Hiện số sao trung bình
+            const avgSaoEl = document.getElementById("avgSaoVeToi");
+            if (avgSaoEl) {
+                if (reviews.length > 0) {
+                    const tb = (reviews.reduce((s, r) => s + (r.so_sao || 0), 0) / reviews.length).toFixed(1);
+                    avgSaoEl.textContent = `⭐ ${tb} (${reviews.length})`;
+                } else {
+                    avgSaoEl.textContent = "";
+                }
+            }
+
             if (reviews.length === 0) {
                 container.innerHTML = `<p style="font-size:0.78rem;color:#64748b;text-align:center;padding:10px 0;">
-                    Chưa có chủ sân nào đánh giá bạn.</p>`;
+                    Chưa có đánh giá nào.</p>`;
                 return;
             }
 
@@ -1768,6 +1781,73 @@
             }).join("");
         } catch (e) {
             console.error("Lỗi tải đánh giá về mình:", e);
+            container.innerHTML = `<p style="font-size:0.78rem;color:#ef4444;">Lỗi tải dữ liệu.</p>`;
+        }
+    }
+
+    /* ═══════════════════════════════════════════════════
+     * GĐ-CÁ-NHÂN: TÔI ĐÃ ĐÁNH GIÁ
+     * Query danh_gia_tin_dung WHERE sdt_nguoi_viet = myPhone AND loai = GuestToHost
+     * Hiện danh sách với nút "Chi tiết" → mở modal ca đấu
+     * ═══════════════════════════════════════════════════ */
+    async function _taiDaGuiDanhGia() {
+        if (!window.currentGuest) return;
+        const container = document.getElementById("daGuiDanhGiaList");
+        if (!container) return;
+
+        try {
+            const [myReviews, allCaDau] = await Promise.all([
+                window.dbEngine.doc("danh_gia_tin_dung", {
+                    eq: { sdt_nguoi_viet: window.currentGuest.sdt_khach, loai_danh_gia: "GuestToHost" }
+                }).catch(() => []),
+                window.dbEngine.doc("ca_dau").catch(() => [])
+            ]);
+
+            const caDauMap = {};
+            allCaDau.forEach(c => { caDauMap[c.id] = c; });
+
+            // Mới nhất trước
+            myReviews.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+
+            if (myReviews.length === 0) {
+                container.innerHTML = `<p style="font-size:0.78rem;color:#64748b;text-align:center;padding:10px 0;">
+                    Chưa gửi đánh giá nào.</p>`;
+                return;
+            }
+
+            container.innerHTML = myReviews.map(r => {
+                const soSao = Math.max(1, Math.min(5, r.so_sao || 1));
+                const stars = Array(5).fill(0).map((_, i) =>
+                    `<i class="fa-solid fa-star" style="color:${i < soSao ? "#fbbf24" : "#2d3748"};font-size:0.72rem;"></i>`
+                ).join("");
+                const ca = caDauMap[r.id_ca_dau];
+                const caName = ca ? (ca.ten_san || "Ca đấu") : "Ca đấu";
+                const caDate = ca?.ngay_danh ? " · " + new Date(ca.ngay_danh).toLocaleDateString("vi-VN") : "";
+                return `<div class="kh-review-about">
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:3px;">
+                        <div class="kh-review-stars">${stars}</div>
+                        <span style="font-size:0.68rem;color:#64748b;margin-left:auto;">
+                            ${r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : ""}
+                        </span>
+                    </div>
+                    <div style="font-size:0.7rem;color:#64748b;margin-bottom:3px;">
+                        <i class="fa-solid fa-table-tennis-paddle-ball" style="color:#60a5fa;margin-right:4px;"></i>
+                        ${r.id_ca_dau
+                            ? `<button onclick="window.moModalChiTietKeo('${r.id_ca_dau}')"
+                                style="background:none;border:none;padding:0;color:#60a5fa;
+                                cursor:pointer;font-size:0.7rem;font-family:inherit;
+                                text-decoration:underline;text-underline-offset:2px;">
+                                ${caName}${caDate} →
+                               </button>`
+                            : `${caName}${caDate}`}
+                    </div>
+                    ${r.nhan_xet
+                        ? `<div style="font-size:0.78rem;color:var(--text-main);line-height:1.5;">"${r.nhan_xet}"</div>`
+                        : `<div style="font-size:0.75rem;color:#64748b;font-style:italic;">Không có nhận xét</div>`}
+                </div>`;
+            }).join("");
+        } catch (e) {
+            console.error("Lỗi tải đánh giá đã gửi:", e);
             container.innerHTML = `<p style="font-size:0.78rem;color:#ef4444;">Lỗi tải dữ liệu.</p>`;
         }
     }
@@ -1902,6 +1982,24 @@
         const isOpen = body.style.display !== "none";
         body.style.display = isOpen ? "none" : "block";
         if (icon) icon.className = isOpen ? "fa-solid fa-chevron-down" : "fa-solid fa-chevron-up";
+    };
+
+    /**
+     * BUG-3 FIX: Copy mã slot vào clipboard
+     */
+    window._copyMaSlot = async function(ma) {
+        try {
+            await navigator.clipboard.writeText(ma);
+        } catch {
+            /* Fallback cho trình duyệt cũ */
+            const t = document.createElement("textarea");
+            t.value = ma;
+            document.body.appendChild(t);
+            t.select();
+            document.execCommand("copy");
+            document.body.removeChild(t);
+        }
+        window.hienToast("Đã sao chép! ✅", `Mã slot: ${ma}`, "success");
     };
 
     /**
@@ -2117,8 +2215,9 @@
 
                 return `
                 <div class="kh-ls-item" id="${itemId}">
-                    <!-- Đầu dòng: badge + tên sân + giá + nút mở rộng -->
-                    <div class="kh-ls-item-head">
+                    <!-- BUG-3 FIX: Toàn bộ đầu dòng đều clickable để toggle mở/đóng -->
+                    <div class="kh-ls-item-head" onclick="window._toggleLsItem('${itemId}')"
+                         style="cursor:pointer;">
                         <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
                             <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;
                                   border-radius:20px;background:${tt.bg};color:${tt.color};
@@ -2138,10 +2237,10 @@
                         </div>
                         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
                             ${priceHTML}
-                            <button class="kh-ls-expand-btn" onclick="window._toggleLsItem('${itemId}')"
-                                    title="Xem chi tiết">
+                            <!-- Nút icon — không gắn onclick riêng, sự kiện bubble lên head div -->
+                            <span class="kh-ls-expand-btn" title="Xem chi tiết" style="pointer-events:none;">
                                 <i class="fa-solid fa-chevron-down" id="icon_${itemId}"></i>
-                            </button>
+                            </span>
                         </div>
                     </div>
                     <!-- Body chi tiết (ẩn mặc định) -->
@@ -2154,9 +2253,17 @@
                         </div>
                         ${tichArr.length > 0 ? `<div style="font-size:0.72rem;color:#9ca3af;margin-bottom:8px;">
                             Bao gồm: ${tichArr.join(" · ")}</div>` : ""}
-                        <div style="font-size:0.75rem;color:#64748b;margin-bottom:4px;">
+                        <!-- BUG-3 FIX: Thêm nút copy mã slot -->
+                        <div style="font-size:0.75rem;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                             Mã slot: <code style="color:#e2e8f0;background:rgba(255,255,255,0.05);
                                 padding:2px 6px;border-radius:4px;">${slot.ma_slot || "--"}</code>
+                            ${slot.ma_slot ? `<button onclick="event.stopPropagation();window._copyMaSlot('${slot.ma_slot}')"
+                                style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);
+                                color:#9ca3af;border-radius:4px;padding:2px 7px;font-size:0.68rem;
+                                cursor:pointer;font-family:inherit;line-height:1.5;transition:background 0.15s;"
+                                title="Sao chép mã slot">
+                                <i class="fa-regular fa-copy"></i> Copy
+                            </button>` : ""}
                         </div>
                         ${nutHuy}
                         ${reviewSection}
@@ -2399,10 +2506,13 @@
             Đang tải hồ sơ...</div>`;
 
         try {
-            const [userList, reviews, datSlots] = await Promise.all([
+            /* Tải song song: user info, đánh giá nhận, đánh giá gửi, lịch sử slot, tất cả ca đấu */
+            const [userList, receivedReviews, sentReviews, datSlots, allCaDau] = await Promise.all([
                 window.dbEngine.doc("nguoi_dung", { eq: { sdt_khach: sdt } }).catch(() => []),
                 window.dbEngine.doc("danh_gia_tin_dung", { eq: { sdt_nguoi_bi_danh_gia: sdt } }).catch(() => []),
-                window.dbEngine.doc("dat_slot", { eq: { sdt_khach: sdt } }).catch(() => [])
+                window.dbEngine.doc("danh_gia_tin_dung", { eq: { sdt_nguoi_viet: sdt, loai_danh_gia: "GuestToHost" } }).catch(() => []),
+                window.dbEngine.doc("dat_slot", { eq: { sdt_khach: sdt } }).catch(() => []),
+                window.dbEngine.doc("ca_dau").catch(() => [])
             ]);
 
             const user       = userList[0];
@@ -2411,18 +2521,29 @@
             const joinDate   = user?.ngay_tham_gia
                 ? new Date(user.ngay_tham_gia).toLocaleDateString("vi-VN") : "--";
 
-            // Tải tên người viết đánh giá (reviewer names)
-            const validReviewsRaw = reviews.filter(r => r.so_sao >= 1 && r.so_sao <= 5);
-            const reviewerSdts = [...new Set(validReviewsRaw.map(r => r.sdt_nguoi_viet).filter(Boolean))];
-            let reviewerMap = {};
-            if (reviewerSdts.length > 0) {
-                try {
-                    const reviewerUsers = await window.dbEngine.doc("nguoi_dung").catch(() => []);
-                    reviewerUsers.forEach(u => { reviewerMap[u.sdt_khach] = u.ten_khach || u.sdt_khach; });
-                } catch (_) {}
-            }
-            // Hàm ẩn số điện thoại (hiện 3 đầu + 3 cuối, ẩn giữa)
+            // Map ca_dau id → ca_dau object
+            const caDauMap = {};
+            allCaDau.forEach(c => { caDauMap[c.id] = c; });
+
+            // Hàm ẩn số điện thoại
             const _maskPhone = (p) => p ? p.slice(0, 3) + "***" + p.slice(-3) : "Ẩn danh";
+
+            // Tải tên người viết đánh giá (reviewer names)
+            let reviewerMap = {};
+            try {
+                const reviewerUsers = await window.dbEngine.doc("nguoi_dung").catch(() => []);
+                reviewerUsers.forEach(u => { reviewerMap[u.sdt_khach] = u.ten_khach || u.sdt_khach; });
+            } catch (_) {}
+
+            // ── ĐÁNH GIÁ NHẬN (HostToGuest) — đây là cơ sở tính sao TB ──
+            const htgReviews = receivedReviews.filter(r => r.loai_danh_gia === "HostToGuest" && r.so_sao >= 1 && r.so_sao <= 5);
+            // avgSao chỉ tính từ đánh giá của HOST gửi về KHÁCH (HostToGuest)
+            const avgSao = htgReviews.length > 0
+                ? (htgReviews.reduce((s, r) => s + r.so_sao, 0) / htgReviews.length).toFixed(1)
+                : null;
+
+            // Thống kê buổi tham gia
+            const daThamGia = datSlots.filter(s => s.trang_thai_di_danh === "Đã tham gia").length;
 
             // Cập nhật tiêu đề modal
             if (title) title.innerHTML = `
@@ -2432,45 +2553,29 @@
                     <i class="fa-solid fa-circle-check"></i> Host Sân
                 </span>` : ""}`;
 
-            // Tính rating trung bình (validReviewsRaw đã được tính ở trên)
-            const avgSao = validReviewsRaw.length > 0
-                ? (validReviewsRaw.reduce((s, r) => s + r.so_sao, 0) / validReviewsRaw.length).toFixed(1)
-                : null;
-
-            // Thống kê buổi tham gia (đã xác nhận đi đánh)
-            const daThamGia = datSlots.filter(s => s.trang_thai_di_danh === "Đã tham gia").length;
-
-            // Lấy 8 đánh giá mới nhất
-            const recentReviews = [...validReviewsRaw]
+            /* ── Render HTML đánh giá nhận (HostToGuest) ── */
+            const recentHtgReviews = [...htgReviews]
                 .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
                 .slice(0, 8);
-
-            const reviewsHTML = recentReviews.length === 0
-                ? `<p style="font-size:0.8rem;color:#64748b;text-align:center;padding:10px;">Chưa có đánh giá nào.</p>`
-                : recentReviews.map(r => {
+            const receivedHTML = recentHtgReviews.length === 0
+                ? `<p style="font-size:0.8rem;color:#64748b;text-align:center;padding:10px 0;">Chưa có đánh giá nào.</p>`
+                : recentHtgReviews.map(r => {
                     const soSao = Math.max(1, Math.min(5, r.so_sao));
                     const stars = Array(5).fill(0).map((_, i) =>
                         `<i class="fa-solid fa-star" style="color:${i < soSao ? "#fbbf24" : "#2d3748"};font-size:0.72rem;"></i>`
                     ).join("");
-                    const loaiLabel = r.loai_danh_gia === "GuestToHost"
-                        ? `<span style="font-size:0.63rem;background:rgba(0,255,136,0.1);color:#00ff88;
-                                border:1px solid rgba(0,255,136,0.3);padding:1px 6px;border-radius:10px;">Từ: Khách</span>`
-                        : `<span style="font-size:0.63rem;background:rgba(96,165,250,0.1);color:#60a5fa;
-                                border:1px solid rgba(96,165,250,0.3);padding:1px 6px;border-radius:10px;">Từ: Host</span>`;
-                    // Tên người viết đánh giá — có link để xem hồ sơ
                     const reviewerPhone = r.sdt_nguoi_viet || "";
                     const reviewerName  = reviewerMap[reviewerPhone] || _maskPhone(reviewerPhone);
                     const reviewerLink  = reviewerPhone
                         ? `<span style="font-size:0.72rem;color:#94a3b8;">
-                                Bởi: <button onclick="event.stopPropagation();window._moHoSoCongKhai('${reviewerPhone}')"
-                                    style="background:none;border:none;padding:0;color:#60a5fa;cursor:pointer;font-size:0.72rem;font-family:inherit;text-decoration:underline;text-underline-offset:2px;"
-                                >${reviewerName}</button>
-                           </span>`
+                               Bởi: <button onclick="event.stopPropagation();window.xemHoSoCongKhai('${reviewerPhone}')"
+                                   style="background:none;border:none;padding:0;color:#60a5fa;cursor:pointer;
+                                   font-size:0.72rem;font-family:inherit;text-decoration:underline;text-underline-offset:2px;">
+                               ${reviewerName}</button></span>`
                         : "";
                     return `<div class="hsck-review-item">
                         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
                             <div style="display:flex;gap:2px;">${stars}</div>
-                            ${loaiLabel}
                             <span style="font-size:0.63rem;color:#64748b;margin-left:auto;">
                                 ${r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : ""}
                             </span>
@@ -2482,6 +2587,64 @@
                     </div>`;
                 }).join("");
 
+            /* ── Render HTML đánh giá đã gửi (GuestToHost) ── */
+            const recentSentReviews = [...sentReviews]
+                .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+                .slice(0, 6);
+            const sentHTML = recentSentReviews.length === 0
+                ? `<p style="font-size:0.8rem;color:#64748b;text-align:center;padding:10px 0;">Chưa gửi đánh giá nào.</p>`
+                : recentSentReviews.map(r => {
+                    const soSao = Math.max(1, Math.min(5, r.so_sao));
+                    const stars = Array(5).fill(0).map((_, i) =>
+                        `<i class="fa-solid fa-star" style="color:${i < soSao ? "#fbbf24" : "#2d3748"};font-size:0.68rem;"></i>`
+                    ).join("");
+                    const ca = caDauMap[r.id_ca_dau];
+                    const caName = ca ? (ca.ten_san || "Ca đấu") : "Ca đấu";
+                    const caDate = ca?.ngay_danh ? " · " + new Date(ca.ngay_danh).toLocaleDateString("vi-VN") : "";
+                    return `<div class="hsck-review-item" style="opacity:0.9;">
+                        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:3px;">
+                            <div style="display:flex;gap:1px;">${stars}</div>
+                            <span style="font-size:0.63rem;color:#64748b;margin-left:auto;">
+                                ${r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : ""}
+                            </span>
+                        </div>
+                        <div style="font-size:0.68rem;color:#64748b;margin-bottom:2px;">
+                            <i class="fa-solid fa-table-tennis-paddle-ball" style="color:#60a5fa;margin-right:3px;"></i>
+                            ${caName}${caDate}
+                        </div>
+                        ${r.nhan_xet
+                            ? `<div style="font-size:0.75rem;color:#e2e8f0;line-height:1.4;">"${r.nhan_xet}"</div>`
+                            : `<em style="font-size:0.7rem;color:#6b7280;">Không có nhận xét</em>`}
+                    </div>`;
+                }).join("");
+
+            /* ── Render LỊCH SỬ TẠI SÂN (dat_slot history) ── */
+            const recentSlots = [...datSlots]
+                .sort((a, b) => new Date(b.thoi_gian_dat || 0) - new Date(a.thoi_gian_dat || 0))
+                .slice(0, 8);
+            const slotStatusColor = { "Đã tham gia": "#00ff88", "Bùng kèo": "#ef4444", "Khách hủy": "#9ca3af", "Chờ đánh": "#fbbf24" };
+            const historyHTML = recentSlots.length === 0
+                ? `<p style="font-size:0.8rem;color:#64748b;text-align:center;padding:10px 0;">Chưa có lịch sử đặt slot.</p>`
+                : recentSlots.map(s => {
+                    const ca = caDauMap[s.id_ca_dau];
+                    const caName = ca ? (ca.ten_san || "Ca đấu") : "Ca đấu";
+                    const caDate = ca?.ngay_danh ? new Date(ca.ngay_danh).toLocaleDateString("vi-VN") : "--";
+                    const st = s.trang_thai_di_danh || "Chờ đánh";
+                    const stColor = slotStatusColor[st] || "#94a3b8";
+                    return `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;
+                                border-bottom:1px solid rgba(255,255,255,0.04);">
+                        <span style="font-size:0.63rem;font-weight:700;color:${stColor};
+                                     background:rgba(255,255,255,0.04);padding:2px 6px;
+                                     border-radius:10px;white-space:nowrap;flex-shrink:0;">${st}</span>
+                        <div style="flex:1;min-width:0;">
+                            <div style="font-size:0.78rem;color:#e2e8f0;white-space:nowrap;
+                                        overflow:hidden;text-overflow:ellipsis;">${caName}</div>
+                            <div style="font-size:0.67rem;color:#64748b;">${caDate}</div>
+                        </div>
+                    </div>`;
+                }).join("");
+
+            /* ── Render body modal — thứ tự: avatar → stats → ratings UP → sent → history DOWN ── */
             body.innerHTML = `
             <!-- Avatar + Thông tin cơ bản -->
             <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px;">
@@ -2489,23 +2652,22 @@
                             background:linear-gradient(135deg,#1a3a6e,#0f2d53);
                             border:2.5px solid ${isHost ? "#fbbf24" : "#1e3a5f"};
                             display:flex;align-items:center;justify-content:center;
-                            font-size:1.6rem;flex-shrink:0;box-shadow:${isHost ? "0 0 14px rgba(251,191,36,0.3)" : "none"};">
+                            font-size:1.6rem;flex-shrink:0;
+                            box-shadow:${isHost ? "0 0 14px rgba(251,191,36,0.3)" : "none"};">
                     ${isHost ? "🏟️" : "🏸"}
                 </div>
                 <div style="flex:1;min-width:0;">
                     <div style="font-size:1rem;font-weight:700;color:#e2e8f0;
                                 display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
                         ${tenHienThi}
-                        ${isHost ? `<span class="hsck-host-badge">
-                            <i class="fa-solid fa-circle-check"></i> Host
-                        </span>` : ""}
+                        ${isHost ? `<span class="hsck-host-badge"><i class="fa-solid fa-circle-check"></i> Host</span>` : ""}
                     </div>
                     <div style="font-size:0.73rem;color:#9ca3af;margin-top:3px;">
                         <i class="fa-regular fa-calendar" style="margin-right:4px;"></i>Gia nhập: ${joinDate}
                     </div>
                     ${avgSao ? `<div style="font-size:0.78rem;color:#fbbf24;margin-top:3px;font-weight:700;">
                         ⭐ ${avgSao} / 5.0
-                        <span style="color:#9ca3af;font-weight:400;font-size:0.7rem;">&nbsp;(${validReviewsRaw.length} đánh giá)</span>
+                        <span style="color:#9ca3af;font-weight:400;font-size:0.7rem;">&nbsp;(${htgReviews.length} đánh giá từ host)</span>
                     </div>` : ""}
                 </div>
             </div>
@@ -2522,17 +2684,37 @@
                 </div>
             </div>
 
-            ${validReviewsRaw.length > 0 ? `
-            <!-- Tiêu đề đánh giá gần đây -->
+            <!-- Đánh giá nhận (HostToGuest) — ĐẶT LÊN TRÊN -->
             <div style="font-size:0.74rem;font-weight:700;color:#9ca3af;
                         text-transform:uppercase;letter-spacing:0.05em;
-                        margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-                <i class="fa-solid fa-star" style="color:#fbbf24;"></i> Đánh Giá Gần Đây
+                        margin:14px 0 8px;display:flex;align-items:center;gap:6px;">
+                <i class="fa-solid fa-star" style="color:#fbbf24;"></i>
+                Đánh Giá Về Người Này
+                ${htgReviews.length > 0 ? `<span style="font-size:0.72rem;color:#fbbf24;margin-left:auto;font-weight:700;">
+                    ⭐ ${avgSao} (${htgReviews.length})</span>` : ""}
             </div>
-            ${reviewsHTML}
-            ` : `<div style="text-align:center;padding:20px;color:#64748b;font-size:0.82rem;">
-                <i class="fa-regular fa-face-smile" style="display:block;font-size:1.4rem;margin-bottom:8px;"></i>
-                Chưa có đánh giá nào.</div>`}
+            ${receivedHTML}
+
+            <!-- Đánh giá đã gửi (GuestToHost) — giữa -->
+            ${sentReviews.length > 0 ? `
+            <div style="font-size:0.74rem;font-weight:700;color:#9ca3af;
+                        text-transform:uppercase;letter-spacing:0.05em;
+                        margin:14px 0 8px;display:flex;align-items:center;gap:6px;">
+                <i class="fa-solid fa-comment-dots" style="color:#60a5fa;"></i>
+                Đánh Giá Đã Gửi Về Sân
+                <span style="font-size:0.7rem;font-weight:400;color:#64748b;margin-left:auto;">${sentReviews.length} lần</span>
+            </div>
+            ${sentHTML}` : ""}
+
+            <!-- Lịch sử tại sân — ĐẶT XUỐNG DƯỚI -->
+            <div style="font-size:0.74rem;font-weight:700;color:#9ca3af;
+                        text-transform:uppercase;letter-spacing:0.05em;
+                        margin:14px 0 8px;display:flex;align-items:center;gap:6px;">
+                <i class="fa-solid fa-clock-rotate-left" style="color:#00ff88;"></i>
+                Lịch Sử Tại Sân
+                <span style="font-size:0.7rem;font-weight:400;color:#64748b;margin-left:auto;">${datSlots.length} lượt</span>
+            </div>
+            ${historyHTML}
             `;
         } catch (e) {
             console.error("Lỗi tải hồ sơ công khai:", e);
@@ -2540,10 +2722,13 @@
         }
     };
 
+    /* Alias để các nơi gọi window._moHoSoCongKhai vẫn hoạt động */
+    window._moHoSoCongKhai = window.xemHoSoCongKhai;
+
     window.dongModalHoSoCongKhai = function () {
         const overlay = document.getElementById("modalHoSoCongKhaiOverlay");
         if (overlay) overlay.style.display = "none";
     };
 
-    console.log("⚡ [Phân Hệ Khách Chơi v4.3]: FEAT-1-hostBadge ✅ | FEAT-2-guiDanhGia ✅ | FEAT-3-hoSoCongKhai ✅ | J4-tabToggle ✅ | J5-bottomSheet ✅");
+    console.log("⚡ [Phân Hệ Khách Chơi v4.4]: BUG1-3-4 ✅ | ĐÁNH_GIÁ_VỀ_TÔI ✅ | TÔI_ĐÃ_ĐÁNH_GIÁ ✅ | HỒ_SƠ_TÍN_DỤNG_v2 ✅");
 })();
