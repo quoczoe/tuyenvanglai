@@ -62,6 +62,15 @@
             cursor: pointer; transition: all 0.2s; text-decoration: none;
         }
         .hs-back-btn:hover { border-color: var(--accent-green); color: var(--accent-green); }
+        @media (max-width: 480px) {
+            .hs-back-btn { font-size: 0.72rem; padding: 5px 9px; white-space: nowrap; }
+            .hs-back-long { display: none; }
+            .hs-back-short { display: inline; }
+        }
+        @media (min-width: 481px) {
+            .hs-back-long { display: inline; }
+            .hs-back-short { display: none; }
+        }
 
         /* ══ LAYOUT ══ */
         /* TASK 4.4: Bỏ max-width cố định → tận dụng toàn bộ chiều rộng PC */
@@ -375,10 +384,9 @@
 
         /* ── R1 + R2: Bảng cầu — PC ngang / Mobile dọc card ── */
 
-        /* R1: Bounded scroll container — overflow-x:auto chỉ hoạt động khi có max-width */
+        /* R1: Container cầu — overflow:visible để dropdown không bị clip */
         #shuttlecockListContainer {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
+            overflow: visible;
             max-width: 100%;
         }
         /* R1: Bảng ca đấu — tương tự */
@@ -386,8 +394,11 @@
             max-width: 100%;
         }
 
-        /* PC (≥769px): giữ nguyên layout grid ngang */
+        /* PC (≥769px): override grid để QUY CÁCH đủ rộng */
         @media (min-width: 769px) {
+            #shuttlecockListContainer .sc-row-grid {
+                grid-template-columns: 2fr minmax(120px,1.5fr) 1.4fr 1fr auto !important;
+            }
             #shuttlecockListContainer .form-control {
                 min-width: 0;
                 width: 100%;
@@ -422,30 +433,36 @@
             /* Row 1: TÊN CẦU chiếm full width */
             #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(1) {
                 grid-column: 1 / -1 !important;
+                grid-row: 1 !important;
                 min-width: 0 !important;
             }
-            /* Row 2: QUY CÁCH (col 1) — xóa min-width cứng */
+            /* Row 2: QUY CÁCH (col 1) */
             #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(2) {
                 grid-column: 1 !important;
+                grid-row: 2 !important;
                 min-width: 0 !important;
             }
             /* Row 2: GIÁ (col 2) */
             #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(3) {
                 grid-column: 2 !important;
+                grid-row: 2 !important;
                 min-width: 0 !important;
             }
             /* Row 3: ĐÃ DÙNG (col 1) */
             #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(4) {
                 grid-column: 1 !important;
+                grid-row: 3 !important;
                 min-width: 0 !important;
             }
-            /* Row 3: DELETE button (col 2) — căn cuối dòng */
+            /* Row 3: DELETE button (col 2) — căn giữa theo chiều dọc ô */
             #shuttlecockListContainer .sc-row-grid > div:last-child {
                 grid-column: 2 !important;
+                grid-row: 3 !important;
                 display: flex !important;
                 align-items: flex-end !important;
-                justify-content: flex-end !important;
-                padding-bottom: 1px;
+                justify-content: center !important;
+                padding-bottom: 2px;
+                z-index: 1;
             }
             /* Mỗi field: label trên, input dưới */
             #shuttlecockListContainer .sc-row-grid > .form-group {
@@ -684,7 +701,9 @@
         <span class="hs-brand-text">TUYENVANGLAI.IO.VN</span>
     </a>
     <a href="khach.html" class="hs-back-btn">
-        <i class="fa-solid fa-angle-left"></i> Về Trang Khách
+        <i class="fa-solid fa-angle-left"></i>
+        <span class="hs-back-long">Về Trang Khách</span>
+        <span class="hs-back-short">Khách</span>
     </a>
 </header>
 

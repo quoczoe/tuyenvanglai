@@ -558,7 +558,7 @@
         const q = inp.value.toLowerCase().trim();
         box.innerHTML = "";
         if (!q) { box.style.display = "none"; return; }
-        const matched = (window.SHUTTLECOCK_BRANDS || []).filter(b => b.toLowerCase().includes(q)).slice(0, 8);
+        const matched = (window.SHUTTLECOCK_BRANDS || []).filter(b => b.toLowerCase().includes(q));
         if (matched.length === 0) { box.style.display = "none"; return; }
         box.style.display = "block";
         matched.forEach((b, idx) => {
@@ -2464,8 +2464,8 @@
                     eq: { sdt_nguoi_bi_danh_gia: sdt, loai_danh_gia: "HostToGuest" }
                 }).catch(() => []),
                 window.dbEngine.doc("danh_gia_tin_dung", {
-                    eq: { sdt_nguoi_viet: sdt, loai_danh_gia: "GuestToHost" }
-                }).catch(() => [])
+                    eq: { sdt_nguoi_viet: sdt }
+                }).then(r => r.filter(x => x.loai_danh_gia === "GuestToHost")).catch(() => [])
             ]);
 
             // Chỉ xem slot liên quan đến ca của HOST này
