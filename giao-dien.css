@@ -2700,9 +2700,10 @@ body::before {
     .kh-layout {
         display: flex !important;
         flex-direction: column !important;
+        align-items: stretch !important; /* Cho sidebar/right chiếm full width */
     }
-    .kh-right  { order: 1; } /* Khu vực filter + kèo: hiện trước */
-    .kh-sidebar { order: 2; } /* Sidebar: hiện sau */
+    .kh-right  { order: 1; width: 100%; } /* Khu vực filter + kèo: hiện trước */
+    .kh-sidebar { order: 2; width: 100%; } /* Sidebar: hiện sau — full width */
 }
 
 /* ══════════════════════════════════════════════════════════════

@@ -2218,7 +2218,7 @@
                 });
 
             // Tính stats nhanh
-            let soThamGia = 0, tongChi = 0, choDanh = 0, daHuy = 0;
+            let soThamGia = 0, tongChi = 0, choDanh = 0, daHuy = 0, daBung = 0;
             withCa.forEach(({ slot, ca }) => {
                 const tt = slot.trang_thai_di_danh;
                 if (tt === "Đã tham gia") {
@@ -2228,15 +2228,17 @@
                     }
                 } else if (tt === "Chờ đánh")  { choDanh++; }
                 else if (tt === "Khách hủy")   { daHuy++; }
+                else if (tt === "Bùng kèo")    { daBung++; }
             });
 
             // Render stats grid
             if (statsEl) {
                 statsEl.innerHTML = [
-                    { val: soThamGia,            color: "#00ff88", icon: "fa-flag-checkered", lbl: "Đã tham gia" },
-                    { val: _formatVND(tongChi),  color: "#60a5fa", icon: "fa-wallet",         lbl: "Tổng chi"    },
-                    { val: choDanh,              color: "#fbbf24", icon: "fa-clock",           lbl: "Chờ đánh"   },
-                    { val: daHuy,                color: "#9ca3af", icon: "fa-circle-xmark",    lbl: "Đã hủy"     },
+                    { val: soThamGia,            color: "#00ff88", icon: "fa-flag-checkered",        lbl: "Đã tham gia" },
+                    { val: _formatVND(tongChi),  color: "#60a5fa", icon: "fa-wallet",                lbl: "Tổng chi"    },
+                    { val: choDanh,              color: "#fbbf24", icon: "fa-clock",                  lbl: "Chờ đánh"   },
+                    { val: daHuy,                color: "#9ca3af", icon: "fa-circle-xmark",            lbl: "Đã hủy"     },
+                    { val: daBung,               color: "#ef4444", icon: "fa-triangle-exclamation",    lbl: "Đã bùng"    },
                 ].map(({ val, color, icon, lbl }) => `
                     <div class="kh-stat-badge">
                         <div class="kh-stat-val" style="color:${color};">${val}</div>
