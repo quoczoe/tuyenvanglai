@@ -2940,6 +2940,19 @@ body::before {
     top: 0;
 }
 
+/* ── Căn giữa text trong select Tỉnh/Thành phố và Quận/Huyện ── */
+#hostProvince,
+#hostDistrict {
+    text-align: center;
+    text-align-last: center;
+}
+
+/* ── Ẩn mũi tên xổ xuống native trên date/time input trong .hs-picker-wrap ──
+   (thêm display:none cho trình duyệt không hỗ trợ opacity:0) */
+.hs-picker-wrap { position: relative; }
+.hs-picker-wrap input[type="date"],
+.hs-picker-wrap input[type="time"] { position: relative; }
+
 /* ── 3E: Bảng cầu — header không bị cắt ── */
 .shuttlecock-card .sc-row-2col {
     display: grid;

@@ -431,19 +431,20 @@
         div.className = "shuttlecock-row";
         div.id = `row_${id}`;
         // C1: Bỏ cột "Giá 1 quả lẻ" — 3 option quy cách — label "Giá"
+        const giaFormatted = (gia || 0).toLocaleString('vi-VN');
         div.innerHTML = `
         <div class="sc-row-grid">
             <div class="form-group" style="margin-bottom:0;position:relative;">
                 <label class="form-label" style="font-size:0.7rem;">Tên cầu</label>
                 <input type="text" class="form-control" id="scName_${id}" value="${ten}"
                     placeholder="Hải Yến, Victor..."
-                    oninput="window._goiYCau('${id}')"
-                    list="badminton-shuttles" autocomplete="off">
-                <div id="scSuggest_${id}" style="position:absolute;top:100%;left:0;right:0;background:hsl(var(--card));border:1px solid var(--border);border-radius:var(--radius-sm);max-height:140px;overflow-y:auto;z-index:50;display:none;"></div>
+                    autocomplete="off"
+                    oninput="window._goiYCau('${id}')">
+                <div id="scSuggest_${id}" style="position:absolute;top:calc(100% + 2px);left:0;right:0;background:#0f1e35;border:1px solid #2d4a6e;border-radius:8px;max-height:160px;overflow-y:auto;z-index:200;display:none;box-shadow:0 4px 16px rgba(0,0,0,0.5);"></div>
             </div>
             <div class="form-group" style="margin-bottom:0;min-width:0;">
                 <label class="form-label" style="font-size:0.7rem;">Quy cách</label>
-                <select class="form-control" id="scLoai_${id}"
+                <select class="form-control" id="scLoai_${id}" style="text-align:center;"
                     onchange="window._dongBoGia('${id}','loai');window._tinhChiPhiCau();">
                     <option value="12" ${loai==="12"?"selected":""}>Ống 12 quả</option>
                     <option value="6"  ${loai==="6" ?"selected":""}>Ống 6 quả</option>
@@ -451,20 +452,21 @@
                 </select>
             </div>
             <div class="form-group" style="margin-bottom:0;">
-                <label class="form-label" style="font-size:0.7rem;">Giá</label>
-                <input type="number" class="form-control" id="scGiaOng_${id}" value="${gia}"
-                    placeholder="Giá ống"
-                    onchange="window._dongBoGia('${id}','ong')"
-                    oninput="window._tinhChiPhiCau();_tinhGoiYGia();">
+                <label class="form-label" style="font-size:0.7rem;">Giá (đ)</label>
+                <input type="text" class="form-control" id="scGiaOng_${id}"
+                    value="${giaFormatted}" data-raw-val="${gia}"
+                    placeholder="0" style="text-align:center;"
+                    oninput="window._formatGiaCau('${id}',this);window._tinhChiPhiCau();_tinhGoiYGia();"
+                    onchange="window._dongBoGia('${id}','ong')">
             </div>
             <div class="form-group" style="margin-bottom:0;">
                 <label class="form-label" style="font-size:0.7rem;">Đã dùng (quả)</label>
                 <input type="number" class="form-control" id="scDaDung_${id}" value="${daDung}"
-                    min="0" placeholder="0"
+                    min="0" placeholder="0" style="text-align:center;"
                     oninput="_tinhGoiYGia();window._tinhChiPhiCau();"
                     onchange="_tinhGoiYGia();window._tinhChiPhiCau();">
             </div>
-            <div style="display:flex;align-items:flex-end;">
+            <div style="display:flex;align-items:flex-end;justify-content:center;">
                 <button type="button" class="btn-remove-sc" onclick="window.xoaLoaiCau('${id}')" title="Xóa loại cầu này">
                     <i class="fa-solid fa-trash-can"></i>
                 </button>
@@ -486,6 +488,14 @@
         _tinhChiPhiCau();
     };
 
+    /* Định dạng ô Giá cầu: tự thêm dấu chấm nghìn khi nhập */
+    window._formatGiaCau = function (id, inputEl) {
+        const raw = (inputEl.value || '').replace(/[^0-9]/g, '');
+        const num = raw === '' ? 0 : parseInt(raw, 10);
+        inputEl.dataset.rawVal = String(num);
+        inputEl.value = num > 0 ? num.toLocaleString('vi-VN') : '';
+    };
+
     /* ═══════════════════════════════════════════════════
      * C2 — TÍNH CHI PHÍ CẦU TIÊU THỤ
      * Lặp qua tất cả hàng cầu → tính tổng → cập nhật #tongChiPhiCau
@@ -493,8 +503,9 @@
     function _tinhChiPhiCau() {
         let tongChi = 0;
         (window.shuttlecocksList || []).forEach(scId => {
-            const loai  = document.getElementById(`scLoai_${scId}`)?.value || "12";
-            const gia   = Number(document.getElementById(`scGiaOng_${scId}`)?.value) || 0;
+            const loai   = document.getElementById(`scLoai_${scId}`)?.value || "12";
+            const giaEl  = document.getElementById(`scGiaOng_${scId}`);
+            const gia    = Number(giaEl?.dataset.rawVal || (giaEl?.value || '0').replace(/[^0-9]/g, '')) || 0;
             const soQua = parseInt(document.getElementById(`scDaDung_${scId}`)?.value) || 0;
             let giaMoiQua = gia;
             if      (loai === "12") giaMoiQua = gia / 12;
@@ -547,19 +558,28 @@
         const q = inp.value.toLowerCase().trim();
         box.innerHTML = "";
         if (!q) { box.style.display = "none"; return; }
-        const matched = (window.SHUTTLECOCK_BRANDS || []).filter(b => b.toLowerCase().includes(q));
+        const matched = (window.SHUTTLECOCK_BRANDS || []).filter(b => b.toLowerCase().includes(q)).slice(0, 8);
         if (matched.length === 0) { box.style.display = "none"; return; }
         box.style.display = "block";
-        matched.forEach(b => {
+        matched.forEach((b, idx) => {
             const d = document.createElement("div");
-            d.style.cssText = "padding:8px 12px;cursor:pointer;font-size:0.82rem;border-bottom:1px solid var(--border);";
-            d.textContent = b;
-            d.onmouseenter = () => d.style.background = "rgba(255,255,255,0.05)";
-            d.onmouseleave = () => d.style.background = "";
-            d.onclick = () => { inp.value = b; box.style.display = "none"; _tinhGoiYGia(); };
+            const isLast = idx === matched.length - 1;
+            d.style.cssText = `display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;font-size:0.82rem;color:#e2e8f0;transition:background 0.12s;${isLast ? '' : 'border-bottom:1px solid rgba(45,74,110,0.6);'}`;
+            d.innerHTML = `<i class="fa-solid fa-shuttle-space" style="color:#00ff88;font-size:0.7rem;flex-shrink:0;"></i><span>${b}</span>`;
+            d.onmouseenter = () => { d.style.background = "rgba(0,255,136,0.07)"; d.style.color = "#00ff88"; };
+            d.onmouseleave = () => { d.style.background = ""; d.style.color = "#e2e8f0"; };
+            d.onmousedown = (e) => { e.preventDefault(); inp.value = b; box.style.display = "none"; _tinhGoiYGia(); };
             box.appendChild(d);
         });
     };
+    /* Đóng dropdown gợi ý cầu khi click ra ngoài */
+    document.addEventListener("click", function(e) {
+        document.querySelectorAll('[id^="scSuggest_"]').forEach(box => {
+            if (!box.contains(e.target) && !e.target.id?.startsWith("scName_")) {
+                box.style.display = "none";
+            }
+        });
+    });
 
     /* ═══════════════════════════════════════════════════
      * 7. BỘ MÁY KẾ TOÁN - GỢI Ý GIÁ
@@ -633,9 +653,12 @@
             const el = document.getElementById(laiId);
             if (el) {
                 const t = thu(n, u);
-                el.textContent = laiId === "sugBreakLai"
-                    ? `Thu: ${_formatVND(t)} | Lãi: 0đ`
-                    : `Thu: ${_formatVND(t)} | Lãi ~${_formatVND(t - tongCP)}`;
+                const laiVal = t - tongCP;
+                if (laiId === "sugBreakLai") {
+                    el.innerHTML = `<span style="color:#60a5fa;">Thu: ${_formatVND(t)}</span> <span style="color:#94a3b8;">| Lãi: 0đ</span>`;
+                } else {
+                    el.innerHTML = `<span style="color:#60a5fa;">Thu: ${_formatVND(t)}</span> <span style="color:#00ff88;">| Lãi ~${_formatVND(laiVal)}</span>`;
+                }
             }
         };
         set4("sugBreakNam","sugBreakNu","sugBreakLai", beBreak.giaNam, beBreak.giaNu);
@@ -747,7 +770,8 @@
         // Danh sách cầu (JSONB) — tong_chi_phi_cau dùng _tinhChiPhiCau() cho kết quả đồng nhất
         const loai_cau_su_dung = window.shuttlecocksList.map(id => {
             const loai   = Number(document.getElementById(`scLoai_${id}`)?.value) || 12;
-            const giaOng = Number(document.getElementById(`scGiaOng_${id}`)?.value) || 0;
+            const giaOngEl = document.getElementById(`scGiaOng_${id}`);
+            const giaOng = Number(giaOngEl?.dataset.rawVal || (giaOngEl?.value || '0').replace(/[^0-9]/g, '')) || 0;
             const daDung = Number(document.getElementById(`scDaDung_${id}`)?.value) || 0;
             const ten    = document.getElementById(`scName_${id}`)?.value || "";
             const gia_qua = loai > 1 ? Math.round(giaOng / loai) : giaOng;
@@ -2432,12 +2456,15 @@
         document.body.style.overflow = "hidden";
 
         try {
-            // Fetch song song: tất cả slot của sdt + ca của host hiện tại + reviews về sdt này
-            const [allSlots, myCaDau, reviews] = await Promise.all([
+            // Fetch song song: tất cả slot của sdt + ca của host hiện tại + reviews về sdt này + reviews do sdt gửi
+            const [allSlots, myCaDau, reviews, guestSentReviews] = await Promise.all([
                 window.dbEngine.doc("dat_slot", { eq: { sdt_khach: sdt } }).catch(() => []),
                 window.dbEngine.doc("ca_dau",   { eq: { ma_key_host: window.currentHostKey } }).catch(() => []),
                 window.dbEngine.doc("danh_gia_tin_dung", {
                     eq: { sdt_nguoi_bi_danh_gia: sdt, loai_danh_gia: "HostToGuest" }
+                }).catch(() => []),
+                window.dbEngine.doc("danh_gia_tin_dung", {
+                    eq: { sdt_nguoi_viet: sdt, loai_danh_gia: "GuestToHost" }
                 }).catch(() => [])
             ]);
 
@@ -2462,17 +2489,17 @@
                     return sum + (s.gioi_tinh === "female" ? (ca.gia_nu || 0) : (ca.gia_nam || 0));
                 }, 0);
 
-            // Sao TB từ reviews của host này
+            // Sao TB từ TẤT CẢ reviews HostToGuest về sdt này
             const hostPhone = window.currentHostInfo?.sdt_host || window.currentHostKey;
             const myReviews = reviews.filter(r => r.sdt_nguoi_viet === hostPhone);
-            const avgStars  = myReviews.length > 0
-                ? (myReviews.reduce((s, r) => s + (r.so_sao || 0), 0) / myReviews.length).toFixed(1)
+            const allAvgStars = reviews.length > 0
+                ? (reviews.reduce((s, r) => s + (r.so_sao || 0), 0) / reviews.length).toFixed(1)
                 : null;
-            const avgNum    = parseFloat(avgStars || 0);
-            const starStr   = avgStars
-                ? `<span style="color:#fbbf24;font-size:0.95rem;">${"★".repeat(Math.round(avgNum))}${"☆".repeat(5-Math.round(avgNum))}</span>
-                   <span style="color:#94a3b8;font-size:0.75rem;margin-left:4px;">${avgStars}/5 (${myReviews.length} đánh giá)</span>`
-                : `<span style="font-size:0.78rem;color:#64748b;">Chưa có đánh giá của bạn</span>`;
+            const allAvgNum = parseFloat(allAvgStars || 0);
+            const starStr = allAvgStars
+                ? `<span style="color:#fbbf24;font-size:0.95rem;">${"★".repeat(Math.round(allAvgNum))}${"☆".repeat(5-Math.round(allAvgNum))}</span>
+                   <span style="color:#94a3b8;font-size:0.75rem;margin-left:4px;">${allAvgStars}/5 (${reviews.length} đánh giá)</span>`
+                : `<span style="font-size:0.78rem;color:#64748b;">Chưa có đánh giá</span>`;
 
             // Render từng dòng lịch sử
             const historyRows = sortedSlots.map(s => {
@@ -2511,6 +2538,36 @@
                 </tr>`;
             }).join("");
 
+            // Render tất cả đánh giá HostToGuest về khách này
+            const allReviewsHTML = reviews.length === 0
+                ? `<p style="color:#64748b;text-align:center;padding:12px;border:1px dashed #1e3a5f;border-radius:8px;font-size:0.82rem;">Chưa có đánh giá nào từ chủ sân.</p>`
+                : `<div style="display:flex;flex-direction:column;gap:8px;max-height:200px;overflow-y:auto;">
+                    ${reviews.map(r => `
+                    <div style="background:rgba(251,191,36,0.05);border:1px solid rgba(251,191,36,0.18);border-radius:8px;padding:10px 12px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+                            <span style="color:#fbbf24;font-size:0.9rem;">${"★".repeat(r.so_sao||0)}${"☆".repeat(5-(r.so_sao||0))}</span>
+                            <span style="font-size:0.68rem;color:#94a3b8;">${r.so_sao}/5 sao</span>
+                            <span style="font-size:0.65rem;color:#475569;margin-left:auto;">${r.sdt_nguoi_viet === hostPhone ? '<span style="color:#00ff88;">✦ Đánh giá của bạn</span>' : r.sdt_nguoi_viet}</span>
+                        </div>
+                        ${r.nhan_xet ? `<div style="font-size:0.79rem;color:#e2e8f0;">${r.nhan_xet}</div>` : ""}
+                    </div>`).join("")}
+                   </div>`;
+
+            // Render đánh giá khách đã gửi cho chủ sân (GuestToHost)
+            const guestSentHTML = guestSentReviews.length === 0
+                ? `<p style="color:#64748b;text-align:center;padding:12px;border:1px dashed #1e3a5f;border-radius:8px;font-size:0.82rem;">Khách chưa gửi đánh giá nào cho chủ sân.</p>`
+                : `<div style="display:flex;flex-direction:column;gap:8px;max-height:160px;overflow-y:auto;">
+                    ${guestSentReviews.map(r => `
+                    <div style="background:rgba(96,165,250,0.05);border:1px solid rgba(96,165,250,0.2);border-radius:8px;padding:10px 12px;">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+                            <span style="color:#60a5fa;font-size:0.9rem;">${"★".repeat(r.so_sao||0)}${"☆".repeat(5-(r.so_sao||0))}</span>
+                            <span style="font-size:0.68rem;color:#94a3b8;">${r.so_sao}/5 sao</span>
+                            <span style="font-size:0.65rem;color:#475569;margin-left:auto;">→ ${r.sdt_nguoi_bi_danh_gia}</span>
+                        </div>
+                        ${r.nhan_xet ? `<div style="font-size:0.79rem;color:#e2e8f0;">${r.nhan_xet}</div>` : ""}
+                    </div>`).join("")}
+                   </div>`;
+
             if (body) body.innerHTML = `
                 <!-- Avatar + tên -->
                 <div style="display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:1px solid #1e3a5f;margin-bottom:14px;">
@@ -2540,8 +2597,15 @@
                         <div style="font-size:0.65rem;color:#64748b;margin-top:2px;">Tổng chi tiêu</div>
                     </div>
                 </div>
-                <!-- Lịch sử -->
+                <!-- Đánh giá về khách (tất cả chủ sân) -->
                 <h4 style="color:#e2e8f0;font-size:0.82rem;margin:0 0 8px;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-star" style="color:#fbbf24;"></i>
+                    Đánh giá từ chủ sân (${reviews.length})
+                    ${reviews.length > 0 ? `<span style="font-size:0.7rem;color:#94a3b8;font-weight:400;">— TB: ${allAvgStars}/5</span>` : ""}
+                </h4>
+                ${allReviewsHTML}
+                <!-- Lịch sử tại sân này -->
+                <h4 style="color:#e2e8f0;font-size:0.82rem;margin:14px 0 8px;display:flex;align-items:center;gap:6px;">
                     <i class="fa-solid fa-clock-rotate-left" style="color:#60a5fa;"></i>
                     Lịch sử tại sân của bạn (${hostSlots.length})
                 </h4>
@@ -2558,21 +2622,12 @@
                             <tbody>${historyRows}</tbody>
                         </table>
                        </div>`}
-                <!-- Đánh giá đã gửi -->
-                ${myReviews.length > 0 ? `
+                <!-- Đánh giá khách đã gửi cho chủ sân -->
                 <h4 style="color:#e2e8f0;font-size:0.82rem;margin:14px 0 8px;display:flex;align-items:center;gap:6px;">
-                    <i class="fa-solid fa-star" style="color:#fbbf24;"></i> Đánh giá bạn đã gửi (${myReviews.length})
+                    <i class="fa-solid fa-paper-plane" style="color:#60a5fa;"></i>
+                    Đánh giá khách đã gửi (${guestSentReviews.length})
                 </h4>
-                <div style="display:flex;flex-direction:column;gap:8px;max-height:180px;overflow-y:auto;">
-                    ${myReviews.map(r => `
-                    <div style="background:rgba(251,191,36,0.06);border:1px solid rgba(251,191,36,0.2);border-radius:8px;padding:10px 14px;">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                            <span style="color:#fbbf24;">${"★".repeat(r.so_sao||0)}${"☆".repeat(5-(r.so_sao||0))}</span>
-                            <span style="font-size:0.68rem;color:#64748b;">${r.so_sao}/5 sao</span>
-                        </div>
-                        ${r.nhan_xet ? `<div style="font-size:0.8rem;color:#e2e8f0;">${r.nhan_xet}</div>` : ""}
-                    </div>`).join("")}
-                </div>` : ""}`;
+                ${guestSentHTML}`;
 
         } catch(e) {
             console.error("xemHoSoKhach error:", e);
