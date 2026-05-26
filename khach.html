@@ -480,39 +480,53 @@
         /* H4-layout — Khung trình độ: cố định chiều cao tối thiểu */
         .kh-trinh-do-row { min-height: 75px; }
 
-        /* ══ FEAT-1: Host Verification Badge ══ */
+        /* ══ FEAT-1: Host Verification Badge — giống Facebook verified tick ══ */
         .host-verify-badge {
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             position: relative;
             cursor: pointer;
-            margin-left: 4px;
+            margin-left: 6px;
             vertical-align: middle;
-            color: #fbbf24;          /* vàng gold */
-            font-size: 1.05rem;
-            transition: transform 0.2s, filter 0.2s;
             flex-shrink: 0;
+            /* Vòng tròn nền xanh — giống Facebook */
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #1877f2 0%, #0a5dc2 100%);
+            color: #ffffff;
+            font-size: 0.72rem;
+            box-shadow: 0 0 0 2px rgba(24,119,242,0.35), 0 2px 8px rgba(0,0,0,0.4);
+            transition: transform 0.18s, box-shadow 0.18s;
         }
         .host-verify-badge:hover,
-        .host-verify-badge:focus { transform: scale(1.2); filter: brightness(1.2); outline: none; }
+        .host-verify-badge:focus {
+            transform: scale(1.18);
+            box-shadow: 0 0 0 3px rgba(24,119,242,0.5), 0 4px 16px rgba(24,119,242,0.4);
+            outline: none;
+        }
+        /* Tooltip hiện khi hover/focus/mobile-tap */
         .host-badge-tooltip {
             display: none;
             position: absolute;
-            bottom: calc(100% + 8px);
+            bottom: calc(100% + 10px);
             left: 50%;
             transform: translateX(-50%);
             background: #0f1e35;
-            border: 1px solid rgba(251,191,36,0.5);
+            border: 1px solid rgba(24,119,242,0.5);
             color: #e2e8f0;
-            font-size: 0.68rem;
+            font-size: 0.7rem;
             font-weight: 500;
             white-space: nowrap;
-            padding: 5px 10px;
-            border-radius: 8px;
+            padding: 7px 12px;
+            border-radius: 10px;
             z-index: 300;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
             pointer-events: none;
-            line-height: 1.4;
+            line-height: 1.5;
+            text-align: center;
+            min-width: 150px;
         }
         .host-badge-tooltip::after {
             content: '';
@@ -520,11 +534,19 @@
             top: 100%;
             left: 50%;
             transform: translateX(-50%);
-            border: 5px solid transparent;
-            border-top-color: rgba(251,191,36,0.5);
+            border: 6px solid transparent;
+            border-top-color: rgba(24,119,242,0.5);
         }
         .host-verify-badge:hover .host-badge-tooltip,
-        .host-verify-badge.tooltip-open .host-badge-tooltip { display: block; }
+        .host-verify-badge:focus .host-badge-tooltip,
+        .host-verify-badge.tooltip-open .host-badge-tooltip {
+            display: block;
+            animation: fadeInUp 0.15s ease;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(4px); }
+            to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
 
         /* ══ FEAT-3: Modal Hồ Sơ Công Khai ══ */
         #modalHoSoCongKhaiOverlay {
@@ -601,15 +623,27 @@
         .hsck-host-badge {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
-            background: rgba(251,191,36,0.12);
-            border: 1px solid rgba(251,191,36,0.4);
-            color: #fbbf24;
+            gap: 5px;
+            background: rgba(24,119,242,0.15);
+            border: 1px solid rgba(24,119,242,0.45);
+            color: #60a5fa;
             font-size: 0.68rem;
             font-weight: 700;
-            padding: 2px 8px;
+            padding: 2px 9px 2px 6px;
             border-radius: 20px;
             white-space: nowrap;
+        }
+        .hsck-host-badge .fa-circle-check {
+            /* Icon check nhỏ trong vòng tròn xanh — như Facebook */
+            width: 14px;
+            height: 14px;
+            background: linear-gradient(135deg, #1877f2, #0a5dc2);
+            color: #fff;
+            border-radius: 50%;
+            font-size: 0.55rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
         /* Link người đánh giá trong review card */
         .review-author-link {
@@ -799,13 +833,16 @@
                     <!-- FEAT-1: Name + Host verification badge -->
                     <div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
                         <div class="kh-profile-name" id="profileGuestName">--</div>
-                        <!-- Tích vàng xác minh Host — chỉ hiện khi vai_tro='host' -->
+                        <!-- Tích xanh xác minh Host — giống Facebook verified, chỉ hiện khi vai_tro='host' -->
                         <span id="profileHostBadge" class="host-verify-badge" style="display:none;"
                               onclick="window._toggleBadgeTooltip()" tabindex="0"
-                              onblur="this.classList.remove('tooltip-open')">
-                            <i class="fa-solid fa-circle-check"></i>
+                              onblur="this.classList.remove('tooltip-open')"
+                              aria-label="Tài khoản Host Sân đã xác minh">
+                            <i class="fa-solid fa-check" style="font-size:0.65rem;font-weight:900;"></i>
                             <span class="host-badge-tooltip">
-                                ✅ Host Sân đã xác minh<br>tại TUYENVANGLAI.IO.VN
+                                <span style="color:#60a5fa;font-weight:700;font-size:0.75rem;">✓ Đã xác minh</span><br>
+                                Host Sân tại TUYENVANGLAI.IO.VN<br>
+                                <span style="color:#94a3b8;font-size:0.65rem;">Tài khoản chính thức được xác nhận</span>
                             </span>
                         </span>
                     </div>

@@ -2026,6 +2026,19 @@
             const joinDate   = user?.ngay_tham_gia
                 ? new Date(user.ngay_tham_gia).toLocaleDateString("vi-VN") : "--";
 
+            // Tải tên người viết đánh giá (reviewer names)
+            const validReviewsRaw = reviews.filter(r => r.so_sao >= 1 && r.so_sao <= 5);
+            const reviewerSdts = [...new Set(validReviewsRaw.map(r => r.sdt_nguoi_viet).filter(Boolean))];
+            let reviewerMap = {};
+            if (reviewerSdts.length > 0) {
+                try {
+                    const reviewerUsers = await window.dbEngine.doc("nguoi_dung").catch(() => []);
+                    reviewerUsers.forEach(u => { reviewerMap[u.sdt_khach] = u.ten_khach || u.sdt_khach; });
+                } catch (_) {}
+            }
+            // Hàm ẩn số điện thoại (hiện 3 đầu + 3 cuối, ẩn giữa)
+            const _maskPhone = (p) => p ? p.slice(0, 3) + "***" + p.slice(-3) : "Ẩn danh";
+
             // Cập nhật tiêu đề modal
             if (title) title.innerHTML = `
                 <i class="fa-solid fa-user-circle" style="color:#60a5fa;"></i>
@@ -2034,17 +2047,16 @@
                     <i class="fa-solid fa-circle-check"></i> Host Sân
                 </span>` : ""}`;
 
-            // Tính rating trung bình
-            const validReviews = reviews.filter(r => r.so_sao >= 1 && r.so_sao <= 5);
-            const avgSao = validReviews.length > 0
-                ? (validReviews.reduce((s, r) => s + r.so_sao, 0) / validReviews.length).toFixed(1)
+            // Tính rating trung bình (validReviewsRaw đã được tính ở trên)
+            const avgSao = validReviewsRaw.length > 0
+                ? (validReviewsRaw.reduce((s, r) => s + r.so_sao, 0) / validReviewsRaw.length).toFixed(1)
                 : null;
 
             // Thống kê buổi tham gia (đã xác nhận đi đánh)
             const daThamGia = datSlots.filter(s => s.trang_thai_di_danh === "Đã tham gia").length;
 
             // Lấy 8 đánh giá mới nhất
-            const recentReviews = [...validReviews]
+            const recentReviews = [...validReviewsRaw]
                 .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
                 .slice(0, 8);
 
@@ -2060,6 +2072,16 @@
                                 border:1px solid rgba(0,255,136,0.3);padding:1px 6px;border-radius:10px;">Từ: Khách</span>`
                         : `<span style="font-size:0.63rem;background:rgba(96,165,250,0.1);color:#60a5fa;
                                 border:1px solid rgba(96,165,250,0.3);padding:1px 6px;border-radius:10px;">Từ: Host</span>`;
+                    // Tên người viết đánh giá — có link để xem hồ sơ
+                    const reviewerPhone = r.sdt_nguoi_viet || "";
+                    const reviewerName  = reviewerMap[reviewerPhone] || _maskPhone(reviewerPhone);
+                    const reviewerLink  = reviewerPhone
+                        ? `<span style="font-size:0.72rem;color:#94a3b8;">
+                                Bởi: <button onclick="event.stopPropagation();window._moHoSoCongKhai('${reviewerPhone}')"
+                                    style="background:none;border:none;padding:0;color:#60a5fa;cursor:pointer;font-size:0.72rem;font-family:inherit;text-decoration:underline;text-underline-offset:2px;"
+                                >${reviewerName}</button>
+                           </span>`
+                        : "";
                     return `<div class="hsck-review-item">
                         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
                             <div style="display:flex;gap:2px;">${stars}</div>
@@ -2068,8 +2090,9 @@
                                 ${r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : ""}
                             </span>
                         </div>
+                        ${reviewerLink}
                         ${r.nhan_xet
-                            ? `<div style="font-size:0.78rem;color:#e2e8f0;line-height:1.5;">"${r.nhan_xet}"</div>`
+                            ? `<div style="font-size:0.78rem;color:#e2e8f0;line-height:1.5;margin-top:4px;">"${r.nhan_xet}"</div>`
                             : `<em style="font-size:0.73rem;color:#6b7280;">Không có nhận xét</em>`}
                     </div>`;
                 }).join("");
@@ -2097,7 +2120,7 @@
                     </div>
                     ${avgSao ? `<div style="font-size:0.78rem;color:#fbbf24;margin-top:3px;font-weight:700;">
                         ⭐ ${avgSao} / 5.0
-                        <span style="color:#9ca3af;font-weight:400;font-size:0.7rem;">&nbsp;(${validReviews.length} đánh giá)</span>
+                        <span style="color:#9ca3af;font-weight:400;font-size:0.7rem;">&nbsp;(${validReviewsRaw.length} đánh giá)</span>
                     </div>` : ""}
                 </div>
             </div>
@@ -2114,7 +2137,7 @@
                 </div>
             </div>
 
-            ${validReviews.length > 0 ? `
+            ${validReviewsRaw.length > 0 ? `
             <!-- Tiêu đề đánh giá gần đây -->
             <div style="font-size:0.74rem;font-weight:700;color:#9ca3af;
                         text-transform:uppercase;letter-spacing:0.05em;

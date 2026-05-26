@@ -253,9 +253,10 @@
     margin-bottom: 12px;
     position: relative;
 }
+/* PC layout: 5 items = Tên cầu(2fr) + Quy cách(1fr) + Giá(1.2fr) + Đã dùng(1fr) + Delete(auto) */
 .sc-row-grid {
     display: grid;
-    grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto;
+    grid-template-columns: 2fr 1fr 1.2fr 1fr auto;
     gap: 10px;
     align-items: end;
 }
@@ -819,7 +820,8 @@
 @media (max-width: 768px) {
     .pricing-suggestions-grid { grid-template-columns: 1fr 1fr; }
     .stats-grid-4 { grid-template-columns: 1fr 1fr; }
-    .sc-row-grid { grid-template-columns: 1fr 1fr auto; }
+    /* 768px: Thu gọn xuống 3 cột đều nhau: Tên(1.5fr) + Quy cách+Giá+Đã dùng(1fr) */
+    .sc-row-grid { grid-template-columns: 1.5fr 1fr 1fr 1fr auto; }
     .slot-price-row { gap: 8px; }
     .slot-details-row { gap: 12px; }
     .form-grid-2 { gap: 10px; }
@@ -827,7 +829,8 @@
 
 @media (max-width: 480px) {
     .pricing-suggestions-grid { grid-template-columns: 1fr; }
-    .sc-row-grid { grid-template-columns: 1fr auto; }
+    /* 480px: 2-col grid — host.html inline sẽ override với !important */
+    .sc-row-grid { grid-template-columns: 1fr 1fr; }
     .radio-btn-label { padding: 7px 12px; font-size: 0.8rem; }
     .checkbox-pill-group label { padding: 5px 10px; font-size: 0.75rem; }
     .sug-box { padding: 12px 10px; }

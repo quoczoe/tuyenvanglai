@@ -401,28 +401,51 @@
             }
         }
 
-        /* R2: Mobile (≤768px) — bảng cầu 2×2 grid, đều đẹp */
+        /* ══════════════════════════════════════════════════════════
+           R2: Mobile (≤768px) — bảng cầu layout gọn, đều, đẹp
+           Layout:
+             Row 1: [TÊN CẦU          ] (full width)
+             Row 2: [QUY CÁCH] [GIÁ   ]
+             Row 3: [ĐÃ DÙNG ] [DELETE]
+           ══════════════════════════════════════════════════════════ */
         @media (max-width: 768px) {
             #shuttlecockListContainer {
                 overflow-x: visible;
             }
-            /* Grid 2 cột đều nhau */
+            /* Grid 2 cột đều — override tất cả */
             #shuttlecockListContainer .sc-row-grid {
                 display: grid !important;
                 grid-template-columns: 1fr 1fr !important;
-                gap: 10px 12px !important;
+                gap: 8px 10px !important;
+                align-items: end !important;
             }
-            /* TÊN CẦU (ô đầu tiên): chiếm full width */
-            #shuttlecockListContainer .sc-row-grid > .form-group:first-child {
-                grid-column: 1 / -1;
+            /* Row 1: TÊN CẦU chiếm full width */
+            #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(1) {
+                grid-column: 1 / -1 !important;
+                min-width: 0 !important;
             }
-            /* Nút xóa (ô cuối): chiếm full width, căn phải */
+            /* Row 2: QUY CÁCH (col 1) — xóa min-width cứng */
+            #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(2) {
+                grid-column: 1 !important;
+                min-width: 0 !important;
+            }
+            /* Row 2: GIÁ (col 2) */
+            #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(3) {
+                grid-column: 2 !important;
+                min-width: 0 !important;
+            }
+            /* Row 3: ĐÃ DÙNG (col 1) */
+            #shuttlecockListContainer .sc-row-grid > .form-group:nth-child(4) {
+                grid-column: 1 !important;
+                min-width: 0 !important;
+            }
+            /* Row 3: DELETE button (col 2) — căn cuối dòng */
             #shuttlecockListContainer .sc-row-grid > div:last-child {
-                grid-column: 1 / -1;
+                grid-column: 2 !important;
                 display: flex !important;
-                justify-content: flex-end;
-                align-items: center;
-                padding-top: 2px;
+                align-items: flex-end !important;
+                justify-content: flex-end !important;
+                padding-bottom: 1px;
             }
             /* Mỗi field: label trên, input dưới */
             #shuttlecockListContainer .sc-row-grid > .form-group {
@@ -431,30 +454,32 @@
                 gap: 4px !important;
                 border-bottom: none !important;
                 padding: 0 !important;
-                min-width: 0;
+                min-width: 0 !important;
             }
-            /* Label */
+            /* Label — nhỏ gọn rõ ràng */
             #shuttlecockListContainer .sc-row-grid .form-label {
                 font-size: 0.65rem !important;
                 color: #94a3b8 !important;
-                font-weight: 600 !important;
+                font-weight: 700 !important;
                 text-transform: uppercase !important;
-                letter-spacing: 0.04em !important;
+                letter-spacing: 0.05em !important;
                 white-space: nowrap !important;
                 overflow: visible !important;
-                min-width: unset !important;
-                flex-shrink: unset !important;
+                min-width: 0 !important;
+                flex-shrink: 0 !important;
+                margin-bottom: 0 !important;
             }
-            /* Input / Select — full width của ô */
+            /* Input/Select — full width của ô */
             #shuttlecockListContainer .sc-row-grid .form-control {
                 width: 100% !important;
                 max-width: 100% !important;
                 height: 38px !important;
-                padding: 0 10px !important;
+                padding: 0 8px !important;
                 border-radius: 8px !important;
                 min-width: 0 !important;
                 flex: unset !important;
                 box-sizing: border-box !important;
+                font-size: 0.82rem !important;
             }
             /* Đường phân cách giữa các loại cầu */
             #shuttlecockListContainer .shuttlecock-row + .shuttlecock-row {
@@ -976,9 +1001,9 @@
                 </div>
 
                 <!-- H-JS1: Tổng chi phí ca đấu = sân + cầu + nước -->
-                <div style="margin-top:12px;padding:10px 14px;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.25);border-radius:10px;font-size:0.85rem;color:#94a3b8;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;">
-                    <span style="flex:1;min-width:180px;"><i class="fa-solid fa-calculator" style="margin-right:6px;color:#fbbf24;"></i>Tổng chi phí ca đấu (Sân + Cầu + Nước):</span>
-                    <strong id="hostTotalAllCost" style="color:#fbbf24;font-size:1.05rem;white-space:nowrap;">0đ</strong>
+                <div style="margin-top:12px;padding:10px 14px;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.25);border-radius:10px;font-size:0.85rem;color:#94a3b8;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap;">
+                    <span style="flex-shrink:1;min-width:0;"><i class="fa-solid fa-calculator" style="margin-right:6px;color:#fbbf24;"></i>Tổng chi phí ca đấu (Sân + Cầu + Nước):</span>
+                    <strong id="hostTotalAllCost" style="color:#fbbf24;font-size:1.1rem;white-space:nowrap;flex-shrink:0;">0đ</strong>
                 </div>
 
                 <!-- GỢI Ý THU TIỀN -->
@@ -1084,6 +1109,8 @@
                                 <i class="fa-solid fa-spinner fa-spin"></i> Đang tải lịch sử...
                             </td></tr>
                         </tbody>
+                        <!-- Empty state khi filter không có kết quả -->
+                        <tbody id="hostSlotsEmpty" style="display:none;"></tbody>
                     </table>
                 </div>
             </div>
@@ -1378,17 +1405,35 @@
 <script>
 // Filter danh sách kèo theo tab
 function locDanhSachKeo(loai, btn) {
-    document.querySelectorAll('.hs-tab-pill').forEach(b => b.classList.remove('active'));
+    // Chỉ bỏ active trong bộ lọc Ca Đấu, không ảnh hưởng tab chính
+    const filterGroup = document.querySelector('#tabCaDau .hs-filter-tabs');
+    if (filterGroup) filterGroup.querySelectorAll('.hs-tab-pill').forEach(b => b.classList.remove('active'));
     if (btn) btn.classList.add('active');
+
     const rows = document.querySelectorAll('#hostSlotsBody tr[data-status]');
+    let visible = 0;
     rows.forEach(row => {
-        if (loai === 'all') { row.style.display = ''; return; }
+        if (loai === 'all') { row.style.display = ''; visible++; return; }
         const status = row.getAttribute('data-status');
-        row.style.display = (
-            (loai === 'running' && status === 'running') ||
-            (loai === 'closed' && status === 'closed')
-        ) ? '' : 'none';
+        const show = (loai === 'running' && status === 'running') ||
+                     (loai === 'closed'  && status === 'closed');
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
     });
+
+    // Hiện thông báo khi không có kết quả
+    const emptyEl = document.getElementById('hostSlotsEmpty');
+    if (emptyEl) {
+        if (visible === 0 && rows.length > 0) {
+            const label = loai === 'running' ? 'Đang chạy' : 'Đã đóng';
+            emptyEl.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:#64748b;">
+                <i class="fa-solid fa-filter" style="margin-right:6px;"></i>
+                Không có ca nào thuộc bộ lọc "<strong>${label}</strong>".</td></tr>`;
+            emptyEl.style.display = '';
+        } else {
+            emptyEl.style.display = 'none';
+        }
+    }
 }
 </script>
 

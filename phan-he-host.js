@@ -441,7 +441,7 @@
                     list="badminton-shuttles" autocomplete="off">
                 <div id="scSuggest_${id}" style="position:absolute;top:100%;left:0;right:0;background:hsl(var(--card));border:1px solid var(--border);border-radius:var(--radius-sm);max-height:140px;overflow-y:auto;z-index:50;display:none;"></div>
             </div>
-            <div class="form-group" style="margin-bottom:0;min-width:130px;">
+            <div class="form-group" style="margin-bottom:0;min-width:0;">
                 <label class="form-label" style="font-size:0.7rem;">Quy cách</label>
                 <select class="form-control" id="scLoai_${id}"
                     onchange="window._dongBoGia('${id}','loai');window._tinhChiPhiCau();">
@@ -910,10 +910,13 @@
                 const tongKhach = guests.length;
                 // Tính daChot có tính đến auto-lock ở trên
                 const daChot   = !!slot.da_chot_ca;
+                // Ca hết giờ (dù chưa chốt) cũng coi là "closed" để filter hoạt động đúng
+                const isExpiredSlot = _isExpired(slot);
+                const displayStatus = (daChot || isExpiredSlot) ? "closed" : "running";
 
                 const tr = document.createElement("tr");
-                // BUG-3 fix: gán data-status để locDanhSachKeo() hoạt động
-                tr.dataset.status = daChot ? "closed" : "running";
+                // data-status: "closed" nếu đã chốt HOẶC hết giờ; "running" nếu đang mở
+                tr.dataset.status = displayStatus;
                 tr.innerHTML = `
                 <td>
                     <div style="font-weight:700;font-size:0.85rem;">${_formatDate(slot.ngay_danh)}</div>
@@ -945,7 +948,9 @@
                 <td>
                     ${daChot
                         ? `<span class="status-badge status-closed"><i class="fa-solid fa-lock"></i> Đã chốt</span>`
-                        : `<span class="status-badge status-active"><i class="fa-solid fa-circle"></i> Đang mở</span>`
+                        : (isExpiredSlot
+                            ? `<span class="status-badge" style="background:rgba(251,146,60,0.12);color:#fb923c;border-color:rgba(251,146,60,0.3);"><i class="fa-solid fa-clock"></i> Hết giờ</span>`
+                            : `<span class="status-badge status-active"><i class="fa-solid fa-circle"></i> Đang mở</span>`)
                     }
                 </td>
                 <td>
