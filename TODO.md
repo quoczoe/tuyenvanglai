@@ -1,14 +1,39 @@
-# TODO — Cập nhật: 2026-06-05
+# TODO — Cập nhật: 2026-06-04
 
 ---
 
 ## 🔄 ĐANG LÀM DỞ
 
-*(Không có task đang dở — phiên 2026-06-05 đã hoàn thành)*
+**Cloudflare Turnstile — chưa hoàn chỉnh:**
+- File: `index.html`, `phan-he-khach-choi.js`, `phan-he-ung-dung.js`
+- Hiện trạng: Widget HTML có sẵn, script CDN đúng chuẩn, lifecycle hooks show widget — nhưng CHECK đã bị TẮT vì widget chưa confirm render được trên production
+- Còn thiếu: Verify widget render trên production (mở DevTools → Elements → `#turnstile-container` → kiểm tra có `<iframe>` không)
+- Bước tiếp theo khi verify xong:
+  1. Bật lại check tại `datSlot()` trước (không phải login): thêm `if (!_xacMinhTurnstile()) { window.hienToast(...); return; }` sau kiểm tra trust score trong `datSlot()`
+  2. Nếu đặt slot hoạt động đúng → bật tại `hoanTatDangKy()` (đăng ký mới)
+  3. KHÔNG bật lại tại `xacThucNguoiDung()` (login) — login đã có password hash, Turnstile ở đây là sai mục đích
 
 ---
 
 ## ✅ ĐÃ HOÀN THÀNH
+
+### Phiên 2026-06-04 — Turnstile Debug + Security Audit
+
+**Turnstile Bug Fix (nhiều vòng lặp):**
+- [x] Thêm `id="turnstile-container"` vào `.cf-turnstile` div trong form login
+- [x] Đổi script CDN từ `render=explicit` → `?onload=_tvlTurnstileInit` (chuẩn async defer + analytics)
+- [x] Thêm inline script: `_tvlTurnstileInit` callback + `_tvlRenderTs(id)` helper + `_tvlTsWidgets` map
+- [x] `_khoiTaoTabCaNhan()`: show `cfTurnstileWrap` + gọi `_tvlRenderTs("turnstile-container")` khi form login mount
+- [x] `_khoiTaoTabDangQuanLy()`: show `cfTurnstileHostWrap` + gọi `_tvlRenderTs("cfTurnstileHost")` khi host tab mở
+- [x] XÓA Turnstile check khỏi `xacThucNguoiDung()` — widget không render được, block 100% user login
+- [x] XÓA Turnstile check khỏi `datSlot()` (trust<80)
+- [x] XÓA Turnstile check khỏi `_dangBaiKeo()` (host)
+- [x] `_xacMinhTurnstile()` còn tồn tại nhưng không được gọi từ bất kỳ flow nào
+
+**Security Audit toàn diện:**
+- [x] Quét 22 tính năng bảo mật — 17 hoạt động ✅, 4 cần cải thiện ⚠️, 1 tạm tắt (Turnstile)
+- [x] Xuất hướng dẫn test 10 tính năng bảo mật đang hoạt động
+- [x] Ghi nhận các known issues: admin pass hardcoded, RLS quá mở, salt cứng, Turnstile analytics No data
 
 ### Phiên 2026-06-05 — 8 Security Modules + Auth Routing Fix + Logo Fix
 
@@ -162,7 +187,13 @@
 
 ### 🔴 Cao — Cần làm ngay
 
+**Turnstile — verify & bật lại (xem mục ĐANG LÀM DỞ):**
+- [ ] Mở production → DevTools → Elements → `#turnstile-container` → kiểm tra có `<iframe>` không
+- [ ] Nếu có iframe: bật lại check tại `datSlot()` trong `phan-he-khach-choi.js`
+- [ ] Nếu không có: debug thêm (check Console errors, CSP headers, ad blocker)
+
 **SQL (user tự chạy trên Supabase Dashboard):**
+- [ ] Chạy `security-migration.sql` — thêm cột `diem_uy_tin`, `is_whitelisted`, bảng `bao_cao`, `fingerprint_blacklist`
 - [ ] Verify `nguoi_dung` có đủ cột: `is_active BOOLEAN DEFAULT TRUE`, `mat_khau_hash TEXT`
 - [ ] RLS policies đủ cho 7 bảng (xem `supabase-schema.sql`)
 - [ ] INSERT config rows vào `cau_hinh_he_thong` với `ON CONFLICT DO NOTHING`

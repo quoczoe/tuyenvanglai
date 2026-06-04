@@ -1022,14 +1022,14 @@ Thêm CDN Chart.js vào `admin/index.html`:
 
 ---
 
-### Current State (cập nhật: 2026-06-05)
+### Current State (cập nhật: 2026-06-04)
 
 **Stack đã detect:**
 - HTML5 / Vanilla JS SPA — không framework
 - Supabase REST (anon key) qua `window.khoDuLieuVinhVien`
 - CSS: Dark Cyberpunk, Mobile-First, `#0f1e35` nền / `#00ff88` accent
-- Deploy target: Vercel (đã deploy production tại domain thật)
-- Cloudflare Turnstile site key: `0x4AAAAAADeiC_0mMTnc07rd`
+- Deploy target: Vercel (production tại `tuyenvanglai.io.vn`)
+- Cloudflare Turnstile site key: `0x4AAAAAADeiC_0mMTnc07rd` (widget có trong HTML, CHECK đã tắt)
 - FingerprintJS v3 CDN tích hợp
 
 **Trạng thái các phân hệ:**
@@ -1038,14 +1038,14 @@ Thêm CDN Chart.js vào `admin/index.html`:
 | Kết nối DB | `ket-noi-supabase.js` | ✅ Ổn định | JWT anon key chuẩn |
 | Dữ liệu | `bo-may-du-lieu.js` | ✅ Ổn định | 63 tỉnh, SHUTTLECOCK_BRANDS |
 | Hiệu ứng | `hieu-ung-giao-dien.js` | ✅ Ổn định | toast, hologram glow |
-| SPA routing | `phan-he-ung-dung.js` | ✅ v2.0 | Phiên 06-05: logo flash bug fix, `_apLogoImg` chỉ show sau onload |
-| CSS toàn cục | `giao-dien.css` | ✅ v6.0 | Phiên 06-05: trust badge, scam banner, phone mask, pending host badge |
+| SPA routing | `phan-he-ung-dung.js` | ✅ v3.0 | Phiên 06-04: Turnstile lifecycle hooks (`_khoiTaoTabCaNhan` + `_khoiTaoTabDangQuanLy`) |
+| CSS toàn cục | `giao-dien.css` | ✅ v6.0 | Phiên 06-05: trust badge, scam banner, phone mask |
 | CSS component | `components.css` | ✅ Ổn định | v5.0 |
-| Host Portal | `phan-he-host.js` | ✅ v5.0 | Phiên 06-05: 8 security modules + DOMContentLoaded guard fix + toast message update |
-| Host HTML | `index.html` (host section) | ✅ v5.0 | Phiên 06-05: Turnstile widget đăng bài, toggle cọc, profileTrustScore element |
-| Khách | `phan-he-khach-choi.js` | ✅ v5.0 | Phiên 06-05: 8 security modules + DOMContentLoaded guard fix + trust badge host |
-| Admin logic | `phan-he-quan-tri.js` | ✅ v4.0 | Phiên 06-05: whitelist, báo cáo tab, phạt gậy ngược + fingerprint blacklist |
-| Admin HTML | `admin/index.html` | ✅ v4.0 | Phiên 06-05: tab "Báo Cáo" (tab 7), whitelist checkbox trong modal |
+| Host Portal | `phan-he-host.js` | ✅ v5.1 | Phiên 06-04: xóa Turnstile block khỏi `_dangBaiKeo()` |
+| Host HTML | `index.html` | ✅ v5.1 | Phiên 06-04: Turnstile script `?onload=_tvlTurnstileInit`, `_tvlRenderTs` helper, `id="turnstile-container"` |
+| Khách | `phan-he-khach-choi.js` | ✅ v5.1 | Phiên 06-04: xóa Turnstile block khỏi login + datSlot; `_xacMinhTurnstile()` còn tồn tại nhưng không gọi |
+| Admin logic | `phan-he-quan-tri.js` | ✅ v4.0 | Phiên 06-05: whitelist, báo cáo, phạt gậy ngược |
+| Admin HTML | `admin/index.html` | ✅ v4.0 | Tab "Báo Cáo" (tab 7), whitelist checkbox |
 | Góp ý | `phan-he-gop-y.js` | ✅ Ổn định | |
 | Security | `security-migration.sql` | ✅ Đã tạo | Chờ user chạy trên Supabase Dashboard |
 | Schema DB | `supabase-schema.sql` | ✅ Đã deploy | |
@@ -1053,45 +1053,54 @@ Thêm CDN Chart.js vào `admin/index.html`:
 | Vercel routing | `vercel.json` | ✅ Hoàn chỉnh | |
 
 **Những gì hoạt động chắc chắn:**
-- Guest vào trang chủ → xem kèo tự do, không bị redirect (DOMContentLoaded guard đã fix)
+- Đăng nhập / Đăng ký: hoạt động bình thường (Turnstile check đã tắt)
 - Trust Score: hủy slot tính thời gian (-7/-3/0đ), ghost report (-15đ), tham gia (+2đ), free pass
 - Phone masking: 096XXXX567, nút 👁 reveal chỉ khi login
 - Ranking: `trust*0.6 + stars*0.4`, host trust<70 xuống cuối
-- Scam banner đỏ khi host chưa đủ quyền nhưng text chứa từ khóa cọc
+- Scam banner đỏ khi host chứa từ khóa cọc nhưng chưa đủ điều kiện
 - Report: khách đã tham gia → báo cáo → ≥3 báo cáo → ca đóng băng tự động
 - Admin: whitelist, tab Báo Cáo, phạt gậy ngược (BAN + fingerprint blacklist)
 - FingerprintJS: chặn 1 thiết bị tạo >1 tài khoản trong 48h
-- Turnstile: site key thật `0x4AAAAAADeiC_0mMTnc07rd`, smart session 7 ngày
+- Security audit: 17/22 tính năng ✅, 4 cần cải thiện, 1 (Turnstile) tạm tắt
+
+**Turnstile — trạng thái chi tiết:**
+- Widget HTML: ✅ tồn tại trong `#cfTurnstileWrap > #turnstile-container` (login) + `#cfTurnstileHostWrap > #cfTurnstileHost` (đăng ca)
+- Script CDN: ✅ `async defer ?onload=_tvlTurnstileInit` (không có `render=explicit` — đã reverted)
+- Helper `_tvlRenderTs(id)`: ✅ check iframe trước khi render, xếp hàng nếu API chưa load
+- `cfTurnstileWrap` shown: ✅ trong `_khoiTaoTabCaNhan()` khi form login mount
+- `cfTurnstileHostWrap` shown: ✅ trong `_khoiTaoTabDangQuanLy()` khi host tab mở
+- CHECK tại login (`xacThucNguoiDung`): 🚫 ĐÃ TẮT — gây block 100% user
+- CHECK tại datSlot: 🚫 ĐÃ TẮT — trust < 80 check bị xóa
+- CHECK tại đăng ca host: 🚫 ĐÃ TẮT — `_hostTs` check bị xóa
+- Cloudflare Analytics: ❌ "No data" — widget chưa confirm render được
+- **Để bật lại:** Verify widget render trên production → thêm lại `if (!_xacMinhTurnstile())` vào `datSlot()` trước (không phải login)
 
 **Known issues / chưa verify:**
-- `security-migration.sql` chưa được chạy trên Supabase → các cột mới (diem_uy_tin, is_whitelisted...) chưa có trong DB
-- Turnstile server-side verification cần Supabase Edge Function (hiện chỉ client-side)
-- Tài khoản cũ có hash sai từ phiên 06-04 → cần admin XOÁ HASH + reset lại
+- `security-migration.sql` chưa chạy trên Supabase → cột `diem_uy_tin`, `is_whitelisted`, bảng `bao_cao`, `fingerprint_blacklist` chưa có
+- Turnstile widget chưa confirm render được trên production (analytics = No data)
+- Admin password `TVL@2026` hardcoded plain text — phải đổi trước deploy thật
+- RLS policies quá mở (`USING(true)`) — bất kỳ anon key có thể ghi/xóa mọi bảng
 - HUD số liệu (45 ca / 1820 thành viên) là fallback cứng
 
 ---
 
-### Recent Decisions (phiên 2026-06-05)
+### Recent Decisions (phiên 2026-06-04)
 | Quyết định | Lý do |
 |---|---|
-| DOMContentLoaded guard: `window.khoiTaoUngDung` thay vì `pathname.includes('/feed')` | App deploy ở root `/` không phải `/feed/` → guard cũ không chặn được, gây auto-redirect guest |
-| `_apLogoImg()` chỉ set `display:block` trong `doSwap()` (sau onload) | Set trước onload → ảnh trống + text logo hiện cùng lúc → flash |
-| `_apDungBrandConfig()` luôn gọi `_apLogoImg()` sau fetch | Bug: lưu cache xong đọc lại so sánh → bằng nhau → không bao giờ gọi lần đầu |
-| Trust badge (✅/⚠️/🔴) inline trong card host banner | Không cần thêm API call mới — trust đã có trong `hostMap` sau khi fetch `allUsers` |
-| Block đăng bài khi uy tín < 60 (không phải < 40) | Spec: 40-59 là "rủi ro cao" → khóa đăng bài; dưới 40 mới BAN tài khoản |
-| `adminThaBC` BAN + fingerprint blacklist (phạt gậy ngược) | Spec Module 4: báo cáo giả mạo → BAN vĩnh viễn + add fingerprint vào blacklist |
-| Turnstile site key `0x4AAAAAADeiC_0mMTnc07rd` hardcode vào HTML | User cung cấp key chính thức; replace `YOUR_SITE_KEY` placeholder |
+| Xóa Turnstile check khỏi login/datSlot/đăng ca | Widget không render được ổn định trong SPA → đang block 100% user đăng nhập; login đã có password hash riêng |
+| Giữ `render=explicit` ra khỏi script URL | `render=explicit` tắt hoàn toàn auto-render + phá Cloudflare Analytics ("No data") |
+| Dùng `?onload=_tvlTurnstileInit` (không `render=explicit`) | Auto-render vẫn chạy cho analytics; onload callback dùng để explicit render vào div bị skip |
+| `_tvlRenderTs()` check `el.querySelector('iframe')` trước khi render | Tránh double-render khi auto-render đã xử lý (auto-render + explicit render → 2 widget) |
+| Show `cfTurnstileWrap` ngay trong lifecycle hook (không lazy-show) | Lazy-show (chỉ hiện khi submit lần đầu) khiến user thấy ô trống sau lần click đầu tiên |
+| Turnstile sẽ bật lại tại `datSlot()` trước (không phải login) | datSlot an toàn hơn để test — không block toàn bộ user; login không cần Turnstile vì có password |
+| Security audit: 17/22 features hoạt động | Được ghi nhận để phiên sau biết phạm vi đã cover |
 
 ---
 
-### Modified Files (phiên 2026-06-05)
+### Modified Files (phiên 2026-06-04)
 | File | Thay đổi |
 |---|---|
-| `security-migration.sql` | **MỚI** — ALTER TABLE nguoi_dung/ca_dau + CREATE TABLE bao_cao/fingerprint_blacklist |
-| `giao-dien.css` | Trust score bar, scam banner, phone mask chip, pending-host badge CSS |
-| `phan-he-khach-choi.js` | 8 security modules; phone mask; ranking; trust badges; DOMContentLoaded guard fix; toast messages |
-| `phan-he-host.js` | Module 3 (scam); Module 2 (ghost report, block đăng bài, Turnstile); DOMContentLoaded guard fix; toast messages |
-| `phan-he-quan-tri.js` | Module 8 (whitelist + `_luuUyTinTV`); Module 4 admin (báo cáo, phạt/tha/khôi phục + fingerprint) |
-| `phan-he-ung-dung.js` | Logo flash bug fix (async fetch + onload-only swap); cache-busting `?v=2` |
-| `index.html` | FingerprintJS CDN; Turnstile CDN + widget (login form + đăng bài); toggle cọc; `profileTrustScore` div; Turnstile site key thật |
-| `admin/index.html` | Tab "Báo Cáo" (tab 7); checkbox `is_whitelisted` + input `diem_uy_tin` trong modal thành viên |
+| `index.html` | `id="turnstile-container"` cho .cf-turnstile; script Turnstile → `?onload=_tvlTurnstileInit` (bỏ render=explicit); thêm inline script `_tvlTurnstileInit` + `_tvlRenderTs()` helper |
+| `phan-he-ung-dung.js` | `_khoiTaoTabCaNhan()`: show `cfTurnstileWrap` + gọi `_tvlRenderTs("turnstile-container")`; `_khoiTaoTabDangQuanLy()`: show `cfTurnstileHostWrap` + gọi `_tvlRenderTs("cfTurnstileHost")` |
+| `phan-he-khach-choi.js` | Xóa Turnstile check trong `xacThucNguoiDung()` (login); xóa Turnstile check trong `datSlot()` (trust<80); xóa reset widget khi sai pass; `_xacMinhTurnstile()` giữ nhưng không gọi |
+| `phan-he-host.js` | Xóa Turnstile check + `_hostTs.style.display = "block"` trong `_dangBaiKeo()` |
