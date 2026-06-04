@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 — Không tìm thấy trang | TUYENVANGLAI.IO.VN</title>
+    <meta name="robots" content="noindex">
+    <script>
+        // SPA fallback: /dang-quan-ly → redirect về /#dang-quan-ly (hash routing)
+        // Hash không bao giờ gửi lên server → F5 luôn an toàn
+        (function () {
+            var SPA_SLUGS = ["tim-keo","dang-quan-ly","ca-nhan","lich-su","gioi-thieu","dang-keo","ho-so"];
+            var slug = location.pathname.replace(/^\//, "").replace(/\/$/, "").split("/")[0];
+            if (slug && SPA_SLUGS.indexOf(slug) !== -1) {
+                location.replace("/#" + slug);
+            }
+        })();
+    </script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏸</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #0a1628;
+            color: #f0f0f0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ── Ambient glows ── */
+        .glow-1, .glow-2 {
+            position: fixed;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(80px);
+        }
+        .glow-1 {
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(0,255,136,0.08), transparent 70%);
+            top: -100px; left: -100px;
+        }
+        .glow-2 {
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(26,74,122,0.25), transparent 70%);
+            bottom: -80px; right: -80px;
+        }
+
+        /* ── Content ── */
+        .container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 24px 20px;
+            max-width: 480px;
+            width: 100%;
+        }
+
+        /* Số 404 lớn */
+        .big-404 {
+            font-family: 'Oswald', sans-serif;
+            font-size: clamp(7rem, 25vw, 12rem);
+            line-height: 0.9;
+            letter-spacing: 0.06em;
+            background: linear-gradient(135deg, #00ff88 0%, #00d4ff 60%, #00ff88 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 30px rgba(0,255,136,0.35));
+            margin-bottom: 8px;
+            animation: floatNum 4s ease-in-out infinite;
+        }
+        @keyframes floatNum {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-10px); }
+        }
+
+        /* Shuttlecock icon xoay */
+        .shuttle-icon {
+            font-size: 3.5rem;
+            display: block;
+            margin: 0 auto 16px;
+            animation: spin 8s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+
+        .title-404 {
+            font-family: 'Oswald', sans-serif;
+            font-size: clamp(1.2rem, 5vw, 1.8rem);
+            letter-spacing: 0.1em;
+            color: #fff;
+            margin-bottom: 12px;
+        }
+        .desc-404 {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            line-height: 1.6;
+            margin-bottom: 32px;
+        }
+
+        /* ── Buttons ── */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .btn-home {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 28px;
+            background: #00ff88;
+            color: #021a0a;
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.05rem;
+            letter-spacing: 0.1em;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            text-decoration: none;
+            font-weight: 700;
+            box-shadow: 0 0 24px rgba(0,255,136,0.35);
+            transition: all 0.22s ease;
+        }
+        .btn-home:hover {
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 0 36px rgba(0,255,136,0.5);
+        }
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            background: transparent;
+            color: #64748b;
+            font-size: 0.88rem;
+            font-weight: 600;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 50px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .btn-back:hover { color: #f0f0f0; border-color: rgba(255,255,255,0.25); }
+
+        /* ── Divider ── */
+        .divider {
+            width: 80px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00ff88, transparent);
+            margin: 24px auto;
+            border-radius: 2px;
+        }
+
+        /* ── Quick links ── */
+        .quick-links {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .quick-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 6px 14px;
+            border: 1px solid rgba(0,255,136,0.2);
+            border-radius: 20px;
+            color: #94a3b8;
+            font-size: 0.78rem;
+            font-weight: 600;
+            text-decoration: none;
+            background: rgba(0,255,136,0.04);
+            transition: all 0.18s;
+        }
+        .quick-link:hover { color: #00ff88; border-color: rgba(0,255,136,0.4); }
+
+        /* ── Brand ── */
+        .brand-404 {
+            margin-top: 32px;
+            font-size: 0.72rem;
+            color: #334155;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 480px) {
+            .big-404 { font-size: 8rem; }
+            .btn-group { flex-direction: column; align-items: center; }
+            .btn-home { width: 100%; justify-content: center; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glow-1"></div>
+    <div class="glow-2"></div>
+
+    <div class="container">
+        <!-- Shuttlecock xoay -->
+        <span class="shuttle-icon">🏸</span>
+
+        <!-- Số 404 -->
+        <div class="big-404">404</div>
+
+        <h1 class="title-404">TRANG NÀY KHÔNG TỒN TẠI</h1>
+        <p class="desc-404">
+            Có vẻ như quả cầu đã bay ra ngoài đường biên.<br>
+            Đường dẫn bạn truy cập không tồn tại hoặc đã bị di chuyển.
+        </p>
+
+        <div class="btn-group">
+            <a href="index.html" class="btn-home">
+                <i class="fa-solid fa-house"></i>
+                QUAY VỀ TRANG CHỦ
+            </a>
+            <a href="javascript:history.back()" class="btn-back">
+                <i class="fa-solid fa-arrow-left"></i>
+                Quay lại
+            </a>
+        </div>
+
+        <div class="divider"></div>
+
+        <!-- Quick links -->
+        <div class="quick-links">
+            <a href="/#tim-keo" class="quick-link">
+                <i class="fa-solid fa-user-astronaut"></i> Tìm Kèo
+            </a>
+            <a href="/#dang-quan-ly" class="quick-link">
+                <i class="fa-solid fa-chess-knight"></i> Đăng Kèo
+            </a>
+        </div>
+
+        <p class="brand-404">TUYENVANGLAI.IO.VN — &copy; 2026</p>
+    </div>
+
+<style>/* Bảo vệ: disable text selection */
+*{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none}
+input,textarea,[contenteditable]{user-select:text;-webkit-user-select:text}
+</style>
+<script>
+// ── BẢO VỆ MÃ NGUỒN ──
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{
+  if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','C','J'].includes(e.key))||(e.ctrlKey&&e.key==='u')){
+    e.preventDefault();return false;
+  }
+});
+(function(){
+  const t=160;
+  setInterval(()=>{
+    if(window.outerWidth-window.innerWidth>t||window.outerHeight-window.innerHeight>t){
+      document.body.innerHTML='<h1 style="color:#00c96e;text-align:center;padding-top:200px;font-family:sans-serif">Vui lòng đóng DevTools</h1>';
+    }
+  },1000);
+})();
+setInterval(()=>console.clear(),100);
+console.log=()=>{};
+</script>
+</body>
+</html>

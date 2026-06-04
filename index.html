@@ -1,0 +1,3040 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Ẩn text logo TRƯỚC first paint nếu cache đã có logo URL — triệt tiêu flash -->
+    <script>if(localStorage.getItem('tvl_brand_logo'))document.documentElement.classList.add('hl-img');</script>
+    <title>TUYENVANGLAI.IO.VN | Tìm Kèo Cầu Lông Toàn Quốc</title>
+    <meta name="description" content="Tìm kèo, đăng kèo, quản lý ca đấu cầu lông — 1 tài khoản, đầy đủ tính năng">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 27'><path d='M11 21L2.5 4Q11 1.5 19.5 4Z' fill='rgba(255,255,255,.07)' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/><line x1='11' y1='21' x2='7' y2='4.5' stroke='%23fff' stroke-width='1.2' opacity='.72'/><line x1='11' y1='21' x2='11' y2='2.5' stroke='%23fff' stroke-width='1.2' opacity='.72'/><line x1='11' y1='21' x2='15' y2='4.5' stroke='%23fff' stroke-width='1.2' opacity='.72'/><path d='M6.5 21A4.5 4.5 0 0 1 15.5 21Z' fill='%23FF5500'/></svg>">
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Figtree:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- CSS hệ thống -->
+    <link rel="stylesheet" href="giao-dien.css?v=6.0">
+    <link rel="stylesheet" href="components.css?v=6.0">
+
+    <style>
+        /* ══════════════════════════════════════════════════
+           FEED APP — Variables & Base
+           ══════════════════════════════════════════════════ */
+        :root {
+            --bg:          #080808;
+            --bg-card:     #121212;
+            --bg-card2:    #181818;
+            --accent:      #FF5500;
+            --accent-2:    #FF8C00;
+            --accent-blue: #FF5500;
+            --text:        #ffffff;
+            --text-sub:    #b8b8b8;
+            --text-muted:  #888888;
+            --border:      rgba(255,255,255,0.08);
+            --border-hover:rgba(255,255,255,0.16);
+            --radius:      16px;
+            --radius-sm:   10px;
+            --shadow:      0 8px 40px rgba(0,0,0,0.55);
+            --lava-grad:   linear-gradient(135deg, #FF5500 0%, #FF8C00 100%);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        /* Override giao-dien.css — file đó set body{overflow:hidden;height:100dvh}
+           cho SPA khác. Feed dùng window scroll bình thường để position:sticky hoạt động. */
+        html {
+            background: var(--bg) !important;
+            overflow-x: hidden !important; /* Chặn cuộn ngang ở mức html */
+            height: auto !important;
+        }
+        body {
+            background: var(--bg) !important; color: var(--text);
+            font-family: 'Figtree', 'Inter', -apple-system, sans-serif;
+            min-height: 100vh !important;
+            height: auto !important;
+            overflow: visible !important; /* KHÔNG dùng overflow:auto — sẽ phá sticky */
+            margin: 0;
+        }
+        input, textarea, [contenteditable] {
+            -webkit-user-select: text; user-select: text;
+        }
+
+        /* ── HEADER — 1 hàng duy nhất: Logo | 3 Tabs | Tài Khoản ── */
+        .app-header {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+            background: rgba(8,8,8,0.92);
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            height: 80px;
+            display: flex; align-items: stretch;
+        }
+        .app-header-inner {
+            max-width: 1700px; width: 100%; margin: 0 auto;
+            padding: 0 32px;
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 16px;
+        }
+        .app-header-account {
+            display: flex; align-items: center; justify-content: flex-end; gap: 16px;
+        }
+        .btn-gop-y {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border-radius: 9px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.75);
+            font-size: 0.88rem; font-weight: 600;
+            cursor: pointer; font-family: inherit; white-space: nowrap;
+            transition: background 0.18s, border-color 0.18s, color 0.18s;
+            -webkit-user-select: none; user-select: none;
+        }
+        .btn-gop-y:hover {
+            background: rgba(255,255,255,0.11);
+            border-color: rgba(255,255,255,0.2);
+            color: #fff;
+        }
+        .app-logo {
+            display: flex; align-items: center;
+            text-decoration: none; flex-shrink: 0;
+            min-width: 120px; /* giữ chỗ trước cho logo, không bị co rúm lúc F5 */
+        }
+        /* Khi cache có logo URL: ẩn text logo từ first paint, không flash */
+        .hl-img #appLogoTextWrap { display: none !important; }
+        .app-logo-text {
+            display: inline-flex; align-items: center; gap: 0;
+            font-size: 1.4rem; font-weight: 900; letter-spacing: 0.05em;
+            text-transform: uppercase; line-height: 1;
+        }
+        .logo-tuyen  { color: #fff; -webkit-text-fill-color: #fff; }
+        .logo-anglai { color: #FF7A00; -webkit-text-fill-color: #FF7A00; }
+        .logo-tld {
+            color: #64748b; font-size: 0.70em;
+            font-weight: 400; letter-spacing: 0.03em;
+            -webkit-text-fill-color: #64748b;
+        }
+        /* Icon trái cầu làm chữ V — cân với cap-height */
+        .logo-icon-v {
+            display: inline-flex; align-items: center;
+            margin: 0 0.01em;
+        }
+        .logo-icon-v svg {
+            height: 0.72em; width: 0.62em;
+            overflow: visible;
+        }
+        .app-header-spacer { display: none; } /* Không dùng nữa — layout chuyển sang grid */
+        .header-user-info {
+            display: flex; align-items: center; gap: 9px; cursor: pointer;
+        }
+        .header-avatar {
+            width: 38px; height: 38px; border-radius: 50%;
+            background: rgba(255,85,0,0.15);
+            border: 1.5px solid rgba(255,85,0,0.45);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.95rem; color: var(--accent); font-weight: 700;
+            overflow: hidden; flex-shrink: 0;
+        }
+        .header-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        #headerUserName { font-size: 0.95rem; font-weight: 600; color: var(--text); }
+        .btn-header-login {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 10px 24px; border-radius: 100px;
+            background: var(--lava-grad); color: #fff;
+            font-size: 0.92rem; font-weight: 700; letter-spacing: 0.04em;
+            border: none; cursor: pointer; text-decoration: none;
+            transition: opacity 0.18s, transform 0.15s;
+            box-shadow: 0 2px 14px rgba(255,85,0,0.38);
+        }
+        .btn-header-login:hover { opacity: 0.88; transform: translateY(-1px); }
+
+        /* ── APP NAV — 3 tabs nằm chính giữa header (gộp thành 1 hàng duy nhất) ── */
+        .tab-nav, .tab-nav-inner { display: none !important; } /* Tab bar cũ đã gộp vào header */
+        .app-nav {
+            display: flex; align-items: center; justify-content: center; gap: 4px;
+        }
+        .tab-nav-btn {
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            padding: 10px 22px; border-radius: 9px;
+            background: transparent; border: none; outline: none;
+            color: #cbd5e1;
+            font-size: 0.96rem; font-weight: 600;
+            cursor: pointer; font-family: inherit; white-space: nowrap;
+            transition: color 0.15s, background 0.15s;
+        }
+        .tab-nav-btn:hover { color: var(--text-sub); background: rgba(255,255,255,0.06); }
+        .tab-nav-btn.active {
+            color: var(--accent);
+            background: rgba(255,85,0,0.1);
+        }
+
+        /* ── APP BODY — padding-top = header(80) + buffer(16) = 96px ── */
+        .app-body {
+            max-width: 1700px; width: 100%; margin: 0 auto;
+            padding: 96px 20px 80px;
+        }
+
+        /* ── TAB SECTIONS ── */
+        .tab-section { display: none; }
+
+        /* ── SUB-TAB NAV ── */
+        .subtab-nav {
+            display: flex; gap: 0;
+            /* FIXED — cùng gốc với header, không rung lắc khi cuộn kịch trần/sàn */
+            position: fixed;
+            top: 80px; left: 0; right: 0;
+            z-index: 150; /* header=200 > subtab-nav=150 > content=1 */
+            background: rgba(8,8,8,0.95);
+            border: none;
+            border-bottom: 1px solid rgba(255,85,0,0.12);
+            border-radius: 0;
+            /* Căn giữa nội dung khớp với app-body max-width 1700px */
+            padding: 4px max(20px, calc((100vw - 1700px) / 2 + 20px));
+            overflow-x: auto;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+        .subtab-btn {
+            flex: 1; min-width: 80px; padding: 9px 12px;
+            background: transparent; border: none; border-radius: 8px;
+            color: rgba(255,255,255,0.45); font-size: 0.78rem; font-weight: 600;
+            cursor: pointer; font-family: inherit; white-space: nowrap;
+            transition: all 0.18s; position: relative;
+        }
+        .subtab-btn:hover:not(.active) { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.05); }
+        .subtab-btn.active {
+            background: rgba(255,85,0,0.18);
+            color: var(--accent);
+            box-shadow: inset 0 -2px 0 var(--accent);
+        }
+        .subtab-section {
+            display: none;
+            position: relative;
+            z-index: 1;     /* thấp hơn fixed subtab-nav (150) */
+            padding-top: 0;
+        }
+        /* Bù chiều cao fixed subtab-nav (~44px) + buffer để nội dung không bị che */
+        #dql-content { padding-top: 52px; }
+
+        /* ── CARD CHUNG ── */
+        .app-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px 20px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            margin-bottom: 16px;
+        }
+        .app-card-title {
+            font-size: 0.88rem; font-weight: 800;
+            letter-spacing: 0.08em; text-transform: uppercase;
+            color: var(--text-muted); margin: 0 0 18px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .app-card-title i { color: var(--accent); }
+
+        /* ── FORM ── */
+        .form-row {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+            margin-bottom: 14px;
+        }
+        .form-row.col-3   { grid-template-columns: 1fr 1fr 1fr; }
+        .form-row.col-1   { grid-template-columns: 1fr; }
+        /* col-san: Tên sân(50%) | Số sân(15%) | Sân cụ thể(35%) */
+        .form-row.col-san { grid-template-columns: 10fr 3fr 7fr; }
+        /* col-4: 4 cột bằng nhau 25% */
+        .form-row.col-4   { grid-template-columns: 1fr 1fr 1fr 1fr; }
+        /* HÀNG 5: Giới tính(20%) | Slot(20%) | Giá Nam(20%) | Giá Nữ(20%) | Nút kế toán(20%) */
+        .row-h5 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr 1fr; gap:12px; margin-bottom:14px; align-items:end; }
+        .row-h5 .form-group { gap:6px; margin-bottom:0; }
+        .row-h5 .fg-btn { display:flex; align-items:flex-end; }
+        .row-h5 .fg-btn .btn-kt-trigger { width:100%; height:42px; white-space:nowrap; }
+        .form-group { display: flex; flex-direction: column; gap: 7px; }
+        .form-label {
+            font-size: 0.8rem; font-weight: 700; color: rgba(255,255,255,0.7);
+            letter-spacing: 0.03em; margin-bottom: 4px;
+        }
+        .form-hint { font-size: 0.68rem; color: var(--text-muted); }
+        .app-input, .app-select, .app-textarea {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.16);
+            border-radius: var(--radius-sm);
+            color: #f0f0f0;
+            padding: 10px 13px; font-size: 0.9rem; font-weight: 500;
+            font-family: inherit;
+            transition: border-color 0.18s, box-shadow 0.18s;
+            width: 100%;
+        }
+        .app-input:focus, .app-select:focus, .app-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(255,85,0,0.15);
+        }
+        .app-select { cursor: pointer; }
+        .app-textarea { resize: vertical; min-height: 80px; }
+        .app-input::placeholder, .app-textarea::placeholder { color: rgba(255,255,255,0.32); }
+        .app-input[readonly] { color: var(--text-sub); cursor: default; }
+
+        /* ── KẾ TOÁN NỘI BỘ ── */
+        .ke-toan-wrap { max-width: 960px; margin-left: auto; margin-right: auto; }
+
+        /* Ô tổng chi phí — readonly nổi bật */
+        .kt-result-box {
+            background: rgba(255,85,0,0.09) !important;
+            border-color: rgba(255,85,0,0.42) !important;
+            color: var(--accent) !important;
+            font-size: 0.96rem !important;
+            font-weight: 700 !important;
+            cursor: default;
+        }
+        .kt-result-box::placeholder { color: rgba(255,85,0,0.38) !important; }
+
+        /* ── Gợi ý thu tiền — pricing cards ── */
+        .kt-sug-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+        .kt-sug-card {
+            background: var(--bg-card2);
+            border: 1.5px solid rgba(255,255,255,0.1);
+            border-radius: var(--radius-sm);
+            padding: 16px 12px; cursor: pointer;
+            display: flex; flex-direction: column; gap: 4px;
+            text-align: center;
+            transition: border-color 0.18s, background 0.18s, transform 0.15s, box-shadow 0.18s;
+        }
+        .kt-sug-card:hover {
+            border-color: rgba(255,85,0,0.45);
+            background: rgba(255,85,0,0.07);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255,85,0,0.12);
+        }
+        .kt-sug-card.selected {
+            border-color: var(--accent);
+            background: rgba(255,85,0,0.13);
+            box-shadow: 0 0 0 2px rgba(255,85,0,0.3);
+        }
+        .kt-sug-label {
+            font-size: 0.67rem; font-weight: 800;
+            letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted);
+        }
+        .kt-sug-pct { color: #fbbf24; margin-left: 3px; }
+        .kt-sug-prices { display: flex; flex-direction: column; gap: 1px; margin: 3px 0 0; }
+        .kt-sug-price { font-size: 1.05rem; font-weight: 700; color: #e2e8f0; line-height: 1.3; }
+        .kt-sug-result { font-size: 0.78rem; font-weight: 600; min-height: 1.1em; margin-top: 3px; }
+        .kt-sug-apply {
+            font-size: 0.62rem; color: var(--accent);
+            opacity: 0; transition: opacity 0.15s; margin-top: 3px;
+        }
+        .kt-sug-card:hover .kt-sug-apply { opacity: 1; }
+
+        @media (max-width: 600px) {
+            .kt-sug-grid { grid-template-columns: 1fr; }
+            .ke-toan-wrap { max-width: 100%; }
+        }
+
+        /* ── Nút mở modal kế toán ── */
+        .btn-kt-trigger {
+            display: flex; align-items: center; justify-content: center; gap: 7px;
+            padding: 0 14px; height: 42px; border-radius: var(--radius-sm);
+            background: rgba(255,85,0,0.1); border: 1px solid rgba(255,85,0,0.35);
+            color: var(--accent); font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; font-family: inherit; white-space: nowrap;
+            transition: background .18s, border-color .18s, box-shadow .18s;
+        }
+        .btn-kt-trigger:hover {
+            background: rgba(255,85,0,0.2); border-color: var(--accent);
+            box-shadow: 0 0 12px rgba(255,85,0,0.18);
+        }
+
+        /* ── Tooltip dấu hỏi ── */
+        .tt {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 15px; height: 15px; border-radius: 50%;
+            background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+            color: rgba(255,255,255,0.55); font-size: 0.6rem; font-weight: 700;
+            cursor: help; position: relative; vertical-align: middle;
+            margin-left: 3px; flex-shrink: 0;
+            transition: background .15s, color .15s;
+        }
+        .tt:hover { background: rgba(255,85,0,0.2); color: var(--accent); }
+        .tt::after {
+            content: attr(data-tip);
+            position: absolute; bottom: calc(100% + 8px);
+            left: 50%; transform: translateX(-50%);
+            background: #1a1a2e; border: 1px solid rgba(255,85,0,0.3);
+            color: #e2e8f0; font-size: 0.72rem; font-weight: 400;
+            line-height: 1.5; padding: 8px 12px; border-radius: 8px;
+            white-space: normal; width: 200px; max-width: 200px; text-align: left;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+            opacity: 0; pointer-events: none;
+            transition: opacity .18s;
+            z-index: 500;
+        }
+        .tt:hover::after { opacity: 1; }
+        /* Tooltip trong modal — đổ về phía trái để không tràn mép phải */
+        #ktModalPanel .tt::after {
+            left: auto; right: 0; transform: none;
+        }
+
+        /* ── Khi modal mở — hiện flex ── */
+        #ktModalOverlay[style*="flex"] { display: flex !important; }
+
+        /* ── Tổng Chi Phí — chống tràn dòng ── */
+        .kt-result-box {
+            font-size: clamp(0.74rem, 2vw, 0.94rem) !important;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* ── Modal scrollbar — không dùng màu xanh toàn cục ── */
+        #ktModalPanel::-webkit-scrollbar { width: 5px; }
+        #ktModalPanel::-webkit-scrollbar-track { background: transparent; }
+        #ktModalPanel::-webkit-scrollbar-thumb {
+            background: rgba(255,85,0,0.25);
+            border-radius: 4px;
+        }
+
+        /* ── btn-remove-sc trong sc-row-grid — override position:absolute từ giao-dien.css ── */
+        #shuttlecockListContainer .btn-remove-sc {
+            position: static !important;
+            top: auto !important; right: auto !important;
+            align-self: center;
+        }
+
+        /* ── sc-row-grid: tỷ lệ 30:25:20:15:10 ── */
+        #shuttlecockListContainer .sc-row-grid {
+            align-items: center;
+            grid-template-columns: 3fr 2.5fr 2fr 1.5fr 1fr !important;
+            gap: 8px !important;
+        }
+        #shuttlecockListContainer .sc-row-grid .form-control {
+            padding: 7px 8px !important;
+            font-size: 0.83rem !important;
+            min-width: 0;
+        }
+        #shuttlecockListContainer .sc-row-grid select.form-control {
+            padding: 7px 5px !important;
+            text-overflow: ellipsis;
+        }
+
+        /* ── Label min-height để 3 ô cost row thẳng hàng ── */
+        #ktModalPanel .form-row.col-3:first-of-type .form-label {
+            min-height: 2.2em;
+            display: flex; align-items: flex-end;
+        }
+
+        /* ── Pricing card — center align + hover ── */
+        .kt-sug-card { padding: 18px 14px !important; gap: 6px !important; text-align: center !important; align-items: center !important; }
+        .kt-sug-prices { width: 100%; }
+        .kt-sug-price {
+            display: flex; align-items: center; justify-content: center;
+            gap: 6px; margin: 2px 0;
+        }
+        .kt-price-gender {
+            font-size: 0.65rem; font-weight: 700; color: var(--text-muted);
+            letter-spacing: 0.07em; text-transform: uppercase;
+            background: rgba(255,255,255,0.08); border-radius: 4px;
+            padding: 1px 5px;
+        }
+        .kt-price-val {
+            font-size: 1.2rem; font-weight: 800; color: var(--accent);
+            letter-spacing: -0.01em;
+        }
+        .kt-sug-result {
+            display: flex; flex-direction: column; gap: 2px; align-items: center;
+            margin-top: 6px; padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.07); width: 100%;
+        }
+        .kt-thu { font-size: 0.78rem; font-weight: 600; color: #93c5fd; }
+        .kt-lai { font-size: 0.92rem; font-weight: 800; }
+        .kt-lai-pos { color: #00ff88; text-shadow: 0 0 10px rgba(0,255,136,0.4); }
+        .kt-lai-zero { color: #64748b; }
+        /* Hover effect — viền sáng rõ hơn, nền đậm hơn một chút */
+        .kt-sug-card:hover .kt-price-val { color: #ff8833; }
+        .kt-sug-card.selected .kt-price-val { color: var(--accent); }
+
+        /* Force 24h — ẩn AM/PM field (SA/CH) trên tất cả trình duyệt webkit */
+        input[type="time"]::-webkit-datetime-edit-ampm-field { display: none !important; }
+        input[type="time"]::-webkit-datetime-edit-hour-field  { min-width: 2ch; }
+
+        /* Date / Time picker icon — to hơn, sáng hơn */
+        input[type="date"]::-webkit-calendar-picker-indicator,
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            width: 18px; height: 18px;
+            filter: brightness(0) invert(0.65) sepia(1) saturate(3) hue-rotate(0deg);
+            cursor: pointer; opacity: 0.75;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator:hover,
+        input[type="time"]::-webkit-calendar-picker-indicator:hover {
+            opacity: 1;
+            filter: brightness(0) invert(1) sepia(1) saturate(4) hue-rotate(345deg);
+        }
+
+        /* ── LEVEL / TIỆN ÍCH PILL CHECKBOXES ── */
+        .lvl-pill-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+        .lvl-cb { display: none; }
+        .lvl-pill {
+            padding: 5px 12px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.14);
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.55);
+            font-size: 0.78rem; font-weight: 600; cursor: pointer;
+            transition: all 0.15s; user-select: none;
+        }
+        .lvl-pill:hover { border-color: rgba(255,85,0,0.45); color: var(--accent); }
+        .lvl-cb:checked + .lvl-pill {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+            font-weight: 700;
+        }
+        .lvl-custom { width: 100%; margin-top: 4px; font-size: 0.78rem; padding: 6px 10px; }
+
+        /* Giới tính: giữ nền cam, icon dùng glow để hiển thị màu rõ trên nền cam */
+        .g-icon { transition: all 0.15s; font-size: 1.1em; font-weight: 800; }
+        #genderMale:checked   + .lvl-pill .g-icon {
+            color: #7dd3fc;
+            text-shadow: 0 0 8px rgba(125,211,252,0.95), 0 0 2px #fff;
+        }
+        #genderFemale:checked + .lvl-pill .g-icon {
+            color: #f0abfc;
+            text-shadow: 0 0 8px rgba(240,171,252,0.95), 0 0 2px #fff;
+        }
+        #genderBoth:checked   + .lvl-pill .g-icon { color: #fff; }
+
+        /* Helper ẩn/hiện (dùng cho tất cả modal) */
+        .hidden { display: none !important; }
+
+        /* ── BUTTONS ── */
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 32px; border-radius: 100px;
+            background: var(--lava-grad); color: #fff;
+            font-size: 0.88rem; font-weight: 700; letter-spacing: 0.04em;
+            border: none; cursor: pointer; font-family: inherit;
+            transition: opacity 0.18s, transform 0.15s, box-shadow 0.18s;
+            box-shadow: 0 3px 14px rgba(255,85,0,0.3);
+        }
+        .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,85,0,0.4); }
+        .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        .btn-secondary {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 13px 28px; border-radius: 100px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid var(--border);
+            color: var(--text-sub); font-size: 0.85rem; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+            transition: all 0.18s;
+        }
+        .btn-secondary:hover { background: rgba(255,255,255,0.11); color: var(--text); border-color: var(--border-hover); }
+
+        .btn-danger {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border-radius: var(--radius-sm);
+            background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+            color: #ef4444; font-size: 0.82rem; font-weight: 600;
+            cursor: pointer; font-family: inherit; transition: all 0.18s;
+        }
+        .btn-danger:hover { background: rgba(239,68,68,0.18); }
+
+        /* ── PROFILE TAB ── */
+        .profile-top {
+            display: flex; align-items: flex-start; gap: 20px;
+            margin-bottom: 24px; flex-wrap: wrap;
+        }
+        .profile-avatar-wrap {
+            width: 72px; height: 72px; border-radius: 50%;
+            background: rgba(255,85,0,0.12);
+            border: 2px solid rgba(255,85,0,0.4);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; flex-shrink: 0; overflow: hidden;
+        }
+        .profile-avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-meta { flex: 1; min-width: 160px; }
+        .profile-display-name {
+            font-size: clamp(1.1rem, 4vw, 1.4rem);
+            font-weight: 800; color: var(--text); margin: 0 0 4px;
+        }
+        .profile-rating {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3);
+            border-radius: 100px; padding: 3px 10px;
+            font-size: 0.8rem; color: #fbbf24; font-weight: 700;
+        }
+
+        /* ── KÈO CARD ── */
+        .keo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            column-gap: 12px;
+            row-gap: 14px;
+        }
+        .keo-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius);
+            display: flex; flex-direction: column;
+            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+            overflow: hidden;
+        }
+        .keo-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        .keo-card-header {
+            padding: 14px 16px 10px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .keo-san { font-size: 0.9rem; font-weight: 700; color: var(--text); }
+        .keo-card-body { padding: 12px 16px; flex: 1; }
+        .keo-info-row {
+            display: flex; align-items: center; gap: 6px;
+            font-size: 0.8rem; color: var(--text-sub);
+            margin-bottom: 6px;
+        }
+        .keo-info-row i { width: 14px; color: var(--text-muted); font-size: 0.75rem; }
+        .keo-level-row {
+            display: flex; flex-direction: column; gap: 3px;
+            margin: 8px 0;
+        }
+        .keo-level-item {
+            font-size: 0.76rem; color: var(--text-sub);
+            display: flex; align-items: center; gap: 5px;
+        }
+        .keo-card-footer {
+            padding: 10px 16px;
+            border-top: 1px solid var(--border);
+            display: flex; gap: 8px; align-items: center;
+        }
+        .btn-dat-slot {
+            flex: 1; padding: 9px 12px; border-radius: 100px;
+            background: var(--lava-grad); color: #fff;
+            font-size: 0.8rem; font-weight: 700; letter-spacing: 0.04em;
+            border: none; cursor: pointer; font-family: inherit;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            transition: opacity 0.18s, box-shadow 0.18s;
+            box-shadow: 0 2px 10px rgba(255,85,0,0.28);
+        }
+        .btn-dat-slot:hover { opacity: 0.88; box-shadow: 0 4px 14px rgba(255,85,0,0.4); }
+        .btn-dat-slot:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+        .btn-da-dat {
+            flex: 1; padding: 9px 12px; border-radius: 100px;
+            background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.1);
+            color: var(--text-sub); font-size: 0.8rem; font-weight: 700;
+            cursor: not-allowed; font-family: inherit;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn-maps {
+            padding: 9px 11px; border-radius: 100px;
+            background: rgba(255,85,0,0.1); border: 1px solid rgba(255,85,0,0.25);
+            color: var(--accent); font-size: 0.78rem; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+            transition: background 0.18s;
+        }
+        .btn-maps:hover { background: rgba(255,85,0,0.18); }
+        .btn-detail {
+            padding: 9px 11px; border-radius: 100px;
+            background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+            color: var(--text-muted); font-size: 0.78rem;
+            cursor: pointer; font-family: inherit; transition: all 0.18s;
+        }
+        .btn-detail:hover { border-color: var(--border-hover); color: var(--text-sub); }
+
+        .badge {
+            display: inline-flex; align-items: center; gap: 3px;
+            font-size: 0.62rem; font-weight: 700; padding: 2px 8px;
+            border-radius: 100px; letter-spacing: 0.04em;
+        }
+        .badge-green { background: rgba(255,85,0,0.12); color: var(--accent); border: 1px solid rgba(255,85,0,0.3); }
+        .badge-orange { background: rgba(255,140,0,0.12); color: var(--accent-2); border: 1px solid rgba(255,140,0,0.3); }
+        .badge-gray { background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); }
+
+        /* ── BỘ LỌC ── */
+        .filter-wrap {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 16px 20px;
+            margin-bottom: 20px;
+        }
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 10px; margin-bottom: 12px;
+        }
+        .filter-actions { display: flex; gap: 8px; }
+
+        /* ── BẢNG CA ĐẤU (tab 3C) ── */
+        .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius-sm); }
+        .app-table {
+            width: 100%; border-collapse: collapse;
+            min-width: 600px; font-size: 0.82rem;
+        }
+        .app-table thead th {
+            background: rgba(255,85,0,0.05); color: var(--accent);
+            font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em;
+            text-transform: uppercase; padding: 10px 14px;
+            text-align: left; border-bottom: 1px solid var(--border);
+            position: sticky; top: 0;
+        }
+        .app-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
+        .app-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+        .app-table td { padding: 10px 14px; vertical-align: middle; color: var(--text-sub); }
+        .app-table td .text-white { color: var(--text); font-weight: 600; }
+
+        /* ── LỊCH SỬ ── */
+        .ls-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 14px 16px;
+            margin-bottom: 10px; display: flex; gap: 14px;
+            align-items: flex-start;
+        }
+        .ls-dot {
+            width: 10px; height: 10px; border-radius: 50%;
+            background: var(--lava-grad); flex-shrink: 0; margin-top: 5px;
+        }
+        .ls-dot.orange { background: var(--accent-2); }
+        .ls-dot.gray   { background: var(--text-muted); }
+        .ls-dot.red    { background: #ef4444; }
+
+        /* ── ĐÁNH GIÁ ── */
+        .review-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 10px;
+        }
+        .stars { color: #fbbf24; font-size: 0.85rem; letter-spacing: 2px; }
+        .review-text { font-size: 0.82rem; color: var(--text-sub); margin-top: 6px; line-height: 1.55; }
+        .review-meta { font-size: 0.68rem; color: var(--text-muted); margin-top: 8px; }
+
+        /* ── PROMPT ĐĂNG NHẬP ── */
+        .login-prompt {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 58vh; padding: 40px 16px; gap: 0; text-align: center;
+        }
+        .login-prompt i { font-size: 3rem; color: var(--text-muted); }
+        .login-prompt p { color: var(--text-sub); margin: 0; font-size: 0.9rem; line-height: 1.6; }
+        /* Card thiết kế mới cho ls-login-prompt */
+        .ls-login-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 48px 36px;
+            max-width: 400px; width: 100%;
+            display: flex; flex-direction: column; align-items: center; gap: 16px;
+        }
+        .ls-login-icon {
+            width: 72px; height: 72px; border-radius: 50%;
+            background: rgba(255,85,0,0.1); border: 1px solid rgba(255,85,0,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; color: var(--accent);
+        }
+        .ls-login-title {
+            font-size: 1.05rem; font-weight: 800; color: var(--text);
+            margin: 0; line-height: 1.35;
+        }
+        .ls-login-desc {
+            font-size: 0.88rem; color: var(--text-sub);
+            line-height: 1.65; margin: 0;
+        }
+
+        /* ── KHOẢNG CÁCH & TIÊU ĐỀ SECTION ── */
+        .section-heading {
+            font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+            text-transform: uppercase; color: var(--text-muted);
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 3px 12px; background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border); border-radius: 100px;
+            margin-bottom: 16px;
+        }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 768px) {
+            .app-body { padding: 96px 16px 100px; }
+            .app-header-inner { padding: 0 16px; gap: 8px; }
+            .tab-label { display: none; } /* Ẩn nhãn tab, chỉ hiện icon */
+            .btn-gop-y-label { display: none; } /* Ẩn text "Góp ý & Ủng hộ" trên mobile */
+            .tab-nav-btn { padding: 9px 13px; font-size: 0.88rem; }
+            .app-logo-text { font-size: 1.05rem; }
+            .form-row, .form-row.col-3,
+            .form-row.col-4, .form-row.col-san { grid-template-columns: 1fr; }
+            .row-h5 { grid-template-columns: 1fr; }
+            .row-h5 .fg-btn { width: 100%; }
+            .row-h5 .fg-btn .btn-kt-trigger { width: 100%; }
+            .keo-grid { grid-template-columns: 1fr; }
+            .filter-grid { grid-template-columns: 1fr 1fr; }
+            .profile-top { flex-direction: column; align-items: center; text-align: center; }
+            #headerUserName { display: none; }
+        }
+        @media (max-width: 480px) {
+            .filter-grid { grid-template-columns: 1fr; }
+            .tab-nav-btn { padding: 8px 10px; font-size: 0.82rem; }
+        }
+
+        /* ════════════════════════════════════════════
+           LAYOUT TÌM KÈO — Split Sidebar + Mobile Drawer
+           ════════════════════════════════════════════ */
+
+        /* ── Shared filter controls (sidebar + drawer) ── */
+        .tk-filter-group { margin-bottom: 10px; }
+        .tk-filter-label {
+            display: block; font-size: 0.7rem; font-weight: 600;
+            letter-spacing: 0.05em; text-transform: uppercase;
+            color: var(--text-muted); margin-bottom: 5px;
+        }
+        .tk-select, .tk-input {
+            width: 100%; background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border); border-radius: 8px;
+            color: var(--text); font-size: 0.8rem; padding: 7px 10px;
+            outline: none; transition: border-color 0.2s;
+            -webkit-appearance: none; appearance: none;
+        }
+        .tk-select:focus, .tk-input:focus {
+            border-color: rgba(255,85,0,0.5);
+            box-shadow: 0 0 0 3px rgba(255,85,0,0.1);
+        }
+        .tk-select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b8fa3'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+        .tk-input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+        /* Range slider giá */
+        .tk-range { width: 100%; accent-color: var(--accent); cursor: pointer; height: 4px; margin: 6px 0 2px; }
+        .tk-range-label { font-size: 0.78rem; font-weight: 700; color: var(--accent); display: block; text-align: right; margin-top: 2px; }
+
+        /* Filter pills */
+        .tk-filter-pills { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+        .tk-pill {
+            padding: 4px 11px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: transparent; color: rgba(255,255,255,0.5);
+            font-size: 0.74rem; font-weight: 600; cursor: pointer;
+            transition: all 0.15s; font-family: inherit;
+        }
+        .tk-pill:hover { border-color: rgba(255,85,0,0.5); color: var(--accent); }
+        .tk-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
+
+        .tk-btn-primary {
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            width: 100%; padding: 11px; border-radius: 100px; border: none; cursor: pointer;
+            background: var(--lava-grad); color: #fff;
+            font-size: 0.82rem; font-weight: 800; margin-bottom: 6px;
+            box-shadow: 0 2px 10px rgba(255,85,0,0.28);
+        }
+        .tk-btn-primary:hover { opacity: 0.88; box-shadow: 0 4px 14px rgba(255,85,0,0.4); }
+        .tk-btn-secondary {
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            width: 100%; padding: 9px 14px; cursor: pointer; font-family: inherit;
+            background: transparent;
+            border: 1px solid rgba(255,85,0,0.3);
+            border-radius: 100px;
+            color: rgba(255,120,0,0.75); font-size: 0.82rem; font-weight: 600;
+            transition: all 0.18s;
+        }
+        .tk-btn-secondary:hover {
+            background: rgba(255,85,0,0.07);
+            border-color: rgba(255,85,0,0.6);
+            color: var(--accent);
+        }
+
+        /* ── LAYOUT SPLIT (PC) — Grid sidebar+main, căn giữa ── */
+        .tk-layout {
+            display: grid;
+            grid-template-columns: 330px 1fr;
+            gap: 24px;
+            align-items: stretch;
+            width: 100%;
+            max-width: 1660px;
+            margin: 0 auto;
+        }
+        .tk-sidebar {
+            width: 100%;
+        }
+        .tk-sidebar-inner {
+            position: sticky;
+            top: 96px; /* header(80) + buffer(16) */
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 18px 16px 16px;
+            max-height: calc(100vh - 96px); /* Không vượt quá viewport */
+            overflow-y: auto;
+            overflow-x: hidden; /* Chặn thanh cuộn ngang */
+            /* Override global green scrollbar từ giao-dien.css */
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,85,0,0.25) transparent;
+        }
+        .tk-sidebar-inner::-webkit-scrollbar { width: 3px; height: 0; }
+        .tk-sidebar-inner::-webkit-scrollbar-track { background: transparent; }
+        .tk-sidebar-inner::-webkit-scrollbar-thumb {
+            background: rgba(255,85,0,0.25); border-radius: 2px;
+        }
+        .tk-sidebar-inner::-webkit-scrollbar-thumb:hover { background: rgba(255,85,0,0.5); }
+        .tk-filter-heading {
+            font-size: 0.82rem; font-weight: 800; letter-spacing: 0.1em;
+            text-transform: uppercase;
+            background: var(--lava-grad);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex; align-items: center; gap: 6px;
+            margin-bottom: 16px; padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .tk-filter-heading i { -webkit-text-fill-color: var(--accent); }
+        .tk-filter-group { margin-bottom: 14px; }
+        .tk-filter-label { font-size: 0.72rem; font-weight: 600; color: var(--text-sub); display: block; margin-bottom: 6px; }
+        .tk-filter-actions {
+            margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border);
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .tk-main { min-width: 0; }
+        .tk-result-count {
+            font-size: 1rem; font-weight: 700; color: var(--text-sub);
+            margin-bottom: 20px; padding: 10px 0 10px 14px;
+            border-left: 3px solid var(--accent); letter-spacing: 0.01em;
+        }
+
+        /* ── CARD GRID: 3 cột đều nhau, gap 14px, gom giữa ── */
+        #slotsSearchResultContainer.keo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            align-items: stretch;
+            gap: 4px;
+            max-width: 1480px;
+            margin-left: auto;
+            margin-right: auto;
+            width: 100%;
+        }
+        .slot-card {
+            display: flex; flex-direction: column;
+            height: auto !important;
+            min-height: 0 !important;
+            min-width: 360px;
+            width: 100%;
+        }
+        .slot-card-inner { display: flex; flex-direction: column; flex: 1; }
+        .slot-card-footer { margin-top: auto; }
+
+        /* ── PROVINCE GRID — 2x2 city buttons ── */
+        .tk-province-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; margin-top:4px; }
+        .tk-province-btn {
+            padding:8px 6px; border-radius:8px; border:1px solid rgba(255,255,255,0.12);
+            background:rgba(255,255,255,0.04); color:#94a3b8; font-size:0.78rem; font-weight:600;
+            cursor:pointer; font-family:inherit; text-align:center; transition:all 0.15s;
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+        }
+        .tk-province-btn:hover { border-color:rgba(255,85,0,0.35); color:#e2e8f0; background:rgba(255,85,0,0.06); }
+        .tk-province-btn.active {
+            border-color:rgba(255,85,0,0.65); color:#FF5500; background:rgba(255,85,0,0.1);
+            box-shadow:0 0 8px rgba(255,85,0,0.25);
+        }
+
+        /* ── INLINE CALENDAR ── */
+        .tk-inline-cal { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:8px; user-select:none; }
+        .tk-cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+        .tk-cal-nav span { font-size:0.82rem; font-weight:700; color:#e2e8f0; }
+        .tk-cal-nav button { background:none; border:none; color:#94a3b8; cursor:pointer; font-size:1.1rem; padding:2px 8px; border-radius:5px; font-family:inherit; transition:color 0.12s,background 0.12s; }
+        .tk-cal-nav button:hover { color:#FF5500; background:rgba(255,85,0,0.1); }
+        .tk-cal-dow { display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:3px; }
+        .tk-cal-dow span { text-align:center; font-size:0.63rem; color:#64748b; font-weight:600; padding:3px 0; }
+        .tk-cal-cells { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+        #tkCalGrid    { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+        .tk-cal-day { text-align:center; font-size:0.78rem; font-weight:500; color:#e2e8f0; background:none; border:none; cursor:pointer; padding:6px 2px; border-radius:6px; transition:background 0.12s,color 0.12s; font-family:inherit; aspect-ratio:1; display:flex; align-items:center; justify-content:center; }
+        .tk-cal-day:hover { background:rgba(255,255,255,0.1); }
+        .tk-cal-other { color:#2d3748 !important; cursor:default; pointer-events:none; }
+        .tk-cal-past  { color:#4b5563; }
+        .tk-cal-today { color:#FF5500; font-weight:800; background:rgba(255,85,0,0.1); }
+        .tk-cal-selected { background:rgba(255,255,255,0.18) !important; color:#fff !important; font-weight:800; box-shadow:0 0 0 1.5px rgba(255,255,255,0.35); }
+        .tk-cal-clr { font-size:0.68rem; color:#64748b; cursor:pointer; padding:2px 6px; border-radius:4px; border:none; background:none; font-family:inherit; transition:color 0.12s; }
+        .tk-cal-clr:hover { color:#FF5500; }
+
+        /* ── MOBILE TOPBAR (ẩn trên PC) ── */
+        .tk-mobile-topbar { display: none; }
+
+        /* ── DRAWER OVERLAY ── */
+        .tk-drawer-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.65); z-index: 500; backdrop-filter: blur(2px);
+        }
+        .tk-drawer-overlay.is-open { display: block; }
+
+        /* ── SLIDE-UP DRAWER ── */
+        .tk-drawer {
+            display: block; position: fixed; bottom: 0; left: 0; right: 0;
+            background: var(--bg-card2); border-radius: 20px 20px 0 0;
+            padding: 0 20px 32px; z-index: 501;
+            max-height: 88vh; overflow-y: auto;
+            transform: translateY(105%);
+            transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+        .tk-drawer.is-open { transform: translateY(0); }
+        .tk-drawer-handle {
+            width: 40px; height: 4px; border-radius: 2px;
+            background: rgba(255,255,255,0.15);
+            margin: 14px auto 16px; flex-shrink: 0;
+        }
+        .tk-drawer-title {
+            font-size: 0.88rem; font-weight: 700; color: var(--accent);
+            display: flex; align-items: center; gap: 8px;
+            margin-bottom: 18px; padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+        .tk-drawer-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 768px) {
+            .app-body { padding: 120px 12px 100px; }
+            .app-header {
+                padding-left: 16px !important;
+                padding-right: 16px !important;
+            }
+            .tk-sidebar { display: none; }
+            .tk-layout {
+                display: block; /* Bỏ grid, chỉ có main */
+            }
+            .tk-mobile-topbar {
+                display: flex; gap: 8px; align-items: center; margin-bottom: 14px;
+            }
+            .tk-topbar-input {
+                flex: 1; background: rgba(255,255,255,0.05);
+                border: 1px solid var(--border); border-radius: 10px;
+                color: var(--text); font-size: 0.88rem; padding: 10px 14px;
+                outline: none;
+            }
+            .tk-topbar-input:focus { border-color: rgba(255,85,0,0.45); }
+            .tk-btn-filter {
+                flex-shrink: 0; display: flex; align-items: center; gap: 6px;
+                padding: 10px 16px; border-radius: 100px; border: none; cursor: pointer;
+                background: var(--lava-grad); color: #fff;
+                font-size: 0.84rem; font-weight: 700; white-space: nowrap;
+            }
+            #slotsSearchResultContainer.keo-grid {
+                grid-template-columns: 1fr;
+                gap: 12px;
+            }
+        }
+        /* Tablet: sidebar hẹp hơn, 2 cột card */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .tk-layout { grid-template-columns: 32% 1fr; gap: 16px; }
+            #slotsSearchResultContainer.keo-grid {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            }
+        }
+        /* PC vừa: 2-3 cột */
+        @media (min-width: 1025px) and (max-width: 1280px) {
+            .tk-layout { grid-template-columns: 28% 1fr; }
+            #slotsSearchResultContainer.keo-grid {
+                grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            }
+        }
+        /* ══════════════════════════════════════════════════
+           TAB GIỚI THIỆU — CSS variables + lp-* layout
+           (Scoped vào #tab-gioi-thieu để không ảnh hưởng feed)
+           ══════════════════════════════════════════════════ */
+        #tab-gioi-thieu {
+            --card:   #111118;
+            --card2:  #18181f;
+            --green:  #00c96e;
+            --cyan:   #22d3ee;
+            --blue:   #4f6ef7;
+            --pink:   #e879a0;
+            --purple: #a855f7;
+            --white:  #ffffff;
+            --gray:   #8b8fa3;
+            --muted:  #52566a;
+            padding: 0;
+        }
+        .lp-hero {
+            min-height: calc(100vh - 120px);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center; padding: 60px 20px 50px;
+            position: relative; overflow: hidden;
+        }
+        .lp-hero::before {
+            content: ''; position: absolute; inset: 0;
+            background:
+                radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0,201,110,0.12), transparent),
+                radial-gradient(ellipse 50% 40% at 80% 60%, rgba(79,110,247,0.08), transparent);
+            pointer-events: none;
+        }
+        .lp-hero > *:not(.lp-glow-blob) { position: relative; z-index: 1; }
+        .lp-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 5px 14px; border-radius: 100px;
+            background: rgba(0,201,110,0.1); border: 1px solid rgba(0,201,110,0.25);
+            font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em;
+            color: var(--green); text-transform: uppercase; margin-bottom: 24px;
+        }
+        .lp-badge::before {
+            content: ''; width: 6px; height: 6px; border-radius: 50%;
+            background: var(--green); animation: lp-pulse-dot 1.5s ease-in-out infinite;
+        }
+        @keyframes lp-pulse-dot { 0%,100%{opacity:1} 50%{opacity:.3} }
+        .lp-hero-title {
+            font-size: clamp(3rem, 9vw, 7rem);
+            font-weight: 900; line-height: 1.18; letter-spacing: -0.03em; margin-bottom: 6px;
+        }
+        .lp-hero-title .line1 { color: #fff; display: block; }
+        .lp-hero-title .line2 {
+            display: block;
+            background: linear-gradient(135deg, #22d3ee 0%, #00c96e 60%, #22d3ee 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; background-size: 200%;
+            animation: lp-grad 4s ease infinite;
+        }
+        @keyframes lp-grad { 0%{background-position:0%} 100%{background-position:200%} }
+        .lp-hero-desc {
+            font-size: clamp(0.95rem, 2.5vw, 1.1rem);
+            color: var(--gray); max-width: 540px;
+            line-height: 1.75; margin: 18px auto 28px;
+        }
+        .lp-cta-wrap { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; margin-bottom: 18px; }
+        .lp-btn-cta {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 32px; border-radius: 10px;
+            background: #06b6d4; color: #000;
+            font-size: 0.95rem; font-weight: 800; letter-spacing: 0.04em;
+            border: none; cursor: pointer; font-family: inherit;
+            box-shadow: 0 0 15px rgba(6,182,212,0.4);
+            transition: all 0.18s;
+        }
+        .lp-btn-cta:hover { background: #22d3ee; transform: translateY(-2px); box-shadow: 0 0 24px rgba(6,182,212,0.6); }
+        .lp-btn-sec {
+            display: inline-flex; align-items: center; gap: 7px;
+            padding: 13px 22px; border-radius: 10px;
+            background: transparent; border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; font-size: 0.88rem; font-weight: 600;
+            cursor: pointer; font-family: inherit; transition: all 0.18s;
+        }
+        .lp-btn-sec:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.35); }
+        .lp-proof {
+            font-size: 0.75rem;
+            display: flex; align-items: center; gap: 8px;
+            flex-wrap: wrap; justify-content: center;
+        }
+        .lp-proof span {
+            display: flex; align-items: center; gap: 5px;
+            background: rgba(6,182,212,0.15);
+            border: 1px solid rgba(6,182,212,0.35);
+            color: #67e8f9;
+            padding: 5px 14px; border-radius: 100px;
+            font-weight: 700; font-size: 0.8rem;
+        }
+        .lp-proof i { color: #22d3ee; }
+        /* Icons grid */
+        .lp-icons-wrap { max-width: 900px; margin: 0 auto 56px; padding: 48px 20px; }
+        .lp-divider-label {
+            text-align: center; font-size: 0.72rem; font-weight: 700;
+            letter-spacing: 0.1em; color: var(--muted); text-transform: uppercase;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            margin-bottom: 24px;
+        }
+        .lp-divider-label::before, .lp-divider-label::after {
+            content: ''; flex: 1; max-width: 80px; height: 1px; background: var(--border);
+        }
+        .lp-feature-badge {
+            display: inline-block;
+            background: #0f172a;
+            border: 1px solid rgba(16,185,129,0.3);
+            color: #10b981;
+            font-size: 0.7rem; font-weight: 700;
+            letter-spacing: 0.12em; text-transform: uppercase;
+            padding: 5px 14px; border-radius: 100px;
+            margin-bottom: 12px;
+        }
+        .lp-feature-ttl {
+            font-size: clamp(1.5rem, 4vw, 2.2rem); font-weight: 900;
+            text-transform: uppercase; letter-spacing: -0.01em;
+            background: linear-gradient(to right, #fff 10%, #f97316 90%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 0 0 28px; text-align: center;
+        }
+        .lp-icons-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+        .lp-icard {
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 14px; padding: 20px 16px; text-align: center;
+            transition: all 0.22s;
+        }
+        .lp-icard:hover { border-color: rgba(0,201,110,0.3); background: var(--card2); transform: translateY(-3px); }
+        .lp-icard .em { font-size: 1.8rem; display: block; margin-bottom: 8px; }
+        .lp-icard .ttl { font-size: 0.82rem; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+        .lp-icard .dsc { font-size: 0.72rem; color: var(--muted); line-height: 1.4; }
+        /* Features */
+        .lp-feat-wrap { max-width: 1100px; margin: 0 auto 72px; padding: 0 20px; position: relative; }
+        /* ── Glow blob ── */
+        .lp-glow-blob {
+            position: absolute; border-radius: 50%;
+            filter: blur(150px); pointer-events: none; z-index: 0;
+            width: 500px; height: 500px;
+        }
+        .lp-glow-blob-1 { background: rgba(16,185,129,0.1); top: -80px; left: -120px; }
+        .lp-glow-blob-2 { background: rgba(6,182,212,0.07); top: 30%; right: -180px; width: 400px; height: 400px; }
+        /* ── Grid-line overlay phía sau cards ── */
+        .lp-feat-wrap::before {
+            content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+            background-image:
+                repeating-linear-gradient(90deg,
+                    rgba(255,255,255,0.02) 0, rgba(255,255,255,0.02) 1px,
+                    transparent 1px, transparent 72px),
+                repeating-linear-gradient(180deg,
+                    rgba(255,255,255,0.015) 0, rgba(255,255,255,0.015) 1px,
+                    transparent 1px, transparent 72px);
+        }
+        .lp-feat-wrap > * { position: relative; z-index: 1; }
+        .lp-sect-hd { text-align: center; margin-bottom: 36px; }
+        .lp-sect-tag {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 4px 14px; border-radius: 100px;
+            background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.2);
+            font-size: 0.68rem; font-weight: 700; letter-spacing: 0.1em;
+            color: var(--cyan); text-transform: uppercase; margin-bottom: 12px;
+        }
+        .lp-sect-title {
+            font-size: clamp(1.5rem, 4vw, 2.4rem);
+            font-weight: 800; color: var(--white);
+            letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 10px;
+        }
+        .lp-sect-sub { font-size: 0.92rem; color: var(--muted); }
+        .lp-feat-grid { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 16px; align-items: stretch; }
+        .lp-fcard {
+            border-radius: 20px; padding: 26px 22px;
+            display: flex; flex-direction: column; gap: 12px; min-height: 280px; height: 100%;
+        }
+        .lp-fcard.dark { background: var(--card2); border: 1px solid var(--border); }
+        .lp-fcard.pink  { background: linear-gradient(145deg,#3d0f2b,#5c1238 50%,#3d0f2b); border: 1px solid rgba(232,121,160,0.3); }
+        .lp-fcard.purple{ background: linear-gradient(145deg,#1a0d2e,#261445 50%,#1a0d2e); border: 1px solid rgba(168,85,247,0.3); }
+        .lp-ftag {
+            display: inline-flex; width: fit-content; align-items: center; gap: 5px;
+            font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em;
+            padding: 3px 10px; border-radius: 100px; text-transform: uppercase;
+        }
+        .tg { background: rgba(0,201,110,0.15); color: var(--green); border: 1px solid rgba(0,201,110,0.25); }
+        .tp { background: rgba(232,121,160,0.15); color: var(--pink); border: 1px solid rgba(232,121,160,0.25); }
+        .tv { background: rgba(168,85,247,0.15); color: var(--purple); border: 1px solid rgba(168,85,247,0.25); }
+        .lp-fcard-ttl { font-size: 1rem; font-weight: 800; color: var(--white); line-height: 1.3; }
+        .lp-fcard-dsc { font-size: 0.8rem; color: rgba(255,255,255,0.72); line-height: 1.6; }
+        .lp-fcard-list { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+        .lp-fcard-list li {
+            display: flex; align-items: center; gap: 7px;
+            font-size: 0.76rem; color: rgba(255,255,255,0.7); list-style: none;
+        }
+        .lp-fcard.dark   .lp-fcard-list li i { color: var(--green); }
+        .lp-fcard.pink   .lp-fcard-list li i { color: var(--pink); }
+        .lp-fcard.purple .lp-fcard-list li i { color: var(--purple); }
+        /* Icon đỉnh card — flat FA icon, cố định trên cùng */
+        .lp-bigem {
+            font-size: 2rem; line-height: 1;
+            margin-bottom: 4px;
+            width: 52px; height: 52px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 12px;
+        }
+        .lp-fcard.dark   .lp-bigem { background: rgba(0,201,110,0.12); }
+        .lp-fcard.pink   .lp-bigem { background: rgba(232,121,160,0.12); }
+        .lp-fcard.purple .lp-bigem { background: rgba(168,85,247,0.12); }
+        /* Stats */
+        .lp-stats-wrap { max-width: 900px; margin: 0 auto 56px; padding: 56px 20px 0; }
+        .lp-stats-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            gap: 1px; background: var(--border);
+            border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+        }
+        .lp-stat { background: var(--card); padding: 26px 20px; text-align: center; }
+        .lp-stat-num {
+            font-size: clamp(1.8rem, 3.5vw, 2.4rem); font-weight: 900;
+            letter-spacing: -0.03em; line-height: 1; display: block; margin-bottom: 6px;
+        }
+        .lp-stat-lbl { font-size: 0.7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+        /* CTA bottom */
+        .lp-cta-btm {
+            background: rgba(15,23,42,0.4);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            padding: 56px 20px; text-align: center; position: relative; overflow: hidden;
+            margin: 0 -20px;
+        }
+        .lp-cta-btm::before { display: none; }
+        .lp-cta-btm h2 {
+            font-size: clamp(1.8rem, 5vw, 2.8rem); font-weight: 900;
+            color: var(--white); letter-spacing: -0.03em;
+            margin-bottom: 12px; position: relative;
+        }
+        .lp-cta-btm p { font-size: 0.95rem; color: rgba(255,255,255,0.6); margin-bottom: 28px; position: relative; }
+        .lp-btn-btm {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 14px 36px; border-radius: 10px;
+            background: #06b6d4; color: #000;
+            font-size: 0.95rem; font-weight: 800; letter-spacing: 0.04em;
+            border: none; cursor: pointer; font-family: inherit;
+            box-shadow: 0 0 15px rgba(6,182,212,0.4);
+            transition: all 0.18s; position: relative;
+        }
+        .lp-btn-btm:hover { background: #22d3ee; transform: translateY(-2px); box-shadow: 0 0 24px rgba(6,182,212,0.6); }
+        /* Responsive cho Giới Thiệu tab */
+        @media (max-width: 900px) {
+            .lp-feat-grid { grid-template-columns: 1fr; }
+            .lp-icons-grid { grid-template-columns: 1fr 1fr; }
+            .lp-stats-grid { grid-template-columns: 1fr 1fr; }
+        }
+        @media (max-width: 600px) {
+            .lp-hero { padding: 40px 16px 32px; }
+            .lp-hero-title { font-size: clamp(2.4rem, 12vw, 3.5rem); }
+            .lp-stats-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        /* ══════════════════════════════════════════════════
+           MODAL CHI TIẾT KÈO — kmd-* design system
+           ══════════════════════════════════════════════════ */
+        .kmd-cols { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; align-items:stretch; }
+        .kmd-col {
+            background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06);
+            border-radius:12px; padding:14px 16px; display:flex; flex-direction:column;
+        }
+        .kmd-col-title {
+            font-size:0.88rem; font-weight:700; letter-spacing:0.03em; text-transform:uppercase;
+            color:var(--accent); display:flex; align-items:center; gap:6px;
+            margin:0 0 14px; padding-bottom:10px; border-bottom:1px solid rgba(255,85,0,0.15);
+        }
+        .kmd-row { display:flex; flex-direction:column; gap:4px; margin-bottom:10px; }
+        .kmd-lbl { font-size:0.69rem; color:#64748b; font-weight:600; text-transform:uppercase; letter-spacing:0.06em; }
+        .kmd-val { font-size:1.05rem; color:#fff; font-weight:800; line-height:1.4; user-select:text; -webkit-user-select:text; }
+        .kmd-divider { border-top:1px solid rgba(255,255,255,0.08); margin:16px 0; }
+        .kmd-maps-btn {
+            display:inline-flex; align-items:center; gap:6px;
+            color:#00ff88; font-size:0.78rem; font-weight:600;
+            padding:5px 12px; border-radius:8px; margin-top:4px;
+            background:rgba(0,255,136,0.08); border:1px solid rgba(0,255,136,0.25);
+            text-decoration:none; transition:all 0.18s;
+        }
+        .kmd-maps-btn:hover { background:rgba(0,255,136,0.14); border-color:rgba(0,255,136,0.45); }
+        .kmd-pill {
+            display:inline-flex; align-items:center; gap:2px; padding:2px 8px;
+            border-radius:20px; background:rgba(255,85,0,0.08); border:1px solid rgba(255,85,0,0.28);
+            color:#FF7A00; font-size:0.7rem; font-weight:600; white-space:nowrap; flex-shrink:0;
+        }
+        .kmd-pills-row { display:flex; flex-wrap:wrap; gap:4px; margin-top:3px; }
+        .kmd-subbox { margin-bottom:20px; }
+        .kmd-bottom { border-top:1px solid rgba(255,255,255,0.06); padding-top:14px; margin-bottom:12px; }
+        .kmd-bottom-title {
+            font-size:0.82rem; font-weight:800; color:#d0dde8; letter-spacing:0.05em;
+            text-transform:uppercase; margin:0 0 10px; display:flex; align-items:center; gap:6px;
+        }
+        .kmd-guest-item {
+            display:flex; align-items:center; gap:8px; padding:7px 10px;
+            border-radius:8px; background:rgba(255,255,255,0.02); margin-bottom:4px;
+        }
+        .kmd-guest-name { font-size:0.84rem; font-weight:600; color:#e2e8f0; flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .kmd-guest-slot { font-size:0.7rem; color:#64748b; flex-shrink:0; }
+        .kmd-status-tag { font-size:0.67rem; font-weight:700; padding:2px 8px; border-radius:100px; flex-shrink:0; }
+        .kmd-status-cho  { background:rgba(251,191,36,0.12); color:#fbbf24; border:1px solid rgba(251,191,36,0.3); }
+        .kmd-status-ok   { background:rgba(0,255,136,0.10); color:#00ff88; border:1px solid rgba(0,255,136,0.25); }
+        .kmd-status-bung { background:rgba(239,68,68,0.10); color:#f87171; border:1px solid rgba(239,68,68,0.25); }
+        .kmd-status-huy  { background:rgba(100,116,139,0.12); color:#64748b; border:1px solid rgba(100,116,139,0.2); }
+        .kmd-footer-area { padding-top:4px; }
+        .kmd-footer { padding:10px 16px; border-radius:10px; text-align:center; font-size:0.82rem; font-weight:600; }
+        .kmd-footer-chot   { background:rgba(251,191,36,0.08); border:1px solid rgba(251,191,36,0.25); color:#fbbf24; }
+        .kmd-footer-locked { background:rgba(71,85,105,0.15); border:1px solid rgba(71,85,105,0.3); color:#94a3b8; }
+        .kmd-host-info-block { display:flex; align-items:center; gap:10px 18px; flex-wrap:wrap; padding:12px 18px; margin:0 0 14px; background:rgba(30,30,40,0.7); border:1px solid rgba(255,85,0,0.35); border-radius:10px; animation:hostBannerGlow 2.4s ease-in-out infinite; }
+        @keyframes hostBannerGlow { 0%,100%{box-shadow:0 0 5px rgba(255,85,0,0.15); border-color:rgba(255,85,0,0.3);} 50%{box-shadow:0 0 12px rgba(255,85,0,0.45); border-color:rgba(255,85,0,0.62);} }
+        /* Pill trình độ trên card */
+        .kh-level-pill { display:inline-flex; align-items:center; padding:1px 7px; border-radius:20px; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.14); color:#cbd5e1; font-size:0.67rem; font-weight:700; white-space:nowrap; }
+        /* Neon pulse cho ô giá trong modal */
+        /* Modal price badges — static neon (không blink) */
+        .kmd-price-male-active   { box-shadow:0 0 10px rgba(0,195,255,0.35); border-color:rgba(0,195,255,0.55) !important; }
+        .kmd-price-female-active { box-shadow:0 0 10px rgba(255,0,130,0.35); border-color:rgba(255,0,130,0.55) !important; }
+        @media (max-width:600px) { .kmd-cols { grid-template-columns:1fr; } }
+
+        /* ══════════════════════════════════════════════════
+           POPUP MODAL ĐA NĂNG — ☕ Ủng Hộ & 💬 Góp Ý
+           ══════════════════════════════════════════════════ */
+
+
+        /* Modal Overlay */
+        #uHoModalOverlay {
+            position: fixed; inset: 0; z-index: 2000;
+            background: rgba(0,0,0,0.68);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            display: none;
+            align-items: center; justify-content: center;
+            padding: 16px;
+        }
+
+        /* Modal Box */
+        .uho-modal-box {
+            background: #111118;
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 20px;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.7);
+            width: 100%; max-width: 460px;
+            max-height: 90vh;
+            display: flex; flex-direction: column;
+            overflow: hidden;
+            animation: uho-slide-in 0.22s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @keyframes uho-slide-in {
+            from { opacity: 0; transform: translateY(24px) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes uho-shake {
+            0%,100% { transform: translateX(0); }
+            20%,60% { transform: translateX(-6px); }
+            40%,80% { transform: translateX(6px); }
+        }
+
+        /* Modal Header */
+        .uho-modal-hd {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 20px 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            flex-shrink: 0;
+        }
+        .uho-modal-title {
+            font-size: 0.82rem; font-weight: 700; letter-spacing: 0.06em;
+            text-transform: uppercase; color: rgba(255,255,255,0.5);
+        }
+        .uho-close-btn {
+            background: rgba(255,255,255,0.07);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 50%; width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: rgba(255,255,255,0.55); font-size: 0.8rem;
+            transition: background 0.15s, color 0.15s;
+        }
+        .uho-close-btn:hover { background: rgba(255,255,255,0.14); color: #fff; }
+
+        /* Tab Bar */
+        .uho-tab-bar {
+            display: grid; grid-template-columns: 1fr 1fr;
+            gap: 6px; padding: 10px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            flex-shrink: 0;
+        }
+        .uho-tab-btn {
+            padding: 9px 0; border-radius: 9px;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.07);
+            color: rgba(255,255,255,0.45);
+            font-size: 0.88rem; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+            transition: all 0.18s;
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .uho-tab-btn:hover { color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.04); }
+        .uho-tab-btn.active {
+            background: rgba(34,211,238,0.1);
+            border-color: rgba(34,211,238,0.3);
+            color: #22d3ee;
+        }
+
+        /* Tab Content */
+        .uho-tab-content {
+            flex: 1; overflow-y: auto; padding: 20px;
+        }
+        .uho-tab-content::-webkit-scrollbar { width: 4px; }
+        .uho-tab-content::-webkit-scrollbar-track { background: transparent; }
+        .uho-tab-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+        /* Tab 1 — Ủng hộ */
+        #uhoTabUngho { text-align: center; }
+        .uho-qr-wrap {
+            background: #fff; border-radius: 14px; padding: 14px;
+            display: inline-block; margin-bottom: 14px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+        }
+        .uho-qr-wrap img {
+            width: 200px; height: 200px; object-fit: contain;
+            display: block; border-radius: 6px;
+        }
+        .uho-qr-text {
+            font-size: 0.88rem; color: rgba(255,255,255,0.55);
+            line-height: 1.6; margin: 0;
+        }
+        .uho-qr-empty {
+            display: flex; flex-direction: column; align-items: center;
+            padding: 32px 20px; gap: 10px;
+            color: rgba(255,255,255,0.3);
+        }
+        .uho-qr-empty i { font-size: 2.5rem; }
+
+        /* Tab 2 — Góp ý */
+        .uho-label {
+            font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+            text-transform: uppercase; color: rgba(255,255,255,0.45);
+            margin-bottom: 10px; display: block;
+        }
+        /* Stars */
+        .uho-star-row {
+            display: flex; gap: 6px; justify-content: center;
+            margin-bottom: 20px;
+        }
+        .uho-star {
+            font-size: 2rem; cursor: pointer;
+            color: rgba(255,255,255,0.18);
+            transition: color 0.12s, transform 0.12s;
+            line-height: 1; -webkit-user-select: none; user-select: none;
+        }
+        /* Chips */
+        .uho-chip-row {
+            display: flex; flex-wrap: wrap; gap: 8px;
+            margin-bottom: 18px;
+        }
+        .uho-chip {
+            padding: 7px 14px; border-radius: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.04);
+            color: rgba(255,255,255,0.55);
+            font-size: 0.8rem; font-weight: 600;
+            cursor: pointer; font-family: inherit;
+            transition: all 0.15s; -webkit-user-select: none; user-select: none;
+        }
+        .uho-chip:hover { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.8); }
+        .uho-chip.active {
+            background: rgba(34,211,238,0.12);
+            border-color: rgba(34,211,238,0.4);
+            color: #22d3ee;
+        }
+        /* Textarea */
+        .uho-textarea {
+            width: 100%; min-height: 90px; resize: none;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 10px; color: #fff;
+            font-size: 0.88rem; font-family: inherit;
+            padding: 10px 13px; outline: none;
+            transition: border-color 0.18s;
+            margin-bottom: 16px; box-sizing: border-box;
+        }
+        .uho-textarea:focus { border-color: rgba(34,211,238,0.4); }
+        .uho-textarea::placeholder { color: rgba(255,255,255,0.25); }
+        /* Submit Button */
+        .uho-btn-submit {
+            width: 100%; padding: 12px;
+            background: linear-gradient(135deg, #22d3ee 0%, #4f6ef7 100%);
+            border: none; border-radius: 10px;
+            color: #fff; font-size: 0.92rem; font-weight: 700;
+            cursor: pointer; font-family: inherit;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: opacity 0.18s, transform 0.15s;
+            box-shadow: 0 3px 14px rgba(34,211,238,0.3);
+        }
+        .uho-btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+        .uho-btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* ── LANDING TAB — full-width, không bó trong card container ── */
+        body.is-landing-tab .app-body {
+            max-width: none !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            padding-bottom: 0 !important;
+        }
+        body.is-landing-tab .lp-hero {
+            padding-top: calc(80px + 40px) !important;
+        }
+        body.is-landing-tab .lp-cta-btm {
+            margin: 0 !important;
+        }
+    </style>
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+</head>
+<body>
+
+<!-- ── HEADER (1 hàng duy nhất: Logo | 3 Tabs | Tài Khoản) ── -->
+<header class="app-header">
+<div class="app-header-inner">
+
+    <!-- Góc trái: Logo → Landing page -->
+    <a href="/" class="app-logo" onclick="window.chuyenTab('gioi-thieu'); return false;">
+        <!-- Logo ảnh động từ DB (ẩn nếu chưa cấu hình) -->
+        <img id="appLogoImg" src="" alt="Logo"
+             style="display:none; max-height:40px; width:auto; object-fit:contain;">
+        <!-- Logo text SVG mặc định (ẩn khi có ảnh) -->
+        <span id="appLogoTextWrap" class="app-logo-text">
+            <span class="logo-tuyen">TUYEN</span><!--
+            --><span class="logo-icon-v">
+                <!--
+                  Trái cầu làm chữ V — theo spec:
+                  · Cánh trái (arm trắng) + 3 shaft trắng + arm phải cam + đế cam
+                  · Đỉnh phẳng ngang song song cap-height chữ N/A
+                  · Độ dày arm bằng nét font 900
+                  · Negative space trong suốt giữa các shaft
+                -->
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 21" aria-hidden="true">
+                    <!-- ARM TRÁI: trắng #FFFFFF — đỉnh phẳng y=0, hội tụ về đáy trái -->
+                    <path d="M 0 0 L 3 0 L 7.5 17 L 6 17 Z" fill="#FFFFFF"/>
+
+                    <!-- ARM PHẢI: cam #FF7A00 — đỉnh phẳng y=0, hội tụ về đáy phải -->
+                    <path d="M 18 0 L 15 0 L 12 17 L 10.5 17 Z" fill="#FF7A00"/>
+
+                    <!-- ĐẾ CẦU: cam #FF7A00, bán nguyệt hướng xuống -->
+                    <!-- M(6,17) → A radius=3 clockwise → (12,17): diameter = 6 = 1/3 total width 18 -->
+                    <path d="M 6 17 A 3 3 0 0 1 12 17 Z" fill="#FF7A00"/>
+
+                    <!-- 3 XƯƠNG LÔNG: trắng, mảnh, hội tụ về đáy — khoảng trống trong suốt -->
+                    <line x1="6"  y1="0" x2="7.5"  y2="17" stroke="#FFFFFF" stroke-width="1.0"/>
+                    <line x1="9"  y1="0" x2="9"    y2="17" stroke="#FFFFFF" stroke-width="1.0"/>
+                    <line x1="12" y1="0" x2="10.5" y2="17" stroke="#FFFFFF" stroke-width="1.0"/>
+                </svg>
+            </span><!--
+            --><span class="logo-anglai">ANGLAI</span><!--
+            --><span class="logo-tld">.IO.VN</span>
+        </span>
+    </a>
+
+    <!-- Chính giữa: 3 tab điều hướng chính -->
+    <nav class="app-nav">
+        <button class="tab-nav-btn" data-tab="tim-keo" onclick="window.chuyenTab('tim-keo')">
+            <i class="fa-solid fa-magnifying-glass tab-icon"></i>
+            <span class="tab-label">Tìm Kèo</span>
+        </button>
+        <button class="tab-nav-btn" data-tab="dang-quan-ly" onclick="window.chuyenTab('dang-quan-ly')">
+            <i class="fa-solid fa-calendar-plus tab-icon"></i>
+            <span class="tab-label">Đăng &amp; Quản Lý</span>
+        </button>
+        <button class="tab-nav-btn" data-tab="lich-su" onclick="window.chuyenTab('lich-su')">
+            <i class="fa-solid fa-clock-rotate-left tab-icon"></i>
+            <span class="tab-label">Lịch Sử</span>
+        </button>
+    </nav>
+
+    <!-- Góc phải: Góp ý + Tài khoản -->
+    <div class="app-header-account">
+        <!-- Nút Góp ý & Ủng hộ — thay FAB tròn cũ ở góc dưới -->
+        <button class="btn-gop-y" onclick="window.moUHoModal && window.moUHoModal()"
+                title="Góp ý & Ủng hộ dự án">
+            💬 <span class="btn-gop-y-label">Góp ý &amp; Ủng hộ</span>
+        </button>
+        <!-- Tài khoản / Đăng nhập -->
+        <div id="headerUserInfo" style="display:none;" class="header-user-info"
+             onclick="window.chuyenTab('ca-nhan')">
+            <div class="header-avatar" id="headerAvatarWrap">
+                <i class="fa-solid fa-user"></i>
+            </div>
+            <span id="headerUserName">Tài khoản</span>
+        </div>
+        <button id="headerLoginBtn" class="btn-header-login"
+                onclick="window.chuyenTab('ca-nhan')">
+            <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập
+        </button>
+    </div>
+
+</div>
+</header>
+
+<!-- ── APP BODY ── -->
+<div class="app-body">
+
+    <!-- ══════════════════════════════════════════════════
+         TAB 1 — CÁ NHÂN
+         ══════════════════════════════════════════════════ -->
+    <section id="tab-ca-nhan" class="tab-section">
+
+        <!-- Chưa đăng nhập: form login/register (id phải là guestAuthPanel để phan-he-khach-choi.js nhận ra) -->
+        <div id="section-login" style="display:none;">
+            <div style="max-width:480px;margin:0 auto;">
+                <div id="guestAuthPanel" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px 20px;">
+                    <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px;display:flex;align-items:center;gap:8px;">
+                        <i class="fa-solid fa-right-to-bracket" style="color:var(--accent);"></i> Đăng Nhập / Đăng Ký
+                    </div>
+                    <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
+                        Nhập SĐT và mật khẩu. Hệ thống tự phân biệt đăng nhập hay đăng ký.
+                    </p>
+
+                    <label style="font-size:0.72rem;font-weight:600;color:var(--text-sub);letter-spacing:0.04em;display:block;margin-bottom:5px;">📱 Số điện thoại <span style="color:#ef4444;">*</span></label>
+                    <input type="tel" class="app-input" id="inputPhone"
+                        inputmode="numeric" maxlength="10"
+                        placeholder="Vd: 0987654321"
+                        oninput="this.value=this.value.replace(/[^0-9]/g,''); validateRealtime && validateRealtime(this,'sdt','SĐT không hợp lệ (10 số, đầu 03/05/07/08/09)');"
+                        onkeydown="if(event.key==='Enter') document.getElementById('inputPass')?.focus()"
+                        style="margin-bottom:4px;">
+                    <span class="input-hint" style="font-size:0.7rem;color:#ef4444;display:block;min-height:16px;margin-bottom:8px;"></span>
+
+                    <label style="font-size:0.72rem;font-weight:600;color:var(--text-sub);letter-spacing:0.04em;display:block;margin-bottom:5px;margin-top:6px;">🔒 Mật khẩu <span style="color:#ef4444;">*</span></label>
+                    <input type="password" class="app-input" id="inputPass"
+                        placeholder="Tối thiểu 6 ký tự"
+                        oninput="validateRealtime && validateRealtime(this,'pass','Mật khẩu tối thiểu 6 ký tự');"
+                        onkeydown="if(event.key==='Enter') xacThucNguoiDung && xacThucNguoiDung()"
+                        style="margin-bottom:4px;">
+                    <span class="input-hint" style="font-size:0.7rem;color:#ef4444;display:block;min-height:16px;margin-bottom:10px;"></span>
+
+                    <label style="display:flex;align-items:center;gap:9px;margin-bottom:14px;cursor:pointer;">
+                        <input type="checkbox" id="chkLuuDangNhap" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
+                        <span style="font-size:0.78rem;color:var(--text-muted);line-height:1.4;">
+                            Lưu đăng nhập 7 ngày
+                        </span>
+                    </label>
+
+                    <!-- Cloudflare Turnstile — Thay YOUR_SITE_KEY bằng key thật từ Cloudflare Dashboard -->
+                    <div id="cfTurnstileWrap" style="margin-bottom:10px;display:none;">
+                        <div class="cf-turnstile" data-sitekey="0x4AAAAAADeiC_0mMTnc07rd" data-theme="dark" data-size="flexible"></div>
+                    </div>
+                    <button class="btn-primary" id="btnXacNhan" onclick="xacThucNguoiDung && xacThucNguoiDung()" style="width:100%;justify-content:center;">
+                        <i class="fa-solid fa-right-to-bracket"></i> XÁC NHẬN →
+                    </button>
+                    <div style="text-align:center;margin-top:10px;">
+                        <a href="#" onclick="quenMatKhau && quenMatKhau();return false;" style="font-size:0.78rem;color:var(--text-muted);text-decoration:underline;">
+                            Quên mật khẩu?
+                        </a>
+                    </div>
+
+                    <!-- FORM PHỤ ĐĂNG KÝ — slide-down khi SĐT mới -->
+                    <div class="auth-extra-fields" id="authExtraFields">
+                        <div class="extra-divider" style="text-align:center;font-size:0.75rem;color:var(--text-muted);padding:12px 0;border-top:1px solid var(--border);margin-top:14px;">Thông tin bổ sung</div>
+
+                        <label style="font-size:0.72rem;font-weight:600;color:var(--text-sub);display:block;margin-bottom:5px;">👤 Họ tên <span style="color:#ef4444;">*</span></label>
+                        <input type="text" class="app-input" id="inputTenKhach"
+                            placeholder="Vd: Nguyễn Văn A"
+                            oninput="validateRealtime && validateRealtime(this,'ten','Tên chỉ được chứa chữ cái tiếng Việt (2-50 ký tự)')"
+                            style="margin-bottom:4px;">
+                        <span class="input-hint" style="font-size:0.7rem;color:#ef4444;display:block;min-height:16px;margin-bottom:8px;"></span>
+
+                        <label style="font-size:0.72rem;font-weight:600;color:var(--text-sub);display:block;margin-bottom:8px;margin-top:6px;">Giới tính</label>
+                        <div style="display:flex;gap:16px;margin-bottom:14px;">
+                            <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
+                                <input type="radio" name="gioiTinh" value="male" checked> Nam
+                            </label>
+                            <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
+                                <input type="radio" name="gioiTinh" value="female"> Nữ
+                            </label>
+                        </div>
+
+                        <label style="font-size:0.72rem;font-weight:600;color:var(--text-sub);display:block;margin-bottom:5px;">📱 SĐT Zalo</label>
+                        <div style="margin-bottom:6px;">
+                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.82rem;color:var(--text-muted);">
+                                <input type="checkbox" id="checkZaloTrungSDT" checked style="accent-color:var(--accent);" onchange="toggleZaloRieng && toggleZaloRieng()">
+                                Trùng với SĐT đăng nhập
+                            </label>
+                        </div>
+                        <div id="rowSdtZaloRieng" style="display:none;margin-bottom:10px;">
+                            <input type="tel" class="app-input" id="inputSdtZalo"
+                                inputmode="numeric" maxlength="10" placeholder="SĐT Zalo khác...">
+                        </div>
+
+                        <label style="font-size:0.72rem;font-weight:600;color:var(--text-sub);display:block;margin-bottom:5px;">🔗 Facebook (tùy chọn)</label>
+                        <input type="url" class="app-input" id="inputFacebook"
+                            placeholder="https://facebook.com/..."
+                            style="margin-bottom:12px;">
+
+                        <button class="btn-primary" id="btnHoanTatDangKy" onclick="hoanTatDangKy && hoanTatDangKy()" style="width:100%;justify-content:center;">
+                            TẠO TÀI KHOẢN & ĐĂNG NHẬP
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stub cho phan-he-khach-choi.js (cần tìm #guestProfileBlock để show/hide) -->
+        <div id="guestProfileBlock" style="display:none;"></div>
+
+        <!-- Đã đăng nhập: hồ sơ -->
+        <div id="section-profile" style="display:none;">
+
+            <!-- Thông tin cá nhân -->
+            <div class="app-card">
+                <div class="profile-top">
+                    <div class="profile-avatar-wrap" id="profileAvatarWrap">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div class="profile-meta">
+                        <h2 class="profile-display-name" id="profileDisplayName">—</h2>
+                        <div class="profile-rating" id="profileRatingBadge" style="margin-bottom:8px;">
+                            <i class="fa-solid fa-star"></i>
+                            <span id="profileRating">—</span>
+                            <span id="profileRatingCount" style="font-weight:400;color:var(--text-muted);"></span>
+                        </div>
+                        <div id="profileTrustScore" style="min-width:160px;"></div>
+                        <button class="btn-danger" onclick="window.dangXuatUngDung()">
+                            <i class="fa-solid fa-right-from-bracket"></i> Đăng Xuất
+                        </button>
+                    </div>
+                </div>
+
+                <div class="app-card-title"><i class="fa-solid fa-pen-to-square"></i> Chỉnh Sửa Hồ Sơ</div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Họ tên</label>
+                        <input type="text" id="profileName" class="app-input" placeholder="Nguyễn Văn A">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Số điện thoại</label>
+                        <input type="tel" id="profilePhone" class="app-input" readonly placeholder="0901234567">
+                        <span class="form-hint">Dùng làm định danh — không thể thay đổi</span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Giới tính</label>
+                        <select id="profileGender" class="app-select">
+                            <option value="">— Chọn giới tính —</option>
+                            <option value="male">Nam</option>
+                            <option value="female">Nữ</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Trình độ chơi</label>
+                        <select id="profileTrindDo" class="app-select">
+                            <option value="">— Chọn trình độ —</option>
+                            <option value="Newbie">Newbie (Mới tập)</option>
+                            <option value="Yếu">Yếu</option>
+                            <option value="TB-">Trung bình yếu (TB-)</option>
+                            <option value="TB">Trung bình (TB)</option>
+                            <option value="TB+">Trung bình khá (TB+)</option>
+                            <option value="Khá">Khá</option>
+                            <option value="Giỏi">Giỏi</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row col-3">
+                    <div class="form-group">
+                        <label class="form-label"><i class="fa-solid fa-comment" style="color:#00b5e2;"></i> Zalo</label>
+                        <input type="tel" id="profileZalo" class="app-input" placeholder="SĐT Zalo">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><i class="fa-brands fa-facebook" style="color:#1877f2;"></i> Facebook</label>
+                        <input type="url" id="profileFacebook" class="app-input" placeholder="https://facebook.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"><i class="fa-solid fa-envelope" style="color:#ea4335;"></i> Gmail</label>
+                        <input type="email" id="profileGmail" class="app-input" placeholder="example@gmail.com">
+                    </div>
+                </div>
+                <div class="form-row col-1">
+                    <div class="form-group">
+                        <label class="form-label">Giới thiệu bản thân</label>
+                        <textarea id="profileBio" class="app-textarea" placeholder="Thích đánh giao hữu, thích gặp người mới..."></textarea>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:10px;margin-top:4px;">
+                    <button id="btnLuuProfile" class="btn-primary" onclick="window.luuProfile()">
+                        <i class="fa-solid fa-floppy-disk"></i> Lưu Lại
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════
+         TAB 2 — TÌM KÈO
+         ══════════════════════════════════════════════════ -->
+    <section id="tab-tim-keo" class="tab-section">
+
+        <!-- ── MOBILE ONLY: Topbar tinh gọn ── -->
+        <div class="tk-mobile-topbar">
+            <input id="filterCourtNameMobile" class="tk-topbar-input" type="text"
+                   placeholder="🔍 Tìm tên sân...">
+            <button class="tk-btn-filter" onclick="window.moBoLocDrawer && window.moBoLocDrawer()">
+                <i class="fa-solid fa-sliders"></i> Lọc Kèo
+            </button>
+        </div>
+
+        <!-- ── SPLIT LAYOUT: sidebar + main ── -->
+        <div class="tk-layout">
+
+            <!-- Cột trái: Sidebar bộ lọc (PC) -->
+            <aside class="tk-sidebar">
+                <div class="tk-sidebar-inner">
+                    <div class="tk-filter-heading">
+                        <i class="fa-solid fa-sliders"></i> Bộ Lọc
+                    </div>
+
+                    <div class="tk-filter-group">
+                        <label class="tk-filter-label">Tỉnh / Thành phố</label>
+                        <!-- Hidden — filter logic đọc từ đây -->
+                        <input type="hidden" id="filterProvince" value="">
+                        <div id="filterProvincePills" class="tk-province-grid">
+                            <button class="tk-province-btn" data-value="TP. Hồ Chí Minh"
+                                    onclick="window._toggleProvincePill(this)">TP. HCM</button>
+                            <button class="tk-province-btn" data-value="Hà Nội"
+                                    onclick="window._toggleProvincePill(this)">Hà Nội</button>
+                            <button class="tk-province-btn" data-value="Bình Dương"
+                                    onclick="window._toggleProvincePill(this)">Bình Dương</button>
+                            <button class="tk-province-btn" data-value="Đà Nẵng"
+                                    onclick="window._toggleProvincePill(this)">Đà Nẵng</button>
+                        </div>
+                    </div>
+                    <div class="tk-filter-group">
+                        <label class="tk-filter-label">Quận / Huyện</label>
+                        <select id="filterDistrict" class="tk-select"
+                                onchange="window.timKiemCaDau && window.timKiemCaDau()">
+                            <option value="">-- Tất cả --</option>
+                        </select>
+                    </div>
+                    <div class="tk-filter-group">
+                        <label class="tk-filter-label">Giới tính</label>
+                        <!-- Hidden select để sync với mobile drawer -->
+                        <select id="filterGender" style="display:none;" onchange="window.timKiemCaDau&&window.timKiemCaDau()">
+                            <option value="">Tất cả</option>
+                            <option value="Nam">Nam</option>
+                            <option value="Nữ">Nữ</option>
+                            <option value="Cả hai">Cả hai</option>
+                        </select>
+                        <div id="filterGenderPills" class="tk-filter-pills">
+                            <button class="tk-pill" data-value="Nam" onclick="window._toggleGenderPill(this)">♂ Nam</button>
+                            <button class="tk-pill" data-value="Nữ" onclick="window._toggleGenderPill(this)">♀ Nữ</button>
+                            <button class="tk-pill" data-value="Cả hai" onclick="window._toggleGenderPill(this)">⚥ Cả hai</button>
+                        </div>
+                    </div>
+                    <div class="tk-filter-group">
+                        <label class="tk-filter-label">Trình độ</label>
+                        <select id="filterLevel" style="display:none;" onchange="window.timKiemCaDau&&window.timKiemCaDau()">
+                            <option value="">Tất cả trình độ</option>
+                            <option value="Newbie">Newbie</option>
+                            <option value="Yếu">Yếu</option>
+                            <option value="TBY">TBY</option>
+                            <option value="TB-">TB-</option>
+                            <option value="TB">TB</option>
+                            <option value="TB+">TB+</option>
+                            <option value="TB Khá">TB Khá</option>
+                        </select>
+                        <div id="filterLevelPills" class="tk-filter-pills">
+                            <button class="tk-pill" data-value="Newbie" onclick="window._toggleLevelPill(this)">Newbie</button>
+                            <button class="tk-pill" data-value="Yếu" onclick="window._toggleLevelPill(this)">Yếu</button>
+                            <button class="tk-pill" data-value="TBY" onclick="window._toggleLevelPill(this)">TBY</button>
+                            <button class="tk-pill" data-value="TB-" onclick="window._toggleLevelPill(this)">TB-</button>
+                            <button class="tk-pill" data-value="TB" onclick="window._toggleLevelPill(this)">TB</button>
+                            <button class="tk-pill" data-value="TB+" onclick="window._toggleLevelPill(this)">TB+</button>
+                            <button class="tk-pill" data-value="TB Khá" onclick="window._toggleLevelPill(this)">TB Khá</button>
+                        </div>
+                    </div>
+                    <div class="tk-filter-group">
+                        <label class="tk-filter-label" style="display:flex;justify-content:space-between;align-items:center;">
+                            <span>CHỌN NGÀY</span>
+                            <button class="tk-cal-clr" onclick="window._tkCalClear&&window._tkCalClear()">✕ Xóa ngày</button>
+                        </label>
+                        <!-- Hidden input — tương thích với filter logic hiện tại -->
+                        <input type="hidden" id="filterDate" value="">
+                        <div class="tk-inline-cal">
+                            <div class="tk-cal-nav">
+                                <button onclick="window._tkCalNav&&window._tkCalNav(-1)">‹</button>
+                                <span id="tkCalTitle"></span>
+                                <button onclick="window._tkCalNav&&window._tkCalNav(1)">›</button>
+                            </div>
+                            <div class="tk-cal-dow">
+                                <span>CN</span><span>T2</span><span>T3</span>
+                                <span>T4</span><span>T5</span><span>T6</span><span>T7</span>
+                            </div>
+                            <div id="tkCalGrid"></div>
+                        </div>
+                    </div>
+                    <div class="tk-filter-group">
+                        <label class="tk-filter-label">Khung giờ</label>
+                        <div style="display:flex;gap:6px;align-items:center;">
+                            <select id="filterTimeFrom" class="tk-select" style="flex:1;"
+                                    onchange="window.timKiemCaDau&&window.timKiemCaDau()">
+                                <option value="">Từ giờ</option>
+                            </select>
+                            <span style="font-size:0.72rem;color:var(--text-muted);flex-shrink:0;">—</span>
+                            <select id="filterTimeTo" class="tk-select" style="flex:1;"
+                                    onchange="window.timKiemCaDau&&window.timKiemCaDau()">
+                                <option value="">Đến</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="tk-filter-group">
+                        <label class="tk-filter-label" style="display:flex;justify-content:space-between;align-items:center;">
+                            <span>Giá tối đa</span>
+                            <span id="filterMaxPriceLabel" style="color:var(--accent);font-weight:700;font-size:0.78rem;">Tất cả</span>
+                        </label>
+                        <input type="range" id="filterMaxPrice" class="tk-range"
+                               min="0" max="200000" step="5000" value="0"
+                               list="priceTickmarks"
+                               oninput="window._capNhatNhanGia&&window._capNhatNhanGia();window.timKiemCaDau&&window.timKiemCaDau()">
+                        <datalist id="priceTickmarks">
+                            <option value="0"><option value="50000"><option value="100000"><option value="150000"><option value="200000">
+                        </datalist>
+                        <div style="display:flex;justify-content:space-between;margin-top:1px;padding:0 1px;">
+                            <span style="width:1px;height:5px;background:rgba(255,255,255,0.2);display:block;"></span>
+                            <span style="width:1px;height:5px;background:rgba(255,255,255,0.2);display:block;"></span>
+                            <span style="width:1px;height:5px;background:rgba(255,255,255,0.2);display:block;"></span>
+                            <span style="width:1px;height:5px;background:rgba(255,255,255,0.2);display:block;"></span>
+                            <span style="width:1px;height:5px;background:rgba(255,255,255,0.2);display:block;"></span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:#94a3b8;margin-top:1px;padding:0 1px;font-weight:600;">
+                            <span>0</span><span>50k</span><span>100k</span><span>150k</span><span>200k</span>
+                        </div>
+                    </div>
+                    <div class="tk-filter-group">
+                        <label class="tk-filter-label">Tên sân</label>
+                        <input type="text" id="filterCourtName" class="tk-input"
+                               placeholder="Tìm theo tên sân..."
+                               oninput="window.timKiemCaDau && window.timKiemCaDau()">
+                    </div>
+
+                    <div style="margin-top:14px;">
+                        <button class="tk-btn-secondary"
+                                onclick="window.xoaBoLoc && window.xoaBoLoc()">
+                            <i class="fa-solid fa-rotate-left"></i> Xóa Bộ Lọc
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Cột phải: Đếm kết quả + lưới kèo -->
+            <main class="tk-main">
+                <div class="tk-result-count" id="countSearchResult">Đang tải kèo...</div>
+                <div id="slotsSearchResultContainer" class="keo-grid">
+                    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">
+                        <i class="fa-solid fa-spinner fa-spin"
+                           style="font-size:1.5rem;display:block;margin-bottom:12px;"></i>
+                        Đang tải danh sách kèo...
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- ── MOBILE: Drawer overlay ── -->
+        <div id="tkDrawerOverlay" class="tk-drawer-overlay"
+             onclick="window.dongBoLocDrawer && window.dongBoLocDrawer()"></div>
+
+        <!-- ── MOBILE: Slide-up Drawer ── -->
+        <div id="tkDrawer" class="tk-drawer">
+            <div class="tk-drawer-handle"></div>
+            <div class="tk-drawer-title"><i class="fa-solid fa-sliders"></i> Bộ Lọc Kèo</div>
+
+            <div class="tk-filter-group">
+                <label class="tk-filter-label">Tỉnh / Thành phố</label>
+                <select id="filterProvinceMobile" class="tk-select"
+                        onchange="window._capNhatHuyenDrawer && window._capNhatHuyenDrawer(this.value)">
+                    <option value="">🇻🇳 Toàn Quốc</option>
+                </select>
+            </div>
+            <div class="tk-filter-group">
+                <label class="tk-filter-label">Quận / Huyện</label>
+                <select id="filterDistrictMobile" class="tk-select">
+                    <option value="">-- Tất cả --</option>
+                </select>
+            </div>
+            <!-- Giới tính — Button Group Pills (đồng bộ PC) -->
+            <div class="tk-filter-group">
+                <label class="tk-filter-label">Giới tính</label>
+                <div id="filterGenderPillsMobile" class="tk-filter-pills" style="flex-wrap:nowrap;">
+                    <button class="tk-pill" data-value="Nam"    onclick="window._toggleMobileGenderPill(this)">♂ Nam</button>
+                    <button class="tk-pill" data-value="Nữ"    onclick="window._toggleMobileGenderPill(this)">♀ Nữ</button>
+                    <button class="tk-pill" data-value="Cả hai" onclick="window._toggleMobileGenderPill(this)">⚥ Cả hai</button>
+                </div>
+            </div>
+
+            <!-- Trình độ — Multi-select Pills (đồng bộ PC) -->
+            <div class="tk-filter-group">
+                <label class="tk-filter-label">Trình độ <span style="font-size:0.68rem;color:#64748b;">(chọn nhiều)</span></label>
+                <div id="filterLevelPillsMobile" class="tk-filter-pills">
+                    <button class="tk-pill" data-value="Newbie" onclick="window._toggleMobileLevelPill(this)">Newbie</button>
+                    <button class="tk-pill" data-value="Yếu"   onclick="window._toggleMobileLevelPill(this)">Yếu</button>
+                    <button class="tk-pill" data-value="TBY"    onclick="window._toggleMobileLevelPill(this)">TBY</button>
+                    <button class="tk-pill" data-value="TB-"    onclick="window._toggleMobileLevelPill(this)">TB-</button>
+                    <button class="tk-pill" data-value="TB+"    onclick="window._toggleMobileLevelPill(this)">TB+</button>
+                    <button class="tk-pill" data-value="TB khá" onclick="window._toggleMobileLevelPill(this)">TB Khá</button>
+                </div>
+            </div>
+
+            <!-- Ngày đánh -->
+            <div class="tk-filter-group">
+                <label class="tk-filter-label">Ngày đánh</label>
+                <input type="date" id="filterDateMobile" class="tk-input">
+            </div>
+
+            <!-- Khung giờ (giống PC) -->
+            <div class="tk-filter-group">
+                <label class="tk-filter-label">Khung giờ</label>
+                <div style="display:flex;gap:6px;align-items:center;">
+                    <select id="filterTimeFromMobile" class="tk-select" style="flex:1;">
+                        <option value="">Từ giờ</option>
+                    </select>
+                    <span style="font-size:0.72rem;color:var(--text-muted,#64748b);flex-shrink:0;">—</span>
+                    <select id="filterTimeToMobile" class="tk-select" style="flex:1;">
+                        <option value="">Đến</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Giá tối đa — Range Slider (đồng bộ PC) -->
+            <div class="tk-filter-group">
+                <label class="tk-filter-label" style="display:flex;justify-content:space-between;align-items:center;">
+                    <span>Giá tối đa</span>
+                    <span id="filterMaxPriceLabelMobile" style="color:var(--accent,#FF5500);font-weight:700;font-size:0.78rem;">Tất cả</span>
+                </label>
+                <input type="range" id="filterMaxPriceMobile" class="tk-range"
+                       min="0" max="200000" step="5000" value="0"
+                       oninput="window._capNhatNhanGiaMobile&&window._capNhatNhanGiaMobile()">
+            </div>
+
+            <!-- Tên sân -->
+            <div class="tk-filter-group">
+                <label class="tk-filter-label">Tên sân</label>
+                <input type="text" id="filterCourtNameDrawer" class="tk-input"
+                       placeholder="Tìm theo tên sân...">
+            </div>
+
+            <div class="tk-drawer-actions">
+                <button class="tk-btn-primary"
+                        onclick="window.xacNhanBoLocDrawer && window.xacNhanBoLocDrawer()">
+                    <i class="fa-solid fa-check"></i> Xác Nhận
+                </button>
+                <button class="tk-btn-secondary"
+                        onclick="window.dongBoLocDrawer && window.dongBoLocDrawer()">
+                    Đóng
+                </button>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- ══════════════════════════════════════════════════
+         TAB 3 — ĐĂNG & QUẢN LÝ
+         ══════════════════════════════════════════════════ -->
+    <section id="tab-dang-quan-ly" class="tab-section">
+
+        <!-- Prompt đăng nhập -->
+        <div id="dql-login-prompt" class="login-prompt" style="display:none;">
+            <div class="ls-login-card">
+                <div class="ls-login-icon">
+                    <i class="fa-solid fa-lock"></i>
+                </div>
+                <h3 class="ls-login-title">Quản Lý Ca Đấu Của Bạn</h3>
+                <p class="ls-login-desc">Vui lòng đăng nhập để đăng kèo, quản lý ca đấu và theo dõi doanh thu.</p>
+                <button class="btn-primary" style="width:100%;padding:12px;border-radius:10px;font-size:0.92rem;"
+                        onclick="window.chuyenTab('ca-nhan')">
+                    <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập Ngay
+                </button>
+            </div>
+        </div>
+
+        <!-- Nội dung chính -->
+        <div id="dql-content" style="display:none;">
+
+            <!-- Sub-tab nav -->
+            <div class="subtab-nav">
+                <button class="subtab-btn" data-subtab="dang-ca"
+                        onclick="window.chuyenSubTab('dang-quan-ly','dang-ca')">
+                    <i class="fa-solid fa-plus"></i> Đăng Ca Mới
+                </button>
+                <button class="subtab-btn" data-subtab="ds-ca"
+                        onclick="window.chuyenSubTab('dang-quan-ly','ds-ca');window.loadLichSuCaDauHost && window.loadLichSuCaDauHost()">
+                    <i class="fa-solid fa-list"></i> Ca Đã Đăng
+                </button>
+                <button class="subtab-btn" data-subtab="doanh-thu"
+                        onclick="window.chuyenSubTab('dang-quan-ly','doanh-thu');window.chuyenTabDoanhThu && window.chuyenTabDoanhThu()">
+                    <i class="fa-solid fa-chart-line"></i> Doanh Thu
+                </button>
+            </div>
+
+            <!-- Sub-tab 3A: Đăng Ca Mới -->
+            <div id="subtab-dang-quan-ly-dang-ca" class="subtab-section">
+                <!-- Form đăng ca — tái sử dụng HTML từ host.html, bind JS từ phan-he-host.js -->
+                <div class="app-card">
+                    <div class="app-card-title"><i class="fa-solid fa-map-location-dot"></i> Địa Điểm &amp; Thời Gian</div>
+                    <!-- Địa lý: Tỉnh/Thành phố + Quận/Huyện -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Tỉnh / Thành phố</label>
+                            <select id="hostProvince" class="app-select" onchange="window._capNhatHuyenBoLoc && window._capNhatHuyenBoLoc(this.value)"></select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Quận / Huyện</label>
+                            <select id="hostDistrict" class="app-select">
+                                <option value="" disabled selected>-- Chọn Quận/Huyện --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- HÀNG 1: Tên sân | Số sân mở | Sân cụ thể -->
+                    <div class="form-row col-san">
+                        <div class="form-group">
+                            <label class="form-label">Tên sân</label>
+                            <input type="text" id="hostCourtName" class="app-input" placeholder="VD: Sân Thần Đồng, Sân Tân Bình...">
+                            <span class="form-hint" style="color:#f97316;">Nên nhập đầy đủ tên sân giống Google Maps. VD: SÂN CẦU LÔNG ĐẠI PHÁT, BE BADMINTON</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Số sân mở</label>
+                            <select id="hostCourtQuantity" class="app-select"
+                                onchange="window._tinhThoiGian&&window._tinhThoiGian();window.validateSanCuThe&&window.validateSanCuThe(document.getElementById('hostCourtNumber'));window._autoFillSlot&&window._autoFillSlot()">
+                                <option value="1">1 sân</option><option value="2">2 sân</option>
+                                <option value="3">3 sân</option><option value="4">4 sân</option>
+                                <option value="5">5 sân</option><option value="6">6 sân</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Sân cụ thể</label>
+                            <input type="text" id="hostCourtNumber" class="app-input" placeholder="Vd: 1, 2"
+                                oninput="window.validateSanCuThe && window.validateSanCuThe(this)">
+                            <span class="form-hint" id="hintSanCuThe"></span>
+                        </div>
+                    </div>
+                    <!-- HÀNG 2: Địa chỉ sân | Link Maps + nút Tìm Maps dính liền -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Địa chỉ sân <span style="font-weight:400;color:rgba(255,255,255,0.35);text-transform:none;letter-spacing:0;">(không bắt buộc)</span></label>
+                            <input type="text" id="hostCourtAddress" class="app-input" placeholder="VD: 123 Đường Lê Văn Việt, P. Hiệp Phú, Q.9">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Link Google Maps sân <span style="font-weight:400;color:rgba(255,255,255,0.35);text-transform:none;letter-spacing:0;">(không bắt buộc)</span> <span class="tt" data-tip="Mở Google Maps → tìm sân → bấm Chia sẻ → Sao chép liên kết → dán vào đây. Hoặc bấm nút &quot;Tìm Maps&quot; để tự động tìm theo tên sân + địa chỉ đã điền.">?</span></label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <input type="url" id="hostMapsLink" class="app-input" placeholder="https://maps.google.com/..." style="flex:1;"
+                                       oninput="window._validateMapsLink&&window._validateMapsLink()">
+                                <button type="button" title="Tìm trên Google Maps"
+                                        onclick="window._moTimKiemMaps&&window._moTimKiemMaps()"
+                                        style="flex-shrink:0;padding:9px 12px;border-radius:var(--radius-sm);
+                                               background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.35);
+                                               color:#4ade80;cursor:pointer;font-size:0.88rem;white-space:nowrap;font-family:inherit;">
+                                    <i class="fa-solid fa-map-location-dot"></i> Tìm Maps
+                                </button>
+                            </div>
+                            <span id="hostMapsLinkErr" class="form-hint" style="color:#ef4444;display:none;"></span>
+                        </div>
+                    </div>
+                    <!-- HÀNG 3: Giờ bắt đầu | Giờ kết thúc | Tổng giờ chơi | Ngày đánh -->
+                    <div class="form-row col-4">
+                        <div class="form-group">
+                            <label class="form-label">Giờ bắt đầu</label>
+                            <div style="display:flex;align-items:center;gap:5px;">
+                                <select id="hostTimeStartH" class="app-select" style="flex:1;min-width:0;"
+                                        onchange="window._tinhThoiGian&&window._tinhThoiGian()">
+                                    <!-- Điền bởi _napThoiGianPair() -->
+                                </select>
+                                <span style="color:var(--text-muted);font-weight:700;font-size:1.1rem;flex-shrink:0;">:</span>
+                                <select id="hostTimeStartM" class="app-select" style="flex:1;min-width:0;"
+                                        onchange="window._tinhThoiGian&&window._tinhThoiGian()">
+                                    <!-- Điền bởi _napThoiGianPair() -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Giờ kết thúc</label>
+                            <div style="display:flex;align-items:center;gap:5px;">
+                                <select id="hostTimeEndH" class="app-select" style="flex:1;min-width:0;"
+                                        onchange="window._tinhThoiGian&&window._tinhThoiGian()">
+                                    <!-- Điền bởi _napThoiGianPair() -->
+                                </select>
+                                <span style="color:var(--text-muted);font-weight:700;font-size:1.1rem;flex-shrink:0;">:</span>
+                                <select id="hostTimeEndM" class="app-select" style="flex:1;min-width:0;"
+                                        onchange="window._tinhThoiGian&&window._tinhThoiGian()">
+                                    <!-- Điền bởi _napThoiGianPair() -->
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Tổng giờ chơi</label>
+                            <input type="text" id="hostTotalDuration" class="app-input" readonly placeholder="Tự tính">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Ngày đánh</label>
+                            <input type="date" id="hostDatePlay" class="app-input" oninput="window._tinhThoiGian && window._tinhThoiGian()">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="app-card">
+                    <div class="app-card-title"><i class="fa-solid fa-users"></i> Yêu Cầu Người Chơi</div>
+                    <!-- HÀNG 5: Giới tính(25%) | Slot(25%) | Giá Nam(20%) | Giá Nữ(20%) | Nút kế toán(10%) -->
+                    <div class="row-h5">
+                        <div class="form-group fg-gender">
+                            <label class="form-label">Giới tính cần</label>
+                            <div class="lvl-pill-group" style="margin-top:4px;">
+                                <input type="radio" class="lvl-cb" name="hostGenderSelect" id="genderMale" value="male" checked
+                                       onchange="window._capNhatTrinhDoSection&&window._capNhatTrinhDoSection(this.value)">
+                                <label for="genderMale" class="lvl-pill"><span class="g-icon">♂</span> Nam</label>
+                                <input type="radio" class="lvl-cb" name="hostGenderSelect" id="genderFemale" value="female"
+                                       onchange="window._capNhatTrinhDoSection&&window._capNhatTrinhDoSection(this.value)">
+                                <label for="genderFemale" class="lvl-pill"><span class="g-icon">♀</span> Nữ</label>
+                                <input type="radio" class="lvl-cb" name="hostGenderSelect" id="genderBoth" value="both"
+                                       onchange="window._capNhatTrinhDoSection&&window._capNhatTrinhDoSection(this.value)">
+                                <label for="genderBoth" class="lvl-pill"><span class="g-icon">⚥</span> Cả hai</label>
+                            </div>
+                        </div>
+                        <div class="form-group fg-slot">
+                            <label class="form-label">Số Slot Cần Tuyển</label>
+                            <input type="number" id="input-total-slots" class="app-input" min="1" max="200" placeholder="VD: 20"
+                                   oninput="window._kiemTraMatDoNguoi&&window._kiemTraMatDoNguoi()">
+                            <span id="hintSoSlot" style="display:none;font-size:0.72rem;color:#f97316;margin-top:4px;line-height:1.4;"></span>
+                        </div>
+                        <div class="form-group fg-price">
+                            <label class="form-label">Giá Thu Nam (K)</label>
+                            <input type="text" id="hostPublicPriceMale" class="app-input" placeholder="VD: 80"
+                                   oninput="window._formatInputTienTeK&&window._formatInputTienTeK(this);window._tinhGoiYGia&&window._tinhGoiYGia();">
+                        </div>
+                        <div class="form-group fg-price">
+                            <label class="form-label">Giá Thu Nữ (K)</label>
+                            <input type="text" id="hostPublicPriceFemale" class="app-input" placeholder="VD: 60"
+                                   oninput="window._formatInputTienTeK&&window._formatInputTienTeK(this);window._tinhGoiYGia&&window._tinhGoiYGia();">
+                        </div>
+                        <div class="fg-btn">
+                            <button type="button" class="btn-kt-trigger" onclick="window.moKtModal && window.moKtModal()">
+                                <i class="fa-solid fa-calculator"></i> Tính toán &amp; Gợi ý giá
+                                <span class="tt" data-tip="Mở máy tính kế toán nội bộ: nhập tiền sân, cầu, nước → hệ thống tự tính và đề xuất 3 mức giá. Click chọn mức giá để điền thẳng vào ô Giá Thu Nam / Nữ.">?</span>
+                            </button>
+                        </div>
+                    </div>
+                    <!-- Toggle đặt cọc — chỉ mở khi host đủ điều kiện -->
+                    <div class="form-group" style="margin-bottom:4px;">
+                        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.85rem;color:#e2e8f0;">
+                            <input type="checkbox" id="hostRequireCoc" disabled
+                                style="width:18px;height:18px;accent-color:#FF5500;">
+                            <span id="hostRequireCocLabel">
+                                🔒 Yêu cầu đặt cọc <span style="font-size:0.75rem;color:#64748b;font-weight:400;">(Khóa — cần tối thiểu 7 ngày hoạt động &amp; 3 ca thành công)</span>
+                            </span>
+                        </label>
+                    </div>
+                    <!-- Trình độ Nam — 100% rộng, ẩn/hiện theo giới tính -->
+                    <div id="levelNamSection">
+                        <div id="labelTrinhDoNam" class="form-label" style="margin-bottom:8px;">Trình độ Nam yêu cầu</div>
+                        <div class="lvl-pill-group" style="margin-bottom:14px;">
+                            <input type="checkbox" id="m_lvl_newbie" value="Newbie" class="lvl-cb"><label for="m_lvl_newbie" class="lvl-pill">Newbie</label>
+                            <input type="checkbox" id="m_lvl_yeu" value="Yếu" class="lvl-cb"><label for="m_lvl_yeu" class="lvl-pill">Yếu</label>
+                            <input type="checkbox" id="m_lvl_tby" value="TBY" class="lvl-cb"><label for="m_lvl_tby" class="lvl-pill">TBY</label>
+                            <input type="checkbox" id="m_lvl_tb_minus" value="TB-" class="lvl-cb"><label for="m_lvl_tb_minus" class="lvl-pill">TB-</label>
+                            <input type="checkbox" id="m_lvl_tb" value="TB" class="lvl-cb"><label for="m_lvl_tb" class="lvl-pill">TB</label>
+                            <input type="checkbox" id="m_lvl_tb_plus" value="TB+" class="lvl-cb"><label for="m_lvl_tb_plus" class="lvl-pill">TB+</label>
+                            <input type="checkbox" id="m_lvl_tbk" value="Khá" class="lvl-cb"><label for="m_lvl_tbk" class="lvl-pill">Khá</label>
+                            <input type="text" id="hostMaleCustomLevel" class="app-input lvl-custom" placeholder="Vd: chơi 1 năm đổ lên, chơi 6 tháng liên tục...">
+                        </div>
+                    </div>
+                    <!-- Trình độ Nữ — 100% rộng, ẩn/hiện theo giới tính -->
+                    <div id="levelNuSection" style="display:none;">
+                        <div class="form-label" style="margin-bottom:8px;">Trình độ Nữ yêu cầu</div>
+                        <div class="lvl-pill-group" style="margin-bottom:14px;">
+                            <input type="checkbox" id="f_lvl_newbie" value="Newbie" class="lvl-cb"><label for="f_lvl_newbie" class="lvl-pill">Newbie</label>
+                            <input type="checkbox" id="f_lvl_yeu" value="Yếu" class="lvl-cb"><label for="f_lvl_yeu" class="lvl-pill">Yếu</label>
+                            <input type="checkbox" id="f_lvl_tby" value="TBY" class="lvl-cb"><label for="f_lvl_tby" class="lvl-pill">TBY</label>
+                            <input type="checkbox" id="f_lvl_tb_minus" value="TB-" class="lvl-cb"><label for="f_lvl_tb_minus" class="lvl-pill">TB-</label>
+                            <input type="checkbox" id="f_lvl_tb" value="TB" class="lvl-cb"><label for="f_lvl_tb" class="lvl-pill">TB</label>
+                            <input type="checkbox" id="f_lvl_tb_plus" value="TB+" class="lvl-cb"><label for="f_lvl_tb_plus" class="lvl-pill">TB+</label>
+                            <input type="checkbox" id="f_lvl_tbk" value="Khá" class="lvl-cb"><label for="f_lvl_tbk" class="lvl-pill">Khá</label>
+                            <input type="text" id="hostFemaleCustomLevel" class="app-input lvl-custom" placeholder="Vd: chơi 1 năm đổ lên, chơi 6 tháng liên tục...">
+                        </div>
+                    </div>
+                    <!-- HÀNG 5: GIÁ ĐÃ BAO GỒM — label + pills trên cùng 1 dòng -->
+                    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px;">
+                        <span class="form-label" style="flex-shrink:0;white-space:nowrap;margin:0;text-transform:uppercase;letter-spacing:0.05em;">Giá đã bao gồm:</span>
+                        <div class="lvl-pill-group" style="margin:0;">
+                            <input type="checkbox" id="inc_san" class="lvl-cb"><label for="inc_san" class="lvl-pill">🏟️ Tiền sân</label>
+                            <input type="checkbox" id="inc_cau" class="lvl-cb"><label for="inc_cau" class="lvl-pill">🏸 Tiền cầu</label>
+                            <input type="checkbox" id="inc_nuoc" class="lvl-cb"><label for="inc_nuoc" class="lvl-pill">💧 Nước uống</label>
+                            <input type="checkbox" id="inc_xe" class="lvl-cb"><label for="inc_xe" class="lvl-pill">🏍️ Gửi xe</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <!-- Turnstile widget cho đăng bài (ẩn đến khi cần) -->
+                    <div id="cfTurnstileHostWrap" style="margin-bottom:10px;display:none;">
+                        <div class="cf-turnstile" data-sitekey="0x4AAAAAADeiC_0mMTnc07rd" data-theme="dark" data-size="flexible" id="cfTurnstileHost"></div>
+                    </div>
+                    <button id="btnDangCa" class="btn-primary" onclick="window.dangCaDauCuaHost && window.dangCaDauCuaHost()">
+                        <i class="fa-solid fa-rocket"></i> Đăng Kèo
+                    </button>
+                    <button class="btn-secondary" onclick="window._resetFormDangCa && window._resetFormDangCa()">
+                        <i class="fa-solid fa-rotate"></i> Nhập Lại
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sub-tab 3B: Ca Đã Đăng -->
+            <div id="subtab-dang-quan-ly-ds-ca" class="subtab-section">
+                <div class="app-card">
+                    <div class="app-card-title"><i class="fa-solid fa-list-check"></i> Danh Sách Ca Đấu Của Tôi</div>
+                    <div class="table-wrap">
+                        <table class="app-table">
+                            <thead>
+                                <tr>
+                                    <th>Ngày Đánh</th>
+                                    <th>Sân</th>
+                                    <th>Giờ</th>
+                                    <th>Slot</th>
+                                    <th>Giá</th>
+                                    <th>Trạng Thái</th>
+                                    <th>Hành Động</th>
+                                </tr>
+                            </thead>
+                            <tbody id="hostSlotsBody">
+                                <tr><td colspan="7" style="text-align:center;padding:24px;color:var(--text-muted);">
+                                    <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub-tab 3D: Thống Kê Doanh Thu -->
+            <div id="subtab-dang-quan-ly-doanh-thu" class="subtab-section">
+                <div id="tabDoanhThu">
+                    <!-- Được render bởi phan-he-host.js _renderDoanhThu() -->
+                    <div style="text-align:center;padding:40px;color:var(--text-muted);">
+                        <i class="fa-solid fa-chart-line" style="font-size:2rem;display:block;margin-bottom:12px;"></i>
+                        Đang tải thống kê...
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════
+         TAB 4 — LỊCH SỬ & ĐÁNH GIÁ
+         ══════════════════════════════════════════════════ -->
+    <section id="tab-lich-su" class="tab-section">
+
+        <!-- Prompt đăng nhập -->
+        <div id="ls-login-prompt" class="login-prompt" style="display:none;">
+            <div class="ls-login-card">
+                <div class="ls-login-icon">
+                    <i class="fa-solid fa-clock-rotate-left"></i>
+                </div>
+                <h3 class="ls-login-title">Theo Dõi Hành Trình Của Bạn</h3>
+                <p class="ls-login-desc">Vui lòng đăng nhập để theo dõi lịch sử đấu và điểm uy tín của bạn.</p>
+                <button class="btn-primary" style="width:100%;padding:12px;border-radius:10px;font-size:0.92rem;"
+                        onclick="window.chuyenTab('ca-nhan')">
+                    <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập Ngay
+                </button>
+            </div>
+        </div>
+
+        <!-- Sub-tab nav -->
+        <div id="ls-nav-wrap">
+            <div class="subtab-nav">
+                <button class="subtab-btn" data-subtab="tham-gia"
+                        onclick="window.chuyenSubTab('lich-su','tham-gia');window._taiLichSuDau && window._taiLichSuDau()">
+                    <i class="fa-solid fa-flag-checkered"></i> Lịch Sử Tham Gia
+                </button>
+                <button class="subtab-btn" data-subtab="danh-gia"
+                        onclick="window.chuyenSubTab('lich-su','danh-gia');window._taiDanhGiaVeToi && window._taiDanhGiaVeToi()">
+                    <i class="fa-solid fa-star"></i> Đánh Giá Nhận Được
+                </button>
+            </div>
+
+            <!-- Sub-tab 4A: Lịch Sử Tham Gia -->
+            <div id="subtab-lich-su-tham-gia" class="subtab-section">
+                <!-- Stats tổng hợp -->
+                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;" id="lichSuStats">
+                    <div class="app-card" style="text-align:center;">
+                        <div style="font-size:1.6rem;font-weight:800;color:var(--accent);" id="statsTotalSlots">—</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Đã Tham Gia</div>
+                    </div>
+                    <div class="app-card" style="text-align:center;">
+                        <div style="font-size:1.4rem;font-weight:800;color:var(--accent-blue);" id="statsTotalCost">—</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Tổng Chi</div>
+                    </div>
+                </div>
+
+                <!-- Bộ lọc thời gian -->
+                <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+                    <button class="btn-secondary" onclick="window.locNhanhThoiGian && window.locNhanhThoiGian('week',this)">Tuần</button>
+                    <button class="btn-secondary" onclick="window.locNhanhThoiGian && window.locNhanhThoiGian('month',this)">Tháng</button>
+                    <button class="btn-secondary" onclick="window.locNhanhThoiGian && window.locNhanhThoiGian('year',this)">Năm</button>
+                    <button class="btn-secondary active-filter" onclick="window.locNhanhThoiGian && window.locNhanhThoiGian('all',this)">Tất Cả</button>
+                </div>
+                <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+                    <div class="form-group" style="flex:1;min-width:130px;">
+                        <label class="form-label">Từ ngày</label>
+                        <input type="date" id="statsDateFrom" class="app-input" onchange="window.locThongKeKhach && window.locThongKeKhach()">
+                    </div>
+                    <div class="form-group" style="flex:1;min-width:130px;">
+                        <label class="form-label">Đến ngày</label>
+                        <input type="date" id="statsDateTo" class="app-input" onchange="window.locThongKeKhach && window.locThongKeKhach()">
+                    </div>
+                </div>
+
+                <!-- Timeline lịch sử -->
+                <div id="lichSuTimeline">
+                    <div style="text-align:center;padding:40px;color:var(--text-muted);">
+                        <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:12px;"></i>
+                        Đang tải lịch sử...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sub-tab 4B: Đánh Giá Nhận Được -->
+            <div id="subtab-lich-su-danh-gia" class="subtab-section">
+                <!-- Tổng điểm uy tín -->
+                <div class="app-card" style="text-align:center;margin-bottom:16px;">
+                    <div style="font-size:2.4rem;font-weight:800;color:#fbbf24;" id="tongDiemUyTin">—</div>
+                    <div id="starsDisplay" class="stars" style="margin:4px 0;">—</div>
+                    <div id="soLuotDanhGia" style="font-size:0.78rem;color:var(--text-muted);"></div>
+                </div>
+
+                <!-- Danh sách đánh giá -->
+                <div id="danhGiaContainer">
+                    <div style="text-align:center;padding:40px;color:var(--text-muted);">
+                        Đang tải đánh giá...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════════════════
+         TAB 5 — TRANG CHỦ (Nội dung landing page nhúng vào app)
+         CTA dùng chuyenTab() thay vì href — không reload trang
+         ══════════════════════════════════════════════════ -->
+    <section id="tab-gioi-thieu" class="tab-section">
+
+        <!-- Hero -->
+        <div class="lp-hero">
+            <div class="lp-glow-blob lp-glow-blob-1"></div>
+            <div class="lp-glow-blob lp-glow-blob-2"></div>
+            <div class="lp-badge">Ứng dụng cầu lông hàng đầu Việt Nam</div>
+            <h1 class="lp-hero-title">
+                <span class="line1">Tìm Kèo Cầu Lông</span>
+                <span class="line2">Dễ Dàng Hơn Bao Giờ Hết</span>
+            </h1>
+            <p class="lp-hero-desc" id="heroDescText">
+                Kết nối người chơi vãng lai và chủ sân cầu lông toàn quốc.<br>
+                Đặt slot, quản lý ca đấu, xây dựng uy tín tức thì.
+            </p>
+            <div class="lp-cta-wrap">
+                <button onclick="window.chuyenTab('tim-keo')" class="lp-btn-cta">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    Tìm Kèo Ngay
+                    <i class="fa-solid fa-arrow-right"></i>
+                </button>
+                <button onclick="window.chuyenTab('dang-quan-ly')" class="lp-btn-sec">
+                    <i class="fa-solid fa-calendar-plus"></i>
+                    Đăng Kèo
+                </button>
+            </div>
+            <div class="lp-proof">
+                <span><i class="fa-solid fa-check"></i> Miễn phí đăng ký</span>
+                <span><i class="fa-solid fa-check"></i> Không cần mã kích hoạt</span>
+                <span><i class="fa-solid fa-check"></i> Toàn quốc (Khu vực lớn)</span>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <section class="lp-feat-wrap">
+            <div class="lp-sect-hd">
+                <div class="lp-sect-tag"><i class="fa-solid fa-rocket"></i> Vì sao chọn chúng tôi</div>
+                <h2 class="lp-sect-title">Tìm kèo chưa bao giờ dễ hơn</h2>
+                <p class="lp-sect-sub">1 tài khoản — vừa tìm kèo, vừa đăng kèo, vừa quản lý</p>
+            </div>
+            <div class="lp-feat-grid">
+                <!-- Card 1: Tìm Kèo — icon xanh lá, đỉnh card -->
+                <div class="lp-fcard dark">
+                    <div class="lp-bigem">
+                        <i class="fa-solid fa-location-crosshairs" style="color:#00c96e;"></i>
+                    </div>
+                    <div class="lp-ftag tg"><i class="fa-solid fa-magnifying-glass"></i> Tìm Kèo</div>
+                    <div class="lp-fcard-ttl">Bộ lọc thông minh tìm kèo phù hợp</div>
+                    <div class="lp-fcard-dsc">Lọc theo khu vực, trình độ, giá tiền. Tìm kèo ưng ý chỉ trong vài giây.</div>
+                    <ul class="lp-fcard-list">
+                        <li><i class="fa-solid fa-check-circle"></i> Tối ưu khu vực lớn: HN, TP.HCM, Đà Nẵng...</li>
+                        <li><i class="fa-solid fa-check-circle"></i> Lọc theo khu vực, giới tính & trình độ</li>
+                        <li><i class="fa-solid fa-check-circle"></i> Xem chi tiết & đặt slot 1 click</li>
+                        <li><i class="fa-solid fa-check-circle"></i> Share link kèo dễ dàng</li>
+                    </ul>
+                </div>
+                <!-- Card 2: Đăng Kèo — icon hồng, đỉnh card -->
+                <div class="lp-fcard pink">
+                    <div class="lp-bigem">
+                        <i class="fa-solid fa-calendar-check" style="color:#e879a0;"></i>
+                    </div>
+                    <div class="lp-ftag tp"><i class="fa-solid fa-calendar-plus"></i> Đăng Kèo</div>
+                    <div class="lp-fcard-ttl">Đăng ca đấu, gom khách tự động</div>
+                    <div class="lp-fcard-dsc">Tạo kèo trong 30 giây. Hệ thống tự quản lý danh sách đăng ký.</div>
+                    <ul class="lp-fcard-list">
+                        <li><i class="fa-solid fa-check-circle"></i> Form đăng kèo đơn giản</li>
+                        <li><i class="fa-solid fa-check-circle"></i> Tự tính chi phí sân, cầu</li>
+                        <li><i class="fa-solid fa-check-circle"></i> Gợi ý giá thu khách</li>
+                        <li><i class="fa-solid fa-check-circle"></i> Quản lý danh sách đăng ký</li>
+                    </ul>
+                </div>
+                <!-- Card 3: Uy Tín — icon tím, đỉnh card, 4 bullets -->
+                <div class="lp-fcard purple">
+                    <div class="lp-bigem">
+                        <i class="fa-solid fa-certificate" style="color:#a855f7;"></i>
+                    </div>
+                    <div class="lp-ftag tv"><i class="fa-solid fa-star"></i> Uy Tín</div>
+                    <div class="lp-fcard-ttl">Hệ thống đánh giá uy tín cộng đồng</div>
+                    <div class="lp-fcard-dsc">Sau mỗi ca đấu, cả host và khách đều được đánh giá minh bạch.</div>
+                    <ul class="lp-fcard-list">
+                        <li><i class="fa-solid fa-check-circle"></i> Đánh giá sao 1–5</li>
+                        <li><i class="fa-solid fa-check-circle"></i> Nhận xét công khai</li>
+                        <li><i class="fa-solid fa-check-circle"></i> Lịch sử tham gia chi tiết</li>
+                        <li><i class="fa-solid fa-check-circle"></i> Báo cáo / chặn tài khoản xấu</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats -->
+        <section class="lp-stats-wrap">
+            <div class="lp-stats-grid">
+                <div class="lp-stat">
+                    <span class="lp-stat-num" id="gtHudSlots" style="color:#FF5500;">50+</span>
+                    <span class="lp-stat-lbl">Ca đấu mở</span>
+                </div>
+                <div class="lp-stat">
+                    <span class="lp-stat-num" id="gtHudMembers" style="color:#22d3ee;">500+</span>
+                    <span class="lp-stat-lbl">Thành viên</span>
+                </div>
+                <div class="lp-stat">
+                    <span class="lp-stat-num" style="color:#a855f7;">24/7</span>
+                    <span class="lp-stat-lbl">Hoạt động</span>
+                </div>
+                <div class="lp-stat">
+                    <span class="lp-stat-num" style="color:#e879a0;">100%</span>
+                    <span class="lp-stat-lbl">Miễn phí</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA bottom -->
+        <section class="lp-cta-btm">
+            <h2>Sẵn sàng lên sân?</h2>
+            <p>Đăng ký miễn phí, dùng ngay toàn bộ tính năng. Không cần mã kích hoạt.</p>
+            <button onclick="window.chuyenTab('ca-nhan')" class="lp-btn-btm">
+                <i class="fa-solid fa-rocket"></i>
+                Vào Sàn Miễn Phí →
+            </button>
+        </section>
+
+        <!-- ── DONATE CARD — hiển thị động từ DB, ẩn nếu chưa config QR ── -->
+        <div id="donateSectionWrap"
+             style="display:none; padding: 56px 20px 0;">
+            <div style="max-width:400px; margin:0 auto;
+                        background: transparent;
+                        border: 1px solid rgba(6,182,212,0.35);
+                        border-radius: 20px;
+                        padding: 28px 24px;
+                        text-align: center;
+                        box-shadow: 0 0 24px rgba(6,182,212,0.08);">
+                <!-- Tiêu đề động từ DB phía TRÊN ảnh QR -->
+                <p id="donateTitleEl"
+                   style="color:#34d399; font-size:0.95rem; font-weight:800;
+                          letter-spacing:0.06em; text-transform:uppercase;
+                          margin: 0 0 18px;">
+                    MỜI ADMIN LY CAFE CHỐT KÈO ☕
+                </p>
+                <!-- QR image -->
+                <img id="donateQrImg" src="" alt="QR Ủng Hộ"
+                     style="width: 180px; height: 180px; object-fit: contain;
+                            border-radius: 12px;
+                            background: #fff; padding: 8px;
+                            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+                            display: block; margin: 0 auto;">
+                <!-- Text giải thích từ DB — phía DƯỚI ảnh QR -->
+                <p id="donateTextEl"
+                   style="color:#94a3b8; font-size:0.75rem;
+                          line-height:1.65; margin: 14px 0 0;"></p>
+            </div>
+        </div>
+
+        <!-- ── BẢN QUYỀN ── -->
+        <p style="text-align:center; color:#64748b; font-size:0.82rem;
+                  padding: 24px 16px 48px; margin:0; letter-spacing:0.02em;">
+            © 2026 TUYENVANGLAI.IO.VN — Nền tảng kết nối và quản lý giao lưu cầu lông hàng đầu Việt Nam.
+        </p>
+
+    </section>
+
+</div>
+<!-- /app-body -->
+
+<!-- ══════════════════════════════════════════════════
+     MODAL CHI TIẾT KÈO — tái sử dụng từ khach.html
+     ══════════════════════════════════════════════════ -->
+<div id="modalChiTietKeoOverlay"
+     role="dialog" aria-modal="true" aria-labelledby="modalKeoTitle"
+     style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.72);
+            align-items:center;justify-content:center;padding:16px;overflow-y:auto;
+            backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);">
+    <article class="modal-keo-article" style="background:#111116;border-radius:16px;
+                    width:100%;max-width:750px;position:relative;box-shadow:0 24px 70px rgba(0,0,0,0.65);">
+        <header style="position:relative;display:flex;align-items:center;justify-content:center;padding:16px 52px 12px;
+                       border-bottom:1px solid rgba(255,255,255,0.07);">
+            <h2 id="modalKeoTitle" style="margin:0;font-size:1.05rem;font-weight:800;color:#fff;display:flex;align-items:center;gap:8px;text-align:center;flex-wrap:wrap;justify-content:center;"></h2>
+            <button onclick="window.dongModalChiTietKeo()" aria-label="Đóng"
+                    style="position:absolute;right:16px;top:50%;transform:translateY(-50%);
+                           background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+                           color:#94a3b8;font-size:0.9rem;cursor:pointer;padding:6px 8px;border-radius:8px;
+                           transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                    onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </header>
+        <div id="modalKeoBody" style="padding:18px 20px 20px;max-height:76vh;overflow-y:auto;"></div>
+    </article>
+</div>
+
+<!-- MODAL DS KHÁCH -->
+<div id="modalDanhSachKhachOverlay"
+     style="display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,0.7);
+            align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
+    <div style="background:#111116;border:1px solid rgba(255,255,255,0.08);border-radius:16px;
+                width:100%;max-width:680px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;
+                    border-bottom:1px solid rgba(255,255,255,0.07);">
+            <h3 id="modalDanhSachKhachTitle" style="margin:0;font-size:1rem;font-weight:700;color:#fff;">Danh Sách Khách</h3>
+            <button onclick="window.dongModalDanhSachKhach && window.dongModalDanhSachKhach()"
+                    style="background:none;border:none;color:#64748b;font-size:1.1rem;cursor:pointer;padding:4px;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div id="modalDanhSachKhachBody" style="padding:20px;max-height:70vh;overflow-y:auto;"></div>
+    </div>
+</div>
+
+<!-- MODAL ĐÁNH GIÁ KHÁCH -->
+<div id="modalDanhGiaKhachOverlay"
+     style="display:none;position:fixed;inset:0;z-index:1100;background:rgba(0,0,0,0.7);
+            align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
+    <div style="background:#111116;border:1px solid rgba(255,255,255,0.08);border-radius:16px;
+                width:100%;max-width:480px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;
+                    border-bottom:1px solid rgba(255,255,255,0.07);">
+            <h3 id="modalDanhGiaTitle" style="margin:0;font-size:1rem;font-weight:700;color:#fff;">Đánh Giá Khách</h3>
+            <button onclick="window.dongModalDanhGiaKhach && window.dongModalDanhGiaKhach()"
+                    style="background:none;border:none;color:#64748b;font-size:1.1rem;cursor:pointer;padding:4px;">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div id="modalDanhGiaBody" style="padding:20px;max-height:70vh;overflow-y:auto;"></div>
+    </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div id="confirmModalOverlay">
+    <div id="confirmModalBox">
+        <span id="confirmModalIcon">⚠️</span>
+        <p id="confirmModalMsg">Bạn có chắc chắn không?</p>
+        <div class="confirm-modal-btns">
+            <button id="confirmModalOk">Xác nhận</button>
+            <button id="confirmModalCancel">Huỷ</button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+
+<!-- ══ POPUP MODAL ĐA NĂNG ══ -->
+<div id="uHoModalOverlay">
+    <div class="uho-modal-box">
+
+        <!-- Header -->
+        <div class="uho-modal-hd">
+            <span class="uho-modal-title">Ủng Hộ &amp; Góp Ý</span>
+            <button class="uho-close-btn" onclick="window.dongUHoModal()" title="Đóng">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="uho-tab-bar">
+            <button id="uhoBtnUngho" class="uho-tab-btn active"
+                    onclick="window.chuyenTabUho('ungho')">
+                ☕ Ủng hộ
+            </button>
+            <button id="uhoBtnGopy" class="uho-tab-btn"
+                    onclick="window.chuyenTabUho('gopy')">
+                💬 Góp ý
+            </button>
+        </div>
+
+        <!-- ── TAB 1: Ủng Hộ ── -->
+        <div id="uhoTabUngho" class="uho-tab-content">
+            <!-- Tiêu đề động từ DB -->
+            <p id="uhoTitleEl"
+               style="color:#34d399; font-size:0.9rem; font-weight:800;
+                      letter-spacing:0.06em; text-transform:uppercase;
+                      margin: 0 0 14px;">
+                MỜI ADMIN LY CAFE CHỐT KÈO ☕
+            </p>
+            <!-- QR Image (hiển thị khi có URL trong DB) -->
+            <div class="uho-qr-wrap" id="uhoQrWrap">
+                <img id="uhoQrImg" src="" alt="QR Donate"
+                     style="display:none; width:200px; height:200px;">
+            </div>
+
+            <!-- Placeholder khi chưa config QR -->
+            <div class="uho-qr-empty" id="uhoQrEmpty">
+                <i class="fa-solid fa-qrcode"></i>
+                <span style="font-size:0.82rem;">QR chưa được cấu hình<br>Liên hệ Admin để cập nhật.</span>
+            </div>
+
+            <p class="uho-qr-text" id="uhoQrText">
+                ☕ Ủng hộ tác giả 1 ly cà phê nhé!
+            </p>
+        </div>
+
+        <!-- ── TAB 2: Góp Ý ── -->
+        <div id="uhoTabGopy" class="uho-tab-content" style="display:none;">
+
+            <!-- Đã đánh giá: hiện sao khoá (không tương tác) -->
+            <div id="uhoDaRatedWrap" style="display:none; margin-bottom:16px;">
+                <label class="uho-label">Đánh giá của bạn</label>
+                <div id="uhoDaRatedStars" class="uho-star-row"
+                     style="pointer-events:none; cursor:default; opacity:0.9;"></div>
+                <p style="font-size:0.78rem; color:#64748b; margin:6px 0 0;">
+                    Bạn đã đánh giá rồi. Vẫn có thể tiếp tục góp ý thêm bất cứ lúc nào.
+                </p>
+            </div>
+
+            <!-- Chưa đánh giá: form sao tương tác -->
+            <div id="uhoRatingSection">
+                <label class="uho-label">Đánh giá trải nghiệm của bạn</label>
+                <div class="uho-star-row" id="uhoStarRow">
+                    <span class="uho-star" id="uhoStar1"
+                          onmouseenter="window.uhoHoverStar(1)" onmouseleave="window.uhoLeaveStar()"
+                          onclick="window.uhoClickStar(1)">★</span>
+                    <span class="uho-star" id="uhoStar2"
+                          onmouseenter="window.uhoHoverStar(2)" onmouseleave="window.uhoLeaveStar()"
+                          onclick="window.uhoClickStar(2)">★</span>
+                    <span class="uho-star" id="uhoStar3"
+                          onmouseenter="window.uhoHoverStar(3)" onmouseleave="window.uhoLeaveStar()"
+                          onclick="window.uhoClickStar(3)">★</span>
+                    <span class="uho-star" id="uhoStar4"
+                          onmouseenter="window.uhoHoverStar(4)" onmouseleave="window.uhoLeaveStar()"
+                          onclick="window.uhoClickStar(4)">★</span>
+                    <span class="uho-star" id="uhoStar5"
+                          onmouseenter="window.uhoHoverStar(5)" onmouseleave="window.uhoLeaveStar()"
+                          onclick="window.uhoClickStar(5)">★</span>
+                </div>
+            </div>
+
+            <!-- Category Chips -->
+            <label class="uho-label">Loại góp ý</label>
+            <div class="uho-chip-row">
+                <span class="uho-chip" onclick="window.uhoChonChip(this, 'Lỗi/Bug')">🐛 Lỗi / Bug</span>
+                <span class="uho-chip" onclick="window.uhoChonChip(this, 'Ý tưởng mới')">💡 Ý tưởng mới</span>
+                <span class="uho-chip" onclick="window.uhoChonChip(this, 'Giao diện/UX')">🎨 Giao diện / UX</span>
+                <span class="uho-chip" onclick="window.uhoChonChip(this, 'Khác')">💬 Khác</span>
+            </div>
+
+            <!-- Textarea -->
+            <label class="uho-label">Nội dung góp ý <span style="font-weight:400;text-transform:none;letter-spacing:0;">(không bắt buộc)</span></label>
+            <textarea id="uhoTextarea" class="uho-textarea"
+                      placeholder="Mô tả chi tiết vấn đề hoặc ý tưởng của bạn..."></textarea>
+
+            <!-- Submit -->
+            <button id="uhoBtnGui" class="uho-btn-submit" onclick="window.guiGopY()">
+                <i class="fa-solid fa-paper-plane"></i> Gửi góp ý
+            </button>
+
+            <!-- Thông báo inline bên dưới nút gửi -->
+            <div id="uhoInlineMsg" style="display:none; margin-top:12px; padding:10px 14px;
+                 border-radius:8px; font-size:0.85rem; font-weight:600;
+                 text-align:center; transition:opacity 0.3s;"></div>
+
+        </div>
+        <!-- /TAB 2 -->
+
+    </div>
+    <!-- /uho-modal-box -->
+</div>
+<!-- /uHoModalOverlay -->
+
+<!-- ── BẢO VỆ MÃ NGUỒN ── -->
+<script>
+document.addEventListener('contextmenu',e=>e.preventDefault());
+document.addEventListener('keydown',e=>{
+    if(e.key==='F12'||(e.ctrlKey&&e.shiftKey&&['I','C','J'].includes(e.key))||(e.ctrlKey&&e.key==='u')){
+        e.preventDefault();return false;
+    }
+});
+(function(){const t=160;setInterval(()=>{if(window.outerWidth-window.innerWidth>t||window.outerHeight-window.innerHeight>t){document.body.innerHTML='<h1 style="color:#FF5500;text-align:center;padding-top:200px;font-family:sans-serif">Vui lòng đóng DevTools</h1>';}},1000);})();
+setInterval(()=>console.clear(),100);console.log=()=>{};
+</script>
+
+<!-- ── Scripts ── -->
+<script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
+<script src="ket-noi-supabase.js?v=6.1"></script>
+<script src="bo-may-du-lieu.js?v=6.1"></script>
+<script src="hieu-ung-giao-dien.js?v=6.1"></script>
+<script src="phan-he-khach-choi.js?v=6.1"></script>
+<script src="phan-he-host.js?v=6.1"></script>
+<script src="phan-he-ung-dung.js?v=6.1"></script>
+<script src="phan-he-gop-y.js?v=6.1"></script>
+
+<script>
+// ── Xóa bộ lọc ──
+function xoaBoLoc() {
+    ["filterProvince","filterDistrict","filterGender","filterLevel","filterDate",
+     "filterMaxPrice","filterCourtName"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+    });
+    if (window.timKiemCaDau) window.timKiemCaDau();
+}
+window.xoaBoLoc = xoaBoLoc;
+
+// ── Redirect /khach và /host sang đúng tab ──
+(function () {
+    const ref = document.referrer;
+    if (ref && ref.includes("host.html")) {
+        // Đến từ host.html cũ → chuyển sang tab Đăng & Quản Lý
+        // (khoiTaoUngDung sẽ xử lý qua URL param)
+    }
+})();
+</script>
+
+<!-- ══ MODAL: HỒ SƠ TÍN DỤNG NGƯỜI ĐĂNG ══ -->
+<div id="modal-ho-so-nguoi-dang" class="hidden"
+     style="position:fixed;inset:0;z-index:1300;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);"
+     onclick="if(event.target===this)window.dongHoSoNguoiDang()">
+    <div style="background:#0f1e35;border:1px solid #1e3a5f;border-radius:14px;width:min(95vw,500px);max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.7);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px 12px;border-bottom:1px solid #1e3a5f;flex-shrink:0;">
+            <h3 style="margin:0;font-size:0.95rem;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:8px;">
+                <i class="fa-solid fa-id-card" style="color:#60a5fa;"></i> Hồ Sơ Tín Dụng
+            </h3>
+            <button onclick="window.dongHoSoNguoiDang()"
+                style="background:rgba(100,116,139,0.2);border:1px solid rgba(100,116,139,0.4);color:#94a3b8;font-size:1rem;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">✕</button>
+        </div>
+        <div id="modal-ho-so-nguoi-dang-body" style="overflow-y:auto;flex:1;padding:18px 20px 20px;">
+            <div style="text-align:center;padding:30px;color:#64748b;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>
+        </div>
+        <div style="padding:10px 20px;border-top:1px solid #1e3a5f;display:flex;justify-content:flex-end;flex-shrink:0;">
+            <button onclick="window.dongHoSoNguoiDang()"
+                style="background:rgba(30,58,95,0.6);border:1px solid #2d4a6e;color:#94a3b8;padding:7px 20px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;">Đóng</button>
+        </div>
+    </div>
+</div>
+<!-- ══════════════════════════════════════════════
+     KẾ TOÁN MODAL — Floating panel kế toán nội bộ
+     ══════════════════════════════════════════════ -->
+<div id="ktModalOverlay"
+     style="display:none;position:fixed;inset:0;z-index:450;background:rgba(0,0,0,0.72);
+            align-items:center;justify-content:center;padding:16px;">
+    <div id="ktModalPanel"
+         style="max-width:720px;width:100%;max-height:88dvh;overflow-y:auto;overflow-x:hidden;
+                background:var(--bg-card);border:1px solid rgba(255,255,255,0.1);
+                border-radius:var(--radius);box-shadow:0 16px 48px rgba(0,0,0,0.7);
+                position:relative;">
+        <!-- Header modal -->
+        <div style="position:sticky;top:0;z-index:1;background:var(--bg-card);
+                    display:flex;align-items:center;justify-content:space-between;
+                    padding:14px 18px;border-bottom:1px solid rgba(255,255,255,0.08);">
+            <div style="display:flex;align-items:center;gap:10px;font-size:0.92rem;font-weight:800;line-height:1;">
+                <i class="fa-solid fa-calculator" style="color:var(--accent);"></i> Kế Toán Nội Bộ
+            </div>
+            <button onclick="window.dongKtModal()"
+                    style="display:flex;align-items:center;justify-content:center;
+                           width:30px;height:30px;
+                           background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);
+                           color:var(--text-muted);font-size:1rem;
+                           border-radius:8px;cursor:pointer;font-family:inherit;
+                           transition:background .15s;flex-shrink:0;"
+                    onmouseenter="this.style.background='rgba(255,85,0,0.15)';this.style.color='var(--accent)'"
+                    onmouseleave="this.style.background='rgba(255,255,255,0.07)';this.style.color='var(--text-muted)'">✕</button>
+        </div>
+
+        <!-- Body modal -->
+        <div style="padding:20px;width:100%;box-sizing:border-box;overflow:hidden;">
+            <!-- Info banner — điền từ JS -->
+            <div id="ktModalInfo"
+                 style="background:rgba(255,85,0,0.07);border:1px solid rgba(255,85,0,0.2);
+                        border-radius:var(--radius-sm);padding:9px 14px;margin-bottom:16px;
+                        font-size:0.82rem;color:var(--text-sub);">
+                <i class="fa-solid fa-circle-info" style="color:var(--accent);margin-right:6px;"></i>
+                Mở form Đăng Ca Mới trước để lấy số giờ &amp; slot tự động.
+            </div>
+
+            <!-- Chi phí sân -->
+            <div class="form-row col-3">
+                <div class="form-group">
+                    <label class="form-label">Giá thuê sân / giờ (K)</label>
+                    <input type="text" id="hostAccountingCourtPrice" class="app-input" placeholder="VD: 120"
+                           oninput="window._formatInputTienTeK&&window._formatInputTienTeK(this);window._tinhGoiYGia&&window._tinhGoiYGia();">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Chi phí nước + phát sinh (K)</label>
+                    <input type="text" id="hostAccountingWaterCost" class="app-input" placeholder="VD: 50"
+                           oninput="window._formatInputTienTeK&&window._formatInputTienTeK(this);window._tinhGoiYGia&&window._tinhGoiYGia();">
+                </div>
+                <div class="form-group" style="display:flex;flex-direction:column;justify-content:flex-end;">
+                    <div style="font-size:0.8rem;color:var(--text-muted);padding-bottom:2px;">
+                        Tiền sân: <strong id="hostTotalCost" style="color:var(--accent);">--</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cầu tiêu thụ -->
+            <div class="app-card-title" style="margin-top:14px;"><i class="fa-solid fa-feather-pointed"></i> Cầu Tiêu Thụ</div>
+            <div id="shuttlecockListContainer"></div>
+            <button class="btn-secondary" style="margin-top:8px;" onclick="window._themHangCauMoi && window._themHangCauMoi()">
+                <i class="fa-solid fa-plus"></i> Thêm Loại Cầu
+            </button>
+            <div style="margin-top:8px;font-size:0.8rem;color:var(--text-muted);">
+                Tổng tiền cầu: <strong id="hostTotalCauCost" style="color:var(--accent);">0đ</strong>
+            </div>
+
+            <!-- Số người + Chênh lệch -->
+            <div class="form-row col-3" style="margin-top:14px;">
+                <div class="form-group" id="ktEstMaleGroup">
+                    <label class="form-label">Số người Nam dự kiến</label>
+                    <input type="number" id="hostAccountingEstMale" class="app-input" min="0" placeholder="VD: 10"
+                           oninput="window._tinhGoiYGia&&window._tinhGoiYGia();window._updateKtBanner&&window._updateKtBanner();window._kiemTraMatDoNguoiModal&&window._kiemTraMatDoNguoiModal()">
+                </div>
+                <div class="form-group" id="ktEstFemaleGroup">
+                    <label class="form-label">Số người Nữ dự kiến</label>
+                    <input type="number" id="hostAccountingEstFemale" class="app-input" min="0" placeholder="VD: 5"
+                           oninput="window._tinhGoiYGia&&window._tinhGoiYGia();window._updateKtBanner&&window._updateKtBanner();window._kiemTraMatDoNguoiModal&&window._kiemTraMatDoNguoiModal()">
+                </div>
+                <div class="form-group" id="ktGapGroup">
+                    <label class="form-label">
+                        Chênh lệch Nam/Nữ (K)
+                        <span class="tt" data-tip="Số dương (+) → Nam trả cao hơn. Số âm (-) → Nữ trả cao hơn. 0 = bằng nhau.">?</span>
+                    </label>
+                    <input type="text" id="hostAccountingGap" class="app-input" placeholder="VD: 10K hoặc -10K"
+                           oninput="window._formatInputTienTeK&&window._formatInputTienTeK(this);window._tinhGoiYGia&&window._tinhGoiYGia()">
+                </div>
+            </div>
+            <!-- Cảnh báo mềm mật độ người/sân trong modal -->
+            <div id="hintSoNguoiModal" style="display:none;font-size:0.75rem;color:#f97316;
+                 background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);
+                 border-radius:8px;padding:8px 12px;margin-top:6px;line-height:1.5;"></div>
+
+            <!-- Gợi ý giá -->
+            <div class="app-card-title" style="margin-top:14px;"><i class="fa-solid fa-lightbulb"></i> Gợi Ý Thu Tiền Khách</div>
+            <!-- Tổng chi phí tổng hợp — căn cứ chia tiền đầu người -->
+            <div style="display:flex;align-items:center;justify-content:space-between;
+                        background:rgba(255,85,0,0.08);border:1px solid rgba(255,85,0,0.3);
+                        border-radius:10px;padding:12px 16px;margin-bottom:10px;">
+                <span style="font-size:0.82rem;color:var(--text-sub);">
+                    <i class="fa-solid fa-circle-plus" style="color:var(--accent);margin-right:6px;"></i>
+                    Tổng chi phí (sân + cầu + nước)
+                </span>
+                <strong id="hostTotalAllCost" style="color:var(--accent);font-size:1.3rem;font-weight:800;letter-spacing:-0.02em;">0K</strong>
+            </div>
+            <div id="hs-pricing-grid" class="kt-sug-grid">
+                <div class="kt-sug-card" id="sugBoxBreak" onclick="window.apDungGoiYGia('breakeven')">
+                    <div class="kt-sug-label">Huề Vốn</div>
+                    <div class="kt-sug-prices">
+                        <div id="sugBreakNam" class="kt-sug-price">—</div>
+                        <div id="sugBreakNu" class="kt-sug-price">—</div>
+                    </div>
+                    <div id="sugBreakLai" class="kt-sug-result">—</div>
+                    <div class="kt-sug-apply">Áp dụng →</div>
+                </div>
+                <div class="kt-sug-card" id="sugBoxSmall" onclick="window.apDungGoiYGia('small')">
+                    <div class="kt-sug-label">Lãi Ít <span class="kt-sug-pct">+10%</span></div>
+                    <div class="kt-sug-prices">
+                        <div id="sugSmallNam" class="kt-sug-price">—</div>
+                        <div id="sugSmallNu" class="kt-sug-price">—</div>
+                    </div>
+                    <div id="sugSmallLai" class="kt-sug-result">—</div>
+                    <div class="kt-sug-apply">Áp dụng →</div>
+                </div>
+                <div class="kt-sug-card" id="sugBoxBig" onclick="window.apDungGoiYGia('big')">
+                    <div class="kt-sug-label">Lãi Nhiều <span class="kt-sug-pct">+20%</span></div>
+                    <div class="kt-sug-prices">
+                        <div id="sugBigNam" class="kt-sug-price">—</div>
+                        <div id="sugBigNu" class="kt-sug-price">—</div>
+                    </div>
+                    <div id="sugBigLai" class="kt-sug-result">—</div>
+                    <div class="kt-sug-apply">Áp dụng →</div>
+                </div>
+            </div>
+            <p style="font-size:0.72rem;color:var(--text-muted);margin-top:8px;">
+                Click vào thẻ giá để tự động điền vào form Đăng Ca Mới và đóng cửa sổ này.
+            </p>
+        </div>
+    </div>
+</div>
+</body>
+</html>
