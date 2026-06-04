@@ -484,12 +484,9 @@
             window.hienToast("Mật khẩu quá ngắn", "Tối thiểu 6 ký tự.", "danger"); return;
         }
 
-        // Turnstile check (chỉ khi YOUR_SITE_KEY đã được cấu hình)
-        const tsWrap = document.getElementById("cfTurnstileWrap");
-        const hasTurnstile = tsWrap && !document.querySelector('.cf-turnstile[data-sitekey="YOUR_SITE_KEY"]');
-        if (hasTurnstile && !_xacMinhTurnstile()) {
-            if (tsWrap) tsWrap.style.display = "block";
-            window.hienToast("Xác minh", "Vui lòng hoàn thành xác minh bảo mật.", "warning"); return;
+        // Turnstile check — widget đã được render sẵn từ _khoiTaoTabCaNhan()
+        if (!_xacMinhTurnstile()) {
+            window.hienToast("Xác minh", "Vui lòng hoàn thành xác minh bảo mật Cloudflare.", "warning"); return;
         }
 
         const btn = document.getElementById("btnXacNhan");
@@ -536,13 +533,7 @@
                 if (hashInput !== effectiveHash) {
                     window.hienToast("Sai mật khẩu", "Nhập lại hoặc bấm 'Quên mật khẩu'.", "danger");
                     // Reset Turnstile để token cũ không hết hạn khi người dùng thử lại
-                    if (window.turnstile) {
-                        if (window._tsLoginWidgetId !== undefined && window._tsLoginWidgetId !== null) {
-                            window.turnstile.reset(window._tsLoginWidgetId);
-                        } else {
-                            window.turnstile.reset();
-                        }
-                    }
+                    if (window._tvlRenderTs) window._tvlRenderTs("turnstile-container");
                     return;
                 }
                 _luuSessionVaDangNhap({ ...user, mat_khau_hash: effectiveHash });
@@ -1890,9 +1881,8 @@
             // Turnstile check cho tài khoản uy tín < 80
             if (myDiem < 80) {
                 if (!_xacMinhTurnstile()) {
-                    const tsWrap = document.getElementById("cfTurnstileWrap");
-                    if (tsWrap) tsWrap.style.display = "block";
-                    window.hienToast("Xác minh bảo mật", "Uy tín < 80 — vui lòng hoàn thành Turnstile tại form đăng nhập rồi thử lại.", "warning");
+                    if (window._tvlRenderTs) window._tvlRenderTs("turnstile-container");
+                    window.hienToast("Xác minh bảo mật", "Uy tín < 80 — vui lòng hoàn thành Turnstile.", "warning");
                     return;
                 }
             }

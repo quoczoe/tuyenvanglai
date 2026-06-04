@@ -1107,8 +1107,8 @@
         const _hostTs = document.getElementById("cfTurnstileHostWrap");
         const _hostToken = document.querySelector("#cfTurnstileHost [name='cf-turnstile-response'], #cfTurnstileHostWrap [name='cf-turnstile-response']")?.value;
         const _tsSession = (() => { try { const s = JSON.parse(localStorage.getItem("tvl_cf_verified")||"{}"); return s.exp && Date.now() < s.exp; } catch { return false; } })();
-        if (_hostTs && !_tsSession && !_hostToken) {
-            _hostTs.style.display = "block";
+        if (!_tsSession && !_hostToken) {
+            if (window._tvlRenderTs) window._tvlRenderTs("cfTurnstileHost");
             window.hienToast("Xác minh bảo mật", "Vui lòng hoàn thành xác minh Turnstile trước khi đăng.", "warning");
             return;
         }

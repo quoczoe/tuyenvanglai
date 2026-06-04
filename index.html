@@ -1628,8 +1628,34 @@
             margin: 0 !important;
         }
     </style>
-    <!-- Cloudflare Turnstile -->
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+    <!-- Cloudflare Turnstile — render=explicit + onload để tránh race condition trong SPA -->
+    <script>
+        window._tvlTsQueue   = [];   // Hàng đợi khi API chưa load
+        window._tvlTsWidgets = {};   // containerId → widgetId
+
+        // Cloudflare gọi hàm này khi API sẵn sàng
+        window._tvlTurnstileInit = function () {
+            window._tvlTsReady = true;
+            window._tvlTsQueue.forEach(function (fn) { try { fn(); } catch (e) {} });
+            window._tvlTsQueue = [];
+        };
+
+        // Render hoặc reset widget theo containerId — dùng ở mọi nơi trong code
+        window._tvlRenderTs = function (containerId) {
+            var doIt = function () {
+                var el = document.getElementById(containerId);
+                if (!el) return;
+                var wid = window._tvlTsWidgets[containerId];
+                if (wid !== undefined && wid !== null) {
+                    window.turnstile.reset(wid);
+                } else {
+                    window._tvlTsWidgets[containerId] = window.turnstile.render(el);
+                }
+            };
+            if (window.turnstile) { doIt(); } else { window._tvlTsQueue.push(doIt); }
+        };
+    </script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=_tvlTurnstileInit&render=explicit" async defer></script>
 </head>
 <body>
 

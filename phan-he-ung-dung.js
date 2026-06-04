@@ -257,19 +257,10 @@
             }
             const btnXN = document.getElementById("btnXacNhan");
             if (btnXN) btnXN.textContent = "XÁC NHẬN →";
-            // Render thủ công Turnstile — auto-render của Cloudflare đã chạy trước khi SPA hiển thị form này
-            if (window.turnstile) {
-                const tsDiv = document.getElementById("turnstile-container");
-                if (tsDiv) {
-                    if (window._tsLoginWidgetId !== undefined && window._tsLoginWidgetId !== null) {
-                        // Widget đã render trước đó — reset để làm mới token
-                        window.turnstile.reset(window._tsLoginWidgetId);
-                    } else {
-                        // Lần đầu hiển thị form — render mới vào container
-                        window._tsLoginWidgetId = window.turnstile.render(tsDiv);
-                    }
-                }
-            }
+            // Hiện widget Turnstile ngay khi form login mount + render thủ công (tránh race condition SPA)
+            const tsWrapLogin = document.getElementById("cfTurnstileWrap");
+            if (tsWrapLogin) tsWrapLogin.style.display = "block";
+            if (window._tvlRenderTs) window._tvlRenderTs("turnstile-container");
             // Khởi dropdown bộ lọc tìm kèo (không gọi khoiTaoTrangKhach để tránh xung đột)
             if (window._napDropdownBoLoc) window._napDropdownBoLoc();
         } else {
@@ -453,6 +444,11 @@
         if (window.loadLichSuCaDauHost) {
             window.loadLichSuCaDauHost();
         }
+
+        // Hiện và render Turnstile widget cho form đăng ca
+        const tsHostWrap = document.getElementById("cfTurnstileHostWrap");
+        if (tsHostWrap) tsHostWrap.style.display = "block";
+        if (window._tvlRenderTs) window._tvlRenderTs("cfTurnstileHost");
     }
 
     /* ═══════════════════════════════════════════════════
