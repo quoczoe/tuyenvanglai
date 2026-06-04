@@ -805,9 +805,9 @@
                     Chỉ Quản Trị Viên Tối Cao mới được truy cập.
                 </p>
                 <div class="ad-form-group" style="text-align:left;">
-                    <label class="ad-label">Tên đăng nhập</label>
-                    <input type="text" class="ad-input" id="adminUsername"
-                        placeholder="Nhập tên đăng nhập..." autocomplete="username"
+                    <label class="ad-label">Email Quản Trị Viên</label>
+                    <input type="email" class="ad-input" id="adminEmail"
+                        placeholder="Nhập email tài khoản admin..." autocomplete="email"
                         onkeydown="if(event.key==='Enter')document.getElementById('adminSecretPassword').focus()">
                 </div>
                 <div class="ad-form-group" style="text-align:left;">
@@ -826,10 +826,10 @@
                         </button>
                     </div>
                 </div>
-                <button class="ad-btn-primary"
+                <button class="ad-btn-primary" id="btnAdminLogin"
                     style="width:100%;justify-content:center;padding:13px;font-size:1rem;"
                     onclick="xacThucQuyenAdmin()">
-                    <i class="fa-solid fa-shield-halved"></i> Đăng Nhập Root Admin
+                    <i class="fa-solid fa-shield-halved"></i> Đăng Nhập Admin
                 </button>
                 <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);">
                     <a href="index.html" style="font-size:0.8rem;color:#64748b;text-decoration:none;">
@@ -1300,14 +1300,18 @@
 <!-- TOAST NOTIFICATION -->
 <div class="toast-container" id="toastContainer"></div>
 
+<!-- ══ Supabase JS v2 SDK — BẮT BUỘC load TRƯỚC ket-noi-supabase.js để supabaseAuth hoạt động ══ -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"
+    onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: Supabase JS SDK — Admin Auth sẽ không hoạt động')"></script>
+
 <!-- ══ SCRIPTS — onerror ghi log chẩn đoán nếu Cốc Cốc block script ══ -->
-<script src="/ket-noi-supabase.js?v=6.2"
+<script src="/ket-noi-supabase.js?v=7.0"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: ket-noi-supabase.js — Cốc Cốc có thể đã block file này')"></script>
-<script src="/bo-may-du-lieu.js?v=6.2"
+<script src="/bo-may-du-lieu.js?v=7.0"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: bo-may-du-lieu.js')"></script>
-<script src="/hieu-ung-giao-dien.js?v=6.2"
+<script src="/hieu-ung-giao-dien.js?v=7.0"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: hieu-ung-giao-dien.js')"></script>
-<script src="/phan-he-quan-tri.js?v=6.3"
+<script src="/phan-he-quan-tri.js?v=7.0"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: phan-he-quan-tri.js — auth panel sẽ hiện sau 8s'); setTimeout(function(){var ap=document.getElementById('adminAuthPanel');if(ap)ap.style.display='block';},500);"></script>
 
 <script>
