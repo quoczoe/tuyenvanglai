@@ -436,44 +436,31 @@
         document.body.appendChild(modal);
 
         document.getElementById("btnXacNhanDatPass").addEventListener("click", async () => {
+            const btnXN = document.getElementById("btnXacNhanDatPass");
+            if (btnXN) { btnXN.disabled = true; btnXN.textContent = "Đang xử lý..."; }
             try {
                 const hash = await _hashMatKhau(pass);
-                let savedToND = false;
-
-                // Bước 1: Thử PATCH nguoi_dung — chỉ tính "lưu thành công" khi có row được cập nhật
-                // PATCH trả [] (0 rows) = user không có trong nguoi_dung, không phải lỗi
-                try {
-                    const patchResult = await window.khoDuLieuVinhVien.ghiData(
-                        "nguoi_dung",
-                        { mat_khau_hash: hash, gioi_tinh: user.gioi_tinh || "male" },
-                        { sdt_khach: phone }
-                    );
-                    savedToND = Array.isArray(patchResult) && patchResult.length > 0;
-                } catch (_) {}
-
-                // Bước 2: PATCH không cập nhật được row nào → INSERT để migrate user sang nguoi_dung
-                if (!savedToND) {
-                    try {
-                        await window.khoDuLieuVinhVien.ghiData("nguoi_dung", {
-                            ten_khach:     user.ten_khach,
-                            sdt_khach:     phone,
-                            mat_khau_hash: hash,
-                            gioi_tinh:     user.gioi_tinh || "male",
-                            vai_tro:       user.vai_tro   || "guest"
-                        }, null);
-                    } catch (_) {
-                        // nguoi_dung chưa được tạo — lưu hash vào localStorage làm cache bền vững
-                    }
+                const result = await window.guestRPC.datPassLanDau(
+                    phone,
+                    user.ten_khach || phone,
+                    user.gioi_tinh || "male",
+                    hash,
+                    null, null, null, null
+                );
+                if (result?.status === "ok") {
+                    modal.remove();
+                    _luuSessionVaDangNhap({ ...user }, result.token);
+                } else if (result?.status === "already_has_pass") {
+                    window.hienToast("Đã có mật khẩu", "Tài khoản này đã được đặt mật khẩu. Vui lòng đăng nhập lại.", "warning");
+                    modal.remove();
+                } else {
+                    window.hienToast("Lỗi", "Không thể đặt mật khẩu. Thử lại sau.", "danger");
+                    if (btnXN) { btnXN.disabled = false; btnXN.textContent = "✅ Xác nhận đặt mật khẩu"; }
                 }
-
-                // Luôn cache hash trong localStorage để login lại không cần modal
-                // kể cả khi DB chưa sẵn sàng (migration chưa chạy)
-                try { localStorage.setItem(`tvl_h_${phone}`, hash); } catch {}
-
-                modal.remove();
-                _luuSessionVaDangNhap({ ...user, mat_khau_hash: hash });
             } catch (e) {
-                window.hienToast("Lỗi", "Không thể đặt mật khẩu. Thử lại sau.", "danger");
+                console.error("Lỗi đặt pass:", e);
+                window.hienToast("Lỗi", e?.message || "Không thể đặt mật khẩu. Thử lại sau.", "danger");
+                if (btnXN) { btnXN.disabled = false; btnXN.textContent = "✅ Xác nhận đặt mật khẩu"; }
             }
         });
     }
@@ -548,7 +535,16 @@
             }
         } catch (e) {
             console.error("Lỗi xác thực:", e);
-            window.hienToast("Lỗi", "Không thể xác thực. Kiểm tra kết nối mạng.", "danger");
+            const errMsg = e?.message || e?.details || "";
+            if (!window.guestRPC || !window._sbClient) {
+                window.hienToast("Lỗi hệ thống", "Module xác thực chưa tải xong. Tải lại trang (F5).", "danger");
+            } else if (errMsg.includes("PGRST202") || errMsg.includes("Could not find") || errMsg.includes("42883")) {
+                window.hienToast("Lỗi cấu hình máy chủ", "Chức năng đăng nhập chưa được cài đặt. Liên hệ Admin.", "danger");
+            } else if (errMsg.includes("SDK")) {
+                window.hienToast("Lỗi tải thư viện", "Thư viện kết nối chưa sẵn sàng. Tải lại trang.", "danger");
+            } else {
+                window.hienToast("Lỗi đăng nhập", errMsg || "Không thể xác thực. Kiểm tra kết nối mạng.", "danger");
+            }
         } finally {
             if (btn) { btn.disabled = false; btn.innerHTML = 'XÁC NHẬN →'; }
         }
