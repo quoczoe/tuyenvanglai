@@ -106,7 +106,7 @@
         const savedSession = localStorage.getItem("tvl_user") || localStorage.getItem("tvl_guest");
 
         if (!savedSession) {
-            window.hienToast("Chưa đăng nhập", "Vui lòng đăng nhập để sử dụng tính năng đăng kèo.", "warning");
+            window.hienToast("Cần đăng nhập", "Vui lòng đăng nhập để đăng bài hoặc đặt slot tham gia ca đấu!", "warning");
             _hienThiManKichHoat();
             // Trong SPA (index.html): chuyển tab không reload
             // Ngoài SPA (host.html cũ): redirect về trang login
@@ -1087,7 +1087,7 @@
      * ═══════════════════════════════════════════════════ */
     window.dangCaDauCuaHost = async function () {
         if (!window.currentUser && !window.currentGuest) {
-            window.hienToast("Chưa đăng nhập", "Vui lòng đăng nhập trước.", "danger"); return;
+            window.hienToast("Cần đăng nhập", "Vui lòng đăng nhập để đăng bài hoặc đặt slot tham gia ca đấu!", "warning"); return;
         }
 
         // Kiểm tra uy tín: 40-59 → không được đăng bài
@@ -3474,8 +3474,9 @@
      * 21. KHỞI ĐỘNG KHI LOAD TRANG
      * ═══════════════════════════════════════════════════ */
     document.addEventListener("DOMContentLoaded", () => {
-        // Không tự khởi tạo khi đang ở /feed/ — phan-he-ung-dung.js sẽ điều phối
-        if (window.location.pathname.includes('/feed')) return;
+        // Khi phan-he-ung-dung.js (SPA coordinator) đã load → bỏ qua, để SPA tự điều phối
+        // Chỉ tự khởi tạo khi chạy độc lập (host.html standalone — không có SPA coordinator)
+        if (window.khoiTaoUngDung) return;
         const checkReady = setInterval(() => {
             if (window.khoiTaoTheme && window.khoiTaoHologramGlow && window.dbEngine) {
                 clearInterval(checkReady);

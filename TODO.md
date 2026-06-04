@@ -1,14 +1,76 @@
-# TODO — Cập nhật: 2026-06-04
+# TODO — Cập nhật: 2026-06-05
 
 ---
 
 ## 🔄 ĐANG LÀM DỞ
 
-*(Không có task đang dở — phiên 2026-06-04 đã hoàn thành)*
+*(Không có task đang dở — phiên 2026-06-05 đã hoàn thành)*
 
 ---
 
 ## ✅ ĐÃ HOÀN THÀNH
+
+### Phiên 2026-06-05 — 8 Security Modules + Auth Routing Fix + Logo Fix
+
+**SQL Migration (user cần chạy thủ công):**
+- [x] Tạo `security-migration.sql` — ALTER TABLE + 2 bảng mới (bao_cao, fingerprint_blacklist)
+
+**Module 5 — Phone Masking:**
+- [x] `_maskSdt()` + `_sdtChipHtml()` + `_hienSdt()` — mask SĐT host trong card
+
+**Module 8 — Admin Whitelist:**
+- [x] Checkbox is_whitelisted + input diem_uy_tin trong modal admin
+- [x] `_luuUyTinTV()` — PATCH whitelist + điểm uy tín
+
+**Module 7 — Ranking Algorithm:**
+- [x] Sort theo `trust*0.6 + stars*0.4`; trust<70 xuống cuối
+
+**Module 3 — Host Scam Protection:**
+- [x] Toggle cọc disabled khi <7 ngày hoặc <3 ca thành công
+- [x] `_quetTuKhoaLuaDao()` keyword scanner
+- [x] Scam banner đỏ trong card và modal
+
+**Module 2 — Trust Score System:**
+- [x] `_truDiemUyTin()`, `_congDiemUyTin()`, `_layDiemUyTin()`, `_trustLevel()`
+- [x] Hủy slot: phân tầng thời gian (-7/-3/0đ) + free pass tháng
+- [x] Ghost report: nút "👻 Ghost" → trừ 15đ + đổi trạng thái "Bùng kèo"
+- [x] `xacNhanThamGia()`: cộng +2đ khi host xác nhận tham gia
+- [x] `datSlot()`: block <40đ; giới hạn 1/ngày (60-79đ); "Chờ Host duyệt" (40-59đ không cọc)
+- [x] Nút Duyệt/Từ chối trong danh sách khách host
+- [x] `baoCaoGhost()` hàm mới cho host
+- [x] Trust score bar trong tab hồ sơ khách (`profileTrustScore`)
+- [x] Block đăng bài khi uy tín < 60
+- [x] Trust badge (✅/⚠️/🔴) cạnh tên host trong card
+
+**Module 4 — Report System:**
+- [x] Nút "Báo cáo Host lừa cọc" (chỉ hiện khi đã tham gia ca)
+- [x] `moFormBaoCao()` + `guiBaoCao()` — INSERT bao_cao + auto-freeze ≥3 báo cáo
+- [x] Filter ca is_frozen khỏi danh sách tìm kèo
+- [x] Admin tab "Báo Cáo" (tab 7) + `adminTaiBaoCao()`
+- [x] `adminPhatBC()`: BAN host + đóng băng ca
+- [x] `adminThaBC()`: BAN reporter + fingerprint blacklist (phạt gậy ngược)
+- [x] `adminKhoiPhucCa()`: mở lại ca bị đóng băng
+
+**Module 1 — FingerprintJS:**
+- [x] CDN `@fingerprintjs/fingerprintjs@3` trong index.html
+- [x] Check blacklist + giới hạn 1 tài khoản/48h trong `hoanTatDangKy()`
+- [x] Lưu `device_fingerprint` vào nguoi_dung khi đăng ký
+
+**Module 6 — Cloudflare Turnstile:**
+- [x] CDN Turnstile trước `</head>`; site key thật `0x4AAAAAADeiC_0mMTnc07rd`
+- [x] Widget trong form login + form đăng bài
+- [x] `_kiemTraTurnstileSession()` + smart session 7 ngày
+- [x] Check Turnstile trong `datSlot()` khi uy tín < 80
+
+**Auth Routing Fix (Production Bug):**
+- [x] `phan-he-khach-choi.js` DOMContentLoaded: `/feed` guard → `window.khoiTaoUngDung`
+- [x] `phan-he-host.js` DOMContentLoaded: `/feed` guard → `window.khoiTaoUngDung`
+- [x] Toast messages: "Chưa đăng nhập" → "Vui lòng đăng nhập để đăng bài hoặc đặt slot tham gia ca đấu!"
+
+**Logo Flash Fix:**
+- [x] `_apLogoImg()`: chỉ set display:block trong `doSwap()` sau onload
+- [x] `_apDungBrandConfig()`: fix bug luôn gọi `_apLogoImg()` (không so sánh cache vừa ghi)
+- [x] Cache-busting `?v=2` trong `_apLogoImg()`
 
 ### Phiên 2026-06-04 — UI Polish + Bug Fix Login + UX Nâng Cấp
 

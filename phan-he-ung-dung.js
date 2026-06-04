@@ -24,13 +24,19 @@
         const img  = document.getElementById("appLogoImg");
         const text = document.getElementById("appLogoTextWrap");
         if (!img || !text || !url) return;
-        img.src = url;
-        const doSwap = () => { img.style.display = "block"; text.style.display = "none"; };
+        // Cache-busting: thêm ?v=2 nếu URL chưa có query string
+        const cacheBustedUrl = url.includes("?") ? url : url + "?v=2";
+        // Chỉ show ảnh SAU KHI load xong — tránh flash ảnh trống + text cùng lúc
+        const doSwap = () => {
+            img.style.cssText = "display:block;width:auto;height:40px;object-fit:contain;";
+            text.style.display = "none";
+        };
+        img.src = cacheBustedUrl;
         if (img.complete && img.naturalWidth > 0) {
-            doSwap();       // Ảnh đã có trong cache trình duyệt — apply ngay
+            doSwap();       // Ảnh đã trong cache — apply ngay
         } else {
             img.onload  = doSwap;
-            img.onerror = () => {};  // Im lặng nếu URL sai, giữ text logo
+            img.onerror = () => { img.style.display = "none"; };  // Giữ text logo nếu URL sai
         }
     }
 
@@ -57,13 +63,15 @@
             const logoUrl    = cfg["logo_url"]    || "";
             const faviconUrl = cfg["favicon_url"] || "";
 
-            // Cập nhật cache localStorage để lần sau sync load được
-            localStorage.setItem("tvl_brand_logo",    logoUrl);
-            localStorage.setItem("tvl_brand_favicon", faviconUrl);
+            // Lưu cache CŨ trước khi ghi mới — dùng để so sánh sau
+            const oldLogoCache = localStorage.getItem("tvl_brand_logo") || "";
 
-            // Áp dụng nếu giá trị khác cache đã dùng (tránh apply 2 lần giống nhau)
-            const cachedLogo = localStorage.getItem("tvl_brand_logo") || "";
-            if (logoUrl && logoUrl !== cachedLogo) _apLogoImg(logoUrl);
+            // Cập nhật cache localStorage để lần sau sync load được
+            if (logoUrl)    localStorage.setItem("tvl_brand_logo",    logoUrl);
+            if (faviconUrl) localStorage.setItem("tvl_brand_favicon", faviconUrl);
+
+            // Áp dụng logo: luôn gọi khi có URL (fix bug: sau khi set cache lại đọc ra bằng nhau)
+            if (logoUrl) _apLogoImg(logoUrl);
 
             if (faviconUrl) {
                 const link = document.querySelector('link[rel="icon"]');
@@ -120,18 +128,24 @@
             "home":         "gioi-thieu"
         };
 
-        // Đọc slug từ hash (#tim-keo) → path sạch (/tim-keo cho Vercel direct) → ?tab= fallback
+        // Đọc slug từ pathname (URL sạch /tim-keo) → hash legacy (#tim-keo) → ?tab= fallback
         const queryTab = new URLSearchParams(window.location.search).get("tab");
-        const hashSlug = (window.location.hash || "").replace(/^#\/?/, "").trim();
         const pathSlug = window.location.pathname.replace(/^\//, "").replace(/^index\.html$/, "").trim();
+        const hashSlug = (window.location.hash || "").replace(/^#\/?/, "").trim(); // backward compat bookmark cũ
 
-        const initTab = SLUG_TO_TAB[hashSlug]
-                     || SLUG_TO_TAB[pathSlug]
+        const initTab = SLUG_TO_TAB[pathSlug]
+                     || SLUG_TO_TAB[hashSlug]
                      || SLUG_TO_TAB[queryTab]
                      || "gioi-thieu";
 
+        // Nếu URL đang dùng hash cũ → đổi sang path sạch ngay lập tức
+        if (hashSlug && SLUG_TO_TAB[hashSlug] && !pathSlug) {
+            const cleanPath = "/" + hashSlug;
+            window.history.replaceState({ tab: SLUG_TO_TAB[hashSlug] }, "", cleanPath);
+        }
+
         _capNhatHeaderState();
-        chuyenTab(initTab, true); // true = không cập nhật hash lại (đã đúng)
+        chuyenTab(initTab, true); // true = không cập nhật URL lại (đã đúng)
 
         // Auto-open modal nếu URL có ?ca=<id>
         const caId = new URLSearchParams(window.location.search).get("ca");
@@ -139,10 +153,10 @@
             setTimeout(() => window.moModalChiTietKeo(caId), 700);
         }
 
-        // Xử lý Back/Forward qua hashchange
-        window.addEventListener("hashchange", function () {
-            const slug = (window.location.hash || "").replace(/^#\/?/, "").trim();
-            const tab  = SLUG_TO_TAB[slug] || "gioi-thieu";
+        // Xử lý Back/Forward qua popstate (History API)
+        window.addEventListener("popstate", function (e) {
+            const pSlug = window.location.pathname.replace(/^\//, "").replace(/^index\.html$/, "").trim();
+            const tab   = SLUG_TO_TAB[pSlug] || (e.state?.tab) || "gioi-thieu";
             chuyenTab(tab, true);
         });
     };
@@ -150,16 +164,16 @@
     /* ═══════════════════════════════════════════════════
      * CHUYỂN TAB MẸ — No-Reload
      * ═══════════════════════════════════════════════════ */
-    // Bảng tabId → hash slug (# không gửi lên server → F5 luôn an toàn)
-    const TAB_TO_HASH = {
-        "gioi-thieu":   "",
-        "tim-keo":      "tim-keo",
-        "dang-quan-ly": "dang-quan-ly",
-        "ca-nhan":      "ca-nhan",
-        "lich-su":      "lich-su"
+    // Bảng tabId → path sạch (HTML5 History Mode — không có #)
+    const TAB_TO_PATH = {
+        "gioi-thieu":   "/",
+        "tim-keo":      "/tim-keo",
+        "dang-quan-ly": "/dang-quan-ly",
+        "ca-nhan":      "/ca-nhan",
+        "lich-su":      "/lich-su"
     };
 
-    window.chuyenTab = function (tabId, _noUpdateHash) {
+    window.chuyenTab = function (tabId, _noUpdateUrl) {
         document.querySelectorAll(".tab-section").forEach(s => s.style.display = "none");
         document.querySelectorAll(".tab-nav-btn").forEach(b => b.classList.remove("active"));
 
@@ -170,12 +184,11 @@
 
         document.body.classList.toggle("is-landing-tab", tabId === "gioi-thieu");
 
-        // Cập nhật hash (# không gửi lên server → F5 an toàn mọi môi trường)
-        if (!_noUpdateHash) {
-            const slug = TAB_TO_HASH[tabId];
-            const newHash = slug ? "#" + slug : "#";
-            if (window.location.hash !== newHash) {
-                window.history.pushState({ tab: tabId }, "", newHash);
+        // Cập nhật URL sạch qua History API (server Vercel đã cấu hình fallback /:path* → index.html)
+        if (!_noUpdateUrl) {
+            const newPath = TAB_TO_PATH[tabId] || "/";
+            if (window.location.pathname !== newPath) {
+                window.history.pushState({ tab: tabId }, "", newPath);
             }
         }
 

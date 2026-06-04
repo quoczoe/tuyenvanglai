@@ -1866,7 +1866,7 @@
      * ═══════════════════════════════════════════════════ */
     window.datSlot = async function (caDauId) {
         if (!window.currentGuest) {
-            window.hienToast("Chưa đăng nhập", "Vui lòng đăng nhập trước.", "warning"); return;
+            window.hienToast("Cần đăng nhập", "Vui lòng đăng nhập để đăng bài hoặc đặt slot tham gia ca đấu!", "warning"); return;
         }
 
         try {
@@ -3124,8 +3124,9 @@
      * 10. KHỞI ĐỘNG KHI LOAD TRANG
      * ═══════════════════════════════════════════════════ */
     document.addEventListener("DOMContentLoaded", () => {
-        // Không tự khởi tạo khi đang ở /feed/ — phan-he-ung-dung.js sẽ điều phối
-        if (window.location.pathname.includes('/feed')) return;
+        // Khi phan-he-ung-dung.js (SPA coordinator) đã load → bỏ qua, để SPA điều phối
+        // Chỉ tự khởi tạo khi chạy standalone (không có coordinator)
+        if (window.khoiTaoUngDung) return;
         const check = setInterval(() => {
             if (window.khoiTaoTheme && window.khoiTaoHologramGlow && window.dbEngine) {
                 clearInterval(check);

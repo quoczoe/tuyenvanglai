@@ -1022,14 +1022,15 @@ Thêm CDN Chart.js vào `admin/index.html`:
 
 ---
 
-### Current State (cập nhật: 2026-06-04)
+### Current State (cập nhật: 2026-06-05)
 
 **Stack đã detect:**
 - HTML5 / Vanilla JS SPA — không framework
 - Supabase REST (anon key) qua `window.khoDuLieuVinhVien`
 - CSS: Dark Cyberpunk, Mobile-First, `#0f1e35` nền / `#00ff88` accent
-- Font: Inter (app) + Bebas Neue + Barlow Condensed (index hero)
-- Deploy target: Vercel / GitHub Pages
+- Deploy target: Vercel (đã deploy production tại domain thật)
+- Cloudflare Turnstile site key: `0x4AAAAAADeiC_0mMTnc07rd`
+- FingerprintJS v3 CDN tích hợp
 
 **Trạng thái các phân hệ:**
 | Phân hệ | File | Trạng thái | Ghi chú |
@@ -1037,53 +1038,60 @@ Thêm CDN Chart.js vào `admin/index.html`:
 | Kết nối DB | `ket-noi-supabase.js` | ✅ Ổn định | JWT anon key chuẩn |
 | Dữ liệu | `bo-may-du-lieu.js` | ✅ Ổn định | 63 tỉnh, SHUTTLECOCK_BRANDS |
 | Hiệu ứng | `hieu-ung-giao-dien.js` | ✅ Ổn định | toast, hologram glow |
-| SPA routing | `phan-he-ung-dung.js` | ✅ Ổn định | hash routing |
-| CSS toàn cục | `giao-dien.css` | ✅ v5.x+ | Phiên 06-04: thêm `.kh-san-link`, `.kmd-ten-san-link:active`, `.kmd-title-link` |
+| SPA routing | `phan-he-ung-dung.js` | ✅ v2.0 | Phiên 06-05: logo flash bug fix, `_apLogoImg` chỉ show sau onload |
+| CSS toàn cục | `giao-dien.css` | ✅ v6.0 | Phiên 06-05: trust badge, scam banner, phone mask, pending host badge |
 | CSS component | `components.css` | ✅ Ổn định | v5.0 |
-| Host Portal | `phan-he-host.js` | ✅ v4.0 | Phiên 06-04: `_chuanHoaTenSan`, `_validateMapsLink`, `_moTimKiemMaps` nâng cấp, địa chỉ optional |
-| Host HTML | `index.html` (host section) | ✅ v4.x | Phiên 06-04: hint TÊN SÂN, label địa chỉ optional, validate maps link input |
-| Khách | `phan-he-khach-choi.js` | ✅ v4.0 | Phiên 06-04: ALL CAPS typography, FULL SLOT, `_chuanHoaTenSan`, hover UX mobile, modal title mới |
-| Admin logic | `phan-he-quan-tri.js` | ✅ v3.1 | Phiên 06-04: **FIX CRITICAL** salt order `_hashMK`: `plain+SALT` (đã fix login bug) |
-| Admin HTML | `admin/index.html` | ✅ v3.0 | 6 tabs, CRUD thành viên |
+| Host Portal | `phan-he-host.js` | ✅ v5.0 | Phiên 06-05: 8 security modules + DOMContentLoaded guard fix + toast message update |
+| Host HTML | `index.html` (host section) | ✅ v5.0 | Phiên 06-05: Turnstile widget đăng bài, toggle cọc, profileTrustScore element |
+| Khách | `phan-he-khach-choi.js` | ✅ v5.0 | Phiên 06-05: 8 security modules + DOMContentLoaded guard fix + trust badge host |
+| Admin logic | `phan-he-quan-tri.js` | ✅ v4.0 | Phiên 06-05: whitelist, báo cáo tab, phạt gậy ngược + fingerprint blacklist |
+| Admin HTML | `admin/index.html` | ✅ v4.0 | Phiên 06-05: tab "Báo Cáo" (tab 7), whitelist checkbox trong modal |
 | Góp ý | `phan-he-gop-y.js` | ✅ Ổn định | |
-| Trang chủ | `index.html` (hero/HUD) | ✅ v5.2 | HUD fallback 45/1820 |
-| Modal Chi Tiết Kèo | `index.html` (modal) | ✅ v2.0 | Phiên 06-04: max-width 750px, header căn giữa, X absolute |
+| Security | `security-migration.sql` | ✅ Đã tạo | Chờ user chạy trên Supabase Dashboard |
+| Schema DB | `supabase-schema.sql` | ✅ Đã deploy | |
 | 404 | `404.html` | ✅ Hoàn chỉnh | |
 | Vercel routing | `vercel.json` | ✅ Hoàn chỉnh | |
-| Schema DB | `supabase-schema.sql` | ✅ Đã deploy | Đã chạy trên Supabase dashboard |
 
 **Những gì hoạt động chắc chắn:**
-- Toàn bộ UI phân hệ Host: đăng kèo (tên sân auto chuẩn hóa), kế toán, chốt ca, danh sách khách, đánh giá
-- Phân hệ Khách: tìm kèo, bộ lọc, đặt/huỷ slot, hồ sơ, lịch sử chi tiêu, modal chi tiết (ALL CAPS, hover UX)
-- Admin: quản lý key, thành viên, đánh giá, cấu hình, ca đấu toàn hệ thống
-- Login/Đăng ký: bug hash salt đã fix — `_hashMK` trong admin khớp với `_hashMatKhau` trong khách
+- Guest vào trang chủ → xem kèo tự do, không bị redirect (DOMContentLoaded guard đã fix)
+- Trust Score: hủy slot tính thời gian (-7/-3/0đ), ghost report (-15đ), tham gia (+2đ), free pass
+- Phone masking: 096XXXX567, nút 👁 reveal chỉ khi login
+- Ranking: `trust*0.6 + stars*0.4`, host trust<70 xuống cuối
+- Scam banner đỏ khi host chưa đủ quyền nhưng text chứa từ khóa cọc
+- Report: khách đã tham gia → báo cáo → ≥3 báo cáo → ca đóng băng tự động
+- Admin: whitelist, tab Báo Cáo, phạt gậy ngược (BAN + fingerprint blacklist)
+- FingerprintJS: chặn 1 thiết bị tạo >1 tài khoản trong 48h
+- Turnstile: site key thật `0x4AAAAAADeiC_0mMTnc07rd`, smart session 7 ngày
 
 **Known issues / chưa verify:**
-- `TELEGRAM_BOT_NAME = "TVLVangLaiBot"` trong `phan-he-khach-choi.js` — placeholder, cần thay trước deploy
-- HUD số liệu (45 ca / 1820 thành viên) là fallback cứng — cần test với Supabase thật
-- End-to-end flow chưa được test trên production
-- Tài khoản đã bị admin reset pass TRƯỚC khi fix (2026-06-04) có hash sai → cần XOÁ HASH rồi reset lại
+- `security-migration.sql` chưa được chạy trên Supabase → các cột mới (diem_uy_tin, is_whitelisted...) chưa có trong DB
+- Turnstile server-side verification cần Supabase Edge Function (hiện chỉ client-side)
+- Tài khoản cũ có hash sai từ phiên 06-04 → cần admin XOÁ HASH + reset lại
+- HUD số liệu (45 ca / 1820 thành viên) là fallback cứng
 
 ---
 
-### Recent Decisions (phiên 2026-06-04)
+### Recent Decisions (phiên 2026-06-05)
 | Quyết định | Lý do |
 |---|---|
-| `_hashMK` (admin): `plain + SALT` thay vì `SALT + plain` | Bug gốc rễ: login dùng `pass+salt`, admin reset dùng `salt+pass` → hash không bao giờ khớp |
-| `_chuanHoaTenSan` 4 nhánh A/B/C/D + `toUpperCase()` | Tự bù "SÂN CẦU LÔNG" khi thiếu, viết hoa toàn bộ để đồng bộ Maps search và hiển thị |
-| Địa chỉ sân bỏ khỏi required validation | UX: nhiều sân không có địa chỉ rõ ràng; link Maps đã đủ để định vị |
-| Modal title: "CHI TIẾT CA ĐẤU • date" thay vì tên sân | Tên sân đã hiển thị rõ trong body (TÊN SÂN row) — title lặp thông tin |
-| Dùng CSS class `.kh-san-link` thay inline `onmouseover`/`onmouseout` | CSS `:active` không thể gọi qua inline JS → cần class để mobile `transform:scale(0.98)` hoạt động |
-| Modal header: `justify-content:center` + X `position:absolute;right:16px` | Nút X không được tham gia flexbox, tránh đẩy lệch chữ tiêu đề khỏi trung tâm |
-| Maps URL validation regex: `google.com/maps|maps.app.goo.gl|goo.gl/maps|maps.google.com` | Chỉ chấp nhận domain chính thức, block khi người dùng paste text rác |
+| DOMContentLoaded guard: `window.khoiTaoUngDung` thay vì `pathname.includes('/feed')` | App deploy ở root `/` không phải `/feed/` → guard cũ không chặn được, gây auto-redirect guest |
+| `_apLogoImg()` chỉ set `display:block` trong `doSwap()` (sau onload) | Set trước onload → ảnh trống + text logo hiện cùng lúc → flash |
+| `_apDungBrandConfig()` luôn gọi `_apLogoImg()` sau fetch | Bug: lưu cache xong đọc lại so sánh → bằng nhau → không bao giờ gọi lần đầu |
+| Trust badge (✅/⚠️/🔴) inline trong card host banner | Không cần thêm API call mới — trust đã có trong `hostMap` sau khi fetch `allUsers` |
+| Block đăng bài khi uy tín < 60 (không phải < 40) | Spec: 40-59 là "rủi ro cao" → khóa đăng bài; dưới 40 mới BAN tài khoản |
+| `adminThaBC` BAN + fingerprint blacklist (phạt gậy ngược) | Spec Module 4: báo cáo giả mạo → BAN vĩnh viễn + add fingerprint vào blacklist |
+| Turnstile site key `0x4AAAAAADeiC_0mMTnc07rd` hardcode vào HTML | User cung cấp key chính thức; replace `YOUR_SITE_KEY` placeholder |
 
 ---
 
-### Modified Files (phiên 2026-06-04)
+### Modified Files (phiên 2026-06-05)
 | File | Thay đổi |
 |---|---|
-| `phan-he-khach-choi.js` | ALL CAPS tên sân (card+modal); FULL SLOT; CÒN X SLOT uppercase; địa chỉ fallback; `.kh-san-link` class; icon glow; modal title "CHI TIẾT CA ĐẤU • date"; ↗ icon |
-| `phan-he-host.js` | `_chuanHoaTenSan()` 4 nhánh; `_validateMapsLink()`; `_moTimKiemMaps` dùng chuẩn hóa+quận/tỉnh; địa chỉ optional; validate maps trước submit |
-| `phan-he-quan-tri.js` | **CRITICAL FIX**: `_hashMK` salt order `SALT+plain` → `plain+SALT` |
-| `index.html` | Hint text TÊN SÂN (cam); label địa chỉ "(không bắt buộc)"; `hostMapsLink` oninput+error span; modal max-width 750px; header centered + X absolute |
-| `giao-dien.css` | Thêm `.kh-san-link`, `.kmd-ten-san-link:active`, `.kmd-title-link` với `:hover`, `:active`, `@media(hover:none)` dotted underline |
+| `security-migration.sql` | **MỚI** — ALTER TABLE nguoi_dung/ca_dau + CREATE TABLE bao_cao/fingerprint_blacklist |
+| `giao-dien.css` | Trust score bar, scam banner, phone mask chip, pending-host badge CSS |
+| `phan-he-khach-choi.js` | 8 security modules; phone mask; ranking; trust badges; DOMContentLoaded guard fix; toast messages |
+| `phan-he-host.js` | Module 3 (scam); Module 2 (ghost report, block đăng bài, Turnstile); DOMContentLoaded guard fix; toast messages |
+| `phan-he-quan-tri.js` | Module 8 (whitelist + `_luuUyTinTV`); Module 4 admin (báo cáo, phạt/tha/khôi phục + fingerprint) |
+| `phan-he-ung-dung.js` | Logo flash bug fix (async fetch + onload-only swap); cache-busting `?v=2` |
+| `index.html` | FingerprintJS CDN; Turnstile CDN + widget (login form + đăng bài); toggle cọc; `profileTrustScore` div; Turnstile site key thật |
+| `admin/index.html` | Tab "Báo Cáo" (tab 7); checkbox `is_whitelisted` + input `diem_uy_tin` trong modal thành viên |
