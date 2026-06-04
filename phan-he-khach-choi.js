@@ -234,22 +234,26 @@
         return s.slice(0, 3) + "XXXX" + s.slice(-3);
     }
 
-    // HTML chip SĐT host có nút reveal — dùng trong card + modal
-    function _sdtChipHtml(sdt, sdtEsc) {
-        const masked = _maskSdt(sdt);
-        return `<span class="shb-sdt shb-sdt-masked" id="sdtDisplay_${sdtEsc}">${masked}</span>` +
+    // HTML chip SĐT host có nút reveal — scopeId = ca_dau_id để tránh trùng DOM id
+    // Mỗi card có scopeId riêng → bấm mắt ở card nào chỉ reveal đúng card đó
+    function _sdtChipHtml(sdt, sdtEsc, scopeId) {
+        const masked  = _maskSdt(sdt);
+        const uid     = scopeId ? `${scopeId}_${sdtEsc}` : sdtEsc;
+        return `<span class="shb-sdt shb-sdt-masked" id="sdtDisplay_${uid}">${masked}</span>` +
                `<button class="shb-reveal-btn" title="Hiện số điện thoại"
-                   onclick="event.stopPropagation();window._hienSdt('${sdtEsc}',this)"
+                   onclick="event.stopPropagation();window._hienSdt('${uid}','${sdtEsc}',this)"
                    aria-label="Hiện SĐT"><i class="fa-regular fa-eye"></i></button>`;
     }
 
     // Reveal SĐT khi bấm nút mắt — chỉ cho user đã đăng nhập
-    window._hienSdt = function (sdt, btn) {
+    // uid: composite key (caDauId_sdt) để định vị đúng span trong card
+    // sdt: số thật để hiển thị
+    window._hienSdt = function (uid, sdt, btn) {
         if (!window.currentGuest) {
             window.hienToast("Cần đăng nhập", "Vui lòng đăng nhập để xem số điện thoại.", "warning");
             return;
         }
-        const span = document.getElementById(`sdtDisplay_${sdt}`);
+        const span = document.getElementById(`sdtDisplay_${uid}`);
         if (span) { span.textContent = sdt; span.classList.remove("shb-sdt-masked"); }
         if (btn)  { btn.style.display = "none"; }
     };
@@ -1805,7 +1809,7 @@
                     <span class="shb-phone-chip" onclick="event.stopPropagation()" title="SĐT Host">
                         <i class="fa-solid fa-phone" style="color:#FF5500;font-size:0.75em;flex-shrink:0;"></i>
                         <span class="shb-label">SĐT:</span>
-                        ${_sdtChipHtml(_sdt, _sdtEsc)}
+                        ${_sdtChipHtml(_sdt, _sdtEsc, slot.id)}
                     </span>` : ""}
                 </div>`;
             })() : ""}
@@ -1876,13 +1880,39 @@
                 window.hienToast("Tài khoản bị hạn chế", "Điểm uy tín của bạn dưới 40 — tài khoản tạm khóa hành động đặt slot.", "danger");
                 return;
             }
+            // Hằng số offset múi giờ Việt Nam (UTC+7) — dùng chung cho tất cả kiểm tra bên dưới
+            const _VN_OFFSET = 7 * 3600 * 1000;
+            const _todayVnStr = new Date(Date.now() + _VN_OFFSET).toISOString().slice(0, 10);
+
             if (myDiem < 60) {
-                // Giới hạn 1 slot/ngày
-                const todayStr = new Date().toISOString().slice(0, 10);
+                // Giới hạn 1 slot/ngày — so sánh theo giờ VN (UTC+7) để tránh lệch ngày
                 const slotsHom = await window.dbEngine.doc("dat_slot", { eq: { sdt_khach: window.currentGuest.sdt_khach } }).catch(() => []);
-                const soHomNay = slotsHom.filter(s => (s.thoi_gian_dat || "").startsWith(todayStr) && s.trang_thai_di_danh !== "Khách hủy").length;
+                const soHomNay = slotsHom.filter(s => {
+                    if (!s.thoi_gian_dat || s.trang_thai_di_danh === "Khách hủy") return false;
+                    const vnDate = new Date(new Date(s.thoi_gian_dat).getTime() + _VN_OFFSET).toISOString().slice(0, 10);
+                    return vnDate === _todayVnStr;
+                }).length;
                 if (soHomNay >= 1) {
                     window.hienToast("Giới hạn 1 slot/ngày", `Uy tín ${myDiem}đ (mức Cảnh cáo) — chỉ được đặt tối đa 1 slot mỗi ngày.`, "warning");
+                    return;
+                }
+            }
+
+            if (myDiem >= 80) {
+                // Giới hạn chống spam cho tài khoản uy tín tốt: tối đa 3 slot/ngày VN HOẶC 5 slot "Chờ đánh" active
+                const allMySlots = await window.dbEngine.doc("dat_slot", { eq: { sdt_khach: window.currentGuest.sdt_khach } }).catch(() => []);
+                const soHomNay = allMySlots.filter(s => {
+                    if (!s.thoi_gian_dat || s.trang_thai_di_danh === "Khách hủy") return false;
+                    const vnDate = new Date(new Date(s.thoi_gian_dat).getTime() + _VN_OFFSET).toISOString().slice(0, 10);
+                    return vnDate === _todayVnStr;
+                }).length;
+                const soActiveSlots = allMySlots.filter(s => s.trang_thai_di_danh === "Chờ đánh").length;
+                if (soHomNay >= 3 || soActiveSlots >= 5) {
+                    window.hienToast(
+                        "Giới hạn đặt slot",
+                        "Bạn đã đạt giới hạn đặt slot tối đa trong ngày để tránh spam. Vui lòng hoàn thành các ca đấu hiện tại!",
+                        "warning"
+                    );
                     return;
                 }
             }

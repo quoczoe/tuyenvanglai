@@ -1,4 +1,4 @@
-# TODO — Cập nhật: 2026-06-04
+# TODO — Cập nhật: 2026-06-04 (phiên 2)
 
 ---
 
@@ -16,6 +16,10 @@
 ---
 
 ## ✅ ĐÃ HOÀN THÀNH
+
+### Phiên 2026-06-04 (phiên 2) — Cập nhật /compact-save
+
+- [x] Viết lại `.claude/commands/compact-save.md` — gọn 5 dòng, thêm dòng QUAN TRỌNG: không tự gọi /compact
 
 ### Phiên 2026-06-04 — Turnstile Debug + Security Audit
 

@@ -1102,5 +1102,8 @@ Thêm CDN Chart.js vào `admin/index.html`:
 |---|---|
 | `index.html` | `id="turnstile-container"` cho .cf-turnstile; script Turnstile → `?onload=_tvlTurnstileInit` (bỏ render=explicit); thêm inline script `_tvlTurnstileInit` + `_tvlRenderTs()` helper |
 | `phan-he-ung-dung.js` | `_khoiTaoTabCaNhan()`: show `cfTurnstileWrap` + gọi `_tvlRenderTs("turnstile-container")`; `_khoiTaoTabDangQuanLy()`: show `cfTurnstileHostWrap` + gọi `_tvlRenderTs("cfTurnstileHost")` |
+| `phan-he-khach-choi.js` | Xóa Turnstile check login + datSlot; `_xacMinhTurnstile()` còn tồn tại nhưng không được gọi |
+| `phan-he-host.js` | Xóa Turnstile block trong `_dangBaiKeo()` |
+| `.claude/commands/compact-save.md` | Viết lại gọn — 4 bước, bỏ hướng dẫn dài; bổ sung QUAN TRỌNG: không tự gọi /compact |
 | `phan-he-khach-choi.js` | Xóa Turnstile check trong `xacThucNguoiDung()` (login); xóa Turnstile check trong `datSlot()` (trust<80); xóa reset widget khi sai pass; `_xacMinhTurnstile()` giữ nhưng không gọi |
 | `phan-he-host.js` | Xóa Turnstile check + `_hostTs.style.display = "block"` trong `_dangBaiKeo()` |
