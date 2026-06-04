@@ -1628,34 +1628,41 @@
             margin: 0 !important;
         }
     </style>
-    <!-- Cloudflare Turnstile — render=explicit + onload để tránh race condition trong SPA -->
+    <!-- Cloudflare Turnstile — async defer chuẩn + onload callback cho explicit render SPA -->
     <script>
-        window._tvlTsQueue   = [];   // Hàng đợi khi API chưa load
+        window._tvlTsQueue   = [];   // Hàng đợi render khi API chưa load xong
         window._tvlTsWidgets = {};   // containerId → widgetId
 
-        // Cloudflare gọi hàm này khi API sẵn sàng
+        // Cloudflare gọi hàm này sau khi API load xong (onload)
         window._tvlTurnstileInit = function () {
             window._tvlTsReady = true;
             window._tvlTsQueue.forEach(function (fn) { try { fn(); } catch (e) {} });
             window._tvlTsQueue = [];
         };
 
-        // Render hoặc reset widget theo containerId — dùng ở mọi nơi trong code
+        // Render widget vào container — nếu đã có iframe thì reset, nếu chưa thì render mới
+        // Sitekey cứng để đảm bảo render đúng widget dù data-sitekey HTML có bị cache hay không
         window._tvlRenderTs = function (containerId) {
             var doIt = function () {
                 var el = document.getElementById(containerId);
                 if (!el) return;
-                var wid = window._tvlTsWidgets[containerId];
-                if (wid !== undefined && wid !== null) {
-                    window.turnstile.reset(wid);
+                if (el.querySelector('iframe')) {
+                    // Widget đã được auto-render hoặc render trước đó — chỉ reset token
+                    var wid = window._tvlTsWidgets[containerId];
+                    if (wid !== undefined && wid !== null) window.turnstile.reset(wid);
                 } else {
-                    window._tvlTsWidgets[containerId] = window.turnstile.render(el);
+                    // Widget chưa render (auto-render bỏ qua div hidden) → render thủ công
+                    window._tvlTsWidgets[containerId] = window.turnstile.render(el, {
+                        sitekey: '0x4AAAAAADeiC_0mMTnc07rd',
+                        theme: 'dark'
+                    });
                 }
             };
             if (window.turnstile) { doIt(); } else { window._tvlTsQueue.push(doIt); }
         };
     </script>
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=_tvlTurnstileInit&render=explicit" async defer></script>
+    <!-- Script CDN chuẩn Cloudflare — async defer để auto-render + kích hoạt analytics -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=_tvlTurnstileInit" async defer></script>
 </head>
 <body>
 

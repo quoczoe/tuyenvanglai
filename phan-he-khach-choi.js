@@ -269,14 +269,9 @@
         localStorage.setItem(_CF_SESSION_KEY, JSON.stringify({ exp: Date.now() + _CF_TTL }));
     }
 
-    // Trả về true nếu pass, false nếu chưa xác minh
+    // Trả về true nếu pass (session hợp lệ hoặc token mới), false nếu chưa xác minh
     function _xacMinhTurnstile() {
         if (_kiemTraTurnstileSession()) return true;
-        // Nếu Turnstile API chưa load xong → bypass để không chặn đăng nhập
-        if (!window._tvlTsReady) return true;
-        // Nếu widget chưa render (iframe chưa có) → bypass graceful degradation
-        const tsDiv = document.getElementById("turnstile-container");
-        if (!tsDiv || !tsDiv.querySelector("iframe")) return true;
         const token = document.querySelector("[name='cf-turnstile-response']")?.value;
         if (token) { _luuTurnstileSession(); return true; }
         return false;
