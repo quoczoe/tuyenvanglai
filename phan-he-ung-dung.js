@@ -17,6 +17,49 @@
     window.currentGuest = null;  // Alias backward compat (trỏ về currentUser)
 
     /* ═══════════════════════════════════════════════════
+     * MOBILE HAMBURGER NAV
+     * ═══════════════════════════════════════════════════ */
+    window.toggleMobileNav = function () {
+        const drawer  = document.getElementById("mobileNavDrawer");
+        const overlay = document.getElementById("mobileNavOverlay");
+        const btn     = document.getElementById("btnHamburger");
+        if (!drawer) return;
+        const isOpen = drawer.classList.contains("open");
+        if (isOpen) {
+            window.closeMobileNav();
+        } else {
+            drawer.classList.add("open");
+            overlay?.classList.add("open");
+            btn?.classList.add("is-open");
+            document.body.style.overflow = "hidden";
+        }
+    };
+
+    window.closeMobileNav = function () {
+        document.getElementById("mobileNavDrawer")?.classList.remove("open");
+        document.getElementById("mobileNavOverlay")?.classList.remove("open");
+        document.getElementById("btnHamburger")?.classList.remove("is-open");
+        document.body.style.overflow = "";
+    };
+
+    // Đóng drawer khi chuyển tab (từ desktop hoặc external call)
+    const _origChuyenTab = window.chuyenTab;
+    window.addEventListener("DOMContentLoaded", () => {
+        // Patch chuyenTab sau khi nó được định nghĩa
+        const _patch = () => {
+            const orig = window.chuyenTab;
+            if (orig && orig !== window._chuyenTabPatched) {
+                window._chuyenTabPatched = function (...args) {
+                    window.closeMobileNav();
+                    return orig(...args);
+                };
+                window.chuyenTab = window._chuyenTabPatched;
+            }
+        };
+        setTimeout(_patch, 100);
+    });
+
+    /* ═══════════════════════════════════════════════════
      * KHỞI TẠO ỨNG DỤNG
      * ═══════════════════════════════════════════════════ */
     /* Brand config — chỉ quản lý favicon (logo đã hardcode trong HTML) */

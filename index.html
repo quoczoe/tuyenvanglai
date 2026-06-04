@@ -179,6 +179,11 @@
             max-width: 1700px; width: 100%; margin: 0 auto;
             padding: 96px 20px 80px;
         }
+        @media (max-width: 768px) {
+            /* Subtab nav bám sát header 56px trên mobile */
+            .subtab-nav { top: 56px; }
+            body.has-subtab .app-body { padding-top: 108px; } /* 56 header + 44 subtab + 8 buffer */
+        }
 
         /* ── TAB SECTIONS ── */
         .tab-section { display: none; }
@@ -754,26 +759,110 @@
         }
 
         /* ── RESPONSIVE ── */
+        /* ── HAMBURGER BUTTON — desktop: ẩn, mobile: hiện ── */
+        .btn-hamburger {
+            display: none;
+            flex-direction: column; justify-content: center; align-items: center;
+            gap: 5px; width: 40px; height: 40px; flex-shrink: 0;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 9px; cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-hamburger span {
+            display: block; width: 18px; height: 2px;
+            background: rgba(255,255,255,0.85); border-radius: 2px;
+            transition: transform 0.22s, opacity 0.18s;
+        }
+        .btn-hamburger.is-open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+        .btn-hamburger.is-open span:nth-child(2) { opacity: 0; }
+        .btn-hamburger.is-open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+        /* ── MOBILE NAV OVERLAY ── */
+        .mobile-nav-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+            z-index: 490;
+            transition: opacity 0.22s;
+        }
+        .mobile-nav-overlay.open { display: block; }
+
+        /* ── MOBILE NAV DRAWER ── */
+        .mobile-nav-drawer {
+            position: fixed; top: 0; right: -300px;
+            width: 285px; height: 100dvh;
+            background: #0d1525;
+            border-left: 1px solid rgba(255,255,255,0.08);
+            box-shadow: -8px 0 32px rgba(0,0,0,0.5);
+            z-index: 500;
+            display: flex; flex-direction: column;
+            transition: right 0.28s cubic-bezier(0.4,0,0.2,1);
+            overflow-y: auto;
+        }
+        .mobile-nav-drawer.open { right: 0; }
+        .mobile-nav-top {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            flex-shrink: 0;
+        }
+        .mobile-nav-close {
+            background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px; width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: #94a3b8; font-size: 1.1rem;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .mobile-nav-items { display: flex; flex-direction: column; padding: 8px 0; flex: 1; }
+        .mobile-nav-item {
+            display: flex; align-items: center; gap: 13px;
+            padding: 15px 20px;
+            background: none; border: none;
+            color: #cbd5e1; font-size: 0.97rem; font-weight: 600;
+            cursor: pointer; font-family: inherit; text-align: left;
+            border-radius: 0;
+            transition: background 0.15s, color 0.15s;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .mobile-nav-item:active { background: rgba(255,85,0,0.1); }
+        .mobile-nav-item i { width: 22px; text-align: center; color: var(--accent); font-size: 1rem; }
+        .mobile-nav-divider {
+            height: 1px; background: rgba(255,255,255,0.07);
+            margin: 6px 20px;
+        }
+        .login-btn-text { /* span bên trong nút login — ẩn trên mobile */ }
+
+        /* ── MOBILE ≤ 768px ── */
         @media (max-width: 768px) {
-            .app-body { padding: 96px 16px 100px; }
-            .app-header-inner { padding: 0 16px; gap: 8px; }
-            .tab-label { display: none; } /* Ẩn nhãn tab, chỉ hiện icon */
-            .btn-gop-y-label { display: none; } /* Ẩn text "Góp ý & Ủng hộ" trên mobile */
-            .tab-nav-btn { padding: 9px 13px; font-size: 0.88rem; }
-            .app-logo-text { font-size: 1.05rem; }
-            .form-row, .form-row.col-3,
-            .form-row.col-4, .form-row.col-san { grid-template-columns: 1fr; }
+            /* Header */
+            .app-header { height: 56px; }
+            .app-header-inner {
+                padding: 0 12px; gap: 8px;
+                display: flex; justify-content: space-between; align-items: center;
+            }
+            .app-logo img { height: 30px !important; }
+            .app-nav { display: none; }          /* ẩn nav tabs */
+            .btn-gop-y { display: none; }        /* ẩn góp ý */
+            .login-btn-text { display: none; }   /* login → icon only */
+            .btn-header-login { padding: 9px 11px; border-radius: 9px; font-size: 0.9rem; box-shadow: none; }
+            #headerUserName { display: none; }
+            .btn-hamburger { display: flex; }    /* hiện hamburger */
+            /* Body */
+            .app-body { padding: 72px 12px 80px; }
+            /* Forms */
+            .form-row, .form-row.col-3, .form-row.col-4, .form-row.col-san { grid-template-columns: 1fr; }
             .row-h5 { grid-template-columns: 1fr; }
             .row-h5 .fg-btn { width: 100%; }
             .row-h5 .fg-btn .btn-kt-trigger { width: 100%; }
+            /* Content */
             .keo-grid { grid-template-columns: 1fr; }
             .filter-grid { grid-template-columns: 1fr 1fr; }
             .profile-top { flex-direction: column; align-items: center; text-align: center; }
-            #headerUserName { display: none; }
         }
         @media (max-width: 480px) {
             .filter-grid { grid-template-columns: 1fr; }
-            .tab-nav-btn { padding: 8px 10px; font-size: 0.82rem; }
+            .app-logo img { height: 26px !important; }
         }
 
         /* ════════════════════════════════════════════
@@ -1571,9 +1660,9 @@
         </button>
     </nav>
 
-    <!-- Góc phải: Góp ý + Tài khoản -->
+    <!-- Góc phải: Góp ý + Tài khoản + Hamburger -->
     <div class="app-header-account">
-        <!-- Nút Góp ý & Ủng hộ — thay FAB tròn cũ ở góc dưới -->
+        <!-- Nút Góp ý & Ủng hộ — ẩn trên mobile, có trong drawer -->
         <button class="btn-gop-y" onclick="window.moUHoModal && window.moUHoModal()"
                 title="Góp ý & Ủng hộ dự án">
             💬 <span class="btn-gop-y-label">Góp ý &amp; Ủng hộ</span>
@@ -1588,12 +1677,48 @@
         </div>
         <button id="headerLoginBtn" class="btn-header-login"
                 onclick="window.chuyenTab('ca-nhan')">
-            <i class="fa-solid fa-right-to-bracket"></i> Đăng Nhập
+            <i class="fa-solid fa-right-to-bracket"></i>
+            <span class="login-btn-text">Đăng Nhập</span>
+        </button>
+        <!-- Hamburger — chỉ hiện trên mobile -->
+        <button class="btn-hamburger" id="btnHamburger"
+                onclick="window.toggleMobileNav()"
+                aria-label="Mở menu">
+            <span></span><span></span><span></span>
         </button>
     </div>
 
 </div>
 </header>
+
+<!-- ── MOBILE NAV OVERLAY + DRAWER ── -->
+<div id="mobileNavOverlay" class="mobile-nav-overlay" onclick="window.closeMobileNav()"></div>
+<div id="mobileNavDrawer" class="mobile-nav-drawer" role="dialog" aria-label="Menu điều hướng">
+    <div class="mobile-nav-top">
+        <img src="/logo.png" alt="TuyenVangLai" style="height:28px;width:auto;object-fit:contain;">
+        <button class="mobile-nav-close" onclick="window.closeMobileNav()" aria-label="Đóng menu">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+    <div class="mobile-nav-items">
+        <button class="mobile-nav-item" onclick="window.chuyenTab('tim-keo');window.closeMobileNav()">
+            <i class="fa-solid fa-magnifying-glass"></i> Tìm Kèo
+        </button>
+        <button class="mobile-nav-item" onclick="window.chuyenTab('dang-quan-ly');window.closeMobileNav()">
+            <i class="fa-solid fa-calendar-plus"></i> Đăng &amp; Quản Lý
+        </button>
+        <button class="mobile-nav-item" onclick="window.chuyenTab('lich-su');window.closeMobileNav()">
+            <i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử
+        </button>
+        <div class="mobile-nav-divider"></div>
+        <button class="mobile-nav-item" onclick="window.moUHoModal&&window.moUHoModal();window.closeMobileNav()">
+            <i class="fa-solid fa-heart"></i> Góp ý &amp; Ủng hộ
+        </button>
+        <button class="mobile-nav-item" onclick="window.chuyenTab('ca-nhan');window.closeMobileNav()">
+            <i class="fa-solid fa-user"></i> Tài Khoản / Đăng Nhập
+        </button>
+    </div>
+</div>
 
 <!-- ── APP BODY ── -->
 <div class="app-body">
