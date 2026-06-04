@@ -1,9 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/", "destination": "/index.html" },
-    { "source": "/index", "destination": "/index.html" },
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/host", "destination": "/host.html" },
-    { "source": "/khach", "destination": "/khach.html" }
-  ]
-}
