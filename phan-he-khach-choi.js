@@ -67,6 +67,24 @@
                     _hienManDangNhap();
                 } else {
                     window.currentGuest = parsed;
+                    // Refresh profile từ DB: sync is_active, vai_tro mới nhất
+                    if (parsed._token && window.guestRPC) {
+                        window.guestRPC.refreshProfile(parsed._token, parsed.sdt_khach)
+                            .then(r => {
+                                if (r.status === 'blocked' || r.status === 'unauthorized') {
+                                    localStorage.removeItem("tvl_guest");
+                                    window.currentGuest = null;
+                                    _hienManDangNhap();
+                                    if (r.status === 'blocked') window.hienToast("Tài khoản bị khóa", "Liên hệ Admin.", "danger");
+                                } else if (r.status === 'ok') {
+                                    // Cập nhật thông tin mới nhất (vai_tro có thể đã đổi)
+                                    window.currentGuest = { ...window.currentGuest, ...r.user };
+                                    const stored = JSON.parse(localStorage.getItem("tvl_guest") || "{}");
+                                    localStorage.setItem("tvl_guest", JSON.stringify({ ...stored, ...r.user }));
+                                }
+                            })
+                            .catch(() => {}); // im lặng nếu mất mạng
+                    }
                     _hienThiDashboardKhach();
                 }
             } catch {
@@ -189,6 +207,11 @@
         // FEAT-1: Tích vàng xác minh Host — hiện kế bên tên
         const hostBadgeEl = document.getElementById("profileHostBadge");
         if (hostBadgeEl) hostBadgeEl.style.display = isHost ? "inline-flex" : "none";
+
+        // Admin Access Card — hiện nút "Vào Admin" nếu vai_tro='admin'
+        const isAdmin = g.vai_tro === 'admin';
+        const sectionAdmin = document.getElementById("sectionAdminAccess");
+        if (sectionAdmin) sectionAdmin.style.display = isAdmin ? "block" : "none";
 
         // 2F: Auto-fill ngày mặc định sau khi đăng nhập
         _dinhNgayMacDinh();
@@ -342,8 +365,8 @@
      * Lưu session và chuyển sang dashboard.
      * localStorage lưu toàn bộ thông tin cần thiết cho routing.
      */
-    function _luuSessionVaDangNhap(user) {
-        window.currentGuest = user;
+    function _luuSessionVaDangNhap(user, token) {
+        window.currentGuest = { ...user, _token: token || null };
 
         // Đọc tuỳ chọn "Lưu trạng thái đăng nhập"
         const luuLau = document.getElementById("chkLuuDangNhap")?.checked ?? false;
@@ -351,6 +374,7 @@
         const expiresAt = Date.now() + ngayMs * 24 * 60 * 60 * 1000;
 
         // Lưu đủ field để host routing và display hoạt động không cần fetch lại
+        // _token: UUID session token từ Supabase DB (không thể đoán, verify server-side)
         localStorage.setItem("tvl_guest", JSON.stringify({
             ten_khach:      user.ten_khach || "",
             sdt_khach:      user.sdt_khach || "",
@@ -359,7 +383,8 @@
             ma_key_host:    user.ma_key_host || null,
             telegram_id:    user.telegram_id || null,
             ngay_tham_gia:  user.ngay_tham_gia || null,
-            _expires_at:    expiresAt   // timestamp hết hạn (ms)
+            _token:         token || null,
+            _expires_at:    expiresAt
         }));
         const ten = user.ten_khach || "Lông thủ";
         const label = luuLau ? "Đã lưu 7 ngày" : "Phiên 1 ngày";
@@ -492,56 +517,38 @@
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang kiểm tra...'; }
 
         try {
-            // Ưu tiên nguoi_dung, fallback khach_vang_lai nếu bảng chưa tồn tại
-            let users = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: phone } });
-            let bangDang = "nguoi_dung";
+            // Hash mật khẩu phía client (SHA-256) trước khi gửi lên RPC
+            const hashInput = await _hashMatKhau(pass);
 
-            if (!users || users.length === 0) {
-                const kvl = await window.dbEngine.docThu("khach_vang_lai", { eq: { sdt_khach: phone } });
-                if (kvl && kvl.length > 0) { users = kvl; bangDang = "khach_vang_lai"; }
-                else if (users === null && kvl === null) {
-                    window.hienToast("Mất kết nối", "Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.", "danger");
-                    return;
-                }
-            }
-            _bangND = bangDang;
+            // Gọi RPC — bảng nguoi_dung bị RLS khóa với anon, chỉ đọc qua RPC SECURITY DEFINER
+            const result = await window.guestRPC.login(phone, hashInput);
 
-            const user = users[0] || null;
-
-            if (user) {
-                // ── 5B: Kiểm tra tài khoản bị khóa (dùng is_active — cột mới) ──
-                if (user.is_active === false) {
-                    window.hienToast(
-                        "Tài khoản bị khóa",
-                        "Tài khoản của bạn đã bị Admin tạm khóa. Liên hệ Admin để biết thêm.",
-                        "danger"
-                    );
-                    return;
-                }
-
-                // ── KỊCH BẢN A: SĐT ĐÃ TỒN TẠI → ĐĂNG NHẬP ──
-                // Hash hiệu dụng = lấy từ DB, nếu không có thì lấy từ cache localStorage
-                const effectiveHash = user.mat_khau_hash || localStorage.getItem(`tvl_h_${phone}`);
-
-                if (!effectiveHash) {
-                    // Không có hash ở đâu cả → modal đặt pass lần đầu
-                    _hienModalDatPassLanDau(phone, pass, user);
-                    return;
-                }
-                const hashInput = await _hashMatKhau(pass);
-                if (hashInput !== effectiveHash) {
+            switch (result?.status) {
+                case 'ok':
+                    _bangND = "nguoi_dung";
+                    _luuSessionVaDangNhap(result.user, result.token);
+                    break;
+                case 'not_found':
+                    _xoFormPhu(phone, pass, gender);
+                    break;
+                case 'blocked':
+                    window.hienToast("Tài khoản bị khóa", "Tài khoản của bạn đã bị Admin tạm khóa. Liên hệ Admin để biết thêm.", "danger");
+                    break;
+                case 'wrong_pass':
                     window.hienToast("Sai mật khẩu", "Nhập lại hoặc bấm 'Quên mật khẩu'.", "danger");
-                    return;
-                }
-                _luuSessionVaDangNhap({ ...user, mat_khau_hash: effectiveHash });
-            } else {
-                // ── KỊCH BẢN B: SĐT CHƯA TỒN TẠI → MỞ FORM ĐĂNG KÝ ──
-                _xoFormPhu(phone, pass, gender);
+                    break;
+                case 'no_pass':
+                    _hienModalDatPassLanDau(phone, pass, {});
+                    break;
+                case 'rate_limited':
+                    window.hienToast("Quá nhiều lần thử", "Bạn đã nhập sai mật khẩu quá 5 lần. Thử lại sau 15 phút.", "warning");
+                    break;
+                default:
+                    window.hienToast("Lỗi kết nối", "Không thể kết nối máy chủ. Kiểm tra mạng và thử lại.", "danger");
             }
         } catch (e) {
-            // dbEngine đã hiện toast "Mất kết nối" rồi — không hiện thêm
             console.error("Lỗi xác thực:", e);
-            // Chỉ reset nút, không toast lần 2
+            window.hienToast("Lỗi", "Không thể xác thực. Kiểm tra kết nối mạng.", "danger");
         } finally {
             if (btn) { btn.disabled = false; btn.innerHTML = 'XÁC NHẬN →'; }
         }
@@ -976,6 +983,13 @@
      * Alias cũ cho backward compat (một số file HTML còn dùng)
      */
     window.xacThucKhachChoi = window.xacThucNguoiDung;
+
+    // Truy cập nhanh trang Admin — chỉ cho tài khoản vai_tro='admin'
+    window.vaoTrangQuanTri = function () {
+        if (window.currentGuest?.vai_tro !== 'admin') return;
+        // Supabase Auth JWT tự quản lý session — admin panel tự detect khi load
+        window.location.href = "/admin/";
+    };
 
     window.dangXuatKhach = function () {
         localStorage.removeItem("tvl_guest");
@@ -1931,34 +1945,35 @@
                 return;
             }
 
-            // Sinh mã SLOT-XXXXX
-            const maSlot = "SLOT-" + Math.random().toString(36).slice(2, 7).toUpperCase();
+            // Gọi RPC dat_slot — server tạo mã slot + verify token + lấy ten từ DB
+            const g = window.currentGuest;
+            if (!g?._token) {
+                window.hienToast("Phiên đăng nhập hết hạn", "Vui lòng đăng nhập lại.", "warning");
+                window.dangXuatKhach?.();
+                return;
+            }
+            const slotResult = await window.guestRPC.datSlot(g._token, g.sdt_khach, caDauId);
 
-            // Xác định trạng thái slot: nếu uy tín 40-59 và ca không yêu cầu cọc → Chờ Host duyệt
-            let trangThaiSlot = "Chờ đánh";
-            if (myDiem >= 40 && myDiem < 60) {
-                if (caDau.yeu_cau_coc) {
-                    window.hienToast("Cần đặt cọc", `Uy tín của bạn đang ở mức rủi ro (${myDiem}đ). Ca đấu này yêu cầu chuyển cọc cho Host trước khi tham gia.`, "warning");
-                } else {
-                    trangThaiSlot = "Chờ Host duyệt";
-                    window.hienToast("Yêu cầu đã gửi", `Uy tín thấp (${myDiem}đ) — slot chuyển sang chờ Host duyệt thủ công!`, "warning");
-                }
+            if (slotResult.status === 'unauthorized') {
+                window.hienToast("Phiên đăng nhập hết hạn", "Vui lòng đăng nhập lại.", "warning");
+                window.dangXuatKhach?.();
+                return;
+            }
+            if (slotResult.status === 'ca_da_chot') {
+                window.hienToast("Ca đã chốt", "Ca đấu này đã được chốt, không thể đặt slot.", "warning");
+                return;
+            }
+            if (slotResult.status === 'da_dat_roi') {
+                window.hienToast("Đã đăng ký rồi", "Bạn đã có slot trong ca này.", "info");
+                return;
+            }
+            if (slotResult.status !== 'ok') {
+                window.hienToast("Lỗi", "Không thể đặt slot. Thử lại sau.", "danger");
+                return;
             }
 
-            // INSERT vào bảng dat_slot — gioi_tinh lấy từ currentGuest (fix bug hardcode "male")
-            await window.dbEngine.ghi("dat_slot", {
-                id_ca_dau:         caDauId,
-                ten_khach:         window.currentGuest.ten_khach,
-                sdt_khach:         window.currentGuest.sdt_khach,
-                ma_slot:           maSlot,
-                gioi_tinh:         window.currentGuest.gioi_tinh || "male",
-                trang_thai_di_danh: trangThaiSlot
-            });
-
-            const msgSlot = trangThaiSlot === "Chờ Host duyệt"
-                ? `Mã của bạn: ${maSlot}. Chờ Host duyệt.`
-                : `Mã của bạn: ${maSlot}. Liên hệ host qua Zalo để xác nhận.`;
-            window.hienToast("Đặt slot thành công! 🎉", msgSlot, "success");
+            const maSlot = slotResult.ma_slot;
+            window.hienToast("Đặt slot thành công! 🎉", `Mã của bạn: ${maSlot}. Liên hệ host qua Zalo để xác nhận.`, "success");
 
             // Cập nhật nút ngay lập tức — không reload toàn bộ danh sách
             const cardEl = document.querySelector(`[data-ca-id="${caDauId}"]`);
@@ -2675,8 +2690,16 @@
                 }
             }
 
-            // Cập nhật trạng thái — KHÔNG xóa bản ghi
-            await window.dbEngine.ghi("dat_slot", { trang_thai_di_danh: "Khách hủy" }, { id: datSlotId });
+            // Cập nhật trạng thái qua RPC — server verify token + sdt_khach khớp
+            const g = window.currentGuest;
+            if (!g?._token) {
+                window.hienToast("Phiên hết hạn", "Vui lòng đăng nhập lại.", "warning"); return;
+            }
+            const huyResult = await window.guestRPC.huySlot(g._token, g.sdt_khach, datSlotId);
+            if (huyResult.status !== 'ok') {
+                window.hienToast("Không thể huỷ", huyResult.status === 'unauthorized' ? "Phiên đăng nhập hết hạn." : "Ca đã chốt hoặc slot không hợp lệ.", "warning");
+                return;
+            }
             window.hienToast("Đã huỷ đăng ký", "Bạn đã huỷ tham gia ca này thành công.", "info");
             // Reload các section liên quan
             await Promise.all([_taiThongKeKhach(), _taiLichSuDau()]);
@@ -3164,33 +3187,104 @@
 
     /* ═══════════════════════════════════════════════════
      * LỊCH SỬ ĐẤU — Tổng hợp lịch sử, chi tiêu, đánh giá
-     * Gộp: CA ĐÃ ĐĂNG KÝ + LỊCH SỬ CHI TIÊU + ĐÁNH GIÁ HOST
      * ═══════════════════════════════════════════════════ */
-    let _lsdFromDate = null;
-    let _lsdToDate   = null;
+    let _lsdFromDate    = null;
+    let _lsdToDate      = null;
+    let _lsdStatusFilter = "all"; // "all"|"cho_danh"|"ket_thuc"|"huy"
+
+    // Segmented status filter — click "all" cũng reset time range
+    window.locTrangThaiLs = function(type, btn) {
+        _lsdStatusFilter = type;
+        document.querySelectorAll(".ls-seg-btn").forEach(b => b.classList.remove("active"));
+        if (btn) btn.classList.add("active");
+        if (type === "all") {
+            _lsdFromDate = null;
+            _lsdToDate   = null;
+            document.querySelectorAll(".kh-ls-filter-btn").forEach(b => b.classList.remove("active"));
+            const f = document.getElementById("statsDateFrom");
+            const t = document.getElementById("statsDateTo");
+            if (f) f.value = "";
+            if (t) t.value = "";
+        }
+        _taiLichSuDau();
+    };
+
+    // Bộ lọc ngày tùy chọn (input date range)
+    window.locNgayLichSu = function() {
+        _lsdFromDate = document.getElementById("statsDateFrom")?.value || null;
+        _lsdToDate   = document.getElementById("statsDateTo")?.value   || null;
+        document.querySelectorAll(".kh-ls-filter-btn").forEach(b => b.classList.remove("active"));
+        _taiLichSuDau();
+    };
+
+    // Liên hệ Host: Mobile → tel: / Desktop → popup số + copy
+    window.lienHeHost = function(sdt, triggerBtn) {
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        if (isMobile) { window.location.href = "tel:" + sdt; return; }
+        // Desktop: hiện popup nhỏ ngay dưới nút
+        const old = document.getElementById("_lhPopup");
+        if (old) old.remove();
+        const pop = document.createElement("div");
+        pop.id = "_lhPopup";
+        pop.style.cssText = "position:fixed;z-index:9999;background:#1a2844;border:1px solid #1e3a5f;border-radius:10px;padding:12px 14px;box-shadow:0 8px 24px rgba(0,0,0,0.6);display:flex;align-items:center;gap:10px;font-size:0.85rem;color:#e2e8f0;white-space:nowrap;";
+        pop.innerHTML = `<i class="fa-solid fa-phone" style="color:#FF7A00;"></i> <span style="font-weight:700;letter-spacing:0.06em;">${sdt}</span>
+        <button onclick="navigator.clipboard.writeText('${sdt}').then(()=>window.hienToast('Đã sao chép!','Số điện thoại host đã copy.','success'));document.getElementById('_lhPopup')?.remove()"
+            style="background:rgba(255,122,0,0.15);border:1px solid rgba(255,122,0,0.35);color:#FF7A00;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:0.72rem;font-family:inherit;">
+            <i class="fa-regular fa-copy"></i> Copy
+        </button>
+        <button onclick="document.getElementById('_lhPopup')?.remove()"
+            style="background:transparent;border:none;color:#64748b;cursor:pointer;padding:2px;font-size:0.8rem;">✕</button>`;
+        if (triggerBtn) {
+            const r = triggerBtn.getBoundingClientRect();
+            pop.style.top  = (r.bottom + 6 + window.scrollY) + "px";
+            pop.style.left = Math.max(8, r.left - 20) + "px";
+        } else {
+            pop.style.top = "50%"; pop.style.left = "50%";
+            pop.style.transform = "translate(-50%,-50%)";
+        }
+        document.body.appendChild(pop);
+        setTimeout(() => pop.remove(), 6000);
+    };
+
+    // Đặt lại sân: chuyển về tab Tìm Kèo + điền tên sân vào filter
+    window.datLaiSan = function(tenSan) {
+        if (window.chuyenTab) window.chuyenTab("tim-keo");
+        setTimeout(() => {
+            const inp = document.getElementById("filterCourtName");
+            if (inp) { inp.value = tenSan; inp.dispatchEvent(new Event("input")); }
+            if (window.timKiemCaDau) window.timKiemCaDau();
+        }, 400);
+    };
 
     /**
-     * Bộ lọc thời gian cho lịch sử đấu — gọi khi bấm các nút Tuần/Tháng/Năm/Tất cả
+     * Bộ lọc thời gian nhanh cho lịch sử đấu — Tuần/Tháng/Năm/Tất cả
      */
     window.locLichSuDau = function(type, btn) {
-        // Cập nhật active cho filter buttons lịch sử
         document.querySelectorAll(".kh-ls-filter-btn").forEach(b => b.classList.remove("active"));
         if (btn) btn.classList.add("active");
 
-        const now   = new Date();
-        const today = now.toISOString().split("T")[0];
+        // Tính ngày theo múi giờ Việt Nam UTC+7
+        const VN_OFF = 7 * 3600 * 1000;
+        const nowVn  = new Date(Date.now() + VN_OFF);
+        const today  = nowVn.toISOString().slice(0, 10);
+        const yr     = parseInt(today.slice(0, 4));
+        const mo     = parseInt(today.slice(5, 7)); // 1–12
 
         if (type === "week") {
-            const mon = new Date(now);
-            mon.setDate(now.getDate() - ((now.getDay() + 6) % 7)); // Thứ 2 tuần này
-            _lsdFromDate = mon.toISOString().split("T")[0];
-            _lsdToDate   = today;
+            // Từ thứ Hai đến Chủ Nhật của tuần hiện tại
+            const daysToMon = (nowVn.getUTCDay() + 6) % 7;
+            const monMs     = nowVn.getTime() - daysToMon * 86400000;
+            const sunMs     = monMs + 6 * 86400000;
+            _lsdFromDate = new Date(monMs).toISOString().slice(0, 10);
+            _lsdToDate   = new Date(sunMs).toISOString().slice(0, 10);
         } else if (type === "month") {
-            _lsdFromDate = today.substring(0, 7) + "-01";
-            _lsdToDate   = today;
+            // Từ ngày 1 đến ngày cuối tháng hiện tại
+            _lsdFromDate = today.slice(0, 7) + "-01";
+            // day 0 của tháng tiếp theo = ngày cuối tháng hiện tại
+            _lsdToDate   = new Date(Date.UTC(yr, mo, 0) + VN_OFF).toISOString().slice(0, 10);
         } else if (type === "year") {
-            _lsdFromDate = today.substring(0, 4) + "-01-01";
-            _lsdToDate   = today;
+            _lsdFromDate = yr + "-01-01";
+            _lsdToDate   = yr + "-12-31";
         } else {
             _lsdFromDate = null;
             _lsdToDate   = null;
@@ -3221,12 +3315,12 @@
      * Toggle mở/đóng phần chi tiết của một item lịch sử
      */
     window._toggleLsItem = function(itemId) {
-        const body = document.getElementById("body_" + itemId);
-        const icon = document.getElementById("icon_" + itemId);
+        const body    = document.getElementById("body_" + itemId);
+        const chevron = document.getElementById("icon_" + itemId);
         if (!body) return;
         const isOpen = body.style.display !== "none";
         body.style.display = isOpen ? "none" : "block";
-        if (icon) icon.className = isOpen ? "fa-solid fa-chevron-down" : "fa-solid fa-chevron-up";
+        if (chevron) chevron.classList.toggle("open", !isOpen);
     };
 
     /**
@@ -3308,253 +3402,269 @@
         const statsEl  = document.getElementById("lichSuStats");
         if (!timeline) return;
 
-        timeline.innerHTML = `<div class="kh-loading">
-            <i class="fa-solid fa-spinner fa-spin"></i> Đang tải lịch sử...</div>`;
+        timeline.innerHTML = `<div class="ls-loading"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải lịch sử...</div>`;
+        // Khi người dùng nhập date range thủ công → xóa active của nút Tuần/Tháng/Năm
+        // (nhập tay = không còn khớp với shortcut nào cụ thể)
 
         try {
             const myPhone = window.currentGuest.sdt_khach;
-            const [myDatSlots, allCaDau, myReviews] = await Promise.all([
+            const [myDatSlots, allCaDau, myReviews, myUserArr, allKeys] = await Promise.all([
                 window.dbEngine.docThu("dat_slot", { eq: { sdt_khach: myPhone } }),
                 window.dbEngine.docThu("ca_dau"),
-                window.dbEngine.docThu("danh_gia_tin_dung", {
-                    eq: { sdt_nguoi_viet: myPhone, loai_danh_gia: "GuestToHost" }
-                })
+                window.dbEngine.docThu("danh_gia_tin_dung", { eq: { sdt_nguoi_viet: myPhone, loai_danh_gia: "GuestToHost" } }),
+                window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: myPhone } }),
+                window.dbEngine.docThu("quan_ly_key")
             ]);
-            // docThu trả về null nếu lỗi — chuyển thành mảng rỗng để code dưới chạy được
-            if (!myDatSlots) { timeline.innerHTML = `<div style="text-align:center;padding:40px;color:#5a5a5a;">Không thể tải lịch sử. Kiểm tra kết nối và thử lại.</div>`; return; }
 
-            const caDauMap   = {};
+            if (!myDatSlots) {
+                timeline.innerHTML = `<div class="ls-empty"><i class="fa-solid fa-wifi-slash"></i><p>Không thể tải lịch sử. Kiểm tra kết nối.</p></div>`;
+                return;
+            }
+
+            const caDauMap    = {};
             (allCaDau || []).forEach(c => { caDauMap[c.id] = c; });
-
-            // Set ID ca đấu đã review
             const reviewedSet = new Set((myReviews || []).map(r => r.id_ca_dau));
+            const trustScore  = (myUserArr || [])[0]?.diem_uy_tin ?? 100;
+            // Map key → sdt_host để lấy SĐT host cho nút Liên hệ
+            const keyMap = {};
+            (allKeys || []).forEach(k => { if (k.ma_key) keyMap[k.ma_key] = k; });
 
-            // Join + filter theo khoảng thời gian
-            const withCa = myDatSlots
+            // Join toàn bộ slot với ca_dau (tính stats từ TẤT CẢ, không filter date)
+            const allWithCa = myDatSlots
                 .map(slot => ({ slot, ca: caDauMap[slot.id_ca_dau] }))
+                .filter(({ ca }) => !!ca);
+
+            // Stats toàn bộ lịch sử
+            let soThamGia = 0, tongChi = 0, tongDat = 0;
+            allWithCa.forEach(({ slot, ca }) => {
+                if (slot.trang_thai_di_danh === "Khách hủy") return;
+                tongDat++;
+                if (slot.trang_thai_di_danh === "Đã tham gia") {
+                    soThamGia++;
+                    if (ca.da_chot_ca) tongChi += slot.gioi_tinh === "female" ? (ca.gia_nu || 0) : (ca.gia_nam || 0);
+                }
+            });
+            const attendRate  = tongDat > 0 ? Math.round(soThamGia / tongDat * 100) + "%" : "—";
+            const trustLevel  = trustScore >= 80 ? { cls: "ls-trust-ok",   lbl: "Uy Tín Tốt" }
+                             : trustScore >= 60  ? { cls: "ls-trust-warn", lbl: "Cảnh Cáo"   }
+                             :                     { cls: "ls-trust-bad",  lbl: "Rủi Ro"      };
+
+            // Render 4 stat cards với tiêu đề phân khu
+            if (statsEl) {
+                statsEl.innerHTML = `<div class="ls-section-title">TỔNG QUAN CÁ NHÂN</div><div class="ls-stats-grid">
+                    <div class="ls-stat-card">
+                        <span class="ls-stat-icon ls-stat-icon-mint"><i class="fa-solid fa-table-tennis-paddle-ball"></i></span>
+                        <div class="ls-stat-val ls-stat-val-mint">${soThamGia}</div>
+                        <div class="ls-stat-lbl">Đã Tham Gia</div>
+                    </div>
+                    <div class="ls-stat-card">
+                        <span class="ls-stat-icon ls-stat-icon-cyan"><i class="fa-solid fa-wallet"></i></span>
+                        <div class="ls-stat-val ls-stat-val-cyan">${_formatVND(tongChi)}</div>
+                        <div class="ls-stat-lbl">Tổng Chi</div>
+                    </div>
+                    <div class="ls-stat-card">
+                        <span class="ls-stat-icon ls-stat-icon-orange"><i class="fa-solid fa-shield-halved"></i></span>
+                        <div class="ls-stat-val ls-stat-val-orange">${trustScore}<span class="ls-stat-val-sub">/ 100</span></div>
+                        <div class="ls-stat-lbl"><span class="ls-trust-badge ${trustLevel.cls}">${trustLevel.lbl}</span></div>
+                    </div>
+                    <div class="ls-stat-card">
+                        <span class="ls-stat-icon ls-stat-icon-green"><i class="fa-solid fa-calendar-check"></i></span>
+                        <div class="ls-stat-val ls-stat-val-green">${attendRate}</div>
+                        <div class="ls-stat-lbl">Chuyên Cần</div>
+                    </div>
+                </div>`;
+            }
+
+            // Filter theo date range
+            let withCa = allWithCa
                 .filter(({ ca }) => {
-                    if (!ca) return false;
                     if (_lsdFromDate && ca.ngay_danh && ca.ngay_danh < _lsdFromDate) return false;
                     if (_lsdToDate   && ca.ngay_danh && ca.ngay_danh > _lsdToDate)   return false;
                     return true;
                 })
-                .sort((a, b) => {
-                    const da = a.ca?.ngay_danh || "";
-                    const db = b.ca?.ngay_danh || "";
-                    return db.localeCompare(da);
-                });
+                .sort((a, b) => (b.ca?.ngay_danh || "").localeCompare(a.ca?.ngay_danh || ""));
 
-            // Tính stats nhanh
-            let soThamGia = 0, tongChi = 0, choDanh = 0, daHuy = 0, daBung = 0;
-            withCa.forEach(({ slot, ca }) => {
-                const tt = slot.trang_thai_di_danh;
-                if (tt === "Đã tham gia") {
-                    soThamGia++;
-                    if (ca.da_chot_ca) {
-                        tongChi += slot.gioi_tinh === "female" ? (ca.gia_nu || 0) : (ca.gia_nam || 0);
-                    }
-                } else if (tt === "Chờ đánh")  { choDanh++; }
-                else if (tt === "Khách hủy")   { daHuy++; }
-                else if (tt === "Bùng kèo")    { daBung++; }
-            });
-
-            // Render stats grid — hàng 1: 2 card lớn; hàng 2: 3 card nhỏ cùng tổng width
-            if (statsEl) {
-                const _card = (val, color, icon, lbl) =>
-                    `<div class="kh-stat-badge">
-                        <div class="kh-stat-val" style="color:${color};">${val}</div>
-                        <div class="kh-stat-lbl"><i class="fa-solid ${icon}"></i> ${lbl}</div>
-                    </div>`;
-                statsEl.innerHTML = `
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-                        ${_card(soThamGia,           "#00ff88", "fa-flag-checkered",      "Đã tham gia")}
-                        ${_card(_formatVND(tongChi), "#60a5fa", "fa-wallet",              "Tổng chi"   )}
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
-                        ${_card(choDanh, "#fbbf24", "fa-clock",                "Chờ đánh")}
-                        ${_card(daBung,  "#ef4444", "fa-triangle-exclamation", "Đã bùng" )}
-                        ${_card(daHuy,   "#9ca3af", "fa-circle-xmark",         "Đã hủy"  )}
-                    </div>`;
+            // Filter theo segmented status control
+            if (_lsdStatusFilter === "cho_danh") {
+                withCa = withCa.filter(({ slot }) => slot.trang_thai_di_danh === "Chờ đánh" || slot.trang_thai_di_danh === "Chờ Host duyệt");
+            } else if (_lsdStatusFilter === "ket_thuc") {
+                withCa = withCa.filter(({ slot }) => slot.trang_thai_di_danh === "Đã tham gia");
+            } else if (_lsdStatusFilter === "huy") {
+                withCa = withCa.filter(({ slot }) => slot.trang_thai_di_danh === "Khách hủy" || slot.trang_thai_di_danh === "Bùng kèo");
             }
 
             if (withCa.length === 0) {
-                timeline.innerHTML = `<div class="kh-empty">
-                    <i class="fa-solid fa-calendar-xmark"></i>
-                    <p>Chưa có lịch sử đấu trong khoảng thời gian này.</p>
-                </div>`;
+                timeline.innerHTML = `<div class="ls-empty"><i class="fa-solid fa-calendar-xmark"></i><p>Chưa có lịch sử trong khoảng thời gian này.</p></div>`;
                 return;
             }
 
-            // Map màu, icon, nhãn hiển thị theo trạng thái
-            // Chú ý: key = giá trị DB, label = text hiển thị cho khách
+            // Stripe + badge mapping
             const ttMap = {
-                "Đã tham gia": { color: "#00ff88", bg: "rgba(0,255,136,0.1)",   icon: "fa-circle-check",         label: "Đã Tham Gia" },
-                "Chờ đánh":    { color: "#fbbf24", bg: "rgba(251,191,36,0.1)",  icon: "fa-clock",                label: "Chờ Đánh"    },
-                "Khách hủy":   { color: "#9ca3af", bg: "rgba(156,163,175,0.1)", icon: "fa-circle-xmark",         label: "Đã Huỷ"      },
-                "Bùng kèo":    { color: "#ef4444", bg: "rgba(239,68,68,0.1)",   icon: "fa-triangle-exclamation", label: "Bùng Kèo"    },
+                "Đã tham gia":    { stripe: "#00e676", badgeCls: "ls-badge-done",   label: "Đã Tham Gia" },
+                "Chờ đánh":       { stripe: "#448aff", badgeCls: "ls-badge-wait",   label: "Chờ Đánh"    },
+                "Chờ Host duyệt": { stripe: "#ff9800", badgeCls: "ls-badge-review", label: "Chờ Duyệt"   },
+                "Khách hủy":      { stripe: "#546e7a", badgeCls: "ls-badge-cancel", label: "Đã Huỷ"      },
+                "Bùng kèo":       { stripe: "#f44336", badgeCls: "ls-badge-bung",   label: "Bùng Kèo"    },
             };
 
-            // Render timeline items
             timeline.innerHTML = withCa.map(({ slot, ca }) => {
-                const ngayStr = ca.ngay_danh
-                    ? new Date(ca.ngay_danh).toLocaleDateString("vi-VN", {
-                        weekday: "short", day: "2-digit", month: "2-digit", year: "numeric" })
+                const ngayFmt = ca.ngay_danh
+                    ? new Date(ca.ngay_danh).toLocaleDateString("vi-VN", { weekday:"short", day:"2-digit", month:"2-digit" })
                     : "--";
-                const tt      = ttMap[slot.trang_thai_di_danh] || { color: "#9ca3af", bg: "rgba(156,163,175,0.1)", icon: "fa-question", label: slot.trang_thai_di_danh };
-                const itemId  = "lsItem_" + slot.id;
-                const baoGom  = ca.tien_ich_bao_gom || {};
-                const tichArr = [];
-                if (baoGom.san)    tichArr.push("🏟️ Sân");
-                if (baoGom.cau)    tichArr.push("🏸 Cầu");
-                if (baoGom.nuoc)   tichArr.push("💧 Nước");
-                if (baoGom.gui_xe) tichArr.push("🏍️ Xe");
+                const gioFmt  = ca.gio_bat_dau
+                    ? ca.gio_bat_dau.slice(0,5) + (ca.gio_ket_thuc ? "–" + ca.gio_ket_thuc.slice(0,5) : "")
+                    : "--";
+                const tt     = ttMap[slot.trang_thai_di_danh] || { stripe: "#546e7a", badgeCls: "ls-badge-cancel", label: slot.trang_thai_di_danh };
+                const itemId = "lsItem_" + slot.id;
+                const baoGom = ca.tien_ich_bao_gom || {};
 
-                // Giá tiền hiển thị
-                let priceHTML = "";
+                // Giá hiển thị bên phải header
+                let priceStr = "";
                 if (ca.da_chot_ca && slot.trang_thai_di_danh === "Đã tham gia") {
                     const gia = slot.gioi_tinh === "female" ? (ca.gia_nu || 0) : (ca.gia_nam || 0);
-                    priceHTML = `<span style="font-weight:700;color:#00ff88;font-size:0.88rem;">${_formatVND(gia)}</span>`;
+                    priceStr = `<span class="ls-price">${_formatVND(gia)}</span>`;
                 } else if (!ca.da_chot_ca && slot.trang_thai_di_danh === "Đã tham gia") {
-                    priceHTML = `<span style="color:#fbbf24;font-size:0.72rem;">Chờ chốt</span>`;
-                } else if (slot.trang_thai_di_danh === "Khách hủy") {
-                    priceHTML = `<span style="color:#9ca3af;font-size:0.72rem;">Đã hủy</span>`;
+                    priceStr = `<span class="ls-price-wait">Chờ chốt</span>`;
                 }
 
-                // Điều kiện đánh giá host
-                const coTheReview = ca.da_chot_ca
-                    && slot.trang_thai_di_danh === "Đã tham gia"
-                    && !reviewedSet.has(ca.id);
+                // Amenity tags
+                const amenityTags = [
+                    { key: "san",    icon: "fa-map",             label: "Sân"  },
+                    { key: "cau",    icon: "fa-feather-pointed", label: "Cầu"  },
+                    { key: "nuoc",   icon: "fa-bottle-water",    label: "Nước" },
+                    { key: "gui_xe", icon: "fa-motorcycle",      label: "Xe"   },
+                ].map(a => `<span class="ls-amenity-tag ${baoGom[a.key] ? "active" : "dim"}"><i class="fa-solid ${a.icon}"></i> ${a.label}</span>`).join("");
+
+                // Điều kiện đánh giá
+                const coTheReview = ca.da_chot_ca && slot.trang_thai_di_danh === "Đã tham gia" && !reviewedSet.has(ca.id);
                 const daReview    = reviewedSet.has(ca.id);
 
-                // Inline review form (chỉ hiện khi đủ điều kiện)
+                // Review section trong expanded body
                 let reviewSection = "";
                 if (coTheReview) {
                     reviewSection = `
-                    <div class="kh-ls-inline-review">
-                        <div style="font-size:0.78rem;font-weight:700;color:#fbbf24;margin-bottom:8px;">
-                            <i class="fa-solid fa-star"></i> Đánh giá Host Sân
-                        </div>
-                        <div class="kh-stars" id="stars_${slot.id}" style="margin-bottom:8px;"></div>
-                        <textarea id="comment_${slot.id}" rows="3" maxlength="1000"
-                            placeholder="Sân đẹp, host nhiệt tình, cầu tốt... (tối đa 1000 ký tự)"
-                        ></textarea>
-                        <div class="kh-ls-char-count" id="charCount_${slot.id}">0 / 1000 ký tự</div>
-                        <button class="kh-ls-btn-review"
-                                onclick="window.guiDanhGiaHostInline('${ca.id}','${slot.id}')">
+                    <div class="ls-review-box" id="reviewBox_${slot.id}">
+                        <div class="ls-review-title"><i class="fa-solid fa-star"></i> Đánh giá Host Sân</div>
+                        <div class="kh-stars" id="stars_${slot.id}" style="font-size:1.6rem;margin-bottom:8px;letter-spacing:4px;"></div>
+                        <textarea id="comment_${slot.id}" class="ls-review-ta" rows="3" maxlength="1000"
+                            placeholder="Sân đẹp, host nhiệt tình... (tối đa 1000 ký tự)"></textarea>
+                        <div class="ls-char-cnt" id="charCount_${slot.id}">0 / 1000 ký tự</div>
+                        <button class="ls-btn-review" onclick="window.guiDanhGiaHostInline('${ca.id}','${slot.id}')">
                             <i class="fa-solid fa-paper-plane"></i> Gửi Đánh Giá
                         </button>
                     </div>`;
                 } else if (daReview) {
-                    reviewSection = `
-                    <div style="font-size:0.78rem;color:#00ff88;display:flex;align-items:center;gap:6px;margin-top:6px;">
-                        <i class="fa-solid fa-circle-check"></i> Đã đánh giá ca này
-                    </div>`;
+                    reviewSection = `<div class="ls-reviewed-badge"><i class="fa-solid fa-circle-check"></i> Đã đánh giá ca này</div>`;
                 } else if (slot.trang_thai_di_danh === "Đã tham gia" && !ca.da_chot_ca) {
-                    reviewSection = `
-                    <div style="font-size:0.72rem;color:#fbbf24;display:flex;align-items:center;gap:6px;margin-top:6px;">
-                        <i class="fa-regular fa-clock"></i> Chờ Host chốt ca mới có thể đánh giá
+                    reviewSection = `<div class="ls-pending-note"><i class="fa-regular fa-clock"></i> Chờ Host chốt ca mới có thể đánh giá</div>`;
+                }
+
+                // SĐT host từ quan_ly_key.sdt_host
+                const hostSdt = (ca.ma_key_host ? (keyMap[ca.ma_key_host]?.sdt_host || "") : "").replace(/'/g, "\\'");
+
+                // Action buttons — logic cố định theo trạng thái slot (không phụ thuộc da_chot_ca)
+                const contactOnclick = hostSdt
+                    ? "window.lienHeHost('" + hostSdt + "',this)"
+                    : "window.moModalChiTietKeo('" + ca.id + "')";
+                const tenSanEsc = (ca.ten_san || "").replace(/'/g, "\\'");
+                let actionBtns = "";
+                if (slot.trang_thai_di_danh === "Chờ đánh" || slot.trang_thai_di_danh === "Chờ Host duyệt") {
+                    // "Hủy đăng ký" chỉ hiện khi ca chưa chốt; "Liên hệ Host" LUÔN hiện
+                    const huyBtn = !ca.da_chot_ca
+                        ? `<button class="ls-btn-cancel" onclick="event.stopPropagation();window.huyDatSlot('${slot.id}','${slot.id_ca_dau}')">
+                               <i class="fa-solid fa-xmark"></i> Hủy đăng ký
+                           </button>` : "";
+                    actionBtns = `<div class="ls-action-row">
+                        ${huyBtn}
+                        <button class="ls-btn-contact" onclick="event.stopPropagation();${contactOnclick}">
+                            <i class="fa-solid fa-phone"></i> Liên hệ Host
+                        </button>
+                    </div>`;
+                } else if (slot.trang_thai_di_danh === "Đã tham gia" || slot.trang_thai_di_danh === "Khách hủy" || slot.trang_thai_di_danh === "Bùng kèo") {
+                    actionBtns = `<div class="ls-action-row">
+                        <button class="ls-btn-rebook" onclick="event.stopPropagation();window.datLaiSan('${tenSanEsc}')">
+                            <i class="fa-solid fa-rotate-right"></i> Đặt lại sân này
+                        </button>
                     </div>`;
                 }
 
-                // Nút hủy slot (nếu đang chờ và ca chưa chốt)
-                const nutHuy = (!ca.da_chot_ca && slot.trang_thai_di_danh === "Chờ đánh")
-                    ? `<button onclick="window.huyDatSlot('${slot.id}','${slot.id_ca_dau}')"
-                           style="margin-top:6px;padding:4px 10px;border-radius:6px;
-                                  border:1px solid rgba(239,68,68,0.5);background:rgba(239,68,68,0.06);
-                                  color:#ef4444;font-size:0.72rem;cursor:pointer;font-family:inherit;
-                                  display:inline-flex;align-items:center;gap:5px;">
-                           <i class="fa-solid fa-xmark"></i> Huỷ đăng ký
-                       </button>`
-                    : "";
-
+                // Địa chỉ — lọc placeholder "không có địa chỉ" do host form tạo ra
+                const _diacChiGoc = ca.dia_chi_san;
+                const _coAddrThat = _diacChiGoc && !/^không có/i.test(_diacChiGoc.trim());
+                const addrDisplay = _coAddrThat
+                    ? _diacChiGoc + (ca.quan_huyen ? " · " + ca.quan_huyen : "") + (ca.tinh_thanh ? " · " + ca.tinh_thanh : "")
+                    : [ca.quan_huyen, ca.tinh_thanh].filter(Boolean).join(" · ")
+                      || '<span class="ls-no-addr">KHÔNG CÓ ĐỊA CHỈ CỤ THỂ</span>';
                 return `
-                <div class="kh-ls-item" id="${itemId}">
-                    <!-- BUG-3 FIX: Toàn bộ đầu dòng đều clickable để toggle mở/đóng -->
-                    <div class="kh-ls-item-head" onclick="window._toggleLsItem('${itemId}')"
-                         style="cursor:pointer;">
-                        <div style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;">
-                            <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;
-                                  border-radius:20px;background:${tt.bg};color:${tt.color};
-                                  font-size:0.67rem;font-weight:700;white-space:nowrap;flex-shrink:0;">
-                                <i class="fa-solid ${tt.icon}" style="font-size:0.58rem;"></i>
-                                ${tt.label}
-                            </span>
-                            <div style="min-width:0;flex:1;">
-                                <div style="font-weight:700;color:#e2e8f0;font-size:0.88rem;
-                                     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                                    ${ca.ten_san || "Ca đấu"}
-                                </div>
-                                <div style="font-size:0.7rem;color:#9ca3af;margin-top:1px;">
-                                    ${ngayStr}${ca.gio_bat_dau ? " · " + ca.gio_bat_dau : ""}${ca.tinh_thanh ? " · " + ca.tinh_thanh : ""}
-                                </div>
+                <article class="ls-card" id="${itemId}" data-tt="${slot.trang_thai_di_danh}" itemscope itemtype="https://schema.org/Event">
+                    <div class="ls-card-inner" onclick="window._toggleLsItem('${itemId}')">
+                        <div class="ls-stripe" style="background:${tt.stripe};"></div>
+                        <div class="ls-card-main">
+                            <div class="ls-card-header">
+                                <span class="ls-badge ${tt.badgeCls}">${tt.label}</span>
+                                <span class="ls-card-name">${(ca.ten_san || "Ca đấu").toUpperCase()}</span>
+                            </div>
+                            <div class="ls-card-meta">
+                                <span><i class="fa-solid fa-calendar-days"></i> ${ngayFmt}</span>
+                                <span><i class="fa-regular fa-clock"></i> ${gioFmt}</span>
+                                ${ca.tinh_thanh ? `<span><i class="fa-solid fa-location-dot"></i> ${ca.tinh_thanh}</span>` : ""}
                             </div>
                         </div>
-                        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-                            ${priceHTML}
-                            <!-- Nút icon — không gắn onclick riêng, sự kiện bubble lên head div -->
-                            <span class="kh-ls-expand-btn" title="Xem chi tiết" style="pointer-events:none;">
-                                <i class="fa-solid fa-chevron-down" id="icon_${itemId}"></i>
-                            </span>
+                        <div class="ls-card-right">
+                            ${priceStr}
+                            <span class="ls-chevron" id="icon_${itemId}"><i class="fa-solid fa-chevron-down"></i></span>
                         </div>
                     </div>
-                    <!-- Body chi tiết (ẩn mặc định) -->
-                    <div class="kh-ls-item-body" id="body_${itemId}" style="display:none;">
-                        <div style="font-size:0.78rem;color:#9ca3af;margin-bottom:8px;">
-                            <i class="fa-solid fa-map-pin" style="color:#00ff88;margin-right:4px;"></i>
-                            ${ca.dia_chi_san || "Chưa có địa chỉ"}
-                            ${ca.quan_huyen  ? " · " + ca.quan_huyen  : ""}
-                            ${ca.tinh_thanh  ? " · " + ca.tinh_thanh  : ""}
+                    <div class="ls-card-body" id="body_${itemId}" style="display:none;">
+                        <div class="ls-body-grid">
+                            <!-- Cột trái: thông tin ca đấu (không lặp badge/tỉnh đã có ở header) -->
+                            <div class="ls-zone-left">
+                                <div class="ls-body-court-name">${(ca.ten_san || "Ca đấu").toUpperCase()}</div>
+                                <div class="ls-body-meta">
+                                    <span><i class="fa-solid fa-calendar-days"></i> ${ngayFmt}</span>
+                                    <span><i class="fa-regular fa-clock"></i> ${gioFmt}</span>
+                                </div>
+                                ${ca.so_san_cu_the ? `<div class="ls-court-detail"><i class="fa-solid fa-hashtag" aria-hidden="true"></i> Sân: ${ca.so_san_cu_the}</div>` : ""}
+                                <div class="ls-amenity-row">${amenityTags}</div>
+                                <div class="ls-detail-row" itemprop="location">
+                                    <i class="fa-solid fa-map-pin ls-pin-icon" aria-hidden="true"></i>
+                                    <span>${addrDisplay}</span>
+                                </div>
+                                ${ca.link_maps ? `<a class="ls-maps-link" href="${ca.link_maps}" target="_blank" rel="noopener noreferrer" aria-label="Xem bản đồ sân"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> Xem trên Maps</a>` : ""}
+                            </div>
+                            <!-- Cột phải: tương tác & nút bấm -->
+                            <div class="ls-zone-right">
+                                <div class="ls-slot-card">
+                                    <div class="ls-slot-card-label">Mã Xác Nhận</div>
+                                    <div class="ls-slot-row">
+                                        <code class="ls-slot-code">${slot.ma_slot || "--"}</code>
+                                        ${slot.ma_slot ? `<button class="ls-copy-btn" aria-label="Sao chép mã slot" onclick="event.stopPropagation();window._copyMaSlot('${slot.ma_slot}')"><i class="fa-regular fa-copy" aria-hidden="true"></i> Copy</button>` : ""}
+                                    </div>
+                                </div>
+                                ${priceStr ? `<div class="ls-price-zone">${priceStr}</div>` : ""}
+                                ${actionBtns}
+                            </div>
                         </div>
-                        ${tichArr.length > 0 ? `<div style="font-size:0.72rem;color:#9ca3af;margin-bottom:8px;">
-                            Bao gồm: ${tichArr.join(" · ")}</div>` : ""}
-                        <!-- BUG-3 FIX: Thêm nút copy mã slot -->
-                        <div style="font-size:0.75rem;color:#64748b;margin-bottom:4px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                            Mã slot: <code style="color:#e2e8f0;background:rgba(255,255,255,0.05);
-                                padding:2px 6px;border-radius:4px;">${slot.ma_slot || "--"}</code>
-                            ${slot.ma_slot ? `<button onclick="event.stopPropagation();window._copyMaSlot('${slot.ma_slot}')"
-                                style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);
-                                color:#9ca3af;border-radius:4px;padding:2px 7px;font-size:0.68rem;
-                                cursor:pointer;font-family:inherit;line-height:1.5;transition:background 0.15s;"
-                                title="Sao chép mã slot">
-                                <i class="fa-regular fa-copy"></i> Copy
-                            </button>` : ""}
-                        </div>
-                        ${nutHuy}
                         ${reviewSection}
                     </div>
-                </div>`;
+                </article>`;
             }).join("");
 
-            // Khởi tạo star rating cho các inline form
+            // Khởi tạo star rating cho inline review forms
             withCa.forEach(({ slot, ca }) => {
-                const coTheReview = ca.da_chot_ca
-                    && slot.trang_thai_di_danh === "Đã tham gia"
-                    && !reviewedSet.has(ca.id);
-                if (!coTheReview) return;
-
+                if (!ca.da_chot_ca || slot.trang_thai_di_danh !== "Đã tham gia" || reviewedSet.has(ca.id)) return;
                 const starEl = document.getElementById("stars_" + slot.id);
                 if (starEl) _renderInlineStars(starEl, 5, slot.id);
-
                 const textEl = document.getElementById("comment_" + slot.id);
                 const cntEl  = document.getElementById("charCount_" + slot.id);
-                if (textEl && cntEl) {
-                    textEl.addEventListener("input", () => {
-                        cntEl.textContent = `${textEl.value.length} / 1000 ký tự`;
-                    });
-                }
+                if (textEl && cntEl) textEl.addEventListener("input", () => { cntEl.textContent = `${textEl.value.length} / 1000 ký tự`; });
             });
 
         } catch (e) {
             console.error("Lỗi tải lịch sử đấu:", e);
-            if (timeline) {
-                timeline.innerHTML = `<div class="kh-empty">
-                    <i class="fa-solid fa-triangle-exclamation"></i>
-                    <p>Lỗi tải dữ liệu. Thử lại sau.</p>
-                </div>`;
-            }
+            if (timeline) timeline.innerHTML = `<div class="ls-empty"><i class="fa-solid fa-triangle-exclamation"></i><p>Lỗi tải dữ liệu. Thử lại sau.</p></div>`;
         }
     }
-    // Gán ra ngoài để huyDatSlot và locThongKeKhach có thể gọi lại
     window._taiLichSuDau = function() { _taiLichSuDau(); };
 
     /* ═══════════════════════════════════════════════════

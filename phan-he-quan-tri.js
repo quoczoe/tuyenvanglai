@@ -20,9 +20,7 @@
  */
 
 (function () {
-    // ── Thông tin đăng nhập Admin (hardcoded client-side) ──
-    const ADMIN_USER    = "admin";
-    const MAT_MAU_ADMIN = "TVL@2026";
+    // ── Auth Admin: Supabase JWT (không còn hardcode) ──
 
     let _editingKeyId = null; // ma_key đang được chỉnh sửa
     // reviewMap — module-level để xemDanhGiaThanhVien() và xoaDanhGia() truy cập sau _taiDanhSachKhach()
@@ -31,11 +29,30 @@
     /* ═══════════════════════════════════════════════════
      * 1. KHỞI TẠO TRANG ADMIN
      * ═══════════════════════════════════════════════════ */
-    window.khoiTaoTrangAdmin = function () {
-        const ok = sessionStorage.getItem("tvl_admin");
-        if (ok === "ok") {
+    window.khoiTaoTrangAdmin = async function () {
+        try {
+            const session = await window.supabaseAuth.laySession();
+            if (!session) { _hienManLogin(); return; }
+
+            // Re-verify vai_tro='admin' thực sự trong DB (dùng JWT authenticated context)
+            const { data, error } = await window._sbClient
+                .from("nguoi_dung")
+                .select("ten_khach")
+                .eq("auth_uid",  session.user.id)
+                .eq("vai_tro",   "admin")
+                .eq("is_active", true)
+                .single();
+
+            if (error || !data) {
+                await window.supabaseAuth.dangXuat();
+                _hienManLogin();
+                return;
+            }
+            // Cache JWT để dbEngine dùng được RLS authenticated context
+            window._adminJWT = session.access_token;
             _hienConsole();
-        } else {
+        } catch (e) {
+            console.warn("[Admin] Kiểm tra session lỗi:", e);
             _hienManLogin();
         }
     };
@@ -64,24 +81,53 @@
     /* ═══════════════════════════════════════════════════
      * 2. XÁC THỰC ADMIN
      * ═══════════════════════════════════════════════════ */
-    window.xacThucQuyenAdmin = function () {
-        const userEl = document.getElementById("adminUsername");
-        const passEl = document.getElementById("adminSecretPassword");
-        const user   = userEl?.value?.trim() || "";
-        const pass   = passEl?.value         || "";
+    window.xacThucQuyenAdmin = async function () {
+        const email = (document.getElementById("adminEmail")?.value || "").trim();
+        const pass  = document.getElementById("adminSecretPassword")?.value || "";
 
-        if (user !== ADMIN_USER || pass !== MAT_MAU_ADMIN) {
-            window.hienToast("Sai thông tin đăng nhập", "Tên đăng nhập hoặc mật khẩu không đúng.", "danger");
-            if (passEl) passEl.value = "";
+        if (!email || !pass) {
+            window.hienToast("Thiếu thông tin", "Nhập đầy đủ email và mật khẩu.", "danger");
             return;
         }
-        sessionStorage.setItem("tvl_admin", "ok");
-        window.hienToast("Chào Admin! 👑", "Đã vào Trung Tâm Chỉ Huy thành công.", "success");
-        _hienConsole();
+
+        const btn = document.getElementById("btnAdminLogin");
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang xác thực...'; }
+
+        try {
+            // Bước 1: Supabase Auth signInWithPassword — JWT có chữ ký server, không thể giả mạo
+            const authData = await window.supabaseAuth.dangNhap(email, pass);
+            if (!authData?.session) throw new Error("Không lấy được session từ Supabase Auth");
+
+            // Bước 2: Verify vai_tro='admin' trong nguoi_dung (dùng JWT vừa lấy)
+            const { data, error } = await window._sbClient
+                .from("nguoi_dung")
+                .select("ten_khach")
+                .eq("auth_uid",  authData.session.user.id)
+                .eq("vai_tro",   "admin")
+                .eq("is_active", true)
+                .single();
+
+            if (error || !data) {
+                await window.supabaseAuth.dangXuat();
+                throw new Error("Tài khoản không có quyền Quản Trị Viên");
+            }
+
+            // Cache JWT để dbEngine dùng được RLS authenticated context
+            window._adminJWT = authData.session.access_token;
+            window.hienToast("Chào Admin! 👑", `Xin chào ${data.ten_khach} — Trung Tâm Chỉ Huy đã sẵn sàng.`, "success");
+            _hienConsole();
+        } catch (e) {
+            window.hienToast("Đăng nhập thất bại", e.message || "Sai email hoặc mật khẩu.", "danger");
+            const passEl = document.getElementById("adminSecretPassword");
+            if (passEl) passEl.value = "";
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-shield-halved"></i> Đăng Nhập Admin'; }
+        }
     };
 
-    window.dangXuatAdmin = function () {
-        sessionStorage.removeItem("tvl_admin");
+    window.dangXuatAdmin = async function () {
+        window._adminJWT = null; // Xóa JWT cache để dbEngine quay về anon key
+        await window.supabaseAuth.dangXuat();
         window.hienToast("Đã đăng xuất", "Phiên Admin đã kết thúc an toàn.", "info");
         _hienManLogin();
     };

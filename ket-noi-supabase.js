@@ -13,12 +13,14 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5aWRzd2JwZmFmc29xc2RoZnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNDI1ODksImV4cCI6MjA5NDkxODU4OX0.ustQ0xaRQqxyCWid1dkC-1YuhX0yA0wQJ5JOyq98TRY";
 
     // 2. Thiết lập Headers tiêu chuẩn để xác thực với Supabase REST API
+    // Ưu tiên JWT admin (window._adminJWT) để RLS authenticated context hoạt động đúng
     const LAY_HEADERS_CHUAN = () => {
+        const bearerToken = window._adminJWT || SUPABASE_ANON_KEY;
         return {
             "apikey": SUPABASE_ANON_KEY,
-            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+            "Authorization": `Bearer ${bearerToken}`,
             "Content-Type": "application/json",
-            "Prefer": "return=representation" // Yêu cầu trả về dữ liệu sau khi ghi/sửa
+            "Prefer": "return=representation"
         };
     };
 
@@ -222,4 +224,89 @@
     };
 
     console.log("⚡ [Hệ thống điều vận Supabase]: Đã kích hoạt đối tượng window.khoDuLieuVinhVien thành công.");
+})();
+
+/* =========================================================================
+ * 🔐 SUPABASE AUTH + GUEST RPC — Bảo mật Admin (JWT) & Guest (Session Token)
+ * Yêu cầu: thẻ <script> CDN Supabase JS v2 phải được load TRƯỚC file này
+ * CDN: https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js
+ * =========================================================================
+ */
+(function () {
+    const _URL = "https://kyidswbpfafsoqsdhfpu.supabase.co";
+    const _KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5aWRzd2JwZmFmc29xc2RoZnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNDI1ODksImV4cCI6MjA5NDkxODU4OX0.ustQ0xaRQqxyCWid1dkC-1YuhX0yA0wQJ5JOyq98TRY";
+
+    // Lấy hoặc khởi tạo Supabase JS v2 client (dùng chung toàn app)
+    function _client() {
+        if (!window._sbClient) {
+            if (!window.supabase || !window.supabase.createClient) {
+                console.warn("⚠️ Supabase JS SDK chưa được load — supabaseAuth và guestRPC không hoạt động");
+                return null;
+            }
+            window._sbClient = window.supabase.createClient(_URL, _KEY);
+        }
+        return window._sbClient;
+    }
+
+    // ── ADMIN AUTH (Supabase JWT — không thể giả mạo) ──
+    window.supabaseAuth = {
+        async dangNhap(email, password) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            return data;
+        },
+        async laySession() {
+            const c = _client(); if (!c) return null;
+            const { data } = await c.auth.getSession();
+            return data.session;
+        },
+        async dangXuat() {
+            const c = _client(); if (!c) return;
+            await c.auth.signOut();
+        }
+    };
+
+    // ── GUEST / HOST RPC (tất cả mutations phải có token) ──
+    window.guestRPC = {
+        async login(sdt, passHash) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('phan_he_guest_login',
+                { p_sdt: sdt, p_pass_hash: passHash });
+            if (error) throw error;
+            return data; // { status, token?, user? }
+        },
+        async datPassLanDau(sdt, ten, gioiTinh, passHash, sdtZalo, facebook) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('phan_he_dat_pass_lan_dau', {
+                p_sdt: sdt, p_ten: ten, p_gioi_tinh: gioiTinh, p_pass_hash: passHash,
+                p_sdt_zalo: sdtZalo || null, p_facebook: facebook || null
+            });
+            if (error) throw error;
+            return data; // { status, token? }
+        },
+        async datSlot(token, sdt, idCa) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('guest_dat_slot',
+                { p_token: token, p_sdt: sdt, p_id_ca: idCa });
+            if (error) throw error;
+            return data; // { status, ma_slot? }
+        },
+        async huySlot(token, sdt, datSlotId) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('guest_huy_slot',
+                { p_token: token, p_sdt: sdt, p_dat_slot_id: datSlotId });
+            if (error) throw error;
+            return data; // { status }
+        },
+        async refreshProfile(token, sdt) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('get_current_guest_profile',
+                { p_token: token, p_sdt: sdt });
+            if (error) throw error;
+            return data; // { status, user? }
+        }
+    };
+
+    console.log("🔐 [Auth Module]: supabaseAuth + guestRPC đã sẵn sàng.");
 })();

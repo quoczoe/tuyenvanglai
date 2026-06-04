@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS hệ thống -->
-    <link rel="stylesheet" href="giao-dien.css?v=6.2">
+    <link rel="stylesheet" href="giao-dien.css?v=6.9">
     <link rel="stylesheet" href="components.css?v=6.0">
 
     <style>
@@ -1945,6 +1945,31 @@
                 </div>
             </div>
 
+            <!-- Admin Access Card — hiện khi vai_tro='admin', ẩn mặc định -->
+            <div id="sectionAdminAccess" style="display:none; margin-top:16px;">
+                <div style="display:flex;align-items:center;gap:12px;
+                     background:rgba(245,158,11,0.08);
+                     border:1px solid rgba(245,158,11,0.35);
+                     border-radius:12px;padding:14px 16px;">
+                    <span style="font-size:1.5rem;line-height:1;">👑</span>
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-weight:700;color:#F59E0B;font-size:0.9rem;letter-spacing:0.04em;">
+                            QUẢN TRỊ VIÊN
+                        </div>
+                        <div style="font-size:0.72rem;color:#94a3b8;margin-top:2px;">
+                            Tài khoản của bạn có quyền truy cập bảng điều khiển hệ thống
+                        </div>
+                    </div>
+                    <button onclick="window.vaoTrangQuanTri()"
+                        style="flex-shrink:0;padding:8px 16px;background:#F59E0B;color:#000;
+                               border:none;border-radius:8px;font-weight:700;font-size:0.82rem;
+                               cursor:pointer;white-space:nowrap;
+                               -webkit-user-select:none;user-select:none;">
+                        Vào Admin →
+                    </button>
+                </div>
+            </div>
+
         </div>
     </section>
 
@@ -2537,41 +2562,45 @@
 
             <!-- Sub-tab 4A: Lịch Sử Tham Gia -->
             <div id="subtab-lich-su-tham-gia" class="subtab-section">
-                <!-- Stats tổng hợp -->
-                <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;" id="lichSuStats">
-                    <div class="app-card" style="text-align:center;">
-                        <div style="font-size:1.6rem;font-weight:800;color:var(--accent);" id="statsTotalSlots">—</div>
-                        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Đã Tham Gia</div>
+                <!-- 4 Stats cards — JS renders into đây -->
+                <div id="lichSuStats"></div>
+
+                <!-- Filter bar: cánh trái=status tabs | cánh phải=time+date -->
+                <div class="ls-filter-bar">
+                    <!-- Cánh trái: 4 tab trạng thái -->
+                    <div class="ls-filter-left">
+                        <div class="ls-seg-ctrl">
+                            <button class="ls-seg-btn active" onclick="window.locTrangThaiLs('all',this)">Tất cả</button>
+                            <button class="ls-seg-btn" onclick="window.locTrangThaiLs('cho_danh',this)">⏳ Chờ</button>
+                            <button class="ls-seg-btn" onclick="window.locTrangThaiLs('ket_thuc',this)">✅ Xong</button>
+                            <button class="ls-seg-btn" onclick="window.locTrangThaiLs('huy',this)">❌ Hủy</button>
+                        </div>
                     </div>
-                    <div class="app-card" style="text-align:center;">
-                        <div style="font-size:1.4rem;font-weight:800;color:var(--accent-blue);" id="statsTotalCost">—</div>
-                        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;">Tổng Chi</div>
+                    <!-- Cánh phải: lọc nhanh + khoảng ngày -->
+                    <div class="ls-filter-right">
+                        <div class="ls-quick-time-inline">
+                            <button class="ls-time-btn kh-ls-filter-btn" onclick="window.locLichSuDau('week',this)">Tuần</button>
+                            <button class="ls-time-btn kh-ls-filter-btn" onclick="window.locLichSuDau('month',this)">Tháng</button>
+                            <button class="ls-time-btn kh-ls-filter-btn" onclick="window.locLichSuDau('year',this)">Năm</button>
+                        </div>
+                        <div class="ls-date-range">
+                            <div class="ls-date-inp-wrap">
+                                <i class="fa-solid fa-calendar-days"></i>
+                                <input type="date" id="statsDateFrom" class="ls-date-inp" onchange="window.locNgayLichSu && window.locNgayLichSu()">
+                            </div>
+                            <span class="ls-date-sep">–</span>
+                            <div class="ls-date-inp-wrap">
+                                <i class="fa-solid fa-calendar-days"></i>
+                                <input type="date" id="statsDateTo" class="ls-date-inp" onchange="window.locNgayLichSu && window.locNgayLichSu()">
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Bộ lọc thời gian -->
-                <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-                    <button class="btn-secondary" onclick="window.locNhanhThoiGian && window.locNhanhThoiGian('week',this)">Tuần</button>
-                    <button class="btn-secondary" onclick="window.locNhanhThoiGian && window.locNhanhThoiGian('month',this)">Tháng</button>
-                    <button class="btn-secondary" onclick="window.locNhanhThoiGian && window.locNhanhThoiGian('year',this)">Năm</button>
-                    <button class="btn-secondary active-filter" onclick="window.locNhanhThoiGian && window.locNhanhThoiGian('all',this)">Tất Cả</button>
-                </div>
-                <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-                    <div class="form-group" style="flex:1;min-width:130px;">
-                        <label class="form-label">Từ ngày</label>
-                        <input type="date" id="statsDateFrom" class="app-input" onchange="window.locThongKeKhach && window.locThongKeKhach()">
-                    </div>
-                    <div class="form-group" style="flex:1;min-width:130px;">
-                        <label class="form-label">Đến ngày</label>
-                        <input type="date" id="statsDateTo" class="app-input" onchange="window.locThongKeKhach && window.locThongKeKhach()">
-                    </div>
-                </div>
-
-                <!-- Timeline lịch sử -->
+                <!-- Timeline container -->
                 <div id="lichSuTimeline">
-                    <div style="text-align:center;padding:40px;color:var(--text-muted);">
-                        <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;display:block;margin-bottom:12px;"></i>
-                        Đang tải lịch sử...
+                    <div class="ls-loading">
+                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải lịch sử...
                     </div>
                 </div>
             </div>
@@ -2972,10 +3001,12 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 
 <!-- ── Scripts ── -->
 <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
-<script src="ket-noi-supabase.js?v=6.1"></script>
-<script src="bo-may-du-lieu.js?v=6.1"></script>
-<script src="hieu-ung-giao-dien.js?v=6.1"></script>
-<script src="phan-he-khach-choi.js?v=6.2"></script>
+<!-- Supabase JS v2 SDK — BẮT BUỘC load trước ket-noi-supabase.js để guestRPC hoạt động -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="ket-noi-supabase.js?v=7.0"></script>
+<script src="bo-may-du-lieu.js?v=7.0"></script>
+<script src="hieu-ung-giao-dien.js?v=7.0"></script>
+<script src="phan-he-khach-choi.js?v=7.0"></script>
 <script src="phan-he-host.js?v=6.2"></script>
 <script src="phan-he-ung-dung.js?v=6.1"></script>
 <script src="phan-he-gop-y.js?v=6.1"></script>
