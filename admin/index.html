@@ -1,0 +1,1679 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADMIN — TUYENVANGLAI.IO.VN</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="description" content="Admin Panel bảo mật — Hệ thống quản trị tuyệt mật TUYENVANGLAI.IO.VN.">
+    <!--
+        QUAN TRỌNG — CSS KHÔNG CHẶN RENDER (Non-render-blocking):
+        Dùng kỹ thuật media="print" + onload để Google Fonts & Font Awesome
+        không chặn render trang. Nếu Cốc Cốc block Google/CDNJS, trang vẫn
+        hiện nội dung ngay (chỉ mất font & icon, không mất layout/text).
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Google Fonts: NON-BLOCKING -->
+    <link rel="preload" as="style"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+          media="print" onload="this.media='all'">
+    <!-- Font Awesome: NON-BLOCKING -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+          media="print" onload="this.media='all'">
+    <!-- Fallback khi JS tắt -->
+    <noscript>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    </noscript>
+    <!-- components.css không dùng trong admin.html — đã tháo để tránh xung đột -->
+    <style>
+        /* ══ DESIGN SYSTEM ══ */
+        :root {
+            /* Palette: Xanh đêm vừa phải — không quá tối, không quá sáng */
+            --bg-base:      #0f1e35;
+            --bg-card:      #1a2844;
+            --bg-card2:     #162039;
+            --accent-green: #00ff88;
+            --accent-blue:  #1a73e8;
+            --text-main:    #e2e8f0;
+            --text-muted:   #9ca3af;
+            --border:       #1e3a5f;
+            --radius-lg:    16px;
+            --radius-md:    12px;
+            --radius-sm:    8px;
+        }
+
+        /* Body: cuộn bình thường — giao-dien.css đã được tháo, không còn xung đột */
+        /* Không dùng scrollbar-gutter (thiếu support 1 số build Cốc Cốc) */
+        html {
+            box-sizing: border-box;
+        }
+        *, *::before, *::after { box-sizing: inherit; }
+        body {
+            display: block;
+            height: auto;
+            min-height: 100vh;
+            margin: 0; padding: 0;
+            /* Không dùng overflow-x:hidden — gây bug position:sticky + stacking context */
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-base);
+            color: var(--text-main);
+        }
+
+        /* ══ TOAST NOTIFICATIONS (inline — không phụ thuộc giao-dien.css) ══ */
+        .toast-container {
+            position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+            display: flex; flex-direction: column; gap: 12px; pointer-events: none;
+        }
+        .toast {
+            pointer-events: auto;
+            background: rgba(8,10,15,0.95);
+            border-left: 4px solid #00ff9d;
+            border-top: 1px solid rgba(30,58,95,0.6);
+            border-right: 1px solid rgba(30,58,95,0.6);
+            border-bottom: 1px solid rgba(30,58,95,0.6);
+            color: #e2e8f0; padding: 14px 20px; border-radius: 12px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.55);
+            display: flex; align-items: center; gap: 14px;
+            min-width: 300px; max-width: 380px;
+            transform: translateX(130%);
+            transition: transform 0.45s cubic-bezier(0.175,0.885,0.32,1.275);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+        }
+        .toast.active { transform: translateX(0); }
+        .toast-success { border-left-color: #00ff9d; }
+        .toast-success i { color: #00ff9d; text-shadow: 0 0 8px rgba(0,255,157,0.3); }
+        .toast-danger  { border-left-color: #ef4444; }
+        .toast-danger  i { color: #ef4444; }
+        .toast-warning { border-left-color: #f59e0b; }
+        .toast-warning i { color: #f59e0b; }
+        .toast-info    { border-left-color: #3b82f6; }
+        .toast-info    i { color: #3b82f6; }
+        .toast-icon  { font-size: 1.2rem; flex-shrink: 0; }
+        .toast-content h4 { font-size: 0.9rem; font-weight: 800; margin: 0 0 2px; color: #f1f5f9; }
+        .toast-content p  { font-size: 0.78rem; color: #94a3b8; margin: 0; }
+        @media (max-width: 600px) {
+            .toast-container { bottom: 14px; right: 10px; left: 10px; }
+            .toast { min-width: auto; width: 100%; }
+        }
+
+        /* ══ TABLE SCROLL WRAPPER ══ */
+        .table-scroll-wrap {
+            width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px;
+        }
+        .table-scroll-wrap::-webkit-scrollbar { height: 4px; }
+        .table-scroll-wrap::-webkit-scrollbar-track { background: rgba(255,255,255,0.04); }
+        .table-scroll-wrap::-webkit-scrollbar-thumb { background: var(--accent-green); border-radius: 2px; }
+
+        /* ══ HEADER ══ */
+        .ad-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 1rem; height: 60px;
+            background: rgba(15,30,53,0.98); /* Đặc hơn — không cần blur mờ */
+            border-bottom: 1px solid rgba(0,255,136,0.15);
+            position: sticky; top: 0; z-index: 200;
+            /* Bỏ backdrop-filter: tránh tạo stacking context mới gây lỗi composite
+               trên Cốc Cốc (dùng background đặc thay thế) */
+        }
+        .ad-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .ad-brand-text { font-size: 1rem; font-weight: 700; color: var(--accent-green); letter-spacing: 0.02em; }
+        .ad-zone-badge {
+            font-size: 0.72rem; padding: 4px 12px;
+            border: 1px solid rgba(0,255,136,0.35); border-radius: var(--radius-sm);
+            color: var(--accent-green);
+        }
+
+        /* ══ MAIN LAYOUT ══ */
+        .ad-main {
+            max-width: 1280px; margin: 0 auto;
+            padding: 1.5rem 2rem 3rem;
+            box-sizing: border-box;
+        }
+        @media (max-width: 768px) { .ad-main { padding: 1rem; } }
+
+        /* ══ AUTH PANEL ══ */
+        .ad-auth-wrap {
+            max-width: 440px; margin: 60px auto 0; padding: 0 1rem;
+        }
+        .ad-auth-card {
+            background: var(--bg-card); border: 1px solid rgba(0,255,136,0.2);
+            border-radius: var(--radius-lg); padding: 2.5rem 2rem; text-align: center;
+        }
+        .ad-auth-badge {
+            width: 64px; height: 64px; border-radius: 50%;
+            background: linear-gradient(135deg, rgba(0,255,136,0.15), rgba(0,200,100,0.08));
+            border: 2px solid var(--accent-green);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.8rem; margin: 0 auto 20px;
+            box-shadow: 0 0 24px rgba(0,255,136,0.25);
+        }
+        .ad-auth-title { font-size: 1.25rem; font-weight: 800; color: var(--accent-green); margin-bottom: 6px; }
+        .ad-auth-sub { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 28px; line-height: 1.5; }
+
+        /* ══ INPUTS ══ */
+        .ad-input, .ad-select, .ad-textarea {
+            width: 100%; background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 10px 14px; color: var(--text-main); font-size: 0.88rem;
+            font-family: inherit; transition: border-color 0.2s; box-sizing: border-box;
+        }
+        .ad-input:focus, .ad-select:focus, .ad-textarea:focus {
+            outline: none; border-color: var(--accent-green);
+            box-shadow: 0 0 0 3px rgba(0,255,136,0.1);
+        }
+        .ad-input::placeholder { color: var(--text-muted); }
+        .ad-label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; text-align: left; }
+        .ad-form-group { margin-bottom: 14px; }
+
+        /* ══ BUTTONS ══ */
+        .ad-btn-primary {
+            padding: 12px 24px; border-radius: var(--radius-md);
+            background: linear-gradient(135deg, #00d97a, #00a855);
+            border: none; color: #fff; font-size: 0.88rem; font-weight: 700;
+            cursor: pointer; transition: all 0.2s; font-family: inherit;
+            display: inline-flex; align-items: center; gap: 7px;
+        }
+        .ad-btn-primary:hover { transform: scale(1.02); filter: brightness(1.1); }
+        .ad-btn-gold {
+            padding: 11px 20px; border-radius: var(--radius-md);
+            background: linear-gradient(135deg, #00d97a, #00a855);
+            border: none; color: #fff;
+            font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+            font-family: inherit; display: inline-flex; align-items: center; gap: 7px;
+        }
+        .ad-btn-gold:hover { filter: brightness(1.1); transform: scale(1.02); }
+        .ad-btn-ghost {
+            padding: 7px 14px; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); background: transparent;
+            color: var(--text-muted); font-size: 0.82rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; font-family: inherit;
+            display: inline-flex; align-items: center; gap: 6px;
+        }
+        .ad-btn-ghost:hover { border-color: var(--accent-green); color: var(--accent-green); }
+        .ad-btn-danger {
+            padding: 7px 14px; border-radius: var(--radius-sm);
+            border: 1px solid rgba(239,68,68,0.4); background: rgba(239,68,68,0.06);
+            color: #ef4444; font-size: 0.82rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; font-family: inherit;
+            display: inline-flex; align-items: center; gap: 5px;
+        }
+        .ad-btn-danger:hover { background: rgba(239,68,68,0.14); }
+        .ad-btn-icon {
+            width: 32px; height: 32px; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); background: transparent;
+            color: var(--text-muted); font-size: 0.82rem;
+            cursor: pointer; transition: all 0.18s; font-family: inherit;
+            display: inline-flex; align-items: center; justify-content: center;
+        }
+        .ad-btn-icon:hover { border-color: var(--accent-green); color: var(--accent-green); }
+        .ad-btn-icon.red:hover { border-color: #ef4444; color: #ef4444; }
+
+        /* ══ CONSOLE BAR ══ */
+        .ad-console-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(0,255,136,0.04); border: 1px solid rgba(0,255,136,0.15);
+            border-radius: var(--radius-md); padding: 14px 20px;
+            margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px;
+        }
+        .ad-console-left { display: flex; align-items: center; gap: 12px; }
+        .ad-shield-icon { font-size: 1.5rem; }
+        .ad-session-lbl { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; }
+        .ad-session-title { font-size: 1rem; font-weight: 800; color: var(--accent-green); }
+
+        /* ══ DASHBOARD METRICS (top 4 cards) ══ */
+        .ad-metrics-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+            margin-bottom: 1.5rem;
+        }
+        @media (max-width: 900px) { .ad-metrics-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 480px) { .ad-metrics-grid { grid-template-columns: 1fr 1fr; } }
+        .ad-metric-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 18px 16px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .ad-metric-card:hover { border-color: rgba(0,255,136,0.3); transform: translateY(-2px); }
+        .ad-metric-icon { font-size: 2rem; margin-bottom: 8px; display: block; line-height: 1; }
+        .ad-metric-val { font-size: 2rem; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+        .ad-metric-lbl {
+            font-size: 0.73rem; color: var(--text-muted); font-weight: 600;
+            text-transform: uppercase; letter-spacing: 0.04em;
+        }
+
+        /* ══ TABS ══ */
+        .ad-tab-nav {
+            display: flex; gap: 6px; flex-wrap: wrap;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding-bottom: 12px; margin-bottom: 20px;
+        }
+        .ad-tab-btn {
+            padding: 8px 16px; border-radius: var(--radius-sm);
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.02);
+            color: var(--text-muted); font-size: 0.82rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; font-family: inherit;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .ad-tab-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-main); }
+        .ad-tab-btn.active {
+            background: linear-gradient(135deg, rgba(0,255,136,0.12), rgba(0,200,255,0.08));
+            border-color: var(--accent-green); color: var(--accent-green);
+            box-shadow: 0 0 12px rgba(0,255,136,0.15);
+        }
+
+        /*
+         * ══════════════════════════════════════════════════════════════
+         * FIX 1 — NỘI DUNG TAB ỔN ĐỊNH CHIỀU RỘNG & CHIỀU CAO:
+         *
+         * width: 100%               → tab luôn chiếm hết chiều rộng container
+         * max-width: 1200px         → giới hạn tối đa đồng nhất mọi tab
+         * margin: 0 auto            → căn giữa khi màn hình rộng hơn 1200px
+         * min-height: 500px         → đảm bảo trang đủ cao → scrollbar không
+         *                              biến mất khi đổi sang tab nội dung ngắn
+         * box-sizing: border-box    → padding không làm tăng kích thước
+         * ══════════════════════════════════════════════════════════════
+         */
+        .ad-tab-content {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            min-height: 500px;
+            box-sizing: border-box;
+        }
+        .ad-tab-content.active { display: block; }
+
+        /* ══ TOOLBAR ══ */
+        .ad-toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 10px; margin-bottom: 14px;
+        }
+        .ad-toolbar-left { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .ad-search-wrap { position: relative; }
+        .ad-search-wrap i {
+            position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+            color: #64748b; font-size: 0.78rem;
+        }
+        .ad-search-input {
+            padding-left: 32px; height: 36px; width: 300px;
+            font-size: 0.82rem; background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border); border-radius: var(--radius-sm);
+            color: var(--text-main); font-family: inherit; transition: border-color 0.2s;
+            box-sizing: border-box; flex-shrink: 0;
+        }
+        @media (max-width: 600px) { .ad-search-input { width: 100%; } }
+        .ad-search-input:focus { outline: none; border-color: var(--accent-green); }
+        .ad-search-input::placeholder { color: var(--text-muted); }
+
+        /* Filter pills */
+        .ad-filter-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+        .ad-pill {
+            padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
+            border: 1px solid var(--border); background: transparent; color: var(--text-muted);
+            cursor: pointer; transition: all 0.18s; font-family: inherit;
+            display: inline-flex; align-items: center; gap: 5px;
+        }
+        .ad-pill.active {
+            border-color: var(--accent-green);
+            background: var(--accent-green);
+            color: #000; font-weight: 700;
+        }
+        .ad-pill:hover:not(.active) { border-color: var(--accent-green); color: var(--accent-green); }
+
+        /*
+         * ══════════════════════════════════════════════════════════════
+         * FIX 1 — TABLE RESPONSIVE WRAPPER:
+         *
+         * .table-responsive bọc toàn bộ <table> trong trang.
+         * overflow-x: auto → bảng rộng hơn container sẽ tự xuất hiện
+         * thanh cuộn ngang bên trong, KHÔNG kéo giãn layout tổng thể.
+         * width: 100% đảm bảo wrapper lấp đầy tab content.
+         * ══════════════════════════════════════════════════════════════
+         */
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* Cuộn mượt trên iOS */
+            border-radius: var(--radius-md);
+        }
+
+        /* ══ TABLE STYLES ══ */
+        .ad-table {
+            width: 100%; border-collapse: collapse; min-width: 860px;
+        }
+        .ad-table thead th {
+            padding: 10px 14px; text-align: left; font-size: 0.73rem;
+            font-weight: 700; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 0.05em; background: var(--bg-card2);
+            border-bottom: 1px solid var(--border); white-space: nowrap;
+            position: sticky; top: 0; z-index: 5;
+        }
+        .ad-table tbody tr {
+            border-bottom: 1px solid rgba(255,255,255,0.035);
+            transition: background 0.15s;
+        }
+        .ad-table tbody tr:nth-child(odd)  { background: var(--bg-card2); }
+        .ad-table tbody tr:nth-child(even) { background: var(--bg-card); }
+        .ad-table tbody tr:hover { background: rgba(0,255,136,0.04); }
+        .ad-table td {
+            padding: 9px 14px; font-size: 0.82rem; color: var(--text-main);
+            vertical-align: middle;
+        }
+        .ad-table td.mono { font-family: monospace; font-size: 0.8rem; color: var(--accent-green); }
+
+        /* ══ STATUS BADGES ══ */
+        .ad-badge-running {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 9px; border-radius: 20px;
+            background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.3);
+            color: var(--accent-green); font-size: 0.7rem; font-weight: 700;
+        }
+        .ad-badge-inactive {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 9px; border-radius: 20px;
+            background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+            color: #64748b; font-size: 0.7rem; font-weight: 700;
+        }
+        .ad-badge-locked {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 9px; border-radius: 20px;
+            background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3);
+            color: #ef4444; font-size: 0.7rem; font-weight: 700;
+        }
+        .ad-badge-expiring {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 9px; border-radius: 20px;
+            background: rgba(251,146,60,0.12); border: 1px solid rgba(251,146,60,0.4);
+            color: #fb923c; font-size: 0.7rem; font-weight: 700;
+        }
+
+        /* Plan badges */
+        .plan-basic { color: #94a3b8; }
+        .plan-pro   { color: #60a5fa; }
+        .plan-vip   { color: var(--accent-green); }
+
+        /* Action cell */
+        .ad-actions { display: flex; gap: 4px; flex-wrap: nowrap; align-items: center; }
+
+        /* ══ CONFIG CARDS ══ */
+        .ad-config-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1rem;
+        }
+        .ad-config-title {
+            font-size: 0.9rem; font-weight: 700; color: var(--text-main);
+            display: flex; align-items: center; gap: 8px; margin-bottom: 1rem;
+        }
+        .ad-config-title i { color: var(--accent-green); }
+
+        /* ══ STATS GRID ══ */
+        .ad-stats-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px; margin-bottom: 20px;
+        }
+        .ad-stat-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius-md); padding: 16px; text-align: center;
+            transition: border-color 0.2s;
+        }
+        .ad-stat-card:hover { border-color: rgba(0,255,136,0.3); }
+        .ad-stat-val { font-size: 2rem; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+        .ad-stat-lbl { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+
+        /* ══ MODAL ══ */
+        .modal-overlay-admin {
+            /* inset thay bằng top/right/bottom/left — tương thích mọi Chromium build */
+            position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+            background: rgba(0,0,0,0.75);
+            -webkit-backdrop-filter: blur(6px);
+            backdrop-filter: blur(6px);
+            display: none; align-items: center;
+            justify-content: center; z-index: 9999; padding: 16px;
+        }
+        .modal-overlay-admin.open { display: flex; }
+        .modal-box-admin {
+            background: var(--bg-card); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: var(--radius-lg); padding: 28px 24px;
+            width: 100%; max-width: 520px; max-height: 90vh;
+            overflow-y: auto; position: relative;
+        }
+        .modal-title-admin {
+            font-size: 1.1rem; font-weight: 800; color: var(--accent-green);
+            margin-bottom: 20px; display: flex; align-items: center; gap: 8px;
+        }
+        .modal-close-btn {
+            position: absolute; top: 16px; right: 16px;
+            background: none; border: none; color: #64748b;
+            font-size: 1.2rem; cursor: pointer; padding: 4px 8px;
+            border-radius: var(--radius-sm); transition: color 0.2s;
+        }
+        .modal-close-btn:hover { color: var(--text-main); }
+
+        /* Guest section */
+        .ad-guests-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
+        }
+        .ad-guest-count {
+            background: rgba(96,165,250,0.1); border: 1px solid rgba(96,165,250,0.3);
+            color: #60a5fa; font-size: 0.78rem; font-weight: 700;
+            padding: 4px 12px; border-radius: 20px;
+        }
+
+        /* Auth: adminConsole ẩn theo mặc định — adminAuthPanel hiện ngay (không phụ thuộc JS) */
+        #adminConsole   { display: none; }
+        /* adminAuthPanel KHÔNG có display:none trong CSS — JS điều khiển hoàn toàn qua inline style */
+
+        /* ═══════════════════════════════════════════════════════════════════
+         * EMERGENCY FALLBACK: Đảm bảo nội dung luôn hiển thị
+         * Áp dụng màu text rõ ràng, background rõ ràng, không transparent
+         * ═══════════════════════════════════════════════════════════════════ */
+        .ad-header { color: var(--accent-green) !important; }
+        .ad-brand-text { color: var(--accent-green) !important; }
+        .ad-auth-card { background: #1a2844 !important; color: #e2e8f0 !important; }
+        .ad-auth-title { color: #00ff88 !important; }
+        .ad-auth-sub { color: #9ca3af !important; }
+        .ad-auth-badge { border-color: #00ff88 !important; }
+
+        /* ══════════════════════════════════════════════════
+         * MODAL QUẢN LÝ THÀNH VIÊN — .mv-* design system
+         * A.4: Input slate-800 + Button indigo-600
+         * A.5: Role buttons individual rounded
+         * A.6: Danger zone + red button
+         * ══════════════════════════════════════════════════ */
+
+        /* Nền + tiêu đề section */
+        .mv-section {
+            background: rgba(255,255,255,0.02);
+            border: 1px solid #1e3a5f;
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+        .mv-section-title {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 10px;
+        }
+        .mv-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 5px;
+            display: block;
+        }
+        .mv-form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        @media (max-width: 500px) { .mv-form-grid { grid-template-columns: 1fr; } }
+
+        /* A.4 — Input: slate-800 + indigo focus */
+        .mv-input {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            height: 40px;
+            padding: 0 12px;
+            font-size: 0.875rem;
+            font-family: inherit;
+            width: 100%;
+            color: #e2e8f0;
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .mv-input:focus { outline: none; border-color: #6366f1; }
+        .mv-input:disabled { opacity: 0.45; cursor: not-allowed; }
+
+        /* Base button */
+        .mv-btn {
+            padding: 7px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid #2d4a6e;
+            border-radius: 7px;
+            color: #94a3b8;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .mv-btn:hover { background: rgba(255,255,255,0.09); color: #e2e8f0; }
+
+        /* A.4 — Primary button: indigo-600 */
+        .mv-btn-primary {
+            background: #4f46e5;
+            border-color: #4f46e5;
+            color: #fff;
+            height: 40px;
+            padding: 0 16px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 8px;
+            justify-content: center;
+        }
+        .mv-btn-primary:hover { background: #6366f1; border-color: #6366f1; color: #fff; }
+
+        /* Warning button (Khóa tài khoản) */
+        .mv-btn-warn {
+            background: rgba(251,146,60,0.12);
+            border-color: rgba(251,146,60,0.4);
+            color: #fb923c;
+        }
+        .mv-btn-warn:hover { background: rgba(251,146,60,0.22); border-color: rgba(251,146,60,0.65); }
+
+        /* A.5 — Role buttons: individual rounded, active = indigo-600 */
+        .mv-role-btns {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .mv-role-btns .mv-btn {
+            border-radius: 6px;
+            border: 1px solid #334155;
+            background: transparent;
+            color: #94a3b8;
+            flex: 1;
+            text-align: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            padding: 6px 16px;
+            height: auto;
+        }
+        .mv-role-btns .mv-btn:hover { background: rgba(255,255,255,0.05); color: #e2e8f0; }
+        .mv-role-btns .mv-btn.mv-btn-active {
+            background: #4f46e5;
+            border-color: #4f46e5;
+            color: #fff;
+        }
+
+        /* Confirm box (đổi vai trò) */
+        .mv-confirm-box {
+            background: rgba(251,191,36,0.07);
+            border: 1px solid rgba(251,191,36,0.3);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 0.82rem;
+            color: #e2e8f0;
+            margin-top: 10px;
+        }
+
+        /* A.6 — Danger zone: border-red-800/50 + bg-red-950/20 */
+        .mv-section-danger {
+            border-color: rgba(153,27,27,0.5);
+            background: rgba(69,10,10,0.2);
+        }
+        .mv-section-danger .mv-section-title { color: #f87171; }
+
+        /* A.4 — Nút "Quản lý" trong bảng thành viên (bg-slate-800, hover bg-slate-700) */
+        .mv-ql-btn {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: #cbd5e1;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: background-color 0.15s, color 0.15s;
+            white-space: nowrap;
+        }
+        .mv-ql-btn:hover { background: #334155; color: #f1f5f9; }
+
+        /* A.6 — Delete button: solid red-700 */
+        .mv-btn-danger {
+            background: #b91c1c;
+            border: 1px solid #b91c1c;
+            color: #fff;
+            height: 40px;
+            padding: 0 16px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .mv-btn-danger:hover { background: #dc2626; border-color: #dc2626; }
+
+        /* ── K1: Số ngày — nút chọn nhanh ── */
+        .kf-day-btn {
+            background: #1e293b;          /* slate-800 */
+            color: #cbd5e1;               /* slate-300 */
+            border: none;
+            border-radius: 8px;           /* rounded-lg */
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            font-family: inherit;
+            transition: color 0.15s, background 0.15s;
+            white-space: nowrap;
+        }
+        .kf-day-btn:not(.kf-day-active):hover { background: #334155; } /* slate-700 */
+        .kf-day-active {
+            background: #4f46e5 !important; /* indigo-600 */
+            color: #fff !important;
+        }
+
+        /* ── K2: Nút Tạo Hàng Loạt ── */
+        .ad-btn-secondary {
+            background: #334155;          /* slate-700 */
+            color: #cbd5e1;               /* slate-200 */
+            border: 1px solid #475569;
+            border-radius: 8px;           /* rounded-lg */
+            padding: 10px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background 0.15s, color 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+        .ad-btn-secondary:hover { background: #475569; } /* slate-600 */
+
+        /* ── K3: Select dropdown nền tối ── */
+        .ad-select option {
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+        .ad-select {
+            background: rgba(30,41,59,0.9);
+            color: #e2e8f0;
+        }
+
+        /* ── Custom Confirm Modal (CSS nội tuyến — không phụ thuộc giao-dien.css) ── */
+        #confirmModalOverlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(4px);
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        #confirmModalOverlay.show { opacity: 1; pointer-events: all; }
+        #confirmModalBox {
+            background: #1a2844;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 18px;
+            padding: 32px 28px 24px;
+            text-align: center; max-width: 380px; width: 90%;
+            transform: scale(0.95) translateY(10px);
+            transition: transform 0.25s cubic-bezier(0.16,1,0.3,1);
+        }
+        #confirmModalOverlay.show #confirmModalBox { transform: scale(1) translateY(0); }
+        #confirmModalIcon { font-size: 2.4rem; margin-bottom: 14px; display: block; }
+        #confirmModalMsg  { color: #e2e8f0; font-size: 0.92rem; line-height: 1.6; margin-bottom: 24px; }
+        .confirm-modal-btns { display: flex; gap: 10px; justify-content: center; }
+        #confirmModalOk {
+            padding: 10px 28px; border-radius: 10px; border: none;
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: #fff; font-size: 0.88rem; font-weight: 700;
+            cursor: pointer; font-family: inherit; transition: opacity 0.18s;
+        }
+        #confirmModalOk:hover { opacity: 0.85; }
+        #confirmModalCancel {
+            padding: 10px 28px; border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: transparent; color: #94a3b8;
+            cursor: pointer; font-family: inherit; transition: background 0.18s;
+        }
+        #confirmModalCancel:hover { background: rgba(255,255,255,0.06); }
+
+    </style>
+</head>
+<body data-theme="dark">
+
+<!-- BANNER TẢI TRANG — hiện inline CSS thuần, tự ẩn sau 2s nếu nội dung đã load.
+     Nếu còn hiện: bấm "Xóa Cache & Tải Lại" để reset.
+     Pure inline styles — không phụ thuộc bất kỳ stylesheet nào. -->
+<div id="adminLoadingBanner" style="
+    position:fixed; top:0; left:0; right:0; z-index:99999;
+    background:#0f1e35; border-bottom:2px solid #00ff88;
+    color:#e2e8f0; font-family:system-ui,Arial,sans-serif; font-size:0.8rem;
+    padding:7px 16px; display:flex; align-items:center; gap:12px;">
+    <span style="color:#00ff88; font-weight:700; flex:1;">
+        ⚙️ TUYENVANGLAI ADMIN — đang tải...
+    </span>
+    <button onclick="sessionStorage.clear();location.reload();"
+        style="background:#00ff88; color:#0a1628; border:none; border-radius:5px;
+               padding:4px 12px; font-weight:700; font-size:0.78rem; cursor:pointer;
+               white-space:nowrap; font-family:inherit;">
+        🔄 Tải Lại
+    </button>
+    <button onclick="this.parentElement.style.display='none';"
+        style="background:transparent; border:1px solid #374151; color:#9ca3af;
+               border-radius:4px; padding:3px 8px; cursor:pointer; font-size:0.75rem;
+               font-family:inherit;">
+        ✕
+    </button>
+</div>
+<!-- Đẩy content xuống để không bị banner che -->
+<div id="bannerSpacer" style="height:38px;"></div>
+
+<!-- ══ HEADER ══ -->
+<header class="ad-header">
+    <a href="index.html" class="ad-brand">
+        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.2" fill="none"
+            style="color:var(--accent-green);transform:rotate(-45deg);flex-shrink:0;margin-right:8px;">
+            <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill="currentColor"/>
+            <path d="M9 6l-5 13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1L15 6"/>
+            <path d="M12 6v14"/><path d="M6 13h12"/>
+        </svg>
+        <span class="ad-brand-text">TUYENVANGLAI.IO.VN</span>
+    </a>
+    <div style="display:flex;align-items:center;gap:10px;">
+        <span class="ad-zone-badge">
+            <i class="fa-solid fa-shield-halved"></i> ADMIN ZONE
+        </span>
+    </div>
+</header>
+
+<div class="ad-main">
+
+    <!-- ══ PANEL ĐĂNG NHẬP ══ -->
+    <div id="adminAuthPanel" style="display:block">
+        <div class="ad-auth-wrap">
+            <div class="ad-auth-card">
+                <div class="ad-auth-badge">👑</div>
+                <div class="ad-auth-title">TRUNG TÂM CHỈ HUY</div>
+                <p class="ad-auth-sub">
+                    Khu vực bảo mật tuyệt mật.<br>
+                    Chỉ Quản Trị Viên Tối Cao mới được truy cập.
+                </p>
+                <div class="ad-form-group" style="text-align:left;">
+                    <label class="ad-label">Tên đăng nhập</label>
+                    <input type="text" class="ad-input" id="adminUsername"
+                        placeholder="Nhập tên đăng nhập..." autocomplete="username"
+                        onkeydown="if(event.key==='Enter')document.getElementById('adminSecretPassword').focus()">
+                </div>
+                <div class="ad-form-group" style="text-align:left;">
+                    <label class="ad-label">Mật khẩu bảo mật</label>
+                    <div style="position:relative;">
+                        <input type="password" class="ad-input" id="adminSecretPassword"
+                            placeholder="Nhập mật khẩu admin..." autocomplete="current-password"
+                            onkeydown="if(event.key==='Enter')xacThucQuyenAdmin()"
+                            style="padding-right:44px;">
+                        <button type="button" onclick="
+                            const f=document.getElementById('adminSecretPassword');
+                            f.type=f.type==='password'?'text':'password';
+                            this.innerHTML=f.type==='password'?'<i class=\'fa-solid fa-eye\'></i>':'<i class=\'fa-solid fa-eye-slash\'></i>';
+                        " style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:#64748b;cursor:pointer;font-size:0.9rem;">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                <button class="ad-btn-primary"
+                    style="width:100%;justify-content:center;padding:13px;font-size:1rem;"
+                    onclick="xacThucQuyenAdmin()">
+                    <i class="fa-solid fa-shield-halved"></i> Đăng Nhập Root Admin
+                </button>
+                <div style="margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06);">
+                    <a href="index.html" style="font-size:0.8rem;color:#64748b;text-decoration:none;">
+                        <i class="fa-solid fa-arrow-left"></i> Quay lại trang chủ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ══ CONSOLE QUẢN TRỊ ══ -->
+    <div id="adminConsole">
+
+        <!-- Thanh trạng thái phiên Admin -->
+        <div class="ad-console-bar">
+            <div class="ad-console-left">
+                <div class="ad-shield-icon">👑</div>
+                <div>
+                    <div class="ad-session-lbl">Trạng thái phiên làm việc</div>
+                    <div class="ad-session-title">ROOT ADMIN SESSION ACTIVE</div>
+                </div>
+            </div>
+            <button class="ad-btn-danger" onclick="dangXuatAdmin()">
+                <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
+            </button>
+        </div>
+
+        <!-- ══ DASHBOARD 4 METRICS ══ -->
+        <div class="ad-metrics-grid reveal">
+            <div class="ad-metric-card reveal reveal-delay-1">
+                <span class="ad-metric-icon" style="color:var(--accent-green);">👥</span>
+                <div class="ad-metric-val" id="metricTotalMembers" style="color:var(--accent-green);">--</div>
+                <div class="ad-metric-lbl">Thành Viên</div>
+            </div>
+            <div class="ad-metric-card reveal reveal-delay-2">
+                <span class="ad-metric-icon" style="color:#60a5fa;">🏸</span>
+                <div class="ad-metric-val" id="metricOpenCaDau" style="color:#60a5fa;">--</div>
+                <div class="ad-metric-lbl">Ca Đấu Đang Mở</div>
+            </div>
+            <div class="ad-metric-card reveal reveal-delay-3">
+                <span class="ad-metric-icon" style="color:#22d3ee;">📬</span>
+                <div class="ad-metric-val" id="metricGopY" style="color:#22d3ee;">--</div>
+                <div class="ad-metric-lbl">Góp Ý Nhận Được</div>
+            </div>
+            <div class="ad-metric-card reveal">
+                <span class="ad-metric-icon" style="color:#fbbf24;">⭐</span>
+                <div class="ad-metric-val" id="metricDanhGia" style="color:#fbbf24;">--</div>
+                <div class="ad-metric-lbl">Đánh Giá</div>
+            </div>
+        </div>
+
+        <!-- ══ THANH ĐIỀU HƯỚNG TAB ══ -->
+        <div class="ad-tab-nav">
+            <button class="ad-tab-btn" data-tab="guests" onclick="chuyenTabAdmin('guests')">
+                <i class="fa-solid fa-users"></i> Thành Viên
+            </button>
+            <button class="ad-tab-btn" data-tab="reviews" onclick="chuyenTabAdmin('reviews')">
+                <i class="fa-solid fa-star-half-stroke"></i> Đánh Giá
+            </button>
+            <button class="ad-tab-btn" data-tab="config" onclick="chuyenTabAdmin('config')">
+                <i class="fa-solid fa-sliders"></i> Cấu Hình
+            </button>
+            <button class="ad-tab-btn" data-tab="cadau" onclick="chuyenTabAdmin('cadau')">
+                <i class="fa-solid fa-calendar-days"></i> Ca Đấu
+            </button>
+            <button class="ad-tab-btn" data-tab="gopy" onclick="chuyenTabAdmin('gopy')">
+                <i class="fa-solid fa-comment-dots"></i> Góp Ý
+            </button>
+            <button class="ad-tab-btn" data-tab="stats" onclick="chuyenTabAdmin('stats')">
+                <i class="fa-solid fa-chart-bar"></i> Thống Kê
+            </button>
+            <button class="ad-tab-btn" data-tab="baocao" onclick="chuyenTabAdmin('baocao')">
+                <i class="fa-solid fa-flag"></i> Báo Cáo
+            </button>
+        </div>
+
+
+        <!-- ════════════════════════════════════════════
+             TAB 2: QUẢN LÝ THÀNH VIÊN
+             ════════════════════════════════════════════ -->
+        <div class="ad-tab-content" id="adminTab_guests">
+            <div class="ad-guests-header">
+                <div>
+                    <div style="font-size:1rem;font-weight:700;color:var(--text-main);margin-bottom:4px;">
+                        Quản Lý Thành Viên Toàn Hệ Thống
+                    </div>
+                    <p style="font-size:0.78rem;color:#64748b;">
+                        Xem thông tin, sửa, khóa, xóa tài khoản thành viên và xem đánh giá.
+                    </p>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <span class="ad-guest-count" id="adminGuestCount">-- thành viên</span>
+                    <div class="ad-search-wrap">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" class="ad-search-input" id="adminGuestSearch"
+                            placeholder="Tìm tên, SĐT..." oninput="locKhachAdmin()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- FIX 1: .table-responsive ngăn bảng kéo giãn layout khi đổi tab -->
+            <div class="table-responsive">
+                <table class="ad-table" style="min-width:780px;">
+                    <thead>
+                        <tr>
+                            <th style="width:40px;">#</th>
+                            <th>Tên Khách</th>
+                            <th>Vai Trò</th>
+                            <th>SĐT Zalo</th>
+                            <th>Ngày Tham Gia</th>
+                            <th>Số Ca</th>
+                            <th>Tổng Chi Tiêu (VNĐ)</th>
+                            <th>Số Host Giao Lưu</th>
+                            <th>⭐ Sao TB</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminGuestsBody">
+                        <tr>
+                            <td colspan="10" style="text-align:center;padding:28px;color:#64748b;">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════
+             TAB 3: KIỂM DUYỆT ĐÁNH GIÁ
+             ════════════════════════════════════════════ -->
+        <div class="ad-tab-content" id="adminTab_reviews">
+            <div style="margin-bottom:14px;">
+                <div style="font-size:1rem;font-weight:700;color:var(--text-main);margin-bottom:4px;">
+                    Kho Đánh Giá Hai Chiều (Host ↔ Khách)
+                </div>
+                <p style="font-size:0.78rem;color:#64748b;">
+                    Admin có quyền xóa bất kỳ đánh giá nào. Đánh giá bị khóa ngay sau khi tạo — chỉ Admin mới xóa được.
+                </p>
+            </div>
+            <!-- Bulk action bar Đánh Giá -->
+            <div id="rvBulkBar"
+                 style="display:none; margin-bottom:10px; padding:8px 14px;
+                        background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.28);
+                        border-radius:8px; align-items:center; gap:12px; flex-wrap:wrap;">
+                <span id="rvChkCount"
+                      style="font-size:0.85rem;font-weight:700;color:#f87171;flex:1;"></span>
+                <button onclick="window.xoaNhieuDanhGia()"
+                        style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.45);
+                               color:#f87171;padding:5px 14px;border-radius:7px;
+                               cursor:pointer;font-size:0.82rem;font-weight:700;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-trash-can"></i> Xóa đã chọn
+                </button>
+                <button onclick="window._rvBoChonHet()"
+                        style="background:transparent;border:1px solid rgba(255,255,255,0.12);
+                               color:#94a3b8;padding:5px 12px;border-radius:7px;
+                               cursor:pointer;font-size:0.82rem;">
+                    Bỏ chọn hết
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="ad-table" style="min-width:940px;">
+                    <thead>
+                        <tr>
+                            <th style="width:36px;text-align:center;">
+                                <input type="checkbox" id="rvChkAll"
+                                       style="cursor:pointer;accent-color:#f87171;"
+                                       onclick="window._rvChkAllToggle(this)">
+                            </th>
+                            <th>Loại</th>
+                            <th>Người Viết</th>
+                            <th>Đối Tượng</th>
+                            <th>Ca Đấu</th>
+                            <th>⭐ Sao</th>
+                            <th>Nội Dung Nhận Xét</th>
+                            <th>Ngày / Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminReviewsBody">
+                        <tr>
+                            <td colspan="8" style="text-align:center;padding:28px;color:#64748b;">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════
+             TAB 4: CẤU HÌNH HỆ THỐNG
+             ════════════════════════════════════════════ -->
+        <div class="ad-tab-content" id="adminTab_config">
+            <div style="max-width:680px;">
+
+                <!-- Thông báo popup trang chủ -->
+                <div class="ad-config-card">
+                    <div class="ad-config-title">
+                        <i class="fa-solid fa-bullhorn"></i>
+                        Nội Dung Thông Báo Popup Trang Chủ
+                    </div>
+                    <!-- C.1: Toggle bật/tắt popup -->
+                    <div class="ad-form-group">
+                        <label class="ad-label" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                            <input type="checkbox" id="adminPopupEnabled"
+                                   style="width:16px;height:16px;accent-color:#00ff88;cursor:pointer;">
+                            Bật popup thông báo trên trang chủ
+                        </label>
+                        <div style="font-size:0.72rem;color:#64748b;margin-top:4px;">
+                            Khi tắt — popup không hiện dù có nội dung.
+                        </div>
+                    </div>
+                    <div class="ad-form-group">
+                        <label class="ad-label">Thông báo hiển thị cho Khách khi vào trang chủ</label>
+                        <textarea class="ad-textarea" id="adminAnnouncementContent" rows="5"
+                            placeholder="Nhập nội dung thông báo... Để trống để tắt popup."></textarea>
+                        <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">
+                            <i class="fa-solid fa-circle-info"></i>
+                            Để trống = tắt popup. Lưu → tự động cập nhật cho tất cả Khách truy cập.
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- QR Donate -->
+                <div class="ad-config-card">
+                    <div class="ad-config-title">
+                        <i class="fa-solid fa-qrcode" style="color:#a78bfa;"></i>
+                        QR Code Ủng Hộ (Donate)
+                    </div>
+                    <div class="ad-form-group">
+                        <label class="ad-label">Link ảnh QR (URL đầy đủ)</label>
+                        <input type="text" class="ad-input" id="adminQrDonate"
+                            placeholder="https://img.vietqr.io/image/..."
+                            oninput="
+                                var w=document.getElementById('qrPreviewWrap');
+                                var i=document.getElementById('qrPreviewImg');
+                                if(this.value.trim()){w.style.display='block';i.src=this.value.trim();}
+                                else{w.style.display='none';}
+                            ">
+                        <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">
+                            Để trống → ẩn khối donate. Ảnh QR được render trực tiếp vào trang chủ.
+                        </div>
+                    </div>
+                    <div class="ad-form-group" style="margin-top:10px;">
+                        <label class="ad-label">Tiêu đề hiển thị phía trên QR</label>
+                        <input type="text" class="ad-input" id="adminTieuDeDonate"
+                            placeholder="MỜI ADMIN LY CAFE CHỐT KÈO ☕">
+                        <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">
+                            Dòng chữ nổi bật phía trên ảnh QR — viết hoa, ngắn gọn.
+                        </div>
+                    </div>
+                    <div class="ad-form-group" style="margin-top:10px;">
+                        <label class="ad-label">Text mô tả bên dưới QR</label>
+                        <input type="text" class="ad-input" id="adminTextDonate"
+                            placeholder="☕ Ủng hộ tác giả 1 ly cà phê nhé!">
+                    </div>
+                    <div id="qrPreviewWrap" style="margin-top:14px;display:none;text-align:center;">
+                        <div style="font-size:0.72rem;color:#64748b;margin-bottom:8px;">Preview:</div>
+                        <img id="qrPreviewImg" src="" alt="QR Preview"
+                             style="max-width:180px;border-radius:10px;
+                                    border:1px solid var(--border);
+                                    box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+                    </div>
+                </div>
+
+                <!-- Text quảng cáo landing page -->
+                <div class="ad-config-card">
+                    <div class="ad-config-title">
+                        <i class="fa-solid fa-rectangle-ad" style="color:#22d3ee;"></i>
+                        Mô Tả Tính Năng (Landing Page Hero)
+                    </div>
+                    <div class="ad-form-group">
+                        <label class="ad-label">Nội dung mô tả ngắn dưới tiêu đề trang chủ</label>
+                        <textarea class="ad-textarea" id="adminTextQuangCao" rows="3"
+                            placeholder="Kết nối người chơi vãng lai và chủ sân cầu lông toàn quốc..."></textarea>
+                        <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">
+                            Cập nhật realtime — không cần deploy lại code. Để trống = dùng text mặc định.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Telegram Notification -->
+                <div class="ad-config-card">
+                    <div class="ad-config-title">
+                        <i class="fa-brands fa-telegram" style="color:#22d3ee;"></i>
+                        Cấu Hình Thông Báo Telegram
+                    </div>
+                    <div class="ad-form-group">
+                        <label class="ad-label">Bot Token (lấy từ @BotFather)</label>
+                        <input type="text" class="ad-input" id="adminTgBotToken"
+                            placeholder="123456789:ABCDefgh...">
+                        <div style="font-size:0.72rem;color:#64748b;margin-top:4px;">
+                            Để trống = tắt thông báo Telegram.
+                        </div>
+                    </div>
+                    <div class="ad-form-group" style="margin-top:10px;">
+                        <label class="ad-label">Chat ID hoặc Channel ID nhận thông báo</label>
+                        <input type="text" class="ad-input" id="adminTgChatId"
+                            placeholder="-1001234567890">
+                        <div style="font-size:0.72rem;color:#64748b;margin-top:4px;">
+                            Mở Telegram bot, gõ /start → lấy chat_id từ đường dẫn.
+                        </div>
+                    </div>
+                </div>
+
+
+                <button class="ad-btn-primary" id="btnLuuThongBao"
+                    style="width:100%;justify-content:center;padding:13px;font-size:0.95rem;"
+                    onclick="luuThongBaoAdmin()">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình Hệ Thống
+                </button>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════
+             TAB 5: THỐNG KÊ TỔNG QUAN
+             ════════════════════════════════════════════ -->
+        <div class="ad-tab-content" id="adminTab_stats">
+            <div style="font-size:1rem;font-weight:700;color:var(--text-main);margin-bottom:16px;">
+                Dashboard Tổng Quan Hệ Thống
+            </div>
+
+            <div class="ad-stats-grid">
+                <div class="ad-stat-card">
+                    <div class="ad-stat-val" style="color:#fb923c;" id="statTotalSlots">--</div>
+                    <div class="ad-stat-lbl"><i class="fa-solid fa-calendar"></i> Tổng Ca Đấu</div>
+                </div>
+                <div class="ad-stat-card">
+                    <div class="ad-stat-val" style="color:#a78bfa;" id="statOpenSlots">--</div>
+                    <div class="ad-stat-lbl"><i class="fa-solid fa-door-open"></i> Ca Còn Mở</div>
+                </div>
+                <div class="ad-stat-card">
+                    <div class="ad-stat-val" style="color:#34d399;" id="statClosedSlots">--</div>
+                    <div class="ad-stat-lbl"><i class="fa-solid fa-lock"></i> Ca Đã Chốt</div>
+                </div>
+                <div class="ad-stat-card">
+                    <div class="ad-stat-val" style="color:#fb923c;" id="statTotalGuests">--</div>
+                    <div class="ad-stat-lbl"><i class="fa-solid fa-users"></i> Tổng Thành Viên</div>
+                </div>
+                <div class="ad-stat-card">
+                    <div class="ad-stat-val" style="color:#f472b6;" id="statTotalReviews">--</div>
+                    <div class="ad-stat-lbl"><i class="fa-solid fa-star"></i> Đánh Giá</div>
+                </div>
+                <div class="ad-stat-card">
+                    <div class="ad-stat-val" style="color:#22d3ee;" id="statTotalGopY">--</div>
+                    <div class="ad-stat-lbl"><i class="fa-solid fa-comment-dots"></i> Góp Ý</div>
+                </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:8px;">
+                <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;">
+                    <div style="font-size:0.78rem;color:#64748b;margin-bottom:12px;text-transform:uppercase;letter-spacing:0.05em;">
+                        <i class="fa-solid fa-circle-info"></i> Ghi Chú Hệ Thống
+                    </div>
+                    <div style="font-size:0.82rem;color:#94a3b8;line-height:1.8;">
+                        <div><i class="fa-solid fa-circle" style="color:var(--accent-green);font-size:0.5rem;"></i> Thống kê tự động cập nhật khi chuyển tab.</div>
+                        <div><i class="fa-solid fa-circle" style="color:#60a5fa;font-size:0.5rem;"></i> Dữ liệu đồng bộ real-time từ Supabase.</div>
+                        <div><i class="fa-solid fa-circle" style="color:#a78bfa;font-size:0.5rem;"></i> Chỉ Admin mới thấy trang này.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top:20px;text-align:center;">
+                <button class="ad-btn-ghost" onclick="chuyenTabAdmin('stats')" style="padding:9px 24px;">
+                    <i class="fa-solid fa-arrows-rotate"></i> Làm Mới Thống Kê
+                </button>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════
+             TAB BÁO CÁO — QUẢN LÝ BÁO CÁO LỪA ĐẢO
+             ════════════════════════════════════════════ -->
+        <div class="ad-tab-content" id="adminTab_baocao">
+            <div style="margin-bottom:14px;">
+                <div style="font-size:1rem;font-weight:700;color:var(--text-main);margin-bottom:4px;">
+                    🚩 Quản Lý Báo Cáo Lừa Đảo
+                </div>
+                <p style="font-size:0.78rem;color:#64748b;">Các báo cáo từ khách về host. Duyệt để phạt, tha bổng hoặc khôi phục ca đấu.</p>
+                <button class="ad-btn-ghost" onclick="window.adminTaiBaoCao()" style="margin-top:8px;">
+                    <i class="fa-solid fa-arrows-rotate"></i> Làm Mới
+                </button>
+            </div>
+            <div class="ad-table-wrap">
+                <table class="ad-table" style="min-width:700px;">
+                    <thead><tr>
+                        <th>Ngày</th><th>Ca Đấu</th><th>Người Báo</th><th>Bị Báo (Host)</th><th>Loại</th><th>Trạng Thái</th><th>Hành Động</th>
+                    </tr></thead>
+                    <tbody id="baoCaoTableBody">
+                        <tr><td colspan="7" style="text-align:center;padding:20px;color:#64748b;">Đang tải...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ════════════════════════════════════════════
+             TAB 6: CA ĐẤU — ADMIN QUẢN LÝ TOÀN BỘ
+             ════════════════════════════════════════════ -->
+        <div class="ad-tab-content" id="adminTab_cadau">
+            <!-- Toolbar -->
+            <div class="ad-toolbar">
+                <div class="ad-toolbar-left">
+                    <span style="font-size:1rem;font-weight:700;color:var(--text-main);">
+                        <i class="fa-solid fa-calendar-days" style="color:#60a5fa;"></i>
+                        Quản Lý Ca Đấu Toàn Hệ Thống
+                    </span>
+                    <span style="font-size:0.78rem;color:#64748b;margin-left:8px;">
+                        Xem, sửa, xóa ca đấu của bất kỳ Host nào
+                    </span>
+                </div>
+                <div class="ad-search-wrap">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" class="ad-search-input" id="adminCaDauSearch"
+                        placeholder="Tìm tên sân, host, tỉnh thành..." oninput="locCaDauAdmin()">
+                </div>
+            </div>
+
+            <!-- Bộ lọc trạng thái ca đấu -->
+            <div class="ad-filter-pills">
+                <button class="ad-pill active" onclick="locCaDauTheoTrangThai('all', this)">
+                    Tất cả
+                </button>
+                <button class="ad-pill" onclick="locCaDauTheoTrangThai('open', this)">
+                    <i class="fa-solid fa-circle" style="color:#00ff88;font-size:0.5em;"></i> Đang mở
+                </button>
+                <button class="ad-pill" onclick="locCaDauTheoTrangThai('closed', this)">
+                    <i class="fa-solid fa-lock" style="color:#64748b;font-size:0.8em;"></i> Đã chốt
+                </button>
+                <button class="ad-pill" onclick="locCaDauTheoTrangThai('today', this)">
+                    <i class="fa-solid fa-calendar-day" style="color:#f59e0b;font-size:0.8em;"></i> Hôm nay
+                </button>
+            </div>
+
+            <!-- Bảng danh sách ca đấu -->
+            <div class="table-responsive">
+                <table class="ad-table">
+                    <thead>
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Host</th>
+                            <th>Tên Sân</th>
+                            <th>Tỉnh / Quận</th>
+                            <th>Giờ</th>
+                            <th>Khách</th>
+                            <th>Giá Nam / Nữ</th>
+                            <th>Trạng thái</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminCaDauBody">
+                        <tr>
+                            <td colspan="9" style="text-align:center;padding:28px;color:#64748b;">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Phân trang -->
+            <div id="adminCaDauPagination" style="display:flex;justify-content:center;gap:8px;margin-top:16px;flex-wrap:wrap;"></div>
+        </div>
+
+    </div><!-- /adminConsole -->
+
+</div><!-- /ad-main -->
+
+<!-- TOAST NOTIFICATION -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ══ SCRIPTS — onerror ghi log chẩn đoán nếu Cốc Cốc block script ══ -->
+<script src="/ket-noi-supabase.js?v=6.2"
+    onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: ket-noi-supabase.js — Cốc Cốc có thể đã block file này')"></script>
+<script src="/bo-may-du-lieu.js?v=6.2"
+    onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: bo-may-du-lieu.js')"></script>
+<script src="/hieu-ung-giao-dien.js?v=6.2"
+    onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: hieu-ung-giao-dien.js')"></script>
+<script src="/phan-he-quan-tri.js?v=6.3"
+    onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: phan-he-quan-tri.js — auth panel sẽ hiện sau 8s'); setTimeout(function(){var ap=document.getElementById('adminAuthPanel');if(ap)ap.style.display='block';},500);"></script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   ADMIN.HTML — Script hỗ trợ UI (inline)
+   Logic nghiệp vụ chính nằm trong phan-he-quan-tri.js
+═══════════════════════════════════════════════════════════ */
+(function () {
+
+    document.addEventListener("DOMContentLoaded", function () {
+        try {
+            /* Hiện auth panel ngay — null-safe để tránh TypeError */
+            var ap = document.getElementById("adminAuthPanel");
+            if (ap) ap.style.display = "block";
+
+            /* Ẩn banner sau 2 giây nếu trang load thành công */
+            setTimeout(function () {
+                try {
+                    var banner  = document.getElementById("adminLoadingBanner");
+                    var spacer  = document.getElementById("bannerSpacer");
+                    if (!banner) return;
+                    var apEl = document.getElementById("adminAuthPanel");
+                    var coEl = document.getElementById("adminConsole");
+                    /* Ẩn khi auth panel HOẶC console đang hiện với chiều cao > 0 */
+                    var anyVisible = (apEl && apEl.offsetHeight > 0) ||
+                                     (coEl && coEl.offsetHeight > 0);
+                    if (anyVisible) {
+                        banner.style.display = "none";
+                        if (spacer) spacer.style.display = "none";
+                    }
+                } catch (_) {}
+            }, 2000);
+
+        } catch (err) {
+            console.warn("[admin] DOMContentLoaded lỗi:", err);
+            try {
+                var fb = document.getElementById("adminAuthPanel") ||
+                         document.querySelector(".ad-auth-wrap");
+                if (fb) fb.style.display = "block";
+            } catch (_) {}
+        }
+    });
+
+    /* Search trong bảng Thành Viên */
+    window.locKhachAdmin = function () {
+        var query = (document.getElementById('adminGuestSearch')?.value || '').toLowerCase().trim();
+        document.querySelectorAll('#adminGuestsBody tr').forEach(function (row) {
+            /* Bỏ qua dòng loading / empty (không có đủ ô dữ liệu) */
+            if (!row.cells || row.cells.length < 2) return;
+            row.style.display = (!query || row.textContent.toLowerCase().includes(query)) ? '' : 'none';
+        });
+    };
+
+    /* Lắng nghe Back/Forward của trình duyệt → khôi phục đúng tab */
+    window.addEventListener('hashchange', function () {
+        var tab   = (location.hash || '').replace('#tab-', '');
+        var valid = ['guests', 'reviews', 'config', 'stats', 'cadau', 'gopy'];
+        if (valid.includes(tab) && document.getElementById('adminConsole').style.display === 'block') {
+            window.chuyenTabAdmin(tab);
+        }
+    });
+
+})();
+</script>
+
+<style>
+/* ── Vô hiệu hóa bôi đen / copy toàn trang ── */
+* { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
+/* Cho phép nhập liệu bình thường trong ô input / textarea */
+input, textarea, [contenteditable] { user-select: text; -webkit-user-select: text; }
+</style>
+<script>
+/* ══════════════════════════════════════════════════════════════════════════════
+ * BẢO VỆ MÃ NGUỒN — v3 (loại bỏ getter, chỉ dùng kích thước + fail-safe)
+ *
+ * === TẠI SAO BỎ GETTER-BASED DETECTION ===
+ * Phiên bản trước dùng: console.log('%o', trap)
+ * Format '%o' buộc engine JavaScript đánh giá toString getter NGAY LẬP TỨC,
+ * bất kể DevTools có mở hay không (đây là hành vi chuẩn của V8/Chromium).
+ * → Getter luôn trigger → _getterHitCount đạt 2 sau 2 check → overlay phủ đen toàn màn.
+ * → Người dùng thấy "chỉ hiện background" dù không mở DevTools (đặc biệt Cốc Cốc).
+ *
+ * === GIẢI PHÁP HIỆN TẠI: CHỈ DÙNG KÍCH THƯỚC (AN TOÀN, ĐỦ NHẠY) ===
+ * Ngưỡng 300px:
+ *   ✓  DevTools dock-bottom/right: 300–600px chiều cao/rộng → PHÁT HIỆN ĐÚNG
+ *   ✓  Sidebar Cốc Cốc: ~65px width diff → KHÔNG KÍCH HOẠT (an toàn)
+ *   ✓  Windows Taskbar: ~40px → AN TOÀN
+ *   ✓  macOS Dock ẩn/hiện: ~0px → AN TOÀN
+ *   ✓  Browser chrome (title+tabs+toolbar): ~100-140px → AN TOÀN
+ *
+ * === KIẾN TRÚC FAIL-SAFE ===
+ * Form đăng nhập LUÔN có display:block trong HTML attribute.
+ * Detection chỉ phủ overlay lên trên — KHÔNG bao giờ xóa / ẩn form.
+ * DevTools đóng → overlay tự remove() → form hiện lại bình thường.
+ * ══════════════════════════════════════════════════════════════════════════════ */
+(function () {
+    'use strict';
+
+    /* ──────────────────────────────────────────────
+     * 1. Chặn chuột phải — ngăn View Page Source
+     * ────────────────────────────────────────────── */
+    document.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+    });
+
+    /* ──────────────────────────────────────────────
+     * 2. Chặn phím tắt mở DevTools / View Source
+     * ────────────────────────────────────────────── */
+    document.addEventListener('keydown', function (e) {
+        /* F12 */
+        if (e.key === 'F12') { e.preventDefault(); return false; }
+        /* Ctrl+Shift+I | Ctrl+Shift+C | Ctrl+Shift+J */
+        if (e.ctrlKey && e.shiftKey && ['I','C','J'].includes(e.key.toUpperCase())) {
+            e.preventDefault(); return false;
+        }
+        /* Ctrl+U — View Page Source */
+        if (e.ctrlKey && e.key.toUpperCase() === 'U') {
+            e.preventDefault(); return false;
+        }
+    });
+
+    /* ──────────────────────────────────────────────
+     * 3. Phát hiện DevTools bằng chênh lệch kích thước
+     *    Ngưỡng 300px — an toàn với sidebar Cốc Cốc (~65px)
+     * ────────────────────────────────────────────── */
+    var _overlay = null; /* Tham chiếu overlay cảnh báo — null khi chưa hiện */
+
+    /**
+     * Kiểm tra xem DevTools đang dock sang một phía không.
+     * Trả về true khi chênh lệch outerWidth/Height và innerWidth/Height > 300px.
+     * Chênh lệch âm (zoom out) → bỏ qua, trả false để tránh false-positive.
+     */
+    function _kiemTraKichThuoc() {
+        try {
+            var dW = window.outerWidth  - window.innerWidth;
+            var dH = window.outerHeight - window.innerHeight;
+            /* Chỉ tính số dương để loại bỏ trường hợp browser zoom làm innerWidth lớn hơn */
+            return (dW > 300 || (dH > 300 && dH < 1200));
+        } catch (_) {
+            return false; /* Lỗi đọc window size → không phán đoán */
+        }
+    }
+
+    /**
+     * Hiển thị overlay cảnh báo DevTools.
+     * KHÔNG xóa, KHÔNG hide form đăng nhập — chỉ phủ overlay z-index cao lên trên.
+     * Nếu tạo overlay thất bại vì bất kỳ lý do gì → im lặng, form vẫn hiện.
+     */
+    function _hienOverlay() {
+        if (_overlay) return; /* Đã có overlay rồi, không tạo thêm */
+        try {
+            _overlay = document.createElement('div');
+            _overlay.id = 'devToolsShield';
+            /*
+             * Dùng top/right/bottom/left thay vì 'inset' — tương thích
+             * mọi version Chromium kể cả build cũ nhất của Cốc Cốc.
+             */
+            _overlay.style.cssText =
+                'position:fixed;top:0;right:0;bottom:0;left:0;z-index:88888;' +
+                'background:#080c16;' +             /* Màu đặc — không dùng rgba để tránh compositing bug */
+                'display:-webkit-flex;display:flex;' +
+                '-webkit-flex-direction:column;flex-direction:column;' +
+                '-webkit-align-items:center;align-items:center;' +
+                '-webkit-justify-content:center;justify-content:center;' +
+                'font-family:Inter,sans-serif;text-align:center;padding:2rem;';
+            _overlay.innerHTML =
+                '<div style="font-size:3.5rem;margin-bottom:18px;">&#128737;</div>' +
+                /* &#128737; = 🛡️ dạng HTML entity — tránh encode vấn đề */
+                '<h2 style="color:#00ff88;font-size:1.15rem;font-weight:800;' +
+                     'margin:0 0 10px;letter-spacing:0.04em;text-transform:uppercase;">' +
+                    'Vui l&#242;ng &#273;&#243;ng DevTools' +
+                '</h2>' +
+                '<p style="color:#94a3b8;font-size:0.83rem;line-height:1.75;' +
+                     'max-width:360px;margin:0 auto 18px;">' +
+                    'H&#7879; th&#7889;ng b&#7843;o m&#7853;t ph&#225;t hi&#7879;n' +
+                    ' c&#7917;a s&#7893; ph&#225;t tri&#7875;n &#273;ang m&#7903;.<br>' +
+                    'H&#227;y &#273;&#243;ng DevTools (F12) &#273;&#7875; ti&#7871;p t&#7909;c truy c&#7853;p.' +
+                '</p>' +
+                /* Nút "Tiếp tục dù vậy" — cho phép người dùng qua overlay nếu phát hiện sai */
+                '<button id="_dtBypassBtn"' +
+                     ' style="background:transparent;border:1px solid #2a4a7f;color:#4b6a8a;' +
+                     'border-radius:6px;padding:7px 18px;cursor:pointer;font-size:0.72rem;' +
+                     'font-family:Inter,sans-serif;margin-top:4px;">' +
+                    'Ti&#7871;p t&#7909;c d&#249; v&#7853;y' +
+                '</button>';
+            document.body.appendChild(_overlay);
+
+            /* Gán sự kiện sau khi append — tránh vấn đề inline onclick trên Cốc Cốc */
+            var bypassBtn = document.getElementById('_dtBypassBtn');
+            if (bypassBtn) {
+                bypassBtn.addEventListener('click', function () {
+                    /* Đánh dấu người dùng đã chủ động tắt — không hiện lại overlay */
+                    window._devToolsBypass = true;
+                    try { _overlay.remove(); } catch (_) {}
+                    _overlay = null;
+                });
+            }
+        } catch (_) {
+            /* Tạo overlay thất bại → form đăng nhập vẫn hiển thị bình thường */
+            _overlay = null;
+        }
+    }
+
+    /** Ẩn overlay khi DevTools đóng lại → trang phục hồi hoàn toàn */
+    function _anOverlay() {
+        try {
+            if (_overlay) {
+                _overlay.remove();
+                _overlay = null;
+            }
+        } catch (_) {}
+    }
+
+    /** Vòng lặp kiểm tra chính — bọc try/catch, không bao giờ để crash ra ngoài */
+    function _khoiChay() {
+        try {
+            /* Nếu người dùng đã bấm "Tiếp tục dù vậy" → bỏ qua detection */
+            if (window._devToolsBypass) return;
+
+            var devToolsMo = _kiemTraKichThuoc();
+
+            if (devToolsMo && !_overlay) {
+                _hienOverlay();
+            } else if (!devToolsMo && _overlay) {
+                _anOverlay();
+            }
+        } catch (_) {
+            /*
+             * TUYỆT ĐỐI không re-throw — mọi lỗi detection phải bị nuốt tại đây.
+             * Form đăng nhập admin phải hiển thị dù detection code có bị crash.
+             */
+        }
+    }
+
+    /*
+     * Khởi động detection sau 1200ms — đảm bảo form đăng nhập đã paint xong
+     * trước khi bắt đầu giám sát. Interval 2500ms: không nặng CPU.
+     * console.clear mỗi 4 giây — ẩn log kỹ thuật khỏi console bình thường.
+     */
+    setTimeout(function () {
+        _khoiChay();                                    /* Lần đầu */
+        setInterval(_khoiChay, 2500);                   /* Định kỳ */
+        setInterval(function () {
+            try { console.clear(); } catch (_) {}
+        }, 4000);
+    }, 1200);
+
+})();
+</script>
+
+<!-- ══════════════════════════════════════════════════════════
+     MODAL THÀNH VIÊN — dùng chung cho: Sửa thông tin, Xem đánh giá
+     ══════════════════════════════════════════════════════════ -->
+<div id="modalThanhVienOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:2000;align-items:center;justify-content:center;padding:16px;">
+    <div style="background:#1a2844;border:1px solid #2d4a6e;border-radius:12px;width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #2d4a6e;flex-shrink:0;">
+            <span id="modalThanhVienTitle" style="font-size:1rem;font-weight:700;color:#e2e8f0;">Sửa Thành Viên</span>
+            <button onclick="window.dongModalThanhVien()" style="background:none;border:none;color:#64748b;font-size:1.3rem;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;" title="Đóng">✕</button>
+        </div>
+        <!-- Body (nội dung inject bởi JS) -->
+        <div id="modalThanhVienBody" style="padding:20px;overflow-y:auto;flex:1;">
+        </div>
+    </div>
+</div>
+
+        <!-- ════════════════════════════════════════════
+             TAB GOP Y: XEM PHẢN HỒI TỪ NGƯỜI DÙNG
+             ════════════════════════════════════════════ -->
+        <div class="ad-tab-content" id="adminTab_gopy">
+            <div style="margin-bottom:14px;">
+                <div style="font-size:1rem;font-weight:700;color:var(--text-main);margin-bottom:4px;">
+                    Phản Hồi &amp; Góp Ý Từ Người Dùng
+                </div>
+                <p style="font-size:0.78rem;color:#64748b;">
+                    Danh sách góp ý gửi qua popup "☕ Ủng hộ &amp; 💬 Góp ý". Mới nhất hiển thị đầu tiên.
+                </p>
+            </div>
+            <!-- Bulk action bar — ẩn khi không có dòng nào được tick -->
+            <div id="gopYBulkBar"
+                 style="display:none; margin-bottom:10px; padding:8px 14px;
+                        background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.28);
+                        border-radius:8px; align-items:center; gap:12px; flex-wrap:wrap;">
+                <span id="gopYChkCount"
+                      style="font-size:0.85rem;font-weight:700;color:#f87171;flex:1;"></span>
+                <button onclick="window.xoaNhieuGopY()"
+                        style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.45);
+                               color:#f87171;padding:5px 14px;border-radius:7px;
+                               cursor:pointer;font-size:0.82rem;font-weight:700;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-trash-can"></i> Xóa đã chọn
+                </button>
+                <button onclick="window._gopYBoChonHet()"
+                        style="background:transparent;border:1px solid rgba(255,255,255,0.12);
+                               color:#94a3b8;padding:5px 12px;border-radius:7px;
+                               cursor:pointer;font-size:0.82rem;">
+                    Bỏ chọn hết
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="ad-table" style="min-width:700px;">
+                    <thead>
+                        <tr>
+                            <th style="width:36px;text-align:center;">
+                                <input type="checkbox" id="gopYChkAll"
+                                       style="cursor:pointer;accent-color:#f87171;"
+                                       onclick="window._gopYChkAllToggle(this)">
+                            </th>
+                            <th>Người Dùng</th>
+                            <th style="width:80px;">Sao</th>
+                            <th style="width:120px;">Loại Góp Ý</th>
+                            <th>Nội Dung</th>
+                            <th style="width:110px;">Thời Gian</th>
+                            <th style="width:60px;">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminGopyBody">
+                        <tr>
+                            <td colspan="7" style="text-align:center;padding:28px;color:#64748b;">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL CHỈNH SỬA CA ĐẤU — Admin can edit any ca đấu
+     ══════════════════════════════════════════════════════ -->
+<div id="modalSuaCaDauOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.8);z-index:2100;align-items:center;justify-content:center;padding:16px;"
+     onclick="if(event.target===this)window.dongModalSuaCaDau()">
+    <div style="background:#1a2844;border:1px solid #2d4a6e;border-radius:14px;width:100%;max-width:640px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,0.7);">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 22px;border-bottom:1px solid #2d4a6e;flex-shrink:0;">
+            <span style="display:flex;align-items:center;gap:10px;font-size:1rem;font-weight:700;color:#e2e8f0;">
+                <i class="fa-solid fa-pen-to-square" style="color:#60a5fa;"></i>
+                Chỉnh Sửa Ca Đấu
+            </span>
+            <button onclick="window.dongModalSuaCaDau()" style="background:none;border:none;color:#64748b;font-size:1.3rem;cursor:pointer;padding:4px 8px;border-radius:6px;line-height:1;" title="Đóng">✕</button>
+        </div>
+        <!-- Body -->
+        <div id="modalSuaCaDauBody" style="padding:22px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;">
+            <!-- Nội dung inject bởi JS -->
+        </div>
+        <!-- Footer -->
+        <div style="display:flex;justify-content:flex-end;gap:10px;padding:14px 22px;border-top:1px solid #2d4a6e;flex-shrink:0;">
+            <button class="ad-btn-ghost" onclick="window.dongModalSuaCaDau()" style="padding:9px 20px;">Hủy</button>
+            <button class="ad-btn-primary" onclick="window.luuSuaCaDauAdmin()" style="padding:9px 24px;">
+                <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ CUSTOM CONFIRM MODAL — thay thế confirm() browser ══ -->
+<div id="confirmModalOverlay">
+    <div id="confirmModalBox">
+        <span id="confirmModalIcon">⚠️</span>
+        <p id="confirmModalMsg">Bạn có chắc chắn không?</p>
+        <div class="confirm-modal-btns">
+            <button id="confirmModalOk">Xác nhận</button>
+            <button id="confirmModalCancel">Huỷ</button>
+        </div>
+    </div>
+</div>
+<!-- window.xacNhanModal đã được định nghĩa trong hieu-ung-giao-dien.js -->
+</body>
+</html>
