@@ -3539,6 +3539,150 @@ body::before {
     }
 }
 
+/* ═══════════════════════════════════════════════════════
+   LỊCH SỬ ĐẤU — Accordion timeline items
+   ═══════════════════════════════════════════════════════ */
+.kh-ls-item {
+    background: #1a2844;
+    border: 1px solid #1e3a5f;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+}
+.kh-ls-item:hover { border-color: rgba(0,255,136,0.22); }
+
+.kh-ls-item-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 11px 14px;
+    gap: 8px;
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.kh-ls-item-head:hover { background: rgba(255,255,255,0.03); }
+
+.kh-ls-item-body {
+    padding: 12px 14px 14px;
+    border-top: 1px solid #1e3a5f;
+    background: rgba(0,0,0,0.15);
+}
+
+.kh-ls-expand-btn {
+    width: 26px;
+    height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    color: #64748b;
+    font-size: 0.72rem;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+.kh-ls-inline-review {
+    margin-top: 12px;
+    padding: 12px;
+    background: rgba(251,191,36,0.06);
+    border: 1px solid rgba(251,191,36,0.2);
+    border-radius: 10px;
+}
+.kh-ls-inline-review textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid #1e3a5f;
+    border-radius: 8px;
+    padding: 8px 10px;
+    color: #e2e8f0;
+    font-size: 0.78rem;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 68px;
+    box-sizing: border-box;
+    -webkit-user-select: text;
+    user-select: text;
+}
+.kh-ls-inline-review textarea:focus {
+    outline: none;
+    border-color: rgba(251,191,36,0.45);
+}
+
+.kh-ls-char-count {
+    font-size: 0.68rem;
+    color: #64748b;
+    text-align: right;
+    margin: 3px 0 8px;
+}
+
+.kh-ls-btn-review {
+    background: linear-gradient(135deg,#f59e0b,#d97706);
+    border: none;
+    color: #0f1e35;
+    font-weight: 700;
+    font-family: inherit;
+    font-size: 0.78rem;
+    padding: 7px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: opacity 0.2s;
+}
+.kh-ls-btn-review:hover { opacity: 0.82; }
+
+.kh-ls-filter-btn {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid #1e3a5f;
+    background: rgba(255,255,255,0.03);
+    color: #94a3b8;
+    font-size: 0.75rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.kh-ls-filter-btn.active,
+.kh-ls-filter-btn:hover {
+    background: rgba(0,255,136,0.1);
+    border-color: rgba(0,255,136,0.35);
+    color: #00ff88;
+}
+
+.kh-loading {
+    text-align: center;
+    padding: 40px 20px;
+    color: #64748b;
+    font-size: 0.88rem;
+}
+.kh-empty {
+    text-align: center;
+    padding: 50px 20px;
+    color: #64748b;
+}
+.kh-empty i {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 12px;
+    opacity: 0.4;
+}
+.kh-empty p { font-size: 0.88rem; margin: 0; }
+
+/* ═══════════════════════════════════════════════════════
+   HOST TABLE — Hành động & ẩn cột trên mobile
+   ═══════════════════════════════════════════════════════ */
+.hs-actions-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 90px;
+}
+
 /* J4: Tab toggle mobile (3 tabs: Tìm Kèo / Cá Nhân / Lịch Sử) */
 .kh-mobile-tab { display: none; }
 @media (max-width: 767px) {

@@ -1423,30 +1423,30 @@
                 tr.innerHTML = `
                 <td>
                     <div style="font-weight:700;font-size:0.85rem;">${_formatDate(slot.ngay_danh)}</div>
-                    <div style="font-size:0.75rem;color:#94a3b8;">${slot.gio_bat_dau || ""} – ${slot.gio_ket_thuc || ""}</div>
                 </td>
                 <td>
                     <div style="font-weight:600;font-size:0.82rem;">${slot.ten_san || "--"}</div>
                     <div style="font-size:0.72rem;color:#94a3b8;">${slot.quan_huyen || ""}, ${slot.tinh_thanh || ""}</div>
-                    <div style="font-size:0.7rem;color:#64748b;">${slot.so_san_cu_the ? "Sân: " + slot.so_san_cu_the : ""}</div>
-                </td>
-                <td class="col-hide-sm">
-                    <div style="font-size:0.78rem;">${_hienThiGioiTinh(slot.gioi_tinh_can)}</div>
-                    <div style="font-size:0.7rem;color:#94a3b8;">${_hienThiTrinhDo(slot)}</div>
-                </td>
-                <td class="col-hide-sm">
-                    <div style="font-size:0.82rem;font-weight:700;color:#00ff88;">${_formatVND(slot.gia_nam || 0)}</div>
-                    <div style="font-size:0.72rem;color:#94a3b8;">Nam</div>
-                    <div style="font-size:0.82rem;font-weight:700;color:#f472b6;">${_formatVND(slot.gia_nu || 0)}</div>
-                    <div style="font-size:0.72rem;color:#94a3b8;">Nữ</div>
+                    <div style="font-size:0.7rem;color:#64748b;margin-top:2px;">${_hienThiGioiTinh(slot.gioi_tinh_can)} · ${_hienThiTrinhDo(slot)}</div>
                 </td>
                 <td>
-                    <div class="badge-slot-count"><i class="fa-solid fa-users" style="font-size:0.7rem;"></i> ${tongKhach}${slot.tong_slot_can > 0 ? ' / ' + slot.tong_slot_can : ''} đã đặt</div>
-                    <div style="font-size:0.68rem;color:#94a3b8;">${daDen} đã tham gia</div>
-                    <button class="btn-mini btn-mini-cyan" style="margin-top:6px;width:100%;"
-                        onclick="window.openGuestListModal('${slot.id}', '${(slot.ten_san || '').replace(/'/g, '\\x27')}')">
+                    <div style="font-size:0.8rem;font-weight:600;color:#e2e8f0;white-space:nowrap;">${(slot.gio_bat_dau || "--").slice(0,5)}</div>
+                    <div style="font-size:0.7rem;color:#94a3b8;">→ ${(slot.gio_ket_thuc || "--").slice(0,5)}</div>
+                    ${slot.so_gio_choi ? `<div style="font-size:0.68rem;color:#64748b;">${slot.so_gio_choi}h</div>` : ""}
+                </td>
+                <td>
+                    <div class="badge-slot-count"><i class="fa-solid fa-users" style="font-size:0.7rem;"></i> ${tongKhach}${slot.tong_slot_can > 0 ? " / " + slot.tong_slot_can : ""} đặt</div>
+                    <div style="font-size:0.68rem;color:#94a3b8;margin-bottom:5px;">${daDen} tham gia</div>
+                    <button class="btn-mini btn-mini-cyan" style="width:100%;"
+                        onclick="window.openGuestListModal('${slot.id}', '${(slot.ten_san || "").replace(/'/g, "\\x27")}')">
                         <i class="fa-solid fa-list-check"></i> DS Khách
                     </button>
+                </td>
+                <td>
+                    <div style="font-size:0.82rem;font-weight:700;color:#00ff88;">${_formatVND(slot.gia_nam || 0)}</div>
+                    <div style="font-size:0.68rem;color:#94a3b8;">Nam</div>
+                    <div style="font-size:0.82rem;font-weight:700;color:#f472b6;margin-top:3px;">${_formatVND(slot.gia_nu || 0)}</div>
+                    <div style="font-size:0.68rem;color:#94a3b8;">Nữ</div>
                 </td>
                 <td>
                     ${daChot
@@ -1459,26 +1459,20 @@
                 <td>
                     <div class="hs-actions-cell">
                         ${!daChot ? `
-                        <button class="btn-mini btn-mini-gold hs-action-btn" onclick="window.chinhSuaCaDau('${slot.id}')">
+                        <button class="btn-mini btn-mini-gold" style="width:100%;justify-content:center;" onclick="window.chinhSuaCaDau('${slot.id}')">
                             <i class="fa-solid fa-pen"></i> Sửa
                         </button>
-                        <button class="btn-mini btn-mini-green hs-action-btn" onclick="window.chotCaDau('${slot.id}')">
+                        <button class="btn-mini btn-mini-green" style="width:100%;justify-content:center;" onclick="window.chotCaDau('${slot.id}')">
                             <i class="fa-solid fa-flag-checkered"></i> Chốt Ca
                         </button>` : `
-                        <button class="btn-mini hs-action-btn" style="background:rgba(34,211,238,0.1);color:#22d3ee;border:1px solid rgba(34,211,238,0.3);"
+                        <button class="btn-mini" style="width:100%;justify-content:center;background:rgba(34,211,238,0.1);color:#22d3ee;border:1px solid rgba(34,211,238,0.3);"
                             onclick="window.xemChiTietCaDau('${slot.id}')">
                             <i class="fa-solid fa-eye"></i> Chi tiết
                         </button>
-                        <button class="btn-mini btn-mini-cyan hs-action-btn" onclick="window.moModalDanhGiaCa('${slot.id}','${(slot.ten_san||'').replace(/'/g,'\\x27')}')">
+                        <button class="btn-mini btn-mini-cyan" style="width:100%;justify-content:center;" onclick="window.moModalDanhGiaCa('${slot.id}','${(slot.ten_san || "").replace(/'/g, "\\x27")}')">
                             <i class="fa-solid fa-star"></i> Đánh giá
-                        </button>
-                        <button class="btn-mini btn-mini-gold hs-action-btn" onclick="window.xuatCSVCaDau('${slot.id}')" title="Xuất danh sách khách ra Excel">
-                            <i class="fa-solid fa-file-csv"></i> CSV
-                        </button>
-                        <button class="btn-mini hs-action-btn" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid #334155;" onclick="window.inCaDau('${slot.id}')" title="In danh sách khách">
-                            <i class="fa-solid fa-print"></i> In
                         </button>`}
-                        <button class="btn-mini btn-mini-red hs-action-btn" onclick="window.xoaCaDau('${slot.id}')" ${daChot ? "disabled" : ""}>
+                        <button class="btn-mini btn-mini-red" style="width:100%;justify-content:center;" onclick="window.xoaCaDau('${slot.id}')" ${daChot ? "disabled" : ""}>
                             <i class="fa-solid fa-trash"></i> Xóa
                         </button>
                     </div>
