@@ -1022,88 +1022,87 @@ Thêm CDN Chart.js vào `admin/index.html`:
 
 ---
 
-### Current State (cập nhật: 2026-06-04)
+### Current State (cập nhật: 2026-06-05 phiên 5)
 
 **Stack đã detect:**
 - HTML5 / Vanilla JS SPA — không framework
-- Supabase REST (anon key) qua `window.khoDuLieuVinhVien`
-- CSS: Dark Cyberpunk, Mobile-First, `#0f1e35` nền / `#00ff88` accent
+- Supabase REST (anon key) qua `window.khoDuLieuVinhVien` + Supabase JS SDK v2 qua `window._sbClient`
+- Auth: Admin → Supabase Auth JWT | Guest → Session Token UUID trong DB (`guest_sessions`)
+- CSS: Dark Neutral (`#181818` card, `#FF7A00` accent lịch sử, `#00ff88` card kèo), Mobile-First
 - Deploy target: Vercel (production tại `tuyenvanglai.io.vn`)
-- Cloudflare Turnstile site key: `0x4AAAAAADeiC_0mMTnc07rd` (widget có trong HTML, CHECK đã tắt)
+- Cloudflare Turnstile: tắt hoàn toàn (rate limiting thay thế ở DB)
 - FingerprintJS v3 CDN tích hợp
+
+**Admin account (đã cấu hình):**
+- Email: mynameisanhquocpro@gmail.com | Supabase Auth UUID: 236254f1-ee49-41d2-9901-957e1b7eeac8
+- SĐT tài khoản: 0961446003 | vai_tro='admin', auth_uid đã set trong nguoi_dung
 
 **Trạng thái các phân hệ:**
 | Phân hệ | File | Trạng thái | Ghi chú |
 |---|---|---|---|
-| Kết nối DB | `ket-noi-supabase.js` | ✅ Ổn định | JWT anon key chuẩn |
+| Kết nối DB | `ket-noi-supabase.js` | ✅ v7.0 | + `supabaseAuth` (JWT admin) + `guestRPC` (token mutations) + `_adminJWT` cache |
 | Dữ liệu | `bo-may-du-lieu.js` | ✅ Ổn định | 63 tỉnh, SHUTTLECOCK_BRANDS |
-| Hiệu ứng | `hieu-ung-giao-dien.js` | ✅ Ổn định | toast, hologram glow |
-| SPA routing | `phan-he-ung-dung.js` | ✅ v3.0 | Phiên 06-04: Turnstile lifecycle hooks (`_khoiTaoTabCaNhan` + `_khoiTaoTabDangQuanLy`) |
-| CSS toàn cục | `giao-dien.css` | ✅ v6.0 | Phiên 06-05: trust badge, scam banner, phone mask |
-| CSS component | `components.css` | ✅ Ổn định | v5.0 |
-| Host Portal | `phan-he-host.js` | ✅ v5.1 | Phiên 06-04: xóa Turnstile block khỏi `_dangBaiKeo()` |
-| Host HTML | `index.html` | ✅ v5.1 | Phiên 06-04: Turnstile script `?onload=_tvlTurnstileInit`, `_tvlRenderTs` helper, `id="turnstile-container"` |
-| Khách | `phan-he-khach-choi.js` | ✅ v5.1 | Phiên 06-04: xóa Turnstile block khỏi login + datSlot; `_xacMinhTurnstile()` còn tồn tại nhưng không gọi |
-| Admin logic | `phan-he-quan-tri.js` | ✅ v4.0 | Phiên 06-05: whitelist, báo cáo, phạt gậy ngược |
-| Admin HTML | `admin/index.html` | ✅ v4.0 | Tab "Báo Cáo" (tab 7), whitelist checkbox |
+| Hiệu ứng | `hieu-ung-giao-dien.js` | ✅ Ổn định | |
+| SPA routing | `phan-he-ung-dung.js` | ✅ v3.0 | |
+| CSS toàn cục | `giao-dien.css` | ✅ v6.9 | Đồng bộ màu neutral dark, sub-tab underline |
+| CSS component | `components.css` | ✅ v5.0 | Ổn định |
+| Host Portal | `phan-he-host.js` | ✅ v6.2 | Ổn định |
+| Host HTML | `index.html` | ✅ v7.0 | CDN Supabase JS v2, admin card `#sectionAdminAccess`, cache bust v7.0 |
+| Khách | `phan-he-khach-choi.js` | ✅ v7.0 | Login/register/datSlot/huySlot qua RPC, `_token` trong session, profile refresh, admin card |
+| Admin logic | `phan-he-quan-tri.js` | ✅ v7.0 | Auth qua Supabase JWT, `window._adminJWT`, `window._ap` namespace |
+| Admin HTML | `admin/index.html` | ✅ v7.0 | CDN Supabase JS v2, form email thay username |
 | Góp ý | `phan-he-gop-y.js` | ✅ Ổn định | |
-| Security | `security-migration.sql` | ✅ Đã tạo | Chờ user chạy trên Supabase Dashboard |
+| Security SQL | `security-auth-v4.sql` | ⏳ Cần chạy | v4.3 — chứa tất cả RPC + RLS + is_admin() + rate limiting |
 | Schema DB | `supabase-schema.sql` | ✅ Đã deploy | |
-| 404 | `404.html` | ✅ Hoàn chỉnh | |
-| Vercel routing | `vercel.json` | ✅ Hoàn chỉnh | |
 
-**Những gì hoạt động chắc chắn:**
-- Đăng nhập / Đăng ký: hoạt động bình thường (Turnstile check đã tắt)
-- Trust Score: hủy slot tính thời gian (-7/-3/0đ), ghost report (-15đ), tham gia (+2đ), free pass
-- Phone masking: 096XXXX567, nút 👁 reveal chỉ khi login
-- Ranking: `trust*0.6 + stars*0.4`, host trust<70 xuống cuối
-- Scam banner đỏ khi host chứa từ khóa cọc nhưng chưa đủ điều kiện
-- Report: khách đã tham gia → báo cáo → ≥3 báo cáo → ca đóng băng tự động
-- Admin: whitelist, tab Báo Cáo, phạt gậy ngược (BAN + fingerprint blacklist)
-- FingerprintJS: chặn 1 thiết bị tạo >1 tài khoản trong 48h
-- Security audit: 17/22 tính năng ✅, 4 cần cải thiện, 1 (Turnstile) tạm tắt
+**Kiến trúc Auth mới (phiên 5):**
+```
+Admin login   → supabase.auth.signInWithPassword(email, pass) → JWT RS256
+              → verify vai_tro='admin' trong nguoi_dung → set window._adminJWT
+              → dbEngine tự dùng JWT cho tất cả admin DB calls
 
-**Turnstile — trạng thái chi tiết:**
-- Widget HTML: ✅ tồn tại trong `#cfTurnstileWrap > #turnstile-container` (login) + `#cfTurnstileHostWrap > #cfTurnstileHost` (đăng ca)
-- Script CDN: ✅ `async defer ?onload=_tvlTurnstileInit` (không có `render=explicit` — đã reverted)
-- Helper `_tvlRenderTs(id)`: ✅ check iframe trước khi render, xếp hàng nếu API chưa load
-- `cfTurnstileWrap` shown: ✅ trong `_khoiTaoTabCaNhan()` khi form login mount
-- `cfTurnstileHostWrap` shown: ✅ trong `_khoiTaoTabDangQuanLy()` khi host tab mở
-- CHECK tại login (`xacThucNguoiDung`): 🚫 ĐÃ TẮT — gây block 100% user
-- CHECK tại datSlot: 🚫 ĐÃ TẮT — trust < 80 check bị xóa
-- CHECK tại đăng ca host: 🚫 ĐÃ TẮT — `_hostTs` check bị xóa
-- Cloudflare Analytics: ❌ "No data" — widget chưa confirm render được
-- **Để bật lại:** Verify widget render trên production → thêm lại `if (!_xacMinhTurnstile())` vào `datSlot()` trước (không phải login)
+Guest login   → guestRPC.login(sdt, sha256hash) → Postgres RPC SECURITY DEFINER
+              → trả { status, token (UUID), user } → lưu _token vào tvl_guest localStorage
+              → mọi mutation (datSlot, huySlot) phải có token
 
-**Known issues / chưa verify:**
-- `security-migration.sql` chưa chạy trên Supabase → cột `diem_uy_tin`, `is_whitelisted`, bảng `bao_cao`, `fingerprint_blacklist` chưa có
-- Turnstile widget chưa confirm render được trên production (analytics = No data)
-- Admin password `TVL@2026` hardcoded plain text — phải đổi trước deploy thật
-- RLS policies quá mở (`USING(true)`) — bất kỳ anon key có thể ghi/xóa mọi bảng
-- HUD số liệu (45 ca / 1820 thành viên) là fallback cứng
+Đăng ký mới  → guestRPC.datPassLanDau(...) → RPC tạo user + session token
+```
+
+**Bảng DB mới (cần chạy security-auth-v4.sql):**
+- `guest_sessions`: token TEXT PK, sdt_khach, expires_at
+- `login_attempts`: sdt_khach, attempt_at (rate limiting + phone enumeration protection)
+- Cột mới trong `nguoi_dung`: `auth_uid UUID UNIQUE`
+
+**Known issues / cần test:**
+- `security-auth-v4.sql` chưa chạy đầy đủ → đang chạy dần từng phần
+- Admin login vẫn báo "không có quyền" nếu chưa chạy Phần 8 (RLS với is_admin)
+- Guest login báo "lỗi kết nối" nếu chưa chạy Phần 3 (RPC phan_he_guest_login)
+- Sau khi chạy đủ SQL → test theo checklist 8 bước ở TODO.md
+- `hoanTatDangKy` — fingerprint check bỏ (bảng fingerprint_blacklist chưa tồn tại)
 
 ---
 
-### Recent Decisions (phiên 2026-06-04)
+### Recent Decisions (phiên 2026-06-05 phiên 5)
 | Quyết định | Lý do |
 |---|---|
-| Xóa Turnstile check khỏi login/datSlot/đăng ca | Widget không render được ổn định trong SPA → đang block 100% user đăng nhập; login đã có password hash riêng |
-| Giữ `render=explicit` ra khỏi script URL | `render=explicit` tắt hoàn toàn auto-render + phá Cloudflare Analytics ("No data") |
-| Dùng `?onload=_tvlTurnstileInit` (không `render=explicit`) | Auto-render vẫn chạy cho analytics; onload callback dùng để explicit render vào div bị skip |
-| `_tvlRenderTs()` check `el.querySelector('iframe')` trước khi render | Tránh double-render khi auto-render đã xử lý (auto-render + explicit render → 2 widget) |
-| Show `cfTurnstileWrap` ngay trong lifecycle hook (không lazy-show) | Lazy-show (chỉ hiện khi submit lần đầu) khiến user thấy ô trống sau lần click đầu tiên |
-| Turnstile sẽ bật lại tại `datSlot()` trước (không phải login) | datSlot an toàn hơn để test — không block toàn bộ user; login không cần Turnstile vì có password |
-| Security audit: 17/22 features hoạt động | Được ghi nhận để phiên sau biết phạm vi đã cover |
+| Admin dùng Supabase Auth JWT (không hardcode) | `TVL@2026` lộ plaintext trong JS — bất kỳ ai mở DevTools đều vào được admin |
+| Guest dùng Session Token UUID trong DB | localStorage sdt_khach có thể bị sửa → IDOR attack; UUID không đoán được |
+| `window._adminJWT` cache cho dbEngine | Admin panel dùng custom `dbEngine` (fetch thuần), không phải `_sbClient` — phải inject JWT để RLS authenticated context work |
+| `is_admin()` SECURITY DEFINER thay vì inline EXISTS | EXISTS subquery trong policy → circular dependency trên PostgreSQL → query trả rỗng |
+| Rate limit áp dụng cho `not_found` | Không ghi attempt khi phone không tồn tại → hacker scan toàn bộ số điện thoại mà không bị chặn |
+| Global rate limit 30/phút | Per-phone limit bị bypass bằng password spray (thử 1 pass cho nhiều phone) |
+| Cleanup xác suất 2% thay vì mỗi request | DELETE full-scan khi bị tấn công → block toàn bộ login queue |
+| `window._ap` namespace cho role functions | `window._thucHienDoiVaiTro` expose ra global → hacker thấy tên hàm và cấu trúc logic nội bộ |
+| Admin nút "Vào Admin →" trong tab Cá Nhân | Không cần nhớ URL `/admin/` — tài khoản `vai_tro='admin'` thấy nút tự động |
 
 ---
 
-### Modified Files (phiên 2026-06-04)
+### Modified Files (phiên 2026-06-05 phiên 5)
 | File | Thay đổi |
 |---|---|
-| `index.html` | `id="turnstile-container"` cho .cf-turnstile; script Turnstile → `?onload=_tvlTurnstileInit` (bỏ render=explicit); thêm inline script `_tvlTurnstileInit` + `_tvlRenderTs()` helper |
-| `phan-he-ung-dung.js` | `_khoiTaoTabCaNhan()`: show `cfTurnstileWrap` + gọi `_tvlRenderTs("turnstile-container")`; `_khoiTaoTabDangQuanLy()`: show `cfTurnstileHostWrap` + gọi `_tvlRenderTs("cfTurnstileHost")` |
-| `phan-he-khach-choi.js` | Xóa Turnstile check login + datSlot; `_xacMinhTurnstile()` còn tồn tại nhưng không được gọi |
-| `phan-he-host.js` | Xóa Turnstile block trong `_dangBaiKeo()` |
-| `.claude/commands/compact-save.md` | Viết lại gọn — 4 bước, bỏ hướng dẫn dài; bổ sung QUAN TRỌNG: không tự gọi /compact |
-| `phan-he-khach-choi.js` | Xóa Turnstile check trong `xacThucNguoiDung()` (login); xóa Turnstile check trong `datSlot()` (trust<80); xóa reset widget khi sai pass; `_xacMinhTurnstile()` giữ nhưng không gọi |
-| `phan-he-host.js` | Xóa Turnstile check + `_hostTs.style.display = "block"` trong `_dangBaiKeo()` |
+| `security-auth-v4.sql` | 🆕 Tạo mới v4.3 — 8 phần: is_admin() SECURITY DEFINER, 6 RPC, RLS policies, rate limiting, phone enumeration fix |
+| `ket-noi-supabase.js` | +`window.supabaseAuth` (JWT admin) +`window.guestRPC` (login/datSlot/huySlot/refresh) +`_adminJWT` trong LAY_HEADERS_CHUAN; `datPassLanDau` thêm maGioiThieu+deviceFp **v7.0** |
+| `admin/index.html` | CDN Supabase JS v2, form login: `#adminUsername` → `#adminEmail`, button `id="btnAdminLogin"` **v7.0** |
+| `phan-he-quan-tri.js` | Xóa `ADMIN_USER`/`MAT_MAU_ADMIN`; auth qua Supabase JWT; `window._adminJWT` set/clear; `window._ap` namespace cho role functions **v7.0** |
+| `phan-he-khach-choi.js` | Login/register qua RPC; `_luuSessionVaDangNhap` lưu `_token`; datSlot/huySlot qua RPC; profile refresh sync is_active; admin card show/hide; `vaoTrangQuanTri()` **v7.0** |
+| `index.html` | CDN Supabase JS v2; `#sectionAdminAccess` HTML; cache bust **v7.0** |

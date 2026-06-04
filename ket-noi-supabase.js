@@ -276,11 +276,12 @@
             if (error) throw error;
             return data; // { status, token?, user? }
         },
-        async datPassLanDau(sdt, ten, gioiTinh, passHash, sdtZalo, facebook) {
+        async datPassLanDau(sdt, ten, gioiTinh, passHash, sdtZalo, facebook, maGioiThieu, deviceFp) {
             const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
             const { data, error } = await c.rpc('phan_he_dat_pass_lan_dau', {
                 p_sdt: sdt, p_ten: ten, p_gioi_tinh: gioiTinh, p_pass_hash: passHash,
-                p_sdt_zalo: sdtZalo || null, p_facebook: facebook || null
+                p_sdt_zalo: sdtZalo || null, p_facebook: facebook || null,
+                p_ma_gioi_thieu: maGioiThieu || null, p_device_fp: deviceFp || null
             });
             if (error) throw error;
             return data; // { status, token? }

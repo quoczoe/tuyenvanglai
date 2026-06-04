@@ -978,9 +978,9 @@
                 <div class="mv-section-title">🎭 Vai Trò &nbsp;<span style="color:#00ff88;font-weight:700;">${vaiTro}</span></div>
                 <div class="mv-role-btns">
                     <button class="mv-btn ${(vaiTro === 'user' || vaiTro === 'guest') ? 'mv-btn-active' : ''}"
-                        onclick="window._xacNhanDoiVaiTro('${sdtAttr}', 'user')">👤 Thành Viên</button>
+                        onclick="window._ap.xacNhanDoiVaiTro('${sdtAttr}', 'user')">👤 Thành Viên</button>
                     <button class="mv-btn ${vaiTro === 'admin' ? 'mv-btn-active' : ''}"
-                        onclick="window._xacNhanDoiVaiTro('${sdtAttr}', 'admin')">👑 Admin</button>
+                        onclick="window._ap.xacNhanDoiVaiTro('${sdtAttr}', 'admin')">👑 Admin</button>
                 </div>
                 <div id="mvRoleConfirm" class="mv-confirm-box" style="display:none;">
                     <span id="mvRoleConfirmText" style="font-size:0.85rem;"></span>
@@ -1106,19 +1106,22 @@
         }
     };
 
+    // Namespace riêng — không expose tên hàm ra window trực tiếp
+    window._ap = window._ap || {};
+
     // B — Hiện confirm nội tuyến trước khi đổi vai trò
-    window._xacNhanDoiVaiTro = function (sdt, vaiTroMoi) {
+    window._ap.xacNhanDoiVaiTro = function (sdt, vaiTroMoi) {
         const box  = document.getElementById("mvRoleConfirm");
         const txt  = document.getElementById("mvRoleConfirmText");
         const btn  = document.getElementById("mvRoleConfirmYes");
         if (!box || !txt || !btn) return;
         txt.innerHTML = `Đổi vai trò thành <strong style="color:#00ff88;">${vaiTroMoi}</strong>?`;
-        btn.onclick   = function () { window._thucHienDoiVaiTro(sdt, vaiTroMoi); };
+        btn.onclick   = function () { window._ap.thucHienDoiVaiTro(sdt, vaiTroMoi); };
         box.style.display = "block";
     };
 
     // B — Thực hiện đổi vai trò sau khi confirm
-    window._thucHienDoiVaiTro = async function (sdt, vaiTroMoi) {
+    window._ap.thucHienDoiVaiTro = async function (sdt, vaiTroMoi) {
         try {
             await window.dbEngine.ghi("nguoi_dung", { vai_tro: vaiTroMoi }, { sdt_khach: sdt });
             window.hienToast("Đã đổi vai trò ✅", `${sdt} → ${vaiTroMoi}`, "success");

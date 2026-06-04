@@ -591,7 +591,7 @@
         try {
             const hash = await _hashMatKhau(pass);
 
-            // Lấy fingerprint thiết bị (FingerprintJS)
+            // Lấy fingerprint thiết bị (FingerprintJS) — gửi kèm để RPC lưu
             let fpId = null;
             try {
                 if (window.FingerprintJS) {
@@ -601,77 +601,30 @@
                 }
             } catch (_) { /* FingerprintJS không load được — bỏ qua */ }
 
-            // Kiểm tra fingerprint blacklist
-            if (fpId) {
-                const blList = await window.dbEngine.docThu("fingerprint_blacklist", { eq: { fingerprint_id: fpId } });
-                if ((blList || []).length > 0) {
-                    window.hienToast("Không thể đăng ký", "Thiết bị này đã bị cấm truy cập hệ thống.", "danger");
-                    if (btnDK) { btnDK.disabled = false; btnDK.innerHTML = 'TẠO TÀI KHOẢN →'; }
-                    return;
-                }
-                // Kiểm tra thiết bị đã tạo tài khoản trong 48h
-                const existing = await window.dbEngine.docThu("nguoi_dung", { eq: { device_fingerprint: fpId } });
-                if ((existing || []).length > 0) {
-                    const lastJoined = new Date(existing[0].ngay_tham_gia || 0).getTime();
-                    if (Date.now() - lastJoined < 48 * 60 * 60 * 1000) {
-                        window.hienToast("Giới hạn thiết bị", "Thiết bị này đã tạo tài khoản trong 48 giờ qua. Vui lòng thử lại sau.", "warning");
-                        if (btnDK) { btnDK.disabled = false; btnDK.innerHTML = 'TẠO TÀI KHOẢN →'; }
-                        return;
-                    }
-                }
+            // Gọi RPC đăng ký — bảng nguoi_dung bị RLS khóa với anon, phải qua SECURITY DEFINER
+            const result = await window.guestRPC.datPassLanDau(
+                phone, ten, gender, hash,
+                sdtZalo || null,
+                facebook || null,
+                maGT || null,
+                fpId || null
+            );
+
+            if (result?.status === 'already_has_pass') {
+                window.hienToast("SĐT đã có tài khoản", "Vui lòng đăng nhập bằng mật khẩu đã tạo.", "info");
+                return;
             }
-
-            // Payload cho schema mới nguoi_dung (đầy đủ cột)
-            const payloadND = {
-                ten_khach:    ten,
-                sdt_khach:    phone,
-                gioi_tinh:    gender,
-                mat_khau_hash: hash,
-                vai_tro:      "guest",
-                sdt_zalo:     sdtZalo,
-                facebook_link: facebook || null,
-                ma_gioi_thieu: maGT || null,
-                device_fingerprint: fpId || null,
-                diem_uy_tin: 100,
-                free_pass_thang: 1,
-                free_pass_reset_thang: new Date().getMonth() + 1
-            };
-            // Ưu tiên ghi vào nguoi_dung, fallback khach_vang_lai nếu bảng chưa sẵn sàng
-            let newUser = null;
-            let dangKyOk = false;
-
-            // Thử 1: nguoi_dung
-            try {
-                const r = await window.khoDuLieuVinhVien.ghiData("nguoi_dung", payloadND, null);
-                newUser = (Array.isArray(r) ? r[0] : null) || { ...payloadND };
-                dangKyOk = true;
-            } catch (e1) {
-                console.warn("[Đăng ký] nguoi_dung fail:", e1.message);
-            }
-
-            // Thử 2: khach_vang_lai (nếu nguoi_dung chưa có)
-            if (!dangKyOk) {
-                try {
-                    const r2 = await window.khoDuLieuVinhVien.ghiData("khach_vang_lai",
-                        { ten_khach: ten, sdt_khach: phone }, null);
-                    newUser = (Array.isArray(r2) ? r2[0] : null) || { ten_khach: ten, sdt_khach: phone, vai_tro: "guest", gioi_tinh: gender };
-                    try { localStorage.setItem(`tvl_h_${phone}`, hash); } catch {}
-                    _bangND = "khach_vang_lai";
-                    dangKyOk = true;
-                } catch (e2) {
-                    console.warn("[Đăng ký] khach_vang_lai fail:", e2.message);
-                }
-            }
-
-            if (!dangKyOk) {
-                // Cả 2 bảng đều không khả dụng — cần chạy SQL schema
-                window.hienToast("Lỗi đăng ký",
-                    "Cơ sở dữ liệu chưa được thiết lập. Cần chạy supabase-schema.sql trên Supabase Dashboard.", "danger");
+            if (!result?.token) {
+                window.hienToast("Lỗi đăng ký", "Không thể tạo tài khoản. Thử lại sau.", "danger");
                 return;
             }
 
+            const newUser = {
+                ten_khach: ten, sdt_khach: phone, gioi_tinh: gender,
+                vai_tro: "guest", sdt_zalo: sdtZalo, facebook_link: facebook || null
+            };
             window.hienToast("Tạo tài khoản thành công! 🎉", `Chào ${ten}! Tài khoản đã được tạo.`, "success");
-            _luuSessionVaDangNhap(newUser);
+            _luuSessionVaDangNhap(newUser, result.token);
         } catch (e) {
             console.error("Lỗi đăng ký:", e?.message || e);
             const msg = e?.message || "";
