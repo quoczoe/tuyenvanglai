@@ -535,6 +535,14 @@
                 const hashInput = await _hashMatKhau(pass);
                 if (hashInput !== effectiveHash) {
                     window.hienToast("Sai mật khẩu", "Nhập lại hoặc bấm 'Quên mật khẩu'.", "danger");
+                    // Reset Turnstile để token cũ không hết hạn khi người dùng thử lại
+                    if (window.turnstile) {
+                        if (window._tsLoginWidgetId !== undefined && window._tsLoginWidgetId !== null) {
+                            window.turnstile.reset(window._tsLoginWidgetId);
+                        } else {
+                            window.turnstile.reset();
+                        }
+                    }
                     return;
                 }
                 _luuSessionVaDangNhap({ ...user, mat_khau_hash: effectiveHash });
