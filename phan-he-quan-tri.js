@@ -1481,26 +1481,11 @@
             _setVal("adminTextQuangCao",  cfgMap["text_quang_cao"]?.noi_dung_thong_bao   || "");
             _setVal("adminTgBotToken",    cfgMap["telegram_bot_token"]?.noi_dung_thong_bao || "");
             _setVal("adminTgChatId",      cfgMap["telegram_chat_id"]?.noi_dung_thong_bao  || "");
-            _setVal("adminLogoUrl",       cfgMap["logo_url"]?.noi_dung_thong_bao          || "");
-            _setVal("adminFaviconUrl",    cfgMap["favicon_url"]?.noi_dung_thong_bao       || "");
             // Hiện preview QR nếu có URL
             const qrUrl  = cfgMap["qr_donate"]?.noi_dung_thong_bao || "";
             const qrWrap = document.getElementById("qrPreviewWrap");
             const qrImg  = document.getElementById("qrPreviewImg");
             if (qrUrl && qrWrap && qrImg) { qrWrap.style.display = "block"; qrImg.src = qrUrl; }
-            // Hiện preview Logo/Favicon nếu có URL
-            const logoUrl    = cfgMap["logo_url"]?.noi_dung_thong_bao    || "";
-            const faviconUrl = cfgMap["favicon_url"]?.noi_dung_thong_bao || "";
-            if (logoUrl) {
-                const lw = document.getElementById("logoPreviewWrap");
-                const li = document.getElementById("logoPreviewImg");
-                if (lw) lw.style.display = "block"; if (li) li.src = logoUrl;
-            }
-            if (faviconUrl) {
-                const fw = document.getElementById("faviconPreviewWrap");
-                const fi = document.getElementById("faviconPreviewImg");
-                if (fw) fw.style.display = "inline-flex"; if (fi) fi.src = faviconUrl;
-            }
         } catch (e) {
             console.error("[Admin] Lỗi tải cấu hình:", e);
         }
@@ -1515,8 +1500,6 @@
         const textQuangCao = document.getElementById("adminTextQuangCao")?.value?.trim()|| "";
         const tgBotToken   = document.getElementById("adminTgBotToken")?.value?.trim()   || "";
         const tgChatId     = document.getElementById("adminTgChatId")?.value?.trim()     || "";
-        const logoUrl      = document.getElementById("adminLogoUrl")?.value?.trim()      || "";
-        const faviconUrl   = document.getElementById("adminFaviconUrl")?.value?.trim()   || "";
 
         const btn = document.getElementById("btnLuuThongBao");
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
@@ -1540,9 +1523,7 @@
                 up("text_donate",       textDonate),
                 up("text_quang_cao",    textQuangCao),
                 up("telegram_bot_token",tgBotToken),
-                up("telegram_chat_id",  tgChatId),
-                up("logo_url",          logoUrl),
-                up("favicon_url",       faviconUrl)
+                up("telegram_chat_id",  tgChatId)
             ]);
             window.hienToast("Đã lưu cấu hình ✅", "Cập nhật thành công.", "success");
         } catch (e) {

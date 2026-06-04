@@ -19,39 +19,15 @@
     /* ═══════════════════════════════════════════════════
      * KHỞI TẠO ỨNG DỤNG
      * ═══════════════════════════════════════════════════ */
-    /* Helper: swap text logo → img logo (chỉ show img khi đã loaded) */
-    function _apLogoImg(url) {
-        const img  = document.getElementById("appLogoImg");
-        const text = document.getElementById("appLogoTextWrap");
-        if (!img || !text || !url) return;
-        // Cache-busting: thêm ?v=2 nếu URL chưa có query string
-        const cacheBustedUrl = url.includes("?") ? url : url + "?v=2";
-        // Chỉ show ảnh SAU KHI load xong — tránh flash ảnh trống + text cùng lúc
-        const doSwap = () => {
-            img.style.cssText = "display:block;width:auto;height:40px;object-fit:contain;";
-            text.style.display = "none";
-        };
-        img.src = cacheBustedUrl;
-        if (img.complete && img.naturalWidth > 0) {
-            doSwap();       // Ảnh đã trong cache — apply ngay
-        } else {
-            img.onload  = doSwap;
-            img.onerror = () => { img.style.display = "none"; };  // Giữ text logo nếu URL sai
-        }
-    }
-
-    /* Bước A — SYNC: đọc localStorage, apply ngay khi DOM sẵn sàng (không đợi Supabase) */
+    /* Brand config — chỉ quản lý favicon (logo đã hardcode trong HTML) */
     function _apDungBrandConfigSync() {
-        const logoUrl    = localStorage.getItem("tvl_brand_logo")    || "";
         const faviconUrl = localStorage.getItem("tvl_brand_favicon") || "";
-        if (logoUrl) _apLogoImg(logoUrl);
         if (faviconUrl) {
             const link = document.querySelector('link[rel="icon"]');
             if (link) link.href = faviconUrl;
         }
     }
 
-    /* Bước B — ASYNC: fetch Supabase, cập nhật cache, apply nếu có thay đổi */
     async function _apDungBrandConfig() {
         try {
             if (!window.dbEngine) return;
@@ -60,20 +36,9 @@
             const cfg = {};
             list.forEach(c => { if (c.id) cfg[c.id] = c.noi_dung_thong_bao || ""; });
 
-            const logoUrl    = cfg["logo_url"]    || "";
             const faviconUrl = cfg["favicon_url"] || "";
-
-            // Lưu cache CŨ trước khi ghi mới — dùng để so sánh sau
-            const oldLogoCache = localStorage.getItem("tvl_brand_logo") || "";
-
-            // Cập nhật cache localStorage để lần sau sync load được
-            if (logoUrl)    localStorage.setItem("tvl_brand_logo",    logoUrl);
-            if (faviconUrl) localStorage.setItem("tvl_brand_favicon", faviconUrl);
-
-            // Áp dụng logo: luôn gọi khi có URL (fix bug: sau khi set cache lại đọc ra bằng nhau)
-            if (logoUrl) _apLogoImg(logoUrl);
-
             if (faviconUrl) {
+                localStorage.setItem("tvl_brand_favicon", faviconUrl);
                 const link = document.querySelector('link[rel="icon"]');
                 if (link) link.href = faviconUrl;
             }

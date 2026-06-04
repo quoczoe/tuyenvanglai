@@ -3,5 +3,13 @@
     { "source": "/admin",        "destination": "/admin/index.html" },
     { "source": "/admin/:path*", "destination": "/admin/index.html" },
     { "source": "/:path*",       "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/assets/images/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+      ]
+    }
   ]
 }
