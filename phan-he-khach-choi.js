@@ -484,11 +484,6 @@
             window.hienToast("Mật khẩu quá ngắn", "Tối thiểu 6 ký tự.", "danger"); return;
         }
 
-        // Turnstile check — widget đã được render sẵn từ _khoiTaoTabCaNhan()
-        if (!_xacMinhTurnstile()) {
-            window.hienToast("Xác minh", "Vui lòng hoàn thành xác minh bảo mật Cloudflare.", "warning"); return;
-        }
-
         const btn = document.getElementById("btnXacNhan");
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang kiểm tra...'; }
 
@@ -532,8 +527,6 @@
                 const hashInput = await _hashMatKhau(pass);
                 if (hashInput !== effectiveHash) {
                     window.hienToast("Sai mật khẩu", "Nhập lại hoặc bấm 'Quên mật khẩu'.", "danger");
-                    // Reset Turnstile để token cũ không hết hạn khi người dùng thử lại
-                    if (window._tvlRenderTs) window._tvlRenderTs("turnstile-container");
                     return;
                 }
                 _luuSessionVaDangNhap({ ...user, mat_khau_hash: effectiveHash });
@@ -1878,14 +1871,6 @@
             // Kiểm tra trust score
             const myDiem = await _layDiemUyTin();
 
-            // Turnstile check cho tài khoản uy tín < 80
-            if (myDiem < 80) {
-                if (!_xacMinhTurnstile()) {
-                    if (window._tvlRenderTs) window._tvlRenderTs("turnstile-container");
-                    window.hienToast("Xác minh bảo mật", "Uy tín < 80 — vui lòng hoàn thành Turnstile.", "warning");
-                    return;
-                }
-            }
 
             if (myDiem < 40) {
                 window.hienToast("Tài khoản bị hạn chế", "Điểm uy tín của bạn dưới 40 — tài khoản tạm khóa hành động đặt slot.", "danger");

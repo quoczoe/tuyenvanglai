@@ -1107,14 +1107,6 @@
         const _hostTs = document.getElementById("cfTurnstileHostWrap");
         const _hostToken = document.querySelector("#cfTurnstileHost [name='cf-turnstile-response'], #cfTurnstileHostWrap [name='cf-turnstile-response']")?.value;
         const _tsSession = (() => { try { const s = JSON.parse(localStorage.getItem("tvl_cf_verified")||"{}"); return s.exp && Date.now() < s.exp; } catch { return false; } })();
-        if (!_tsSession && !_hostToken) {
-            if (window._tvlRenderTs) window._tvlRenderTs("cfTurnstileHost");
-            window.hienToast("Xác minh bảo mật", "Vui lòng hoàn thành xác minh Turnstile trước khi đăng.", "warning");
-            return;
-        }
-        if (_hostToken && !_tsSession) {
-            localStorage.setItem("tvl_cf_verified", JSON.stringify({ exp: Date.now() + 7*24*60*60*1000 }));
-        }
 
         const tinh_thanh  = document.getElementById("hostProvince")?.value;
         const quan_huyen  = document.getElementById("hostDistrict")?.value;
