@@ -1448,35 +1448,34 @@
 
     /* ─── Cascade delete một user — xóa toàn bộ dữ liệu liên quan ─── */
     async function _cascadeXoaUser(sdt) {
-        // 1. Xóa tất cả slot khách này đã đặt (với tư cách người đặt)
+        // Đường ưu tiên: RPC admin_cascade_xoa_user (SECURITY DEFINER, bypass RLS hoàn toàn)
+        // Cần chạy migration-admin-cascade.sql trên Supabase Dashboard trước
+        if (window._sbClient) {
+            try {
+                const { data, error } = await window._sbClient.rpc("admin_cascade_xoa_user", { p_sdt: sdt });
+                if (!error && data?.status === "ok") return;
+                // Nếu RPC trả lỗi / chưa deploy → fall through sang REST fallback
+            } catch (_) { /* RPC chưa deploy → tiếp tục REST fallback */ }
+        }
+
+        // Fallback: REST API — thứ tự quan trọng
+        // Bước 1: xóa slot khách này đã đặt trong ca đấu của người khác
         await window.dbEngine.xoa("dat_slot", { sdt_khach: sdt }).catch(() => {});
 
-        // 2. Tìm & xóa ca đấu do user này TỔ CHỨC (với tư cách host)
-        //    ca_dau.ma_key_host liên kết với nguoi_dung.ma_key_host
-        //    KHÔNG dùng sdt_nguoi_tao vì cột đó không tồn tại trong schema
+        // Bước 2: tìm & xóa ca đấu do user này tổ chức (sdt_nguoi_tao — cột tồn tại trong schema)
+        //         FK CASCADE trong DB sẽ tự xóa dat_slot trong các ca đó
         let userCaDau = [];
         try {
-            const userArr = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: sdt } });
-            const maKey   = userArr?.[0]?.ma_key_host;
-            if (maKey) {
-                userCaDau = (await window.dbEngine.doc("ca_dau", { eq: { ma_key_host: maKey } })) || [];
-            }
+            userCaDau = (await window.dbEngine.doc("ca_dau", { eq: { sdt_nguoi_tao: sdt } })) || [];
         } catch (_) { userCaDau = []; }
-
-        // Xóa tất cả dat_slot trong các ca đấu host này đã đăng
-        for (const ca of userCaDau) {
-            await window.dbEngine.xoa("dat_slot", { id_ca_dau: ca.id }).catch(() => {});
-        }
-        // Xóa các ca đấu
         for (const ca of userCaDau) {
             await window.dbEngine.xoa("ca_dau", { id: ca.id }).catch(() => {});
         }
 
-        // 3. Xóa session token — token không còn hợp lệ, API call tiếp theo trả 'unauthorized'
-        //    Poll định kỳ ở client sẽ phát hiện và văng ngay trong vòng 60s
+        // Bước 3: xóa session token
         await window.dbEngine.xoa("guest_sessions", { sdt_khach: sdt }).catch(() => {});
 
-        // 4. Xóa tài khoản chính
+        // Bước 4: xóa tài khoản chính — sau khi xóa, verify_guest_token fail luôn (JOIN không còn)
         await window.dbEngine.xoa("nguoi_dung", { sdt_khach: sdt });
     }
 

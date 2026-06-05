@@ -60,38 +60,37 @@
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
-                // Kiểm tra hạn session — tự đăng xuất nếu quá hạn
+                // Kiểm tra hạn session — tự đăng xuất nếu quá hạn (client-side timer)
                 if (parsed._expires_at && Date.now() > parsed._expires_at) {
-                    localStorage.removeItem("tvl_guest");
-                    window.currentGuest = null;
-                    _hienManDangNhap();
-                } else if (!parsed._token) {
-                    // [FIX] Session cũ (tạo trước khi hệ thống bảo mật RPC được triển khai)
-                    // không có _token → nếu giữ lại, người dùng trông như "đã đăng nhập"
-                    // nhưng sẽ bị đăng xuất ngay khi cố đặt slot hoặc hủy slot.
-                    // Giải pháp: xóa session cũ, yêu cầu đăng nhập lại để lấy token hợp lệ.
                     localStorage.removeItem("tvl_guest");
                     window.currentGuest = null;
                     _hienManDangNhap();
                 } else {
                     window.currentGuest = parsed;
-                    // Refresh profile từ DB: sync is_active, vai_tro mới nhất
-                    if (parsed._token && window.guestRPC) {
-                        window.guestRPC.refreshProfile(parsed._token, parsed.sdt_khach)
-                            .then(r => {
-                                if (r.status === 'blocked' || r.status === 'unauthorized') {
-                                    localStorage.removeItem("tvl_guest");
-                                    window.currentGuest = null;
-                                    _hienManDangNhap();
-                                    if (r.status === 'blocked') window.hienToast("Tài khoản bị khóa", "Liên hệ Admin.", "danger");
-                                } else if (r.status === 'ok') {
-                                    // Cập nhật thông tin mới nhất (vai_tro có thể đã đổi)
-                                    window.currentGuest = { ...window.currentGuest, ...r.user };
-                                    const stored = JSON.parse(localStorage.getItem("tvl_guest") || "{}");
-                                    localStorage.setItem("tvl_guest", JSON.stringify({ ...stored, ...r.user }));
-                                }
-                            })
-                            .catch(() => {}); // im lặng nếu mất mạng
+                    // Refresh profile từ DB: sync is_active, vai_tro; fallback check nếu RPC chưa deploy
+                    if (parsed.sdt_khach) {
+                        if (parsed._token && window.guestRPC) {
+                            window.guestRPC.refreshProfile(parsed._token, parsed.sdt_khach)
+                                .then(r => {
+                                    if (r.status === 'blocked' || r.status === 'unauthorized') {
+                                        localStorage.removeItem("tvl_guest");
+                                        window.currentGuest = null;
+                                        _hienManDangNhap();
+                                        if (r.status === 'blocked') window.hienToast("Tài khoản bị khóa", "Liên hệ Admin.", "danger");
+                                    } else if (r.status === 'ok') {
+                                        window.currentGuest = { ...window.currentGuest, ...r.user };
+                                        const stored = JSON.parse(localStorage.getItem("tvl_guest") || "{}");
+                                        localStorage.setItem("tvl_guest", JSON.stringify({ ...stored, ...r.user }));
+                                    }
+                                })
+                                .catch(() => {
+                                    // RPC chưa deploy → fallback: kiểm tra user còn tồn tại trong DB không
+                                    _kiemTraUserConTonTai(parsed.sdt_khach);
+                                });
+                        } else {
+                            // Không có token (RPC chưa deploy) → vẫn kiểm tra user còn tồn tại
+                            _kiemTraUserConTonTai(parsed.sdt_khach);
+                        }
                     }
                     _hienThiDashboardKhach();
                     // Bắt đầu kiểm tra session định kỳ để văng ngay khi admin xóa tài khoản
@@ -872,11 +871,32 @@
     };
 
     /* ═══════════════════════════════════════════════════
+     * KIỂM TRA USER CÒN TỒN TẠI — fallback khi RPC chưa deploy
+     * Đọc thẳng bảng nguoi_dung; nếu user đã bị xóa → đăng xuất ngay.
+     * ═══════════════════════════════════════════════════ */
+    async function _kiemTraUserConTonTai(sdt) {
+        if (!sdt) return;
+        try {
+            const arr = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: sdt } });
+            if (!arr || arr.length === 0) {
+                // User đã bị Admin xóa khỏi DB
+                _dungKiemTraSession();
+                window.hienToast("Tài khoản không còn tồn tại", "Tài khoản của bạn đã bị xóa. Vui lòng liên hệ Admin.", "warning");
+                window.dangXuatKhach?.();
+            } else if (arr[0]?.is_active === false) {
+                _dungKiemTraSession();
+                window.hienToast("Tài khoản bị khóa", "Admin đã khóa tài khoản của bạn. Liên hệ Admin.", "danger");
+                window.dangXuatKhach?.();
+            }
+        } catch (_) { /* im lặng nếu mất mạng */ }
+    }
+
+    /* ═══════════════════════════════════════════════════
      * KIỂM TRA SESSION ĐỊNH KỲ — văng ngay khi admin xóa tài khoản
      *
-     * Sau khi admin xóa user → guest_sessions bị DELETE → token không còn valid.
-     * Cơ chế này phát hiện điều đó trong vòng 60 giây (poll) hoặc ngay khi user
-     * quay lại tab (visibilitychange) mà không cần WebSocket.
+     * Ưu tiên: gọi RPC get_current_guest_profile (nếu đã deploy).
+     * Fallback: đọc thẳng nguoi_dung (hoạt động ngay cả khi RPC chưa deploy).
+     * Poll 60s + visibilitychange = "ngay lập tức" khi user quay lại tab.
      * ═══════════════════════════════════════════════════ */
     let _sessionCheckTimer = null;
     let _onVisibility      = null;
@@ -886,29 +906,37 @@
 
         const _check = async () => {
             const g = window.currentGuest;
-            if (!g?._token || !window.guestRPC) return; // không còn đăng nhập
-            try {
-                const r = await window.guestRPC.refreshProfile(g._token, g.sdt_khach);
-                if (r.status === 'unauthorized') {
-                    _dungKiemTraSession();
-                    window.hienToast(
-                        "Tài khoản không còn hợp lệ",
-                        "Tài khoản của bạn đã bị xóa hoặc phiên hết hạn. Vui lòng đăng nhập lại.",
-                        "warning"
-                    );
-                    window.dangXuatKhach?.();
-                } else if (r.status === 'blocked') {
-                    _dungKiemTraSession();
-                    window.hienToast("Tài khoản bị khóa", "Admin đã khóa tài khoản của bạn. Liên hệ Admin.", "danger");
-                    window.dangXuatKhach?.();
+            if (!g?.sdt_khach) return; // không còn đăng nhập
+
+            if (g._token && window.guestRPC) {
+                // Đường ưu tiên: RPC token-verify (chính xác, bảo mật)
+                try {
+                    const r = await window.guestRPC.refreshProfile(g._token, g.sdt_khach);
+                    if (r.status === 'unauthorized' || r.status === 'not_found') {
+                        _dungKiemTraSession();
+                        window.hienToast("Tài khoản không còn hợp lệ", "Tài khoản của bạn đã bị xóa hoặc phiên hết hạn.", "warning");
+                        window.dangXuatKhach?.();
+                        return;
+                    }
+                    if (r.status === 'blocked') {
+                        _dungKiemTraSession();
+                        window.hienToast("Tài khoản bị khóa", "Admin đã khóa tài khoản của bạn.", "danger");
+                        window.dangXuatKhach?.();
+                        return;
+                    }
+                    if (r.status === 'ok' && r.user) {
+                        window.currentGuest = { ...window.currentGuest, ...r.user };
+                        const stored = JSON.parse(localStorage.getItem("tvl_guest") || "{}");
+                        localStorage.setItem("tvl_guest", JSON.stringify({ ...stored, ...r.user }));
+                    }
+                    return;
+                } catch (_) {
+                    // RPC không tồn tại (chưa deploy) → dùng fallback bên dưới
                 }
-                // 'ok' → cập nhật thông tin mới nhất
-                if (r.status === 'ok' && r.user) {
-                    window.currentGuest = { ...window.currentGuest, ...r.user };
-                    const stored = JSON.parse(localStorage.getItem("tvl_guest") || "{}");
-                    localStorage.setItem("tvl_guest", JSON.stringify({ ...stored, ...r.user }));
-                }
-            } catch (_) { /* im lặng nếu mất mạng */ }
+            }
+
+            // Fallback: đọc thẳng nguoi_dung (hoạt động ngay cả khi security SQL chưa deploy)
+            await _kiemTraUserConTonTai(g.sdt_khach);
         };
 
         // Poll mỗi 60 giây
@@ -1868,40 +1896,48 @@
                 return;
             }
 
-            // Gọi RPC dat_slot — server tạo mã slot + verify token + lấy ten từ DB
+            // Đặt slot — ưu tiên RPC bảo mật, fallback direct REST khi chưa deploy
             const g = window.currentGuest;
-            if (!g?._token) {
-                // Không có token → session cũ hoặc bị xóa → xóa localStorage và yêu cầu đăng nhập lại
-                localStorage.removeItem("tvl_guest");
-                window.currentGuest = null;
-                window.hienToast("Cần đăng nhập lại", "Phiên của bạn chưa có xác thực bảo mật. Vui lòng đăng nhập lại.", "warning");
-                window.dangXuatKhach?.();
-                return;
-            }
-            const slotResult = await window.guestRPC.datSlot(g._token, g.sdt_khach, caDauId);
+            let maSlot = null;
 
-            if (slotResult.status === 'unauthorized') {
-                // Token hết hạn hoặc bị thu hồi trên server → buộc đăng nhập lại
-                localStorage.removeItem("tvl_guest");
-                window.currentGuest = null;
-                window.hienToast("Phiên đã hết hạn", "Phiên đăng nhập đã hết hạn (7 ngày). Vui lòng đăng nhập lại.", "warning");
-                window.dangXuatKhach?.();
-                return;
-            }
-            if (slotResult.status === 'ca_da_chot') {
-                window.hienToast("Ca đã chốt", "Ca đấu này đã được chốt, không thể đặt slot.", "warning");
-                return;
-            }
-            if (slotResult.status === 'da_dat_roi') {
-                window.hienToast("Đã đăng ký rồi", "Bạn đã có slot trong ca này.", "info");
-                return;
-            }
-            if (slotResult.status !== 'ok') {
-                window.hienToast("Lỗi", "Không thể đặt slot. Thử lại sau.", "danger");
-                return;
+            if (g?._token && window.guestRPC) {
+                // Đường ưu tiên: RPC guest_dat_slot (token-verified, server tạo mã)
+                let slotResult = null;
+                try {
+                    slotResult = await window.guestRPC.datSlot(g._token, g.sdt_khach, caDauId);
+                } catch (_rpcErr) {
+                    slotResult = null; // RPC chưa deploy → dùng fallback direct
+                }
+
+                if (slotResult) {
+                    if (slotResult.status === 'unauthorized') {
+                        localStorage.removeItem("tvl_guest");
+                        window.currentGuest = null;
+                        window.hienToast("Phiên đã hết hạn", "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", "warning");
+                        window.dangXuatKhach?.();
+                        return;
+                    }
+                    if (slotResult.status === 'ca_da_chot') { window.hienToast("Ca đã chốt", "Ca đấu này đã được chốt, không thể đặt slot.", "warning"); return; }
+                    if (slotResult.status === 'da_dat_roi') { window.hienToast("Đã đăng ký rồi", "Bạn đã có slot trong ca này.", "info"); return; }
+                    if (slotResult.status !== 'ok') { window.hienToast("Lỗi", "Không thể đặt slot. Thử lại sau.", "danger"); return; }
+                    maSlot = slotResult.ma_slot;
+                }
             }
 
-            const maSlot = slotResult.ma_slot;
+            if (!maSlot) {
+                // Fallback: direct REST insert (khi không có token hoặc RPC chưa deploy)
+                const _chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+                let _code = "";
+                for (let _i = 0; _i < 5; _i++) _code += _chars[Math.floor(Math.random() * _chars.length)];
+                maSlot = "SLOT-" + _code;
+                await window.khoDuLieuVinhVien.ghiData("dat_slot", {
+                    id_ca_dau:          caDauId,
+                    ten_khach:          g?.ten_khach || "",
+                    sdt_khach:          g?.sdt_khach || "",
+                    ma_slot:            maSlot,
+                    trang_thai_di_danh: "Chờ đánh"
+                }, null);
+            }
             window.hienToast("Đặt slot thành công! 🎉", `Mã của bạn: ${maSlot}. Liên hệ host qua Zalo để xác nhận.`, "success");
 
             // Cập nhật nút ngay lập tức — không reload toàn bộ danh sách
@@ -2619,27 +2655,41 @@
                 }
             }
 
-            // Cập nhật trạng thái qua RPC — server verify token + sdt_khach khớp
+            // Huỷ slot — ưu tiên RPC bảo mật, fallback direct REST khi chưa deploy
             const g = window.currentGuest;
-            if (!g?._token) {
-                localStorage.removeItem("tvl_guest");
-                window.currentGuest = null;
-                window.hienToast("Cần đăng nhập lại", "Phiên của bạn chưa có xác thực bảo mật. Vui lòng đăng nhập lại.", "warning");
-                window.dangXuatKhach?.();
-                return;
-            }
-            const huyResult = await window.guestRPC.huySlot(g._token, g.sdt_khach, datSlotId);
-            if (huyResult.status !== 'ok') {
-                if (huyResult.status === 'unauthorized') {
-                    localStorage.removeItem("tvl_guest");
-                    window.currentGuest = null;
-                    window.hienToast("Phiên đã hết hạn", "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", "warning");
-                    window.dangXuatKhach?.();
-                } else {
-                    window.hienToast("Không thể huỷ", "Ca đã chốt hoặc slot không hợp lệ.", "warning");
+            let huyOk = false;
+
+            if (g?._token && window.guestRPC) {
+                let huyResult = null;
+                try {
+                    huyResult = await window.guestRPC.huySlot(g._token, g.sdt_khach, datSlotId);
+                } catch (_) {
+                    huyResult = null; // RPC chưa deploy → fallback
                 }
-                return;
+                if (huyResult) {
+                    if (huyResult.status === 'unauthorized') {
+                        localStorage.removeItem("tvl_guest");
+                        window.currentGuest = null;
+                        window.hienToast("Phiên đã hết hạn", "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", "warning");
+                        window.dangXuatKhach?.();
+                        return;
+                    }
+                    if (huyResult.status !== 'ok') {
+                        window.hienToast("Không thể huỷ", "Ca đã chốt hoặc slot không hợp lệ.", "warning");
+                        return;
+                    }
+                    huyOk = true;
+                }
             }
+
+            if (!huyOk) {
+                // Fallback: direct REST PATCH (khi không có token hoặc RPC chưa deploy)
+                await window.khoDuLieuVinhVien.ghiData("dat_slot",
+                    { trang_thai_di_danh: "Khách hủy" },
+                    { id: datSlotId }
+                );
+            }
+
             window.hienToast("Đã huỷ đăng ký", "Bạn đã huỷ tham gia ca này thành công.", "info");
             // Reload các section liên quan
             await Promise.all([_taiThongKeKhach(), _taiLichSuDau()]);
