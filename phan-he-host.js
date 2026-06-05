@@ -632,7 +632,12 @@
     window._onNgayDanhChange = function () {
         const dateInput = document.getElementById("hostDatePlay");
         const todayStr  = new Date().toLocaleDateString("sv-SE");
-        const isToday   = dateInput?.value === todayStr;
+        // Chặn ngày trong quá khứ — reset về hôm nay và thông báo
+        if (dateInput?.value && dateInput.value < todayStr) {
+            dateInput.value = todayStr;
+            window.hienToast?.("Không hợp lệ", "Không thể chọn ngày trong quá khứ. Đã reset về hôm nay.", "warning");
+        }
+        const isToday   = !dateInput?.value || dateInput.value === todayStr;
         _capNhatGioSelect(isToday);
         // Nếu giờ đang chọn đã qua → snap về giờ hợp lệ
         if (isToday) {
