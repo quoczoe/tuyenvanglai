@@ -1507,8 +1507,19 @@ body::before {
 
 .slot-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
+    gap: 0;
+}
+
+/* Card trong grid: bo góc nhỏ + border phân tách thay gap */
+.slot-grid .card-keo-cauthi {
+    border-radius: 4px;
+    border-color: rgba(255, 255, 255, 0.07);
+    margin: 1px;
+}
+.slot-grid .card-keo-cauthi:hover {
+    transform: translateY(-2px);
+    z-index: 1;
 }
 
 .card-keo-cauthi {
@@ -1528,6 +1539,9 @@ body::before {
     background: rgba(240, 245, 242, 0.7);
     border-color: rgba(0, 180, 100, 0.05);
     color: #0f172a;
+}
+[data-theme="light"] .slot-grid .card-keo-cauthi {
+    border-color: rgba(0, 180, 100, 0.12);
 }
 
 .card-keo-cauthi:hover {
@@ -2206,7 +2220,8 @@ body::before {
     .gateway-container { padding: 8px 20px 48px; }
     .gateway-button-grid { gap: 22px; }
     .gateway-card { padding: 28px; }
-    .slot-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+    .slot-grid { grid-template-columns: repeat(auto-fill, minmax(500px, 1fr)); gap: 0; }
+
 }
 
 /* === TABLET (max 768px) === */
@@ -2252,8 +2267,8 @@ body::before {
     .hud-grid { grid-template-columns: 1fr; gap: 20px; }
 
     /* --- Slot Grid --- */
-    .slot-grid { grid-template-columns: 1fr; gap: 14px; }
-    .card-keo-cauthi { padding: 18px 15px; gap: 10px; }
+    .slot-grid { grid-template-columns: 1fr; gap: 0; }
+    .card-keo-cauthi { padding: 14px 13px; gap: 8px; }
     .card-keo-title { font-size: 1rem; }
     .card-keo-price { font-size: 0.92rem; }
     .card-keo-meta-box { padding: 8px 10px; font-size: 0.8rem; }
@@ -2314,7 +2329,7 @@ body::before {
     .hud-panel-title { font-size: 1rem; }
 
     .gateway-button-grid { gap: 12px; }
-    .slot-grid { gap: 12px; }
+    .slot-grid { gap: 6px; }
     .card-keo-cauthi { padding: 15px 13px; gap: 8px; }
 
     .btn-filter-cyber { height: 44px !important; font-size: 0.82rem !important; }
@@ -4498,7 +4513,10 @@ body::before {
 
 /* ── Tên sân link — card (kh-san-link) ── */
 .kh-san-link {
-    display: inline-flex; align-items: baseline; gap: 5px; flex-wrap: wrap;
+    display: flex; align-items: baseline; gap: 5px;
+    flex-wrap: nowrap;      /* giữ tên sân + khu vực trên 1 hàng */
+    overflow: hidden;       /* cắt nếu quá dài — tránh tràn card */
+    width: 100%;
     color: #00e5ff;
     text-shadow: 0 0 4px rgba(0,229,255,0.55);
     text-decoration: none;
@@ -4510,6 +4528,19 @@ body::before {
 .kh-san-link:active { color: #FF5500; transform: scale(0.98); }
 @media (hover: none) {
     .kh-san-link { text-decoration: underline dotted rgba(0,229,255,0.4); text-underline-offset: 3px; }
+}
+/* Span tên sân bên trong link: co giãn, nhường chỗ cho khu vực, ellipsis nếu quá dài */
+.kh-san-link > span:first-of-type {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+    flex-shrink: 1;
+}
+/* Span ↗ và — khu vực không co */
+.kh-san-link > span:not(:first-of-type) {
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 /* ── Tên sân link — modal TÊN SÂN row (kmd-ten-san-link) ── */

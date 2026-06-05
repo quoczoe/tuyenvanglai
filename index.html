@@ -985,12 +985,12 @@
             border-left: 3px solid var(--accent); letter-spacing: 0.01em;
         }
 
-        /* ── CARD GRID: 3 cột đều nhau, gap 14px, gom giữa ── */
+        /* ── CARD GRID: 3 cột đều nhau, sát nhau ── */
         #slotsSearchResultContainer.keo-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             align-items: stretch;
-            gap: 4px;
+            gap: 1px;
             max-width: 1480px;
             margin-left: auto;
             margin-right: auto;
@@ -1002,6 +1002,7 @@
             min-height: 0 !important;
             min-width: 360px;
             width: 100%;
+            margin-bottom: 0 !important;
         }
         .slot-card-inner { display: flex; flex-direction: column; flex: 1; }
         .slot-card-footer { margin-top: auto; }
@@ -1101,7 +1102,7 @@
             }
             #slotsSearchResultContainer.keo-grid {
                 grid-template-columns: 1fr;
-                gap: 12px;
+                gap: 1px;
             }
         }
         /* Tablet: sidebar hẹp hơn, 2 cột card */

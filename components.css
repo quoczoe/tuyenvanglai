@@ -421,7 +421,7 @@
 
 .slot-card {
     position: relative;
-    margin-bottom: 14px;
+    margin-bottom: 0;
 }
 
 /* Viền 1.5px sợi chỉ rainbow — background-clip kỹ thuật chuẩn */
