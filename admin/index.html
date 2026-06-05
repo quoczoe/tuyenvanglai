@@ -232,29 +232,44 @@
 
         /* ══ DASHBOARD METRICS (top 4 cards) ══ */
         .ad-metrics-grid {
-            display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
             margin-bottom: 1.5rem;
         }
         @media (max-width: 900px) { .ad-metrics-grid { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 480px) { .ad-metrics-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 480px) { .ad-metrics-grid { grid-template-columns: 1fr 1fr; gap: 10px; } }
         .ad-metric-card {
             background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: var(--radius-lg); padding: 18px 16px;
-            transition: border-color 0.2s, transform 0.2s;
+            border-radius: var(--radius-lg); padding: 22px 16px 18px;
+            text-align: center;
+            display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+            position: relative; overflow: hidden;
         }
-        .ad-metric-card:hover { border-color: rgba(0,255,136,0.3); transform: translateY(-2px); }
-        .ad-metric-icon { font-size: 2rem; margin-bottom: 8px; display: block; line-height: 1; }
-        .ad-metric-val { font-size: 2rem; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+        .ad-metric-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: currentColor; opacity: 0.4; border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+        .ad-metric-card:hover { border-color: rgba(255,255,255,0.2); transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.25); }
+        .ad-metric-icon { font-size: 1.8rem; line-height: 1; }
+        .ad-metric-val { font-size: 2.4rem; font-weight: 900; line-height: 1; letter-spacing: -0.02em; }
         .ad-metric-lbl {
-            font-size: 0.73rem; color: var(--text-muted); font-weight: 600;
-            text-transform: uppercase; letter-spacing: 0.04em;
+            font-size: 0.7rem; color: var(--text-muted); font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.06em;
         }
 
         /* ══ TABS ══ */
+        /* Sticky wrapper: giữ metrics + tab nav cố định ở đầu khi cuộn */
+        .ad-sticky-top {
+            position: sticky; top: 0; z-index: 100;
+            background: var(--bg-base);
+            padding-top: 1rem;
+            margin-top: -1rem;
+        }
         .ad-tab-nav {
             display: flex; gap: 6px; flex-wrap: wrap;
-            border-bottom: 1px solid rgba(255,255,255,0.06);
-            padding-bottom: 12px; margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px; margin-bottom: 20px;
+            background: var(--bg-base);
         }
         .ad-tab-btn {
             padding: 8px 16px; border-radius: var(--radius-sm);
@@ -289,6 +304,7 @@
             max-width: 100%;
             min-height: 500px;
             box-sizing: border-box;
+            overflow-x: hidden; /* Chặn tràn ngang — bảng cuộn trong .table-responsive */
         }
         .ad-tab-content.active { display: block; }
 
@@ -477,6 +493,29 @@
         .ad-table thead th.sortable { cursor:pointer; user-select:none; }
         .ad-table thead th.sortable:hover { color: var(--accent-green); }
         .sort-icon { font-size:0.7rem; color:#4b5563; margin-left:4px; }
+
+        /* ══ CA ĐẤU ACTION DROPDOWN ══ */
+        .ca-action-menu { font-family: inherit; }
+        @media (max-width: 600px) {
+            .ca-action-menu { position: fixed !important; left: 50% !important; top: 50% !important;
+                transform: translate(-50%,-50%); min-width: 180px !important; }
+        }
+
+        /* ══ MOBILE OPTIMIZATIONS ══ */
+        @media (max-width: 768px) {
+            .ad-sticky-top { position: sticky; top: 0; }
+            .ad-metrics-grid .ad-metric-val { font-size: 1.8rem; }
+            .mv-toolbar { flex-direction: column; align-items: stretch; }
+            .mv-filters { flex-wrap: wrap; }
+            .mv-filter-select { min-width: unset; flex: 1; }
+            .ad-tab-nav { gap: 4px; }
+            .ad-tab-btn { padding: 6px 10px; font-size: 0.75rem; }
+            .ad-tab-btn i { display: none; } /* ẩn icon trên mobile nhỏ */
+        }
+        @media (max-width: 480px) {
+            .ad-tab-btn { padding: 5px 8px; font-size: 0.72rem; }
+            .ad-main { padding: 0.5rem; }
+        }
 
         /* ══ MEMBER TOOLBAR ══ */
         .mv-toolbar {
@@ -894,6 +933,8 @@
             </button>
         </div>
 
+        <!-- ══ STICKY: METRICS + TAB NAV ══ -->
+        <div class="ad-sticky-top">
         <!-- ══ DASHBOARD 4 METRICS ══ -->
         <div class="ad-metrics-grid reveal">
             <div class="ad-metric-card reveal reveal-delay-1">
@@ -918,16 +959,10 @@
             </div>
         </div>
 
-        <!-- ══ THANH ĐIỀU HƯỚNG TAB ══ -->
+        <!-- ══ THANH ĐIỀU HƯỚNG TAB — thứ tự ưu tiên theo item 8 ══ -->
         <div class="ad-tab-nav">
             <button class="ad-tab-btn" data-tab="guests" onclick="chuyenTabAdmin('guests')">
                 <i class="fa-solid fa-users"></i> Thành Viên
-            </button>
-            <button class="ad-tab-btn" data-tab="reviews" onclick="chuyenTabAdmin('reviews')">
-                <i class="fa-solid fa-star-half-stroke"></i> Đánh Giá
-            </button>
-            <button class="ad-tab-btn" data-tab="config" onclick="chuyenTabAdmin('config')">
-                <i class="fa-solid fa-sliders"></i> Cấu Hình
             </button>
             <button class="ad-tab-btn" data-tab="cadau" onclick="chuyenTabAdmin('cadau')">
                 <i class="fa-solid fa-calendar-days"></i> Ca Đấu
@@ -935,13 +970,20 @@
             <button class="ad-tab-btn" data-tab="gopy" onclick="chuyenTabAdmin('gopy')">
                 <i class="fa-solid fa-comment-dots"></i> Góp Ý
             </button>
-            <button class="ad-tab-btn" data-tab="stats" onclick="chuyenTabAdmin('stats')">
-                <i class="fa-solid fa-chart-bar"></i> Thống Kê
-            </button>
             <button class="ad-tab-btn" data-tab="baocao" onclick="chuyenTabAdmin('baocao')">
                 <i class="fa-solid fa-flag"></i> Báo Cáo
             </button>
+            <button class="ad-tab-btn" data-tab="reviews" onclick="chuyenTabAdmin('reviews')">
+                <i class="fa-solid fa-star-half-stroke"></i> Đánh Giá
+            </button>
+            <button class="ad-tab-btn" data-tab="config" onclick="chuyenTabAdmin('config')">
+                <i class="fa-solid fa-sliders"></i> Cấu Hình
+            </button>
+            <button class="ad-tab-btn" data-tab="stats" onclick="chuyenTabAdmin('stats')">
+                <i class="fa-solid fa-chart-bar"></i> Thống Kê
+            </button>
         </div>
+        </div><!-- end .ad-sticky-top -->
 
 
         <!-- ════════════════════════════════════════════
@@ -1376,41 +1418,80 @@
                 </div>
             </div>
 
-            <!-- Bộ lọc trạng thái ca đấu -->
-            <div class="ad-filter-pills">
-                <button class="ad-pill active" onclick="locCaDauTheoTrangThai('all', this)">
-                    Tất cả
+            <!-- Filter pills + số dòng -->
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                <div class="ad-filter-pills" style="margin-bottom:0;">
+                    <button class="ad-pill active" onclick="locCaDauTheoTrangThai('all', this)">Tất cả</button>
+                    <button class="ad-pill" onclick="locCaDauTheoTrangThai('open', this)">
+                        <i class="fa-solid fa-circle" style="color:#00ff88;font-size:0.5em;"></i> Đang mở
+                    </button>
+                    <button class="ad-pill" onclick="locCaDauTheoTrangThai('closed', this)">
+                        <i class="fa-solid fa-lock" style="color:#64748b;font-size:0.8em;"></i> Đã chốt
+                    </button>
+                    <button class="ad-pill" onclick="locCaDauTheoTrangThai('today', this)">
+                        <i class="fa-solid fa-calendar-day" style="color:#f59e0b;font-size:0.8em;"></i> Hôm nay
+                    </button>
+                </div>
+                <select class="mv-filter-select" onchange="window._caDauDoiSoTrang(this.value)" style="min-width:100px;">
+                    <option value="10">10 dòng</option>
+                    <option value="20" selected>20 dòng</option>
+                    <option value="50">50 dòng</option>
+                    <option value="100">100 dòng</option>
+                </select>
+            </div>
+
+            <!-- Thanh xóa hàng loạt -->
+            <div id="caDauBulkBar" style="display:none;margin-bottom:10px;padding:8px 14px;
+                 background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.28);
+                 border-radius:8px;align-items:center;gap:12px;flex-wrap:wrap;">
+                <span id="caDauBulkCount" style="font-size:0.85rem;font-weight:700;color:#f87171;flex:1;"></span>
+                <button onclick="window.xoaNhieuCaDauAdmin()"
+                    style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.45);
+                           color:#f87171;padding:5px 14px;border-radius:7px;cursor:pointer;
+                           font-size:0.82rem;font-weight:700;display:inline-flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-trash-can"></i> Xóa đã chọn
                 </button>
-                <button class="ad-pill" onclick="locCaDauTheoTrangThai('open', this)">
-                    <i class="fa-solid fa-circle" style="color:#00ff88;font-size:0.5em;"></i> Đang mở
-                </button>
-                <button class="ad-pill" onclick="locCaDauTheoTrangThai('closed', this)">
-                    <i class="fa-solid fa-lock" style="color:#64748b;font-size:0.8em;"></i> Đã chốt
-                </button>
-                <button class="ad-pill" onclick="locCaDauTheoTrangThai('today', this)">
-                    <i class="fa-solid fa-calendar-day" style="color:#f59e0b;font-size:0.8em;"></i> Hôm nay
+                <button onclick="window._caDauBoChonHet()"
+                    style="background:transparent;border:1px solid rgba(255,255,255,0.12);
+                           color:#94a3b8;padding:5px 12px;border-radius:7px;cursor:pointer;font-size:0.82rem;">
+                    Bỏ chọn hết
                 </button>
             </div>
 
-            <!-- Bảng danh sách ca đấu -->
+            <!-- Bảng ca đấu mới -->
             <div class="table-responsive">
-                <table class="ad-table">
+                <table class="ad-table" style="min-width:1050px;">
                     <thead>
                         <tr>
-                            <th>Ngày</th>
-                            <th>Host</th>
-                            <th>Tên Sân</th>
-                            <th>Tỉnh / Quận</th>
+                            <th style="width:36px;">
+                                <input type="checkbox" id="caDauChkAll" style="cursor:pointer;accent-color:#f87171;"
+                                    onchange="window._caDauChonTatCa(this.checked)">
+                            </th>
+                            <th class="sortable" onclick="window._sortCaDau('_seqId')" style="width:54px;">
+                                ID <span class="sort-icon" id="sortIconCa__seqId">↕</span>
+                            </th>
+                            <th style="width:64px;">Thao Tác</th>
+                            <th class="sortable" onclick="window._sortCaDau('ten_san')">
+                                Tên Sân <span class="sort-icon" id="sortIconCa_ten_san">↕</span>
+                            </th>
+                            <th>Người Đăng</th>
+                            <th>Khu Vực</th>
+                            <th class="sortable" onclick="window._sortCaDau('ngay_danh')" style="text-align:center;">
+                                Ngày <span class="sort-icon" id="sortIconCa_ngay_danh" style="color:#00ff88;">↓</span>
+                            </th>
                             <th>Giờ</th>
-                            <th>Khách</th>
-                            <th>Giá Nam / Nữ</th>
-                            <th>Trạng thái</th>
-                            <th>Hành động</th>
+                            <th class="sortable" onclick="window._sortCaDau('soKhach')" style="text-align:center;">
+                                Khách <span class="sort-icon" id="sortIconCa_soKhach">↕</span>
+                            </th>
+                            <th>Trạng Thái</th>
+                            <th class="sortable" onclick="window._sortCaDau('gia_nam')">
+                                Giá <span class="sort-icon" id="sortIconCa_gia_nam">↕</span>
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="adminCaDauBody">
                         <tr>
-                            <td colspan="9" style="text-align:center;padding:28px;color:#64748b;">
+                            <td colspan="11" style="text-align:center;padding:28px;color:#64748b;">
                                 <i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...
                             </td>
                         </tr>
@@ -1419,7 +1500,9 @@
             </div>
 
             <!-- Phân trang -->
-            <div id="adminCaDauPagination" style="display:flex;justify-content:center;gap:8px;margin-top:16px;flex-wrap:wrap;"></div>
+            <div id="caDauPaginationBar"
+                 style="display:flex;align-items:center;justify-content:space-between;
+                        flex-wrap:wrap;gap:10px;padding:12px 4px;margin-top:8px;"></div>
         </div>
 
     </div><!-- /adminConsole -->

@@ -223,143 +223,284 @@
      * 4B. CA ĐẤU — ADMIN QUẢN LÝ TOÀN HỆ THỐNG
      * ═══════════════════════════════════════════════════ */
 
-    // Dữ liệu ca đấu đã tải — dùng cho filter + search
-    let _allCaDauAdmin = [];
-    let _keyHostMap    = {}; // ma_key → ten_host
-    let _datSlotCountMap = {}; // id_ca_dau → số slot đã đặt (tất cả trạng thái trừ Khách hủy)
-    // ID ca đang chỉnh sửa
-    let _editingCaId   = null;
+    // ── State CA ĐẤU ──
+    let _allCaDauAdmin    = [];
+    let _userMapCaDau     = {}; // sdt → ten_khach (người đăng)
+    let _datSlotCountMap  = {};
+    let _editingCaId      = null;
+    let _sortCaDauCol     = "ngay_danh";
+    let _sortCaDauDir     = "desc";
+    let _pageSizeCaDau    = 20;
+    let _pageNumCaDau     = 1;
+    let _lastFilteredCaDau= [];
+    let _filterCaDauLoai  = "all";
+
+    // Cắt giờ:phút từ HH:MM:SS
+    function _fGio(raw) { return raw ? String(raw).substring(0, 5) : "--:--"; }
+
+    // Định dạng khu vực: Quận/Tỉnh
+    function _fKhuVuc(tinh, quan) {
+        if (!tinh && !quan) return "—";
+        if (!quan) return tinh;
+        // Rút gọn tên tỉnh phổ biến
+        const tinhRutGon = (tinh || "")
+            .replace("Thành phố", "TP.").replace("thành phố", "TP.")
+            .replace("Tỉnh ", "").replace("tỉnh ", "");
+        return `${quan} / ${tinhRutGon}`;
+    }
 
     async function _taiDanhSachCaDauAdmin() {
         const tbody = document.getElementById("adminCaDauBody");
         if (!tbody) return;
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:28px;color:#64748b;">
+        tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:28px;color:#64748b;">
             <i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu ca đấu...</td></tr>`;
         try {
-            // Tải song song: ca_dau + quan_ly_key + dat_slot
-            const [caDauList, keys, datSlots] = await Promise.all([
+            const [caDauList, users, datSlots] = await Promise.all([
                 window.dbEngine.doc("ca_dau"),
-                window.dbEngine.doc("quan_ly_key"),
-                window.dbEngine.doc("dat_slot")
+                window.dbEngine.doc("nguoi_dung").catch(() => []),
+                window.dbEngine.doc("dat_slot").catch(() => [])
             ]);
 
-            // Tạo map host key → tên host
-            _keyHostMap = {};
-            keys.forEach(k => { if (k.ma_key) _keyHostMap[k.ma_key] = k.ten_host || k.ma_key; });
+            // Map sdt → tên người đăng
+            _userMapCaDau = {};
+            (users || []).forEach(u => { if (u.sdt_khach) _userMapCaDau[u.sdt_khach] = u.ten_khach || u.sdt_khach; });
 
-            // Tạo map id_ca_dau → số khách (loại trừ "Khách hủy")
+            // Map id_ca_dau → số khách
             _datSlotCountMap = {};
-            datSlots.forEach(s => {
-                if (s.trang_thai_di_danh !== "Khách hủy") {
+            (datSlots || []).forEach(s => {
+                if (s.trang_thai_di_danh !== "Khách hủy")
                     _datSlotCountMap[s.id_ca_dau] = (_datSlotCountMap[s.id_ca_dau] || 0) + 1;
-                }
             });
 
-            // Sắp xếp: mới nhất trước
+            // Gán seqID theo ngày tạo
+            caDauList.sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+            caDauList.forEach((c, i) => { c._seqId = i + 1; });
+            // Sort mặc định: ngày đánh mới nhất trước
             caDauList.sort((a, b) => new Date(b.ngay_danh || 0) - new Date(a.ngay_danh || 0));
             _allCaDauAdmin = caDauList;
-
-            _renderCaDauAdmin(caDauList);
+            _apDungSortFilterCaDau();
         } catch (e) {
-            if (tbody) tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:28px;color:#ef4444;">
-                <i class="fa-solid fa-triangle-exclamation"></i> Lỗi tải dữ liệu: ${e.message || "Không rõ"}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:28px;color:#ef4444;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Lỗi tải dữ liệu: ${_escHtml(e.message || "Không rõ")}</td></tr>`;
         }
     }
+
+    function _apDungSortFilterCaDau() {
+        const q     = (document.getElementById("adminCaDauSearch")?.value || "").toLowerCase();
+        const today = new Date().toISOString().split("T")[0];
+
+        let list = _allCaDauAdmin.filter(c => {
+            if (_filterCaDauLoai === "open"   && c.da_chot_ca) return false;
+            if (_filterCaDauLoai === "closed" && !c.da_chot_ca) return false;
+            if (_filterCaDauLoai === "today"  && c.ngay_danh !== today) return false;
+            if (q) {
+                const nguoiDang = (_userMapCaDau[c.sdt_nguoi_tao] || c.sdt_nguoi_tao || "").toLowerCase();
+                return (c.ten_san || "").toLowerCase().includes(q)
+                    || (c.tinh_thanh || "").toLowerCase().includes(q)
+                    || (c.quan_huyen || "").toLowerCase().includes(q)
+                    || nguoiDang.includes(q)
+                    || (c.id || "").toLowerCase().includes(q);
+            }
+            return true;
+        });
+
+        // Sắp xếp
+        const col = _sortCaDauCol;
+        const dir = _sortCaDauDir === "asc" ? 1 : -1;
+        list.sort((a, b) => {
+            let va = col === "ngay_danh" ? new Date(a.ngay_danh || 0).getTime()
+                   : col === "_seqId"   ? (a._seqId || 0)
+                   : a[col];
+            let vb = col === "ngay_danh" ? new Date(b.ngay_danh || 0).getTime()
+                   : col === "_seqId"   ? (b._seqId || 0)
+                   : b[col];
+            if (typeof va === "string") return dir * va.localeCompare(vb, "vi");
+            return dir * ((va > vb ? 1 : va < vb ? -1 : 0));
+        });
+
+        _lastFilteredCaDau = list;
+        _pageNumCaDau = 1;
+        _renderCaDauVoiPhanTrang();
+        _capNhatMetric("metricOpenCaDau", list.filter(c => !c.da_chot_ca).length);
+
+        const cols = ["ngay_danh","_seqId","ten_san","soKhach","da_chot_ca","gia_nam"];
+        cols.forEach(c => {
+            const el = document.getElementById(`sortIconCa_${c}`);
+            if (!el) return;
+            el.textContent = c === col ? (dir === 1 ? "↑" : "↓") : "↕";
+            el.style.color  = c === col ? "#00ff88" : "#64748b";
+        });
+    }
+
+    function _renderCaDauVoiPhanTrang() {
+        const total    = _lastFilteredCaDau.length;
+        const from     = (_pageNumCaDau - 1) * _pageSizeCaDau;
+        const to       = Math.min(from + _pageSizeCaDau, total);
+        _renderCaDauAdmin(_lastFilteredCaDau.slice(from, to));
+
+        // Thanh phân trang
+        const bar = document.getElementById("caDauPaginationBar");
+        if (!bar) return;
+        const totalPages = Math.max(1, Math.ceil(total / _pageSizeCaDau));
+        if (totalPages <= 1) { bar.innerHTML = ""; return; }
+        const f = from + 1, t = Math.min(to, total);
+        bar.innerHTML = `
+            <span style="font-size:0.78rem;color:#94a3b8;">${f}–${t} / ${total} ca đấu</span>
+            <div style="display:flex;gap:4px;">
+                <button class="ad-btn-ghost" style="padding:4px 10px;font-size:0.78rem;"
+                    ${_pageNumCaDau<=1?"disabled style='opacity:.4'":""}
+                    onclick="window._caDauChuyenTrang(${_pageNumCaDau-1})">‹ Trước</button>
+                <span style="font-size:0.78rem;color:#e2e8f0;padding:0 8px;white-space:nowrap;">Trang ${_pageNumCaDau}/${totalPages}</span>
+                <button class="ad-btn-ghost" style="padding:4px 10px;font-size:0.78rem;"
+                    ${_pageNumCaDau>=totalPages?"disabled style='opacity:.4'":""}
+                    onclick="window._caDauChuyenTrang(${_pageNumCaDau+1})">Sau ›</button>
+            </div>`;
+    }
+    window._caDauChuyenTrang = function(p) {
+        _pageNumCaDau = Math.max(1, Math.min(p, Math.ceil(_lastFilteredCaDau.length/_pageSizeCaDau)));
+        _renderCaDauVoiPhanTrang();
+    };
+    window._caDauDoiSoTrang = function(n) { _pageSizeCaDau = parseInt(n)||20; _pageNumCaDau=1; _renderCaDauVoiPhanTrang(); };
+    window._sortCaDau = function(col) {
+        _sortCaDauDir = (_sortCaDauCol === col && _sortCaDauDir === "desc") ? "asc" : "desc";
+        _sortCaDauCol = col;
+        _apDungSortFilterCaDau();
+    };
 
     function _renderCaDauAdmin(list) {
         const tbody = document.getElementById("adminCaDauBody");
         if (!tbody) return;
+        const _vnd = n => (n||0).toLocaleString("vi-VN") + "đ";
 
         if (!list.length) {
-            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:#64748b;">
+            tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:32px;color:#64748b;">
                 <i class="fa-solid fa-calendar-xmark" style="font-size:1.5rem;display:block;margin-bottom:8px;"></i>
                 Không tìm thấy ca đấu nào.</td></tr>`;
+            document.getElementById("caDauBulkBar").style.display = "none";
             return;
         }
 
-        const _vnd = (n) => (n || 0).toLocaleString("vi-VN") + "đ";
-
         tbody.innerHTML = list.map(c => {
-            const tenHost    = _keyHostMap[c.ma_key_host] || c.ma_key_host || "—";
-            const soKhach    = _datSlotCountMap[c.id] || 0;
-            const trangThai  = c.da_chot_ca
-                ? `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(100,116,139,0.15);color:#94a3b8;padding:3px 10px;border-radius:12px;font-size:0.75rem;font-weight:600;"><i class="fa-solid fa-lock" style="font-size:0.65em;"></i> Đã chốt</span>`
-                : `<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(0,255,136,0.12);color:#00ff88;padding:3px 10px;border-radius:12px;font-size:0.75rem;font-weight:600;"><i class="fa-solid fa-circle" style="font-size:0.5em;"></i> Đang mở</span>`;
-            const ngay       = c.ngay_danh ? new Date(c.ngay_danh).toLocaleDateString("vi-VN") : "—";
-            const gio        = `${c.gio_bat_dau || "--:--"} – ${c.gio_ket_thuc || "--:--"}`;
-            const tinh       = [c.tinh_thanh, c.quan_huyen].filter(Boolean).join(" / ") || "—";
+            const cId      = _escHtml(c.id);
+            const tenSan   = _escHtml(c.ten_san || "—");
+            const nguoiDang= _escHtml(_userMapCaDau[c.sdt_nguoi_tao] || c.sdt_nguoi_tao || "—");
+            const khuVuc   = _escHtml(_fKhuVuc(c.tinh_thanh, c.quan_huyen));
+            const soKhach  = _datSlotCountMap[c.id] || 0;
+            const ngay     = c.ngay_danh ? _fNgayGio(c.ngay_danh).split(" ")[0] : "—";
+            const gioBD    = _fGio(c.gio_bat_dau);
+            const gioKT    = _fGio(c.gio_ket_thuc);
+            const trangThai = c.da_chot_ca
+                ? `<span style="font-size:0.72rem;background:rgba(100,116,139,0.15);color:#94a3b8;padding:2px 8px;border-radius:10px;font-weight:700;white-space:nowrap;"><i class="fa-solid fa-lock" style="font-size:0.6em;"></i> Đã chốt</span>`
+                : `<span style="font-size:0.72rem;background:rgba(0,255,136,0.1);color:#00ff88;padding:2px 8px;border-radius:10px;font-weight:700;white-space:nowrap;"><i class="fa-solid fa-circle" style="font-size:0.5em;"></i> Đang mở</span>`;
 
             return `<tr>
-                <td style="white-space:nowrap;font-weight:600;color:#e2e8f0;">${ngay}</td>
-                <td>
-                    <div style="font-size:0.8rem;color:#60a5fa;font-weight:600;">${_escHtml(tenHost)}</div>
-                    <div style="font-size:0.7rem;color:#64748b;font-family:monospace;">${c.ma_key_host || ""}</div>
-                </td>
-                <td style="font-weight:500;color:#e2e8f0;">${_escHtml(c.ten_san || "—")}</td>
-                <td style="font-size:0.8rem;color:#9ca3af;">${_escHtml(tinh)}</td>
-                <td style="font-size:0.82rem;color:#94a3b8;white-space:nowrap;">${gio}</td>
                 <td style="text-align:center;">
-                    <span style="background:rgba(99,102,241,0.15);color:#a78bfa;padding:3px 10px;border-radius:12px;font-size:0.8rem;font-weight:700;">${soKhach}</span>
+                    <input type="checkbox" class="ca-chk" data-id="${cId}"
+                        style="cursor:pointer;accent-color:#f87171;"
+                        onchange="window._caDauCapNhatBulk()">
                 </td>
-                <td style="font-size:0.8rem;white-space:nowrap;">
-                    <span style="color:#00ff88;">Nam: ${_vnd(c.gia_nam)}</span><br>
-                    <span style="color:#f472b6;">Nữ: ${_vnd(c.gia_nu)}</span>
-                </td>
-                <td>${trangThai}</td>
+                <td style="font-family:monospace;font-size:0.75rem;color:#64748b;" title="${cId}">${c._seqId || "—"}</td>
                 <td>
-                    <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                        <button class="btn-mini" onclick="window.suaCaDauAdmin('${c.id}')"
-                            style="background:rgba(96,165,250,0.1);color:#60a5fa;border:1px solid rgba(96,165,250,0.3);">
-                            <i class="fa-solid fa-pen-to-square"></i> Sửa
+                    <div style="position:relative;display:inline-block;">
+                        <button class="btn-mini" style="padding:4px 8px;gap:4px;"
+                            onclick="window._toggleCaMenu(this,'${cId}')">
+                            <i class="fa-solid fa-ellipsis-vertical"></i>
                         </button>
-                        <button class="btn-mini" onclick="window.xoaCaDauAdmin('${c.id}','${_escHtml(c.ten_san || c.id)}')"
-                            style="background:rgba(239,68,68,0.08);color:#f87171;border:1px solid rgba(239,68,68,0.25);">
-                            <i class="fa-solid fa-trash-can"></i> Xóa
-                        </button>
-                        ${c.da_chot_ca
-                            ? `<button class="btn-mini" onclick="window.moChocCaDauAdmin('${c.id}', false)"
-                                style="background:rgba(251,146,60,0.1);color:#fb923c;border:1px solid rgba(251,146,60,0.3);">
-                                <i class="fa-solid fa-lock-open"></i> Mở lại
-                               </button>`
-                            : `<button class="btn-mini" onclick="window.moChocCaDauAdmin('${c.id}', true)"
-                                style="background:rgba(100,116,139,0.1);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);">
-                                <i class="fa-solid fa-lock"></i> Chốt
-                               </button>`
-                        }
+                        <div class="ca-action-menu" data-caid="${cId}" style="display:none;position:absolute;left:0;top:100%;z-index:300;
+                            background:#1a2844;border:1px solid rgba(0,255,136,0.2);border-radius:8px;padding:4px;
+                            box-shadow:0 8px 24px rgba(0,0,0,0.4);min-width:130px;">
+                            <button onclick="window.suaCaDauAdmin('${cId}');window._closeCaMenus();"
+                                style="display:flex;align-items:center;gap:8px;width:100%;padding:6px 10px;background:none;border:none;color:#60a5fa;font-size:0.8rem;cursor:pointer;border-radius:5px;font-family:inherit;"
+                                onmouseover="this.style.background='rgba(96,165,250,0.1)'" onmouseout="this.style.background='none'">
+                                <i class="fa-solid fa-pen-to-square"></i> Sửa ca
+                            </button>
+                            ${c.da_chot_ca
+                                ? `<button onclick="window.moChocCaDauAdmin('${cId}',false);window._closeCaMenus();"
+                                    style="display:flex;align-items:center;gap:8px;width:100%;padding:6px 10px;background:none;border:none;color:#fb923c;font-size:0.8rem;cursor:pointer;border-radius:5px;font-family:inherit;"
+                                    onmouseover="this.style.background='rgba(251,146,60,0.1)'" onmouseout="this.style.background='none'">
+                                    <i class="fa-solid fa-lock-open"></i> Mở lại
+                                </button>`
+                                : `<button onclick="window.moChocCaDauAdmin('${cId}',true);window._closeCaMenus();"
+                                    style="display:flex;align-items:center;gap:8px;width:100%;padding:6px 10px;background:none;border:none;color:#94a3b8;font-size:0.8rem;cursor:pointer;border-radius:5px;font-family:inherit;"
+                                    onmouseover="this.style.background='rgba(100,116,139,0.1)'" onmouseout="this.style.background='none'">
+                                    <i class="fa-solid fa-lock"></i> Chốt ca
+                                </button>`}
+                            <hr style="border:none;border-top:1px solid rgba(255,255,255,0.08);margin:3px 0;">
+                            <button onclick="window.xoaCaDauAdmin('${cId}','${tenSan}');window._closeCaMenus();"
+                                style="display:flex;align-items:center;gap:8px;width:100%;padding:6px 10px;background:none;border:none;color:#f87171;font-size:0.8rem;cursor:pointer;border-radius:5px;font-family:inherit;"
+                                onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='none'">
+                                <i class="fa-solid fa-trash-can"></i> Xóa
+                            </button>
+                        </div>
                     </div>
+                </td>
+                <td style="font-weight:600;white-space:nowrap;">${tenSan}</td>
+                <td style="font-size:0.8rem;color:#60a5fa;white-space:nowrap;">${nguoiDang}</td>
+                <td style="font-size:0.78rem;color:#9ca3af;white-space:nowrap;">${khuVuc}</td>
+                <td style="white-space:nowrap;font-size:0.8rem;">${ngay}</td>
+                <td style="font-size:0.78rem;color:#94a3b8;white-space:nowrap;">${gioBD}–${gioKT}</td>
+                <td><span style="background:rgba(99,102,241,0.15);color:#a78bfa;padding:2px 8px;border-radius:10px;font-size:0.8rem;font-weight:700;">${soKhach}</span></td>
+                <td>${trangThai}</td>
+                <td style="font-size:0.78rem;text-align:right;">
+                    <span style="color:#00ff88;white-space:nowrap;">${_vnd(c.gia_nam)}</span><br>
+                    <span style="color:#f472b6;white-space:nowrap;">${_vnd(c.gia_nu)}</span>
                 </td>
             </tr>`;
         }).join("");
     }
 
-    // Hàm tìm kiếm ca đấu theo text
-    window.locCaDauAdmin = function () {
-        const q = (document.getElementById("adminCaDauSearch")?.value || "").toLowerCase();
-        if (!q) { _renderCaDauAdmin(_allCaDauAdmin); return; }
-        const filtered = _allCaDauAdmin.filter(c => {
-            const tenHost = (_keyHostMap[c.ma_key_host] || "").toLowerCase();
-            return (c.ten_san   || "").toLowerCase().includes(q)
-                || (c.tinh_thanh || "").toLowerCase().includes(q)
-                || (c.quan_huyen || "").toLowerCase().includes(q)
-                || tenHost.includes(q)
-                || (c.ma_key_host || "").toLowerCase().includes(q);
-        });
-        _renderCaDauAdmin(filtered);
+    // Toggle dropdown hành động ca đấu
+    window._toggleCaMenu = function(btn, caId) {
+        window._closeCaMenus();
+        const menu = document.querySelector(`.ca-action-menu[data-caid="${caId}"]`);
+        if (menu) menu.style.display = "block";
+        document.addEventListener("click", function handler(e) {
+            if (!btn.contains(e.target)) { window._closeCaMenus(); document.removeEventListener("click", handler); }
+        }, { once: false, capture: true });
+    };
+    window._closeCaMenus = function() {
+        document.querySelectorAll(".ca-action-menu").forEach(m => m.style.display = "none");
     };
 
-    // Hàm lọc theo trạng thái
+    // Bulk select CA ĐẤU
+    window._caDauCapNhatBulk = function() {
+        const checked = document.querySelectorAll("#adminCaDauBody .ca-chk:checked");
+        const bar = document.getElementById("caDauBulkBar");
+        const cnt = document.getElementById("caDauBulkCount");
+        if (bar) bar.style.display = checked.length > 0 ? "flex" : "none";
+        if (cnt) cnt.textContent = `Đã chọn ${checked.length} ca đấu`;
+    };
+    window._caDauChonTatCa = function(chk) {
+        document.querySelectorAll("#adminCaDauBody .ca-chk").forEach(c => c.checked = chk);
+        window._caDauCapNhatBulk();
+    };
+    window._caDauBoChonHet = function() {
+        document.querySelectorAll("#adminCaDauBody .ca-chk").forEach(c => c.checked = false);
+        const all = document.getElementById("caDauChkAll"); if (all) all.checked = false;
+        window._caDauCapNhatBulk();
+    };
+
+    // Xóa nhiều ca đấu
+    window.xoaNhieuCaDauAdmin = async function() {
+        const ids = Array.from(document.querySelectorAll("#adminCaDauBody .ca-chk:checked")).map(c => c.dataset.id);
+        if (!ids.length) return;
+        if (!confirm(`Xác nhận xóa vĩnh viễn ${ids.length} ca đấu?\nHành động này KHÔNG THỂ hoàn tác.`)) return;
+        let ok = 0, fail = 0;
+        for (const id of ids) {
+            try { await window.dbEngine.xoa("ca_dau", { id }); ok++; } catch { fail++; }
+        }
+        window.hienToast(ok>0?"Đã Xóa ✅":"Thất Bại ❌", `Đã xóa ${ok} ca đấu.${fail>0?` ${fail} thất bại.`:""}`, ok>0?"success":"danger");
+        window._caDauBoChonHet();
+        _taiDanhSachCaDauAdmin();
+    };
+
+    window.locCaDauAdmin = function () { _apDungSortFilterCaDau(); };
+
     window.locCaDauTheoTrangThai = function (loai, btnEl) {
         document.querySelectorAll("#adminTab_cadau .ad-pill").forEach(b => b.classList.remove("active"));
         if (btnEl) btnEl.classList.add("active");
-
-        const today = new Date().toISOString().split("T")[0];
-        let filtered;
-        if      (loai === "open")   filtered = _allCaDauAdmin.filter(c => !c.da_chot_ca);
-        else if (loai === "closed") filtered = _allCaDauAdmin.filter(c => c.da_chot_ca);
-        else if (loai === "today")  filtered = _allCaDauAdmin.filter(c => c.ngay_danh === today);
-        else                        filtered = _allCaDauAdmin;
-
-        _renderCaDauAdmin(filtered);
+        _filterCaDauLoai = loai;
+        _apDungSortFilterCaDau();
     };
 
     // Mở modal sửa ca đấu
@@ -801,6 +942,7 @@
             _allKhachData = allArr;
             _st("adminGuestCount", `${_allKhachData.length} thành viên`);
             _capNhatMetric("metricTotalMembers", _allKhachData.length);
+            _ganEventListenerFilter(); // gắn event listeners khi tab hiện và data sẵn sàng
             _apDungSortFilter();
         } catch (e) {
             console.error("[Admin] Lỗi tải thành viên:", e);
@@ -929,8 +1071,20 @@
         _renderKhachVoiPhanTrang();
     };
 
-    // Re-export rõ ràng để HTML onchange="locKhachAdmin()" gọi được
+    // Re-export rõ ràng để HTML onchange gọi được
     window.locKhachAdmin = function() { _apDungSortFilter(); };
+
+    // Gắn event listener sau khi tab guests được hiện (gọi từ _taiDanhSachKhach)
+    function _ganEventListenerFilter() {
+        const ids = ["adminGuestSearch", "filterVaiTro", "filterTinhTrang"];
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el || el.dataset.listenerGan) return;
+            el.addEventListener("input",  () => _apDungSortFilter());
+            el.addEventListener("change", () => _apDungSortFilter());
+            el.dataset.listenerGan = "1"; // đánh dấu đã gán, không gán lại
+        });
+    }
 
     window._sortKhach = function(col) {
         if (_sortKhachCol === col) {
@@ -1183,7 +1337,7 @@
         let ok = 0, fail = 0;
         for (const sdt of sdts) {
             try {
-                await window.dbEngine.xoaData("nguoi_dung", { sdt_khach: sdt });
+                await window.dbEngine.xoa("nguoi_dung", { sdt_khach: sdt });
                 ok++;
             } catch { fail++; }
         }
