@@ -2305,26 +2305,33 @@
                     }
                 }
 
-                return `<tr style="border-bottom:1px solid rgba(30,58,95,0.5);transition:background 0.12s;"
-                            onmouseover="this.style.background='rgba(30,58,95,0.35)'"
-                            onmouseout="this.style.background='transparent'">
-                    <td style="padding:10px;text-align:center;color:#64748b;">${idx + 1}</td>
-                    <td style="padding:10px;">
-                        <button onclick="window.xemHoSoKhach('${sdtKhachEsc}','${tenKhachEsc}','${matchId}')"
-                                style="background:none;border:none;color:#60a5fa;font-weight:500;cursor:pointer;padding:0;font-family:inherit;font-size:inherit;text-decoration:underline;text-underline-offset:2px;text-align:left;">
+                // Lỗi 5: bỏ badge riêng, gộp vào cột Trạng Thái → chỉ hiện dropdown (hoặc badge nếu Khách hủy)
+                // Lỗi 4: tên khách không gạch chân, màu #e2e8f0, hover underline qua onmouseover/out
+                const rowBgOdd  = "rgba(15,30,53,0.95)";
+                const rowBgEven = "rgba(20,38,65,0.7)";
+                const bg = idx % 2 === 0 ? rowBgEven : rowBgOdd;
+                const td = (content, extra="") =>
+                    `<td style="padding:9px 10px;border-bottom:1px solid rgba(30,58,95,0.4);${extra}">${content}</td>`;
+
+                return `<tr style="background:${bg};transition:background 0.12s;"
+                            onmouseover="this.style.background='rgba(30,58,95,0.5)'"
+                            onmouseout="this.style.background='${bg}'">
+                    ${td(`<span style="color:#64748b;font-size:0.78rem;">${idx + 1}</span>`, "text-align:center;")}
+                    ${td(`<button onclick="window.xemHoSoKhach('${sdtKhachEsc}','${tenKhachEsc}','${matchId}')"
+                                  onmouseover="this.style.textDecoration='underline'"
+                                  onmouseout="this.style.textDecoration='none'"
+                                  style="background:none;border:none;color:#e2e8f0;font-weight:600;cursor:pointer;padding:0;font-family:inherit;font-size:0.82rem;text-decoration:none;text-align:left;white-space:nowrap;">
                             ${g.ten_khach || "—"}
-                        </button>
-                    </td>
-                    <td style="padding:10px;color:#94a3b8;font-family:monospace;">${g.sdt_khach || "—"}</td>
-                    <td style="padding:10px;text-align:center;color:${genderClr};">${gioiTinh}</td>
-                    <td style="padding:10px;text-align:center;">
-                        <span style="padding:3px 9px;border-radius:10px;font-size:0.75rem;font-weight:600;white-space:nowrap;${badgeStyle}">${trangThai}</span>
-                    </td>
-                    <td style="padding:10px;text-align:center;color:#94a3b8;font-size:0.78rem;white-space:nowrap;">${_formatTS(g.created_at)}</td>
-                    <td style="padding:10px;text-align:center;color:${tgHuyClr};font-size:0.78rem;white-space:nowrap;">${tgHuy}</td>
-                    <td style="padding:10px;text-align:center;">${ttCellHTML}</td>
-                    <td style="padding:10px;text-align:center;">${selectHTML}</td>
-                    <td style="padding:10px;text-align:center;">${ratingCellHTML}</td>
+                        </button>`, "min-width:110px;")}
+                    ${td(`<span style="color:#94a3b8;font-family:monospace;font-size:0.8rem;white-space:nowrap;">${g.sdt_khach || "—"}</span>`)}
+                    ${td(`<span style="color:${genderClr};font-weight:600;font-size:0.8rem;">${gioiTinh}</span>`, "text-align:center;")}
+                    ${td(`<span style="color:#94a3b8;font-size:0.75rem;white-space:nowrap;">${_formatTS(g.created_at)}</span>`, "text-align:center;")}
+                    ${td(`<span style="color:${tgHuyClr};font-size:0.75rem;white-space:nowrap;">${tgHuy}</span>`, "text-align:center;")}
+                    ${td(ttCellHTML, "text-align:center;")}
+                    ${td(isKhachHuy
+                        ? `<span style="padding:3px 9px;border-radius:10px;font-size:0.73rem;font-weight:600;white-space:nowrap;${badgeStyle}">${trangThai}</span>`
+                        : selectHTML, "text-align:center;")}
+                    ${td(ratingCellHTML, "text-align:center;")}
                 </tr>`;
             }).join("");
 
@@ -2332,7 +2339,7 @@
 
         } catch (err) {
             if (loading) loading.style.display = "none";
-            if (tbody)   tbody.innerHTML = `<tr><td colspan="10" style="padding:24px;text-align:center;color:#f87171;">Lỗi tải danh sách: ${(err.message || "").slice(0, 80)}</td></tr>`;
+            if (tbody)   tbody.innerHTML = `<tr><td colspan="9" style="padding:24px;text-align:center;color:#f87171;">Lỗi tải danh sách: ${(err.message || "").slice(0, 80)}</td></tr>`;
             if (table)   table.style.display = "table";
             console.error("openGuestListModal error:", err);
         }
