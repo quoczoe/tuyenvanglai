@@ -805,16 +805,23 @@
         if (chkAll) chkAll.checked = false;
     }
 
-    async function _taiDanhSachGopY() {
+    window._taiDanhSachGopY = async function _taiDanhSachGopY() {
         _resetBulkBar();
         const tbody = document.getElementById("adminGopyBody");
         if (!tbody) return;
         tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:#64748b;">
             <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>`;
         try {
-            const list = (await window.dbEngine.docThu("gop_y_he_thong", {
+            const list = await window.dbEngine.docThu("gop_y_he_thong", {
                 order: "created_at.desc"
-            })) || [];
+            });
+            if (list === null) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#f87171;">
+                    ⚠️ Không tải được dữ liệu góp ý. Kiểm tra RLS policy hoặc kết nối mạng.
+                    <br><button onclick="_taiDanhSachGopY()" style="margin-top:8px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.35);color:#f87171;padding:4px 14px;border-radius:6px;cursor:pointer;font-size:0.82rem;">Thử lại</button>
+                    </td></tr>`;
+                return;
+            }
             if (list.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b;">
                     Chưa có góp ý nào.</td></tr>`;
