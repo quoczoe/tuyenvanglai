@@ -1249,7 +1249,7 @@
     };
 
     // Xem hồ sơ tín dụng người đăng kèo (HOST)
-    window.xemHoSoNguoiDang = async function (sdt, ten) {
+    window.xemHoSoNguoiDang = async function (sdt, ten, scopeId) {
         const modal = document.getElementById("modal-ho-so-nguoi-dang");
         const body  = document.getElementById("modal-ho-so-nguoi-dang-body");
         if (!modal || !body) return;
@@ -1268,7 +1268,12 @@
             ]);
             const user = userRows[0] || {};
             const tenHien = user.ten_khach || ten || "Ẩn danh";
-            const sdtHien = user.sdt_khach || sdt;
+            const sdtReal = user.sdt_khach || sdt;
+            // Chỉ hiện SĐT đầy đủ nếu user đã bấm reveal ngoài card
+            const uid = scopeId ? `${scopeId}_${sdt}` : sdt;
+            const sdtEl = document.getElementById(`sdtDisplay_${uid}`);
+            const daReveal = sdtEl && !sdtEl.classList.contains("shb-sdt-masked");
+            const sdtHien = daReveal ? sdtReal : _maskSdt(sdtReal);
             const ngayTG  = user.ngay_tham_gia ? new Date(user.ngay_tham_gia).toLocaleDateString("vi-VN") : "--";
             const soKeo   = caDauRows.length;
             const avgSao  = reviewsHost.length > 0
@@ -1783,14 +1788,14 @@
                     : `<span style="font-size:0.6rem;padding:1px 5px;border-radius:4px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);color:#f97316;font-weight:700;margin-left:4px;white-space:nowrap;">🔴 RỦI RO</span>`;
                 return `<div class="slot-host-banner" onclick="event.stopPropagation()">
                     <span class="shb-name-chip"
-                          onclick="window.xemHoSoNguoiDang('${_sdtEsc}','${_tenEsc}');event.stopPropagation()"
+                          onclick="window.xemHoSoNguoiDang('${_sdtEsc}','${_tenEsc}','${slot.id}');event.stopPropagation()"
                           title="Xem hồ sơ & đánh giá host">
                         <i class="fa-solid fa-crown" style="color:#fbbf24;font-size:0.75em;flex-shrink:0;"></i>
                         <span class="shb-label">HOST:</span>
                         <span class="shb-name">${_ten.toUpperCase() || "ẨN DANH"}</span>${_trustBadge}
                     </span>
                     ${_sdt ? `<span class="shb-divider">|</span>
-                    <span class="shb-phone-chip" onclick="event.stopPropagation()" title="SĐT Host">
+                    <span class="shb-phone-chip" onclick="event.stopPropagation();(function(el){var btn=el.querySelector('.shb-reveal-btn');if(btn)btn.click();})(this)" title="Bấm để xem SĐT" style="cursor:pointer;">
                         <i class="fa-solid fa-phone" style="color:#FF5500;font-size:0.75em;flex-shrink:0;"></i>
                         <span class="shb-label">SĐT:</span>
                         ${_sdtChipHtml(_sdt, _sdtEsc, slot.id)}

@@ -719,10 +719,10 @@
 .shb-sdt     { font-size:0.82rem; font-weight:700; color:#FF5500; white-space:nowrap; }
 .shb-divider { color:#334155; font-size:0.9rem; margin:0 1px; }
 
-/* Footer card — grid 15% Share | 40% Chi tiết | 45% Đặt slot */
+/* Footer card — grid 22% Share | 37% Chi tiết | 41% Đặt slot */
 .slot-card-footer {
     display: grid;
-    grid-template-columns: 15fr 40fr 45fr;
+    grid-template-columns: 22fr 37fr 41fr;
     gap: 6px;
     padding: 10px 14px 12px;
     border-top: 1px solid rgba(255,255,255,0.04);
