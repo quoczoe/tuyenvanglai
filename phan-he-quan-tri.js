@@ -825,6 +825,9 @@
                 </td></tr>`;
             return;
         }
+        // Gán _rank cố định theo id tăng dần (nhỏ nhất = cũ nhất = _rank 1)
+        const sorted = [...list].sort((a, b) => (a.id || 0) - (b.id || 0));
+        sorted.forEach((g, i) => { g._rank = i + 1; });
         _gopYAllData = list;
         _gopYPage    = 1;
         window._gopYApplyFilter();
@@ -834,7 +837,7 @@
     function _gopYCompare(a, b, col, dir) {
         let va, vb;
         if (col === "id") {
-            va = a.id || 0; vb = b.id || 0;
+            va = a._rank || 0; vb = b._rank || 0;
         } else {
             va = a[col] ?? ""; vb = b[col] ?? "";
         }
@@ -946,7 +949,7 @@
         };
 
         tbody.innerHTML = page.map((g, i) => {
-            const stt   = start + i + 1;
+            const stt   = g._rank ?? (start + i + 1);
             const loai  = g.loai_gop_y || "Khác";
             const lc    = _LOAI_COLOR[loai] || { bg:"rgba(34,211,238,0.1)", color:"#22d3ee" };
             const nd    = g.noi_dung || "";
@@ -982,7 +985,7 @@
                     <input type="checkbox" class="gy-chk" value="${g.id}" style="cursor:pointer;accent-color:#f87171;" onchange="window._capNhatBulkBar()">
                 </td>
                 <td style="text-align:center;color:#64748b;font-size:0.78rem;padding:6px 4px;">${stt}</td>
-                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tenHtml}</td>
+                <td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tenHtml}</td>
                 <td style="white-space:nowrap;">${_stars(g.so_sao)}</td>
                 <td><span style="background:${lc.bg};color:${lc.color};padding:2px 8px;border-radius:10px;font-size:0.73rem;white-space:nowrap;">${_escHtml(loai)}</span></td>
                 <td style="max-width:220px;">${ndHtml}</td>
