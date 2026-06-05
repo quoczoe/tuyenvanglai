@@ -6,6 +6,8 @@
     <title>ADMIN — TUYENVANGLAI.IO.VN</title>
     <meta name="robots" content="noindex, nofollow">
     <meta name="description" content="Admin Panel bảo mật — Hệ thống quản trị tuyệt mật TUYENVANGLAI.IO.VN.">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='16' fill='%230f1e35'/><text x='16' y='22' text-anchor='middle' font-size='18' fill='%2300ff88'>🏸</text></svg>">
+    <link rel="shortcut icon" href="../favicon.ico" type="image/x-icon">
     <!--
         QUAN TRỌNG — CSS KHÔNG CHẶN RENDER (Non-render-blocking):
         Dùng kỹ thuật media="print" + onload để Google Fonts & Font Awesome
@@ -121,20 +123,23 @@
                trên Cốc Cốc (dùng background đặc thay thế) */
         }
         .ad-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .ad-brand-text { font-size: 1rem; font-weight: 700; color: var(--accent-green); letter-spacing: 0.02em; }
+        .ad-brand-text { font-size: 1rem; font-weight: 900; letter-spacing: 0.02em; white-space: nowrap; }
+        .ad-brand-text .logo-tuyen   { color: #fff; }
+        .ad-brand-text .logo-anglai  { color: #FF7A00; }
+        .ad-brand-text .logo-tld     { color: #64748b; font-weight: 400; font-size: 0.82em; }
         .ad-zone-badge {
             font-size: 0.72rem; padding: 4px 12px;
             border: 1px solid rgba(0,255,136,0.35); border-radius: var(--radius-sm);
             color: var(--accent-green);
         }
 
-        /* ══ MAIN LAYOUT ══ */
+        /* ══ MAIN LAYOUT — full-width PC ══ */
         .ad-main {
-            max-width: 1280px; margin: 0 auto;
+            width: 100%; max-width: 100%;
             padding: 1.5rem 2rem 3rem;
             box-sizing: border-box;
         }
-        @media (max-width: 768px) { .ad-main { padding: 1rem; } }
+        @media (max-width: 768px) { .ad-main { padding: 0.75rem; } }
 
         /* ══ AUTH PANEL ══ */
         .ad-auth-wrap {
@@ -281,8 +286,7 @@
         .ad-tab-content {
             display: none;
             width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
+            max-width: 100%;
             min-height: 500px;
             box-sizing: border-box;
         }
@@ -347,22 +351,22 @@
             width: 100%; border-collapse: collapse; min-width: 860px;
         }
         .ad-table thead th {
-            padding: 10px 14px; text-align: left; font-size: 0.73rem;
+            padding: 10px 12px; text-align: center; font-size: 0.72rem;
             font-weight: 700; color: var(--text-muted); text-transform: uppercase;
             letter-spacing: 0.05em; background: var(--bg-card2);
-            border-bottom: 1px solid var(--border); white-space: nowrap;
+            border: 1px solid rgba(30,58,95,0.8); white-space: nowrap;
             position: sticky; top: 0; z-index: 5;
         }
         .ad-table tbody tr {
-            border-bottom: 1px solid rgba(255,255,255,0.035);
             transition: background 0.15s;
         }
         .ad-table tbody tr:nth-child(odd)  { background: var(--bg-card2); }
         .ad-table tbody tr:nth-child(even) { background: var(--bg-card); }
-        .ad-table tbody tr:hover { background: rgba(0,255,136,0.04); }
+        .ad-table tbody tr:hover { background: rgba(0,255,136,0.05); }
         .ad-table td {
-            padding: 9px 14px; font-size: 0.82rem; color: var(--text-main);
-            vertical-align: middle;
+            padding: 8px 12px; font-size: 0.82rem; color: var(--text-main);
+            vertical-align: middle; text-align: center;
+            border: 1px solid rgba(30,58,95,0.55);
         }
         .ad-table td.mono { font-family: monospace; font-size: 0.8rem; color: var(--accent-green); }
 
@@ -468,6 +472,29 @@
         /* Auth: adminConsole ẩn theo mặc định — adminAuthPanel hiện ngay (không phụ thuộc JS) */
         #adminConsole   { display: none; }
         /* adminAuthPanel KHÔNG có display:none trong CSS — JS điều khiển hoàn toàn qua inline style */
+
+        /* ══ SORT ICONS ══ */
+        .ad-table thead th.sortable { cursor:pointer; user-select:none; }
+        .ad-table thead th.sortable:hover { color: var(--accent-green); }
+        .sort-icon { font-size:0.7rem; color:#4b5563; margin-left:4px; }
+
+        /* ══ MEMBER TOOLBAR ══ */
+        .mv-toolbar {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 10px; margin-bottom: 14px;
+        }
+        .mv-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; flex:1; }
+        .mv-filter-select {
+            height: 36px; padding: 0 10px; font-size: 0.82rem; min-width: 130px;
+            background: rgba(30,41,59,0.9); border: 1px solid var(--border);
+            border-radius: var(--radius-sm); color: var(--text-main); font-family: inherit;
+            cursor: pointer;
+        }
+        .mv-filter-select:focus { outline: none; border-color: var(--accent-green); }
+
+        /* role / trust badges */
+        .mv-role-badge-admin { font-size:0.72rem;background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);padding:2px 8px;border-radius:10px;font-weight:700; }
+        .mv-role-badge-guest { font-size:0.72rem;background:rgba(96,165,250,0.1);color:#60a5fa;border:1px solid rgba(96,165,250,0.2);padding:2px 8px;border-radius:10px;font-weight:600; }
 
         /* ═══════════════════════════════════════════════════════════════════
          * EMERGENCY FALLBACK: Đảm bảo nội dung luôn hiển thị
@@ -776,16 +803,27 @@
 
 <!-- ══ HEADER ══ -->
 <header class="ad-header">
-    <a href="index.html" class="ad-brand">
-        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2.2" fill="none"
-            style="color:var(--accent-green);transform:rotate(-45deg);flex-shrink:0;margin-right:8px;">
-            <path d="M12 2a3 3 0 0 0-3 3v1a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" fill="currentColor"/>
-            <path d="M9 6l-5 13a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1L15 6"/>
-            <path d="M12 6v14"/><path d="M6 13h12"/>
-        </svg>
-        <span class="ad-brand-text">TUYENVANGLAI.IO.VN</span>
+    <a href="../" class="ad-brand">
+        <!-- Logo image — ẩn text khi load OK, hiện text khi lỗi -->
+        <img src="../logo.png" alt="Logo" height="32"
+             style="height:32px;object-fit:contain;flex-shrink:0;"
+             onload="document.getElementById('adminBrandText').style.display='none';"
+             onerror="this.style.display='none';document.getElementById('adminBrandText').style.display='inline-flex';">
+        <!-- Text fallback — ẩn mặc định, chỉ hiện khi logo fail -->
+        <span class="ad-brand-text" id="adminBrandText" style="display:none;align-items:center;gap:0;">
+            <span class="logo-tuyen">TUYEN</span><span class="logo-anglai">VANGLAI</span><span class="logo-tld">.IO.VN</span>
+        </span>
     </a>
     <div style="display:flex;align-items:center;gap:10px;">
+        <a href="/" target="_blank" rel="noopener"
+           style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;
+                  border:1px solid rgba(0,255,136,0.3);border-radius:8px;
+                  color:var(--accent-green);font-size:0.78rem;font-weight:700;
+                  text-decoration:none;transition:background 0.2s;"
+           onmouseover="this.style.background='rgba(0,255,136,0.08)'"
+           onmouseout="this.style.background='transparent'">
+            <i class="fa-solid fa-house"></i> Trang Chủ
+        </a>
         <span class="ad-zone-badge">
             <i class="fa-solid fa-shield-halved"></i> ADMIN ZONE
         </span>
@@ -910,51 +948,142 @@
              TAB 2: QUẢN LÝ THÀNH VIÊN
              ════════════════════════════════════════════ -->
         <div class="ad-tab-content" id="adminTab_guests">
-            <div class="ad-guests-header">
+
+            <!-- Header row: tiêu đề + đếm tổng -->
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
                 <div>
-                    <div style="font-size:1rem;font-weight:700;color:var(--text-main);margin-bottom:4px;">
+                    <div style="font-size:1rem;font-weight:700;color:var(--text-main);margin-bottom:3px;">
                         Quản Lý Thành Viên Toàn Hệ Thống
                     </div>
-                    <p style="font-size:0.78rem;color:#64748b;">
-                        Xem thông tin, sửa, khóa, xóa tài khoản thành viên và xem đánh giá.
-                    </p>
+                    <div style="font-size:0.78rem;color:#64748b;">
+                        Xem thông tin, sửa, khóa, xóa tài khoản và phân tích hành vi.
+                        Tổng: <strong id="adminGuestCount" style="color:var(--accent-green);">--</strong>
+                    </div>
                 </div>
-                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                    <span class="ad-guest-count" id="adminGuestCount">-- thành viên</span>
+            </div>
+
+            <!-- Toolbar: tìm kiếm + bộ lọc + số dòng + nút tạo test -->
+            <div class="mv-toolbar">
+                <div class="mv-filters">
                     <div class="ad-search-wrap">
                         <i class="fa-solid fa-magnifying-glass"></i>
                         <input type="text" class="ad-search-input" id="adminGuestSearch"
                             placeholder="Tìm tên, SĐT..." oninput="locKhachAdmin()">
                     </div>
+                    <select class="mv-filter-select" id="filterVaiTro" onchange="window.locKhachAdmin()">
+                        <option value="">Tất cả vai trò</option>
+                        <option value="admin">👑 Admin</option>
+                        <option value="guest">👤 Thành Viên</option>
+                    </select>
+                    <select class="mv-filter-select" id="filterTinhTrang" onchange="window.locKhachAdmin()">
+                        <option value="">Tất cả tình trạng</option>
+                        <option value="active">✅ Hoạt động</option>
+                        <option value="locked">🔒 Bị khóa</option>
+                    </select>
+                    <!-- Số dòng / trang -->
+                    <select class="mv-filter-select" onchange="window._tvDoiSoTrang(this.value)"
+                        style="min-width:100px;" title="Số dòng hiển thị mỗi trang">
+                        <option value="10">10 dòng</option>
+                        <option value="20" selected>20 dòng</option>
+                        <option value="50">50 dòng</option>
+                        <option value="100">100 dòng</option>
+                    </select>
+                </div>
+                <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+                    <button class="ad-btn-secondary" onclick="window.moModalTaoTaiKhoanTest()">
+                        <i class="fa-solid fa-flask"></i> Tạo TK Test
+                    </button>
+                    <button class="ad-btn-ghost" onclick="_taiDanhSachKhach()">
+                        <i class="fa-solid fa-rotate-right"></i>
+                    </button>
                 </div>
             </div>
 
-            <!-- FIX 1: .table-responsive ngăn bảng kéo giãn layout khi đổi tab -->
+            <!-- Thanh xóa hàng loạt -->
+            <div id="tvBulkBar" style="display:none;margin-bottom:10px;padding:8px 14px;
+                 background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.28);
+                 border-radius:8px;align-items:center;gap:12px;flex-wrap:wrap;">
+                <span id="tvBulkCount" style="font-size:0.85rem;font-weight:700;color:#f87171;flex:1;"></span>
+                <button onclick="window.xoaNhieuTaiKhoanTest()"
+                    style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.45);
+                           color:#f87171;padding:5px 14px;border-radius:7px;
+                           cursor:pointer;font-size:0.82rem;font-weight:700;
+                           display:inline-flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-trash-can"></i> Xóa đã chọn
+                </button>
+                <button onclick="window._tvBoChonHet()"
+                    style="background:transparent;border:1px solid rgba(255,255,255,0.12);
+                           color:#94a3b8;padding:5px 12px;border-radius:7px;cursor:pointer;font-size:0.82rem;">
+                    Bỏ chọn hết
+                </button>
+            </div>
+
+            <!-- Bảng thành viên -->
             <div class="table-responsive">
-                <table class="ad-table" style="min-width:780px;">
+                <table class="ad-table" style="min-width:1250px;">
                     <thead>
                         <tr>
-                            <th style="width:40px;">#</th>
-                            <th>Tên Khách</th>
-                            <th>Vai Trò</th>
+                            <!-- Cột Chọn (checkbox) -->
+                            <th style="width:36px;text-align:center;">
+                                <input type="checkbox" id="tvChkAll" style="cursor:pointer;accent-color:#f87171;"
+                                    onchange="window._tvChonTatCa(this.checked)">
+                            </th>
+                            <!-- Cột ID -->
+                            <th class="sortable" onclick="window._sortKhach('memberID')" style="width:50px;">
+                                ID <span class="sort-icon" id="sortIcon_memberID">↕</span>
+                            </th>
+                            <!-- Hành Động ngay đầu để dễ thao tác mobile -->
+                            <th style="width:80px;">Thao Tác</th>
+                            <!-- Tên -->
+                            <th class="sortable" onclick="window._sortKhach('ten')">
+                                Tên <span class="sort-icon" id="sortIcon_ten">↕</span>
+                            </th>
+                            <th class="sortable" onclick="window._sortKhach('vai_tro')">
+                                Vai Trò <span class="sort-icon" id="sortIcon_vai_tro">↕</span>
+                            </th>
                             <th>SĐT Zalo</th>
-                            <th>Ngày Tham Gia</th>
-                            <th>Số Ca</th>
-                            <th>Tổng Chi Tiêu (VNĐ)</th>
-                            <th>Số Host Giao Lưu</th>
-                            <th>⭐ Sao TB</th>
-                            <th>Hành động</th>
+                            <th class="sortable" onclick="window._sortKhach('caDang')" title="Số ca đấu đã tạo">
+                                Ca Đăng <span class="sort-icon" id="sortIcon_caDang">↕</span>
+                            </th>
+                            <th class="sortable" onclick="window._sortKhach('caTG')" title="Số ca đã tham gia">
+                                Ca Tham Gia <span class="sort-icon" id="sortIcon_caTG">↕</span>
+                            </th>
+                            <th class="sortable" onclick="window._sortKhach('tongChi')">
+                                Tổng Chi <span class="sort-icon" id="sortIcon_tongChi">↕</span>
+                            </th>
+                            <!-- Uy Tín + Sao cạnh nhau -->
+                            <th class="sortable" onclick="window._sortKhach('diemUyTin')" title="Điểm uy tín 0–100">
+                                Uy Tín <span class="sort-icon" id="sortIcon_diemUyTin">↕</span>
+                            </th>
+                            <th class="sortable" onclick="window._sortKhach('sao')">
+                                ⭐ Sao <span class="sort-icon" id="sortIcon_sao">↕</span>
+                            </th>
+                            <!-- Tình trạng + Thiết bị -->
+                            <th class="sortable" onclick="window._sortKhach('isActive')">
+                                Tình Trạng <span class="sort-icon" id="sortIcon_isActive">↕</span>
+                            </th>
+                            <th title="Fingerprint thiết bị — Xóa để reset đăng nhập">Thiết Bị</th>
+                            <!-- Ngày ở cuối cùng, căn phải -->
+                            <th class="sortable" onclick="window._sortKhach('ngayTG')" style="text-align:right;">
+                                Ngày Tham Gia <span class="sort-icon" id="sortIcon_ngayTG" style="color:#00ff88;">↓</span>
+                            </th>
                         </tr>
                     </thead>
                     <tbody id="adminGuestsBody">
                         <tr>
-                            <td colspan="10" style="text-align:center;padding:28px;color:#64748b;">
+                            <td colspan="14" style="text-align:center;padding:28px;color:#64748b;">
                                 <i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+
+            <!-- Thanh phân trang -->
+            <div id="tvPaginationBar"
+                 style="display:flex;align-items:center;justify-content:space-between;
+                        flex-wrap:wrap;gap:10px;padding:12px 4px;margin-top:8px;"></div>
+
         </div>
 
         <!-- ════════════════════════════════════════════
