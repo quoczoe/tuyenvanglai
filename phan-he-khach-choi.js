@@ -65,6 +65,14 @@
                     localStorage.removeItem("tvl_guest");
                     window.currentGuest = null;
                     _hienManDangNhap();
+                } else if (!parsed._token) {
+                    // [FIX] Session cũ (tạo trước khi hệ thống bảo mật RPC được triển khai)
+                    // không có _token → nếu giữ lại, người dùng trông như "đã đăng nhập"
+                    // nhưng sẽ bị đăng xuất ngay khi cố đặt slot hoặc hủy slot.
+                    // Giải pháp: xóa session cũ, yêu cầu đăng nhập lại để lấy token hợp lệ.
+                    localStorage.removeItem("tvl_guest");
+                    window.currentGuest = null;
+                    _hienManDangNhap();
                 } else {
                     window.currentGuest = parsed;
                     // Refresh profile từ DB: sync is_active, vai_tro mới nhất
@@ -1801,14 +1809,20 @@
             // Gọi RPC dat_slot — server tạo mã slot + verify token + lấy ten từ DB
             const g = window.currentGuest;
             if (!g?._token) {
-                window.hienToast("Phiên đăng nhập hết hạn", "Vui lòng đăng nhập lại.", "warning");
+                // Không có token → session cũ hoặc bị xóa → xóa localStorage và yêu cầu đăng nhập lại
+                localStorage.removeItem("tvl_guest");
+                window.currentGuest = null;
+                window.hienToast("Cần đăng nhập lại", "Phiên của bạn chưa có xác thực bảo mật. Vui lòng đăng nhập lại.", "warning");
                 window.dangXuatKhach?.();
                 return;
             }
             const slotResult = await window.guestRPC.datSlot(g._token, g.sdt_khach, caDauId);
 
             if (slotResult.status === 'unauthorized') {
-                window.hienToast("Phiên đăng nhập hết hạn", "Vui lòng đăng nhập lại.", "warning");
+                // Token hết hạn hoặc bị thu hồi trên server → buộc đăng nhập lại
+                localStorage.removeItem("tvl_guest");
+                window.currentGuest = null;
+                window.hienToast("Phiên đã hết hạn", "Phiên đăng nhập đã hết hạn (7 ngày). Vui lòng đăng nhập lại.", "warning");
                 window.dangXuatKhach?.();
                 return;
             }
@@ -2546,11 +2560,22 @@
             // Cập nhật trạng thái qua RPC — server verify token + sdt_khach khớp
             const g = window.currentGuest;
             if (!g?._token) {
-                window.hienToast("Phiên hết hạn", "Vui lòng đăng nhập lại.", "warning"); return;
+                localStorage.removeItem("tvl_guest");
+                window.currentGuest = null;
+                window.hienToast("Cần đăng nhập lại", "Phiên của bạn chưa có xác thực bảo mật. Vui lòng đăng nhập lại.", "warning");
+                window.dangXuatKhach?.();
+                return;
             }
             const huyResult = await window.guestRPC.huySlot(g._token, g.sdt_khach, datSlotId);
             if (huyResult.status !== 'ok') {
-                window.hienToast("Không thể huỷ", huyResult.status === 'unauthorized' ? "Phiên đăng nhập hết hạn." : "Ca đã chốt hoặc slot không hợp lệ.", "warning");
+                if (huyResult.status === 'unauthorized') {
+                    localStorage.removeItem("tvl_guest");
+                    window.currentGuest = null;
+                    window.hienToast("Phiên đã hết hạn", "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.", "warning");
+                    window.dangXuatKhach?.();
+                } else {
+                    window.hienToast("Không thể huỷ", "Ca đã chốt hoặc slot không hợp lệ.", "warning");
+                }
                 return;
             }
             window.hienToast("Đã huỷ đăng ký", "Bạn đã huỷ tham gia ca này thành công.", "info");
