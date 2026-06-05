@@ -1282,6 +1282,11 @@
             const starStr = avgSao
                 ? `${"★".repeat(Math.round(parseFloat(avgSao)))}${"☆".repeat(5 - Math.round(parseFloat(avgSao)))} ${avgSao}/5 (${reviewsHost.length} đánh giá)`
                 : "Chưa có đánh giá";
+            // Điểm uy tín
+            const diemUT  = user.diem_uy_tin ?? 100;
+            const lvUT    = _trustLevel(diemUT);
+            const pctUT   = Math.max(0, Math.min(100, diemUT));
+            const barColorUT = diemUT >= 80 ? "#00ff88" : diemUT >= 60 ? "#fbbf24" : diemUT >= 40 ? "#f97316" : "#ef4444";
 
             const reviewList = reviewsHost.slice(0, 5).map(r => {
                 const ss = Math.max(1, Math.min(5, r.so_sao || 0));
@@ -1309,6 +1314,18 @@
                 <div style="background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.2);border-radius:10px;padding:12px;text-align:center;">
                     <div style="font-size:1.4rem;font-weight:800;color:#fbbf24;">${avgSao || "--"}</div>
                     <div style="font-size:0.7rem;color:#64748b;margin-top:2px;">Điểm đánh giá</div>
+                </div>
+            </div>
+            <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                    <span style="font-size:0.75rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Điểm uy tín</span>
+                    <span style="font-size:0.82rem;font-weight:800;color:${barColorUT};">${lvUT.icon} ${lvUT.label} — ${diemUT}đ</span>
+                </div>
+                <div style="background:rgba(255,255,255,0.06);border-radius:100px;height:8px;overflow:hidden;">
+                    <div style="height:100%;width:${pctUT}%;background:${barColorUT};border-radius:100px;transition:width 0.5s ease;box-shadow:0 0 6px ${barColorUT}55;"></div>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:0.65rem;color:#475569;">
+                    <span>0đ</span><span>50đ</span><span>100đ</span>
                 </div>
             </div>
             <div style="font-size:0.76rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Đánh giá gần nhất</div>
