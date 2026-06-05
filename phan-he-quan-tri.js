@@ -1448,21 +1448,32 @@
 
     /* ─── Cascade delete một user — xóa toàn bộ dữ liệu liên quan ─── */
     async function _cascadeXoaUser(sdt) {
-        // 1. Xóa tất cả slot khách này đã đặt
+        // 1. Xóa tất cả slot khách này đã đặt (với tư cách người đặt)
         await window.dbEngine.xoa("dat_slot", { sdt_khach: sdt }).catch(() => {});
 
-        // 2. Tìm & xóa ca đấu do user này đăng + slot trong ca đó
+        // 2. Tìm & xóa ca đấu do user này TỔ CHỨC (với tư cách host)
+        //    ca_dau.ma_key_host liên kết với nguoi_dung.ma_key_host
+        //    KHÔNG dùng sdt_nguoi_tao vì cột đó không tồn tại trong schema
         let userCaDau = [];
-        try { userCaDau = await window.dbEngine.doc("ca_dau", { eq: { sdt_nguoi_tao: sdt } }); }
-        catch (_) { userCaDau = []; }
+        try {
+            const userArr = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: sdt } });
+            const maKey   = userArr?.[0]?.ma_key_host;
+            if (maKey) {
+                userCaDau = (await window.dbEngine.doc("ca_dau", { eq: { ma_key_host: maKey } })) || [];
+            }
+        } catch (_) { userCaDau = []; }
+
+        // Xóa tất cả dat_slot trong các ca đấu host này đã đăng
         for (const ca of userCaDau) {
             await window.dbEngine.xoa("dat_slot", { id_ca_dau: ca.id }).catch(() => {});
         }
+        // Xóa các ca đấu
         for (const ca of userCaDau) {
             await window.dbEngine.xoa("ca_dau", { id: ca.id }).catch(() => {});
         }
 
-        // 3. Xóa session token (văng khỏi app ngay khi hành động tiếp theo)
+        // 3. Xóa session token — token không còn hợp lệ, API call tiếp theo trả 'unauthorized'
+        //    Poll định kỳ ở client sẽ phát hiện và văng ngay trong vòng 60s
         await window.dbEngine.xoa("guest_sessions", { sdt_khach: sdt }).catch(() => {});
 
         // 4. Xóa tài khoản chính

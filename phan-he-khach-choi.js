@@ -94,6 +94,8 @@
                             .catch(() => {}); // im lặng nếu mất mạng
                     }
                     _hienThiDashboardKhach();
+                    // Bắt đầu kiểm tra session định kỳ để văng ngay khi admin xóa tài khoản
+                    _batDauKiemTraSession();
                 }
             } catch {
                 window.currentGuest = null;
@@ -853,6 +855,7 @@
     };
 
     window.dangXuatKhach = function () {
+        _dungKiemTraSession(); // dừng poll định kỳ trước khi xóa session
         localStorage.removeItem("tvl_guest");
         window.currentGuest = null;
         // Xóa toàn bộ nội dung lịch sử cũ để không hiện lại sau đăng xuất
@@ -867,6 +870,65 @@
         window.hienToast("Đã đăng xuất", "Hẹn gặp lại lông thủ!", "info");
         _hienManDangNhap();
     };
+
+    /* ═══════════════════════════════════════════════════
+     * KIỂM TRA SESSION ĐỊNH KỲ — văng ngay khi admin xóa tài khoản
+     *
+     * Sau khi admin xóa user → guest_sessions bị DELETE → token không còn valid.
+     * Cơ chế này phát hiện điều đó trong vòng 60 giây (poll) hoặc ngay khi user
+     * quay lại tab (visibilitychange) mà không cần WebSocket.
+     * ═══════════════════════════════════════════════════ */
+    let _sessionCheckTimer = null;
+    let _onVisibility      = null;
+
+    function _batDauKiemTraSession() {
+        _dungKiemTraSession(); // đảm bảo không có timer cũ chạy song song
+
+        const _check = async () => {
+            const g = window.currentGuest;
+            if (!g?._token || !window.guestRPC) return; // không còn đăng nhập
+            try {
+                const r = await window.guestRPC.refreshProfile(g._token, g.sdt_khach);
+                if (r.status === 'unauthorized') {
+                    _dungKiemTraSession();
+                    window.hienToast(
+                        "Tài khoản không còn hợp lệ",
+                        "Tài khoản của bạn đã bị xóa hoặc phiên hết hạn. Vui lòng đăng nhập lại.",
+                        "warning"
+                    );
+                    window.dangXuatKhach?.();
+                } else if (r.status === 'blocked') {
+                    _dungKiemTraSession();
+                    window.hienToast("Tài khoản bị khóa", "Admin đã khóa tài khoản của bạn. Liên hệ Admin.", "danger");
+                    window.dangXuatKhach?.();
+                }
+                // 'ok' → cập nhật thông tin mới nhất
+                if (r.status === 'ok' && r.user) {
+                    window.currentGuest = { ...window.currentGuest, ...r.user };
+                    const stored = JSON.parse(localStorage.getItem("tvl_guest") || "{}");
+                    localStorage.setItem("tvl_guest", JSON.stringify({ ...stored, ...r.user }));
+                }
+            } catch (_) { /* im lặng nếu mất mạng */ }
+        };
+
+        // Poll mỗi 60 giây
+        _sessionCheckTimer = setInterval(_check, 60_000);
+
+        // Kiểm tra ngay khi user quay lại tab (sau khi tab bị ẩn)
+        _onVisibility = () => { if (document.visibilityState === 'visible') _check(); };
+        document.addEventListener('visibilitychange', _onVisibility);
+    }
+
+    function _dungKiemTraSession() {
+        if (_sessionCheckTimer) {
+            clearInterval(_sessionCheckTimer);
+            _sessionCheckTimer = null;
+        }
+        if (_onVisibility) {
+            document.removeEventListener('visibilitychange', _onVisibility);
+            _onVisibility = null;
+        }
+    }
 
     /* ═══════════════════════════════════════════════════
      * 3. BỘ LỌC TÌM KIẾM KÈO
