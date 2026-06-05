@@ -830,7 +830,28 @@
         window._gopYApplyFilter();
     };
 
-    /* Lọc + sắp xếp + render trang hiện tại */
+    /* Hàm so sánh dùng tham số tường minh — không dùng closure để tránh bug */
+    function _gopYCompare(a, b, col, dir) {
+        let va, vb;
+        if (col === "id") {
+            va = a.id || 0; vb = b.id || 0;
+        } else {
+            va = a[col] ?? ""; vb = b[col] ?? "";
+        }
+        if (typeof va === "string") { va = va.toLowerCase(); vb = String(vb).toLowerCase(); }
+        if (va < vb) return dir === "asc" ? -1 : 1;
+        if (va > vb) return dir === "asc" ?  1 : -1;
+        return 0;
+    }
+
+    /* Chỉ sắp xếp _gopYFiltered theo trạng thái sort hiện tại rồi render */
+    function _gopYDoSort() {
+        const col = _gopYSortCol;
+        const dir = _gopYSortDir;
+        _gopYFiltered.sort((a, b) => _gopYCompare(a, b, col, dir));
+    }
+
+    /* Lọc từ _gopYAllData → sort → render */
     window._gopYApplyFilter = function () {
         const kw   = (document.getElementById("gopYSearch")?.value || "").trim().toLowerCase();
         const loai = document.getElementById("gopYFilterLoai")?.value || "";
@@ -846,21 +867,12 @@
             return true;
         });
 
-        _gopYFiltered.sort((a, b) => {
-            let va = a[_gopYSortCol] ?? "";
-            let vb = b[_gopYSortCol] ?? "";
-            if (typeof va === "string") va = va.toLowerCase();
-            if (typeof vb === "string") vb = vb.toLowerCase();
-            if (va < vb) return _gopYSortDir === "asc" ? -1 : 1;
-            if (va > vb) return _gopYSortDir === "asc" ?  1 : -1;
-            return 0;
-        });
-
+        _gopYDoSort();
         _gopYPage = 1;
         _gopYRenderPage();
     };
 
-    /* Đổi cột sắp xếp hoặc toggle chiều */
+    /* Đổi cột / chiều sắp xếp — chỉ re-sort _gopYFiltered, không filter lại */
     window._gopYSort = function (col) {
         if (_gopYSortCol === col) {
             _gopYSortDir = _gopYSortDir === "asc" ? "desc" : "asc";
@@ -868,7 +880,9 @@
             _gopYSortCol = col;
             _gopYSortDir = col === "created_at" ? "desc" : "asc";
         }
-        window._gopYApplyFilter();
+        _gopYDoSort();
+        _gopYPage = 1;
+        _gopYRenderPage();
     };
 
     window._gopYResetFilter = function () {

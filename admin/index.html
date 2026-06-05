@@ -1563,7 +1563,7 @@
                 </button>
             </div>
 
-            <!-- Bộ lọc -->
+            <!-- Bộ lọc + Phân trang — cùng 1 hàng -->
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center;">
                 <input id="gopYSearch" type="text" placeholder="🔍 Tìm tên, nội dung..."
                        oninput="window._gopYApplyFilter()"
@@ -1591,6 +1591,23 @@
                                padding:6px 12px;border-radius:7px;cursor:pointer;font-size:0.82rem;white-space:nowrap;">
                     ✕ Xóa lọc
                 </button>
+                <!-- Phân trang — cùng hàng với bộ lọc -->
+                <div style="display:flex;align-items:center;gap:6px;margin-left:auto;flex-shrink:0;">
+                    <span id="gopYPageInfo" style="font-size:0.78rem;color:#64748b;white-space:nowrap;"></span>
+                    <select id="gopYPerPage" onchange="window._gopYSetPerPage()"
+                            style="background:#1a2844;border:1px solid rgba(255,255,255,0.12);color:#e2e8f0;border-radius:7px;padding:5px 8px;font-size:0.8rem;cursor:pointer;">
+                        <option value="10">10/tr</option>
+                        <option value="20">20/tr</option>
+                        <option value="50">50/tr</option>
+                    </select>
+                    <button id="gopYPrevBtn" onclick="window._gopYPrevPage()"
+                            style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#94a3b8;
+                                   padding:5px 10px;border-radius:7px;cursor:pointer;font-size:0.82rem;">‹</button>
+                    <span id="gopYPageNum" style="font-size:0.78rem;color:#e2e8f0;white-space:nowrap;min-width:70px;text-align:center;"></span>
+                    <button id="gopYNextBtn" onclick="window._gopYNextPage()"
+                            style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#94a3b8;
+                                   padding:5px 10px;border-radius:7px;cursor:pointer;font-size:0.82rem;">›</button>
+                </div>
             </div>
 
             <!-- Bulk action bar -->
@@ -1619,9 +1636,12 @@
                             <th style="width:36px;text-align:center;">
                                 <input type="checkbox" id="gopYChkAll" style="cursor:pointer;accent-color:#f87171;" onclick="window._gopYChkAllToggle(this)">
                             </th>
-                            <th style="width:36px;text-align:center;color:#64748b;font-weight:600;">#</th>
+                            <th class="gy-sort-th" data-sort="id" onclick="window._gopYSort('id')"
+                                style="width:42px;text-align:center;cursor:pointer;user-select:none;">
+                                <span style="color:#64748b;font-weight:600;">#</span><span class="gy-arr" style="opacity:0.35;font-size:0.7rem;"> ↕</span>
+                            </th>
                             <th class="gy-sort-th" data-sort="ten_user" onclick="window._gopYSort('ten_user')"
-                                style="width:120px;cursor:pointer;white-space:nowrap;user-select:none;">
+                                style="width:160px;cursor:pointer;white-space:nowrap;user-select:none;">
                                 Người Dùng<span class="gy-arr" style="opacity:0.35;"> ↕</span>
                             </th>
                             <th class="gy-sort-th" data-sort="so_sao" onclick="window._gopYSort('so_sao')"
@@ -1651,24 +1671,6 @@
             </div>
             </div><!-- /ad-table-wrap -->
 
-            <!-- Phân trang -->
-            <div id="gopYPagination" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;padding:4px 2px;">
-                <span id="gopYPageInfo" style="font-size:0.8rem;color:#64748b;"></span>
-                <div style="flex:1;"></div>
-                <select id="gopYPerPage" onchange="window._gopYSetPerPage()"
-                        style="background:#1a2844;border:1px solid rgba(255,255,255,0.12);color:#e2e8f0;border-radius:7px;padding:4px 8px;font-size:0.8rem;cursor:pointer;">
-                    <option value="10">10 / trang</option>
-                    <option value="20">20 / trang</option>
-                    <option value="50">50 / trang</option>
-                </select>
-                <button id="gopYPrevBtn" onclick="window._gopYPrevPage()"
-                        style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#94a3b8;
-                               padding:4px 12px;border-radius:7px;cursor:pointer;font-size:0.82rem;">‹ Trước</button>
-                <span id="gopYPageNum" style="font-size:0.8rem;color:#e2e8f0;white-space:nowrap;min-width:90px;text-align:center;"></span>
-                <button id="gopYNextBtn" onclick="window._gopYNextPage()"
-                        style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);color:#94a3b8;
-                               padding:4px 12px;border-radius:7px;cursor:pointer;font-size:0.82rem;">Sau ›</button>
-            </div>
         </div>
 
     </div><!-- /adminConsole -->
