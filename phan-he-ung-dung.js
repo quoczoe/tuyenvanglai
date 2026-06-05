@@ -287,6 +287,8 @@
 
         // Điểm uy tín — tải từ DB
         _taiDiemUyTin(u.sdt_khach);
+        // Thanh uy tín — gọi sau F5 (khi currentGuest đã restore từ localStorage)
+        window._hienTrustScoreBar?.();
 
         // Tên hiển thị và avatar
         const nameEl   = document.getElementById("profileDisplayName");

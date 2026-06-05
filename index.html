@@ -551,8 +551,8 @@
 
         /* ── PROFILE TAB ── */
         .profile-top {
-            display: flex; align-items: flex-start; gap: 20px;
-            margin-bottom: 24px; flex-wrap: wrap;
+            display: flex; align-items: flex-start; gap: 16px;
+            margin-bottom: 16px; flex-wrap: nowrap;
         }
         .profile-avatar-wrap {
             width: 72px; height: 72px; border-radius: 50%;
@@ -562,16 +562,56 @@
             font-size: 1.8rem; flex-shrink: 0; overflow: hidden;
         }
         .profile-avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
-        .profile-meta { flex: 1; min-width: 160px; }
+        .profile-meta { flex: 1; min-width: 0; }
         .profile-display-name {
-            font-size: clamp(1.1rem, 4vw, 1.4rem);
-            font-weight: 800; color: var(--text); margin: 0 0 4px;
+            font-size: clamp(1rem, 4vw, 1.3rem);
+            font-weight: 800; color: var(--text); margin: 0 0 6px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .profile-rating {
             display: inline-flex; align-items: center; gap: 6px;
             background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3);
             border-radius: 100px; padding: 3px 10px;
             font-size: 0.8rem; color: #fbbf24; font-weight: 700;
+        }
+        /* Nút Đăng Xuất — góc phải, icon-only mobile */
+        .btn-profile-logout {
+            display: flex; align-items: center; gap: 6px;
+            padding: 7px 14px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.35);
+            background: rgba(239,68,68,0.08); color: #f87171;
+            font-size: 0.78rem; font-weight: 700; font-family: inherit;
+            cursor: pointer; transition: all 0.15s; white-space: nowrap;
+            align-self: flex-start; flex-shrink: 0; margin-left: auto;
+        }
+        .btn-profile-logout:hover { background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.6); color: #fca5a5; }
+        /* Thanh trust — khu vực riêng full-width dưới profile-top */
+        .profile-trust-wrap { margin-bottom: 16px; }
+        /* Trust card redesign */
+        .tvl-trust-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px; padding: 14px 16px;
+        }
+        .tvl-trust-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 8px;
+        }
+        .tvl-trust-title {
+            font-size: 0.72rem; font-weight: 700; color: #64748b;
+            text-transform: uppercase; letter-spacing: 0.07em;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .tvl-trust-badge { font-size: 0.75rem; font-weight: 700; }
+        .tvl-trust-score-row {
+            display: flex; align-items: baseline; gap: 4px; margin-bottom: 10px;
+        }
+        .tvl-trust-score { font-size: 2rem; font-weight: 900; line-height: 1; }
+        .tvl-trust-max { font-size: 0.78rem; color: #475569; }
+        .tvl-trust-track { height: 8px; margin-bottom: 4px; }
+        .tvl-trust-fill { height: 100%; }
+        .tvl-trust-scale {
+            display: flex; justify-content: space-between;
+            font-size: 0.62rem; color: #334155;
         }
 
         /* ── KÈO CARD ── */
@@ -858,7 +898,10 @@
             /* Content */
             .keo-grid { grid-template-columns: 1fr; }
             .filter-grid { grid-template-columns: 1fr 1fr; }
-            .profile-top { flex-direction: column; align-items: center; text-align: center; }
+            .profile-top { flex-direction: row; align-items: flex-start; }
+            .btn-logout-label { display: none; }
+            .btn-profile-logout { padding: 7px 10px; }
+            .tvl-trust-score { font-size: 1.6rem; }
         }
         @media (max-width: 480px) {
             .filter-grid { grid-template-columns: 1fr; }
@@ -1870,17 +1913,19 @@
                     </div>
                     <div class="profile-meta">
                         <h2 class="profile-display-name" id="profileDisplayName">—</h2>
-                        <div class="profile-rating" id="profileRatingBadge" style="margin-bottom:8px;">
+                        <div class="profile-rating" id="profileRatingBadge">
                             <i class="fa-solid fa-star"></i>
                             <span id="profileRating">—</span>
                             <span id="profileRatingCount" style="font-weight:400;color:var(--text-muted);"></span>
                         </div>
-                        <div id="profileTrustScore" style="min-width:160px;"></div>
-                        <button class="btn-danger" onclick="window.dangXuatUngDung()">
-                            <i class="fa-solid fa-right-from-bracket"></i> Đăng Xuất
-                        </button>
                     </div>
+                    <button class="btn-profile-logout" onclick="window.dangXuatUngDung()" title="Đăng xuất">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                        <span class="btn-logout-label">Đăng Xuất</span>
+                    </button>
                 </div>
+                <!-- Thanh điểm uy tín — nằm ngoài profile-top để full-width -->
+                <div id="profileTrustScore" class="profile-trust-wrap"></div>
 
                 <div class="app-card-title"><i class="fa-solid fa-pen-to-square"></i> Chỉnh Sửa Hồ Sơ</div>
 

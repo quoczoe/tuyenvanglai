@@ -171,17 +171,30 @@
     async function _hienTrustScoreBar() {
         const el = document.getElementById("profileTrustScore");
         if (!el || !window.currentGuest?.sdt_khach) return;
-        const score  = await _layDiemUyTin();
+        const score = await _layDiemUyTin();
+        _renderTrustBar(el, score);
+    }
+    window._hienTrustScoreBar = _hienTrustScoreBar; // expose để phan-he-ung-dung.js gọi sau F5
+
+    function _renderTrustBar(el, score) {
         const level  = _trustLevel(score);
-        const pct    = score;
+        const pct    = Math.max(0, Math.min(100, score));
+        const barCls = { "trust-ok": "#00ff88", "trust-warn": "#fbbf24", "trust-risk": "#f97316", "trust-dead": "#ef4444" }[level.cls] || "#00ff88";
         el.innerHTML = `
-            <div class="trust-bar-wrap">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
-                    <span style="font-size:0.72rem;color:#94a3b8;font-weight:600;">ĐỘ UY TÍN</span>
-                    <span class="trust-label ${level.cls}">${level.icon} ${level.label} — ${score}đ</span>
+            <div class="tvl-trust-card">
+                <div class="tvl-trust-header">
+                    <span class="tvl-trust-title"><i class="fa-solid fa-shield-halved"></i> ĐỘ UY TÍN</span>
+                    <span class="tvl-trust-badge trust-label ${level.cls}">${level.icon} ${level.label}</span>
                 </div>
-                <div class="trust-bar-track">
-                    <div class="trust-bar-fill ${level.cls}" style="width:${pct}%;"></div>
+                <div class="tvl-trust-score-row">
+                    <span class="tvl-trust-score" style="color:${barCls};">${score}</span>
+                    <span class="tvl-trust-max">/100đ</span>
+                </div>
+                <div class="trust-bar-track tvl-trust-track">
+                    <div class="trust-bar-fill ${level.cls} tvl-trust-fill" style="width:${pct}%;box-shadow:0 0 8px ${barCls}66;"></div>
+                </div>
+                <div class="tvl-trust-scale">
+                    <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
                 </div>
             </div>`;
     }
