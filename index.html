@@ -179,17 +179,7 @@
             max-width: 1700px; width: 100%; margin: 0 auto;
             padding: 96px 20px 80px;
         }
-        @media (max-width: 768px) {
-            /* Subtab nav bám sát header 56px trên mobile */
-            .subtab-nav { top: 56px; }
-            /* Khi có subtab: đẩy nội dung xuống đủ (56 header + 44 subtab + 8 buffer) */
-            body.has-subtab .app-body { padding-top: 108px !important; }
-            /* Subtab nền đục hoàn toàn — nội dung không xuyên qua */
-            .subtab-nav { background: rgba(8,8,8,1); }
-            /* Chặn horizontal scroll trên mobile */
-            #tab-dang-quan-ly { overflow-x: hidden; max-width: 100vw; }
-            #dql-content { overflow-x: hidden; }
-        }
+        /* (mobile subtab overrides đã chuyển vào @media 768px chính bên dưới) */
 
         /* ── TAB SECTIONS ── */
         .tab-section { display: none; }
@@ -933,7 +923,14 @@
             .btn-hamburger { display: flex; }    /* hiện hamburger */
             /* Body */
             .app-body { padding: 72px 12px 80px; }
+            /* Subtab nav sát header 56px — PHẢI đặt SAU .subtab-nav { top:80px } để override đúng */
+            .subtab-nav { top: 56px; background: rgba(8,8,8,1); }
+            /* Khi có subtab: đẩy nội dung xuống đủ (56 header + 44 subtab + 8 buffer) */
             body.has-subtab .app-body { padding-top: 108px !important; }
+            /* Chặn horizontal scroll */
+            #tab-dang-quan-ly, #dql-content { overflow-x: hidden; max-width: 100vw; }
+            /* padding-top cho dql-content: subtab cao ~44px, cộng thêm 8px buffer */
+            #dql-content { padding-top: 52px; }
             /* Forms */
             .form-row, .form-row.col-3, .form-row.col-4, .form-row.col-san { grid-template-columns: 1fr; }
             .row-h5 { grid-template-columns: 1fr; }
