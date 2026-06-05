@@ -1,4 +1,4 @@
-# TODO — Cập nhật: 2026-06-05 (phiên 6)
+# TODO — Cập nhật: 2026-06-07 (phiên 7)
 
 ---
 
@@ -24,122 +24,84 @@
 - [ ] Console `window._xacNhanDoiVaiTro` → `undefined`
 - [ ] Tài khoản admin đăng nhập main site → thấy nút "Vào Admin →"
 
-**Admin UI — cần test trực quan sau khi SQL chạy xong:**
-- [ ] F5 trang admin → không flash login form
-- [ ] Đăng nhập → nút Đăng Xuất hiện trong header cạnh Trang Chủ
-- [ ] Scroll trong bất kỳ tab → 4 metric cards + tab nav KHÔNG scroll mất
-- [ ] Tab Thành Viên: danh sách dài → chỉ 1 thanh cuộn (trong bảng, không phải trang)
-- [ ] Tab Ca Đấu: dropdown (⋮) → hiện trên cùng, không bị clip
-- [ ] Tab Góp Ý: kích thước đồng bộ, không blank space
-- [ ] Tab Cấu Hình, Thống Kê, Báo Cáo, Đánh Giá: không bị che bởi sticky nav
-- [ ] Xóa user → biến mất hoàn toàn (kể cả slot và ca đấu của họ)
-
 ---
 
 ## ✅ ĐÃ HOÀN THÀNH
 
-### Phiên 2026-06-05 (phiên 6) — Admin UI/UX Overhaul
+### Phiên 2026-06-07 (phiên 7) — UX Polish /tim-keo + /dang-quan-ly + /ca-nhan
 
-**Layout fix (core):**
-- [x] Flex layout chuẩn: `body` → `ad-main` → `adminConsole (flex:1 column)` → `ad-sticky-top (flex-shrink:0)` + `ad-tab-content (flex:1)`
-- [x] `adminConsole` show bằng `display:flex` (không phải block) — quan trọng cho flex layout
-- [x] Xóa negative margin `margin: -1.5rem -2rem 0` khỏi sticky-top — root cause của overlap tất cả tabs
-- [x] `adminAuthPanel` khởi động `display:none` — fix F5 flash login form
+**slot-grid & card layout:**
+- [x] `gap: 0` + `border-radius: 4px` + `margin: 1px` cho card trong grid — sát nhau
+- [x] `slot-card { margin-bottom: 0 }` trong components.css
+- [x] `#slotsSearchResultContainer.keo-grid { gap: 1px }` trong index.html
+- [x] `minmax(500px, 1fr)` cho slot-grid — cột đủ rộng cho tên sân
 
-**Chống dual-scroll:**
-- [x] `_fitTable()`: JS function đo `offsetHeight` chính xác → set `table-responsive.maxHeight`
-- [x] Gọi `_fitTable` trong: chuyenTabAdmin, renderKhach, renderCaDau, taiGopY, taiDanhGia, window.resize (debounced)
-- [x] Kết quả: chỉ 1 thanh cuộn (trong bảng), không có page-level scroll
+**kh-san-link fix (tên sân không xuống dòng):**
+- [x] `display: flex; width: 100%` thay `inline-flex; max-width: 100%`
+- [x] `flex-shrink: 0` cho span ↗ và — khu vực; `flex-shrink: 1` cho span tên sân
 
-**Logout button + header:**
-- [x] `#btnHeaderLogout` hiện sau login (`_hienConsole` shows), ẩn sau logout
+**SĐT reveal UX (/tim-keo):**
+- [x] Click cả dòng `.shb-phone-chip` → delegate click tới `.shb-reveal-btn` bên trong
+- [x] Nút SHARE footer tăng tỉ lệ: `15fr 40fr 45fr` → `22fr 37fr 41fr`
 
-**Cascade delete:**
-- [x] `_cascadeXoaUser(sdt)`: xóa dat_slot → ca_dau (+ slots của ca) → guest_sessions → nguoi_dung
-- [x] `_xoaTV` + `xoaNhieuTaiKhoanTest` dùng cascade
-- [x] `_taiDanhSachKhach`: bỏ virtual user entry từ dat_slot → ghost user không còn
+**HỒ SƠ TÍN DỤNG (/tim-keo modal):**
+- [x] Truyền `slot.id` vào `xemHoSoNguoiDang` → check DOM `sdtDisplay_${uid}` có masked không
+- [x] Thêm block điểm uy tín: score lớn + badge + progress bar glow + scale 0-25-50-75-100
 
-**Ca đấu dropdown:**
-- [x] `_toggleCaMenu`: dùng `position:fixed` + `getBoundingClientRect` — không bị clip bởi overflow container
-- [x] Đóng khi scroll bảng
+**/ca-nhan profile redesign:**
+- [x] Nút ĐĂNG XUẤT chuyển lên góc phải `.profile-top` (margin-left: auto)
+- [x] `#profileTrustScore` tách ra ngoài `.profile-meta` thành `.profile-trust-wrap` full-width
+- [x] Redesign trust bar: score số lớn, badge, bar, scale
+- [x] F5 bug fix: expose `window._hienTrustScoreBar`, gọi trong `_renderProfile` (phan-he-ung-dung.js)
+- [x] Mobile: `.btn-logout-label { display: none }` — icon only
 
-**Column widths + misc:**
-- [x] ID column: 50px → 60px; THAO TÁC: 64px → 100px
-- [x] `thead th { overflow:visible }` — tên cột hiện đầy đủ
-- [x] Góp ý tab: thêm `ad-table-wrap` wrapper
-- [x] Xóa dead CSS: `.ad-console-bar`, `.ad-session-lbl`, `.ad-session-title`
-- [x] `.claude/commands/compact-save.md`: thêm gợi ý /compact instruction
+**/dang-quan-ly — giờ mặc định smart:**
+- [x] `_gioMacDinhHomNay()`: realtime + 20p snap bội 15 — thay 18:00 cứng
+- [x] `_capNhatGioSelect(isToday)`: disable hour options trong quá khứ
+- [x] `_capNhatPhutSelect()`: disable minute options khi giờ = giờ hiện tại
+- [x] `window._onNgayDanhChange`: validate reject ngày quá khứ + snap giờ + re-enable
+- [x] End time = start + 2h tự động
+- [x] `hostDatePlay onkeydown="return false"` chặn gõ tay ngày quá khứ
 
-### Phiên 2026-06-05 (phiên 5) — Hệ Thống Auth Bảo Mật Toàn Diện
+**/dang-quan-ly — THU CỌC TRƯỚC redesign:**
+- [x] Toggle switch thay checkbox, label "Thu Cọc Trước" rõ nghĩa
+- [x] Nút `?` dùng class `.tt.coc-tip` — tooltip đẹp đúng vị trí, đồng bộ với Maps `?`
+- [x] Tooltip đổ xuống dưới (top: calc(100%+8px)), rộng 260px
+- [x] Layout inline-flex compact: toggle ngay cạnh title, không space-between
+- [x] Mobile: `width: 100%; justify-content: center`; ẩn `.coc-toggle-desc`
 
-**Kiến trúc Auth mới:**
-- [x] Admin: Supabase Auth JWT (`supabase.auth.signInWithPassword`) — xóa ADMIN_USER/MAT_MAU_ADMIN
-- [x] Guest: Session Token UUID trong DB (`guest_sessions` table) — xóa localStorage self-service
-- [x] `window._adminJWT` cache trong `LAY_HEADERS_CHUAN` → dbEngine tự dùng JWT cho admin calls
-- [x] `window._ap` namespace cho `xacNhanDoiVaiTro` + `thucHienDoiVaiTro` — ẩn khỏi global scope
+**/dang-quan-ly mobile subtab fix:**
+- [x] Bug root cause: media query `top: 56px` ở dòng 182 nằm TRƯỚC `.subtab-nav { top: 80px }` ở dòng 198 → bị override
+- [x] Fix: xóa media query sai vị trí, chuyển vào @media 768px CHÍNH (sau `.subtab-nav` base)
+- [x] `body.has-subtab` toggle trong `chuyenTab()` (phan-he-ung-dung.js)
+- [x] `padding-top: 108px !important` khi has-subtab, `background: rgba(8,8,8,1)` cho subtab-nav
+- [x] `overflow-x: hidden` cho `#tab-dang-quan-ly` và `#dql-content`
 
-**Code changes:**
-- [x] `ket-noi-supabase.js` v7.0: thêm `supabaseAuth` + `guestRPC` (6 methods)
-- [x] `admin/index.html` v7.0: CDN Supabase JS v2, form email thay username
-- [x] `phan-he-quan-tri.js` v7.0: auth JWT, _adminJWT cache, _ap namespace
-- [x] `phan-he-khach-choi.js` v7.0: login/register/datSlot/huySlot qua RPC, _token session
-- [x] `index.html` v7.0: CDN Supabase JS v2, admin card #sectionAdminAccess
+### Phiên 2026-06-06 (phiên 6) — Admin UI/UX Overhaul
+- [x] Flex layout admin, _fitTable, cascade delete, dropdown fixed position, logout button
 
-**SQL security-auth-v4.sql v4.3 — tạo mới với tất cả fixes:**
-- [x] is_admin() SECURITY DEFINER — fix circular RLS
-- [x] phan_he_guest_login: rate limit 5/15min + global 30/min spray fix + NOT_FOUND enumeration fix + 2% cleanup
-- [x] phan_he_dat_pass_lan_dau: thêm device_fp, ma_gioi_thieu, diem_uy_tin=100
-- [x] verify_guest_token: JOIN nguoi_dung check is_active realtime
-- [x] guest_dat_slot: fetch ten từ DB, 8 ký tự + collision loop
-- [x] guest_huy_slot + get_current_guest_profile
-- [x] RLS policies dùng is_admin() (không circular)
+### Phiên 2026-06-05 (phiên 5) — Auth Security
+- [x] Supabase JWT admin, guest RPC session token, security-auth-v4.sql
 
-**Bảo mật đã fix:**
-- [x] ADMIN_USER="admin"/MAT_MAU_ADMIN="TVL@2026" → xóa hoàn toàn khỏi JS
-- [x] Session forgery: localStorage → Supabase JWT (không giả mạo được)
-- [x] IDOR Guest: localStorage sdt_khach → UUID token trong DB
-- [x] Phone enumeration: rate limit áp dụng kể cả NOT_FOUND
-- [x] Password spray: global rate limit 30 attempt/phút
-- [x] DB congestion: cleanup xác suất 2%
-- [x] Global function exposure: window._ap namespace
-- [x] Đăng ký bị sập sau RLS: hoanTatDangKy → guestRPC.datPassLanDau()
-- [x] Circular RLS: is_admin() SECURITY DEFINER
-
-### Phiên 2026-06-04 (phiên 4) — Lịch Sử 13 Bug Fixes + Đồng Bộ Màu
-- [x] 13 bug fixes lịch sử từ screenshot review (trust score, badge, province, slot code...)
-- [x] Đồng bộ màu: #151D30 → #181818, sub-tab underline tabs
-
-### Phiên 2026-06-04 (phiên 3) — Lịch Sử Redesign
-- [x] 4 stat cards, dual-zone card, filter bar, neon buttons, responsive
-
-### Phiên 2026-06-05 — 8 Security Modules + Auth Routing
-- [x] FingerprintJS, Turnstile, Trust Score, Report System, Scam Protection, Whitelist, Ranking, Phone Masking
-
-### Phiên trước (đến 2026-05-26)
-- [x] Toàn bộ phân hệ Khách/Host/Admin core features
-- [x] supabase-schema.sql đã deploy
+### Phiên trước (đến 2026-06-04)
+- [x] Toàn bộ core features, bug fixes lịch sử, redesign
 
 ---
 
 ## 📋 NEXT UP (theo thứ tự ưu tiên)
 
 ### 🔴 Cao — Cần làm ngay
-
-**Hoàn thành SQL migration (xem ĐANG LÀM DỞ):**
-- Chạy security-auth-v4.sql Phần 2→8 trên Supabase Dashboard
-- Sau đó test 8 bước bên trên
-
-**Deploy Vercel:**
-- [ ] GitHub repo → push code v7.0 → Vercel import → custom domain tuyenvanglai.io.vn
+- [ ] Chạy security-auth-v4.sql Phần 2→8 trên Supabase Dashboard
+- [ ] Test 8 bước auth sau khi SQL chạy xong
+- [ ] Deploy Vercel: GitHub → custom domain tuyenvanglai.io.vn
 
 ### 🟡 Trung bình
-
-- [ ] Fix Telegram: đổi TELEGRAM_BOT_NAME placeholder bằng bot thật
-- [ ] Admin credentials: đổi pass Supabase Auth trước deploy thật (mynameisanhquocpro@gmail.com)
-- [ ] Verify hoanTatDangKy: fingerprint_blacklist table chưa tồn tại → check bảng tồn tại trước khi query
+- [ ] GĐ4A: Dashboard doanh thu Host (subtab + 4 metric + filter)
+- [ ] GĐ4B: Export/In ca đấu (print popup + CSV)
+- [ ] Fix Telegram bot placeholder
+- [ ] Verify hoanTatDangKy: fingerprint_blacklist table check
 
 ### 🟢 Thấp
-
 - [ ] Chart.js Admin (Line/Bar/Doughnut)
 - [ ] Export JSON/CSV Admin
 - [ ] Supabase Realtime WebSocket

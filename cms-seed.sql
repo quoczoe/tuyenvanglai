@@ -62,21 +62,28 @@ ALTER TABLE gop_y_he_thong ADD COLUMN IF NOT EXISTS sdt_user text;
 ALTER TABLE gop_y_he_thong ENABLE ROW LEVEL SECURITY;
 
 -- Dùng DROP trước để an toàn khi chạy lại
-DROP POLICY IF EXISTS "gop_y_anon_insert" ON gop_y_he_thong;
-DROP POLICY IF EXISTS "gop_y_anon_no_select" ON gop_y_he_thong;
-DROP POLICY IF EXISTS "gop_y_anon_select"    ON gop_y_he_thong;
+DROP POLICY IF EXISTS "gop_y_anon_insert"       ON gop_y_he_thong;
+DROP POLICY IF EXISTS "gop_y_anon_no_select"    ON gop_y_he_thong;
+DROP POLICY IF EXISTS "gop_y_anon_select"       ON gop_y_he_thong;
+DROP POLICY IF EXISTS "gop_y_anon_delete"       ON gop_y_he_thong;
+DROP POLICY IF EXISTS "gop_y_auth_select"       ON gop_y_he_thong;
+DROP POLICY IF EXISTS "gop_y_auth_delete"       ON gop_y_he_thong;
 
+-- Khách (anon) chỉ được INSERT
 CREATE POLICY "gop_y_anon_insert" ON gop_y_he_thong
   FOR INSERT TO anon WITH CHECK (true);
 
--- Cho phép anon SELECT để Admin đọc được danh sách góp ý
+-- Khách (anon) có thể SELECT (cần cho metric header nếu dùng anon key)
 CREATE POLICY "gop_y_anon_select" ON gop_y_he_thong
   FOR SELECT TO anon USING (true);
 
--- Cho phép anon DELETE để Admin xóa góp ý (không có policy này → DELETE không có tác dụng)
-DROP POLICY IF EXISTS "gop_y_anon_delete" ON gop_y_he_thong;
-CREATE POLICY "gop_y_anon_delete" ON gop_y_he_thong
-  FOR DELETE TO anon USING (true);
+-- Admin (authenticated JWT) đọc toàn bộ góp ý
+CREATE POLICY "gop_y_auth_select" ON gop_y_he_thong
+  FOR SELECT TO authenticated USING (true);
+
+-- Admin (authenticated JWT) xóa góp ý
+CREATE POLICY "gop_y_auth_delete" ON gop_y_he_thong
+  FOR DELETE TO authenticated USING (true);
 
 
 -- ============================================================
