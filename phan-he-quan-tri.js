@@ -214,6 +214,11 @@
         if (el) el.textContent = val;
     }
 
+    function _capNhatMetric(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = typeof val === "number" ? val.toLocaleString("vi-VN") : (val ?? "--");
+    }
+
     /* ═══════════════════════════════════════════════════
      * 4B. CA ĐẤU — ADMIN QUẢN LÝ TOÀN HỆ THỐNG
      * ═══════════════════════════════════════════════════ */
@@ -636,7 +641,7 @@
             window.hienToast("Đã xóa", `Góp ý #${id} đã bị xóa.`, "success");
             _taiDanhSachGopY();
         } catch (e) {
-            window.hienToast("Lỗi", "Không xóa được. Kiểm tra RLS hoặc kết nối.", "danger");
+            window.hienToast("Xóa thất bại", "Không thể xóa. Kiểm tra kết nối mạng và thử lại.", "danger");
         }
     };
 
@@ -676,24 +681,48 @@
             window.hienToast("Đã xóa", `Xóa thành công ${ids.length} góp ý.`, "success");
             _taiDanhSachGopY();
         } catch (e) {
-            window.hienToast("Lỗi", "Một số dòng không xóa được. Kiểm tra RLS.", "danger");
+            window.hienToast("Xóa không hoàn toàn", "Một số góp ý không thể xóa — kiểm tra kết nối.", "danger");
             _taiDanhSachGopY();
         }
     };
 
     /* ═══════════════════════════════════════════════════
-     * 6. QUẢN LÝ THÀNH VIÊN
-     * Tải song song: dat_slot + nguoi_dung + ca_dau + danh_gia_tin_dung
-     * Tổng hợp: chỉ đếm ca + tính tiền khi da_chot_ca = true
-     * reviewMap: sdt → { saoArr[], danhGia[] } — module-level để các hàm khác dùng
+     * 6. QUẢN LÝ THÀNH VIÊN — v2.0
+     * + Sắp xếp theo từng cột, bộ lọc vai trò/tình trạng
+     * + Cột: Ca Đăng | Ca Tham Gia | Điểm Uy Tín | Tình Trạng | Thiết Bị
+     * + Tạo tài khoản test hàng loạt
      * ═══════════════════════════════════════════════════ */
+    let _allKhachData   = [];  // toàn bộ data sau khi load
+    let _sortKhachCol   = "ngayTG";
+    let _sortKhachDir   = "desc"; // "asc" | "desc"
+    const ADMIN_GOC_SDT = "0961446003"; // Admin gốc — bất khả xâm phạm
+
+    // Trust score → badge định dạng "Điểm - Trạng thái"
+    function _trustBadge(diem) {
+        const d = diem ?? 100;
+        if (d >= 80) return `<span style="font-size:0.8rem;font-weight:700;color:#00ff88;white-space:nowrap;">${d} <span style="color:#64748b;">—</span> Tốt</span>`;
+        if (d >= 60) return `<span style="font-size:0.8rem;font-weight:700;color:#fbbf24;white-space:nowrap;">${d} <span style="color:#64748b;">—</span> Cảnh báo</span>`;
+        if (d >= 40) return `<span style="font-size:0.8rem;font-weight:700;color:#fb923c;white-space:nowrap;">${d} <span style="color:#64748b;">—</span> Rủi ro</span>`;
+        return `<span style="font-size:0.8rem;font-weight:700;color:#ef4444;white-space:nowrap;">${d} <span style="color:#64748b;">—</span> Nguy hiểm</span>`;
+    }
+
+    function _vaiTroBadge(vt) {
+        if (vt === "admin") return '<span style="font-size:0.72rem;background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);padding:2px 8px;border-radius:10px;font-weight:700;">👑 Admin</span>';
+        return '<span style="font-size:0.72rem;background:rgba(96,165,250,0.1);color:#60a5fa;border:1px solid rgba(96,165,250,0.2);padding:2px 8px;border-radius:10px;font-weight:600;">👤 Thành Viên</span>';
+    }
+
+    function _tinhTrangBadge(isActive) {
+        return isActive !== false
+            ? '<span style="font-size:0.72rem;background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.25);padding:2px 8px;border-radius:10px;font-weight:600;"><i class="fa-solid fa-circle" style="font-size:0.5em;margin-right:4px;"></i>Hoạt động</span>'
+            : '<span style="font-size:0.72rem;background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);padding:2px 8px;border-radius:10px;font-weight:600;"><i class="fa-solid fa-lock" style="font-size:0.65em;margin-right:4px;"></i>Bị khóa</span>';
+    }
+
     async function _taiDanhSachKhach() {
         const tbody = document.getElementById("adminGuestsBody");
         if (!tbody) return;
-        tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:16px;color:#64748b;">
+        tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:20px;color:#64748b;">
             <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>`;
         try {
-            // Chỉ dùng nguoi_dung — bảng duy nhất sau migration hợp nhất
             const [datSlots, khachVL, caDau, allDanhGia] = await Promise.all([
                 window.dbEngine.doc("dat_slot"),
                 window.dbEngine.doc("nguoi_dung"),
@@ -701,7 +730,7 @@
                 window.dbEngine.doc("danh_gia_tin_dung")
             ]);
 
-            // Xây dựng reviewMap module-level: sdt → { saoArr, danhGia }
+            // reviewMap: sdt → { saoArr, danhGia }
             reviewMap = {};
             (allDanhGia || []).forEach(r => {
                 const sdt = r.sdt_nguoi_bi_danh_gia;
@@ -711,139 +740,460 @@
                 reviewMap[sdt].danhGia.push(r);
             });
 
-            // Hàm tính sao trung bình
-            function _tbSao(sdt) {
-                const data = reviewMap[sdt];
-                if (!data || data.saoArr.length === 0) return null;
-                return (data.saoArr.reduce((a, b) => a + b, 0) / data.saoArr.length).toFixed(1);
-            }
-
-            // Bản đồ id ca_dau → thông tin ca (da_chot_ca, gia_nam, gia_nu, ma_key_host)
+            // Map ca_dau
             const mapCaDau = new Map();
             caDau.forEach(s => mapCaDau.set(s.id, s));
 
-            // Bản đồ sdt_khach → thông tin tổng hợp của khách
+            // Map sdt → tổng hợp
             const map = new Map();
-
-            // Khởi tạo từ bảng nguoi_dung — lưu thêm vai_tro, trang_thai_tai_khoan
             khachVL.forEach(u => {
                 const sdt = u.sdt_khach || "";
                 if (!sdt) return;
-                if (!map.has(sdt)) {
-                    map.set(sdt, {
-                        ten:       u.ten_khach || "Ẩn danh",
-                        sdt,
-                        ngayTG:    u.created_at || u.ngay_tham_gia || null,
-                        soBuiloi:  0,
-                        tongChi:   0,
-                        hosts:     new Set(),
-                        vai_tro:   u.vai_tro || "guest",
-                        trang_thai_tai_khoan: u.trang_thai_tai_khoan !== false
-                    });
-                }
+                map.set(sdt, {
+                    ten:        u.ten_khach || "Ẩn danh",
+                    sdt,
+                    ngayTG:     u.created_at || u.ngay_tham_gia || null,
+                    vai_tro:    u.vai_tro || "guest",
+                    isActive:   u.is_active !== false,
+                    diemUyTin:  u.diem_uy_tin ?? 100,
+                    deviceFp:   u.device_fingerprint || null,
+                    caDang:     0,  // số ca đã tạo/đăng
+                    caTG:       0,  // số ca đã tham gia (chốt + Đã tham gia)
+                    tongChi:    0
+                });
             });
 
-            // Cộng dồn thống kê từ dat_slot — chỉ tính khi ca đã chốt
-            datSlots.forEach(slot => {
-                const sdt    = slot.sdt_khach || "";
-                const ca     = mapCaDau.get(slot.id_ca_dau);
-                if (!sdt || !ca) return;
+            // Đếm Ca đã đăng (ca_dau.sdt_nguoi_tao = sdt)
+            caDau.forEach(c => {
+                const sdt = c.sdt_nguoi_tao || "";
+                if (sdt && map.has(sdt)) map.get(sdt).caDang++;
+            });
 
-                // Đảm bảo khách có trong map (khách có thể chưa có trong nguoi_dung)
+            // Đếm Ca tham gia + tổng chi từ dat_slot
+            datSlots.forEach(slot => {
+                const sdt = slot.sdt_khach || "";
+                const ca  = mapCaDau.get(slot.id_ca_dau);
+                if (!sdt || !ca) return;
                 if (!map.has(sdt)) {
                     map.set(sdt, {
-                        ten: slot.ten_khach || "Ẩn danh",
-                        sdt,
-                        ngayTG:   slot.thoi_gian_dat || null,
-                        soBuiloi: 0,
-                        tongChi:  0,
-                        hosts:    new Set(),
-                        vai_tro:  "guest",
-                        trang_thai_tai_khoan: true
+                        ten: slot.ten_khach || "Ẩn danh", sdt,
+                        ngayTG: slot.thoi_gian_dat || null, vai_tro: "guest",
+                        isActive: true, diemUyTin: 100, deviceFp: null,
+                        caDang: 0, caTG: 0, tongChi: 0
                     });
                 }
-                const info = map.get(sdt);
-
-                // Chỉ đếm tài chính khi ca đã chốt VÀ khách thực sự tham gia
                 if (ca.da_chot_ca === true && slot.trang_thai_di_danh === "Đã tham gia") {
-                    info.soBuiloi++;
-                    // Xác định giá theo giới tính đặt slot
+                    const info = map.get(sdt);
+                    info.caTG++;
                     const gia = slot.gioi_tinh === "female" ? (ca.gia_nu || 0) : (ca.gia_nam || 0);
                     info.tongChi += gia;
-                    if (ca.ma_key_host) info.hosts.add(ca.ma_key_host);
                 }
             });
 
-            const list = Array.from(map.values()).sort((a, b) => b.soBuiloi - a.soBuiloi);
-            _st("adminGuestCount", `${list.length} thành viên`);
-
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" style="text-align:center;padding:20px;color:#64748b;">
-                    Chưa có thành viên nào trong hệ thống.</td></tr>`;
-                return;
-            }
-
-            // Bản đồ badge vai trò (hỗ trợ cả mô hình cũ lẫn mới)
-            const _vaiTroBadge = function(vt) {
-                if (vt === "admin")   return '<span class="mv-role-badge-admin">👑 Admin</span>';
-                if (vt === "host")    return '<span class="mv-role-badge-host">🏟️ Host (cũ)</span>';
-                if (vt === "user")    return '<span class="mv-role-badge-guest">👤 Thành Viên</span>';
-                return '<span class="mv-role-badge-guest">👤 Thành Viên</span>';
-            };
-
-            tbody.innerHTML = "";
-            list.forEach((g, i) => {
-                const d  = g.ngayTG ? new Date(g.ngayTG).toLocaleDateString("vi-VN") : "--";
-                const tb = _tbSao(g.sdt);
-                const soLuotDG = reviewMap[g.sdt]?.saoArr.length || 0;
-                // Escape SĐT cho onclick (safe to use trong attribute)
-                const sdtSafe = g.sdt.replace(/'/g, "\\'").replace(/"/g, "&quot;");
-
-                // Cell ⭐ Sao TB
-                const tenSafe = (g.ten || "").replace(/'/g, "\\'");
-                const saoCellHTML = tb
-                    ? `<span class="sao-badge">${tb} ⭐</span>
-                       <span style="font-size:0.72rem;color:#9ca3af;display:block;margin-top:2px;">(${soLuotDG} lượt)</span>
-                       <button class="btn-mini" style="margin-top:4px;"
-                           onclick="window.xemDanhGiaThanhVien('${sdtSafe}', '${tenSafe}')">
-                           📋 Chi tiết
-                       </button>`
-                    : `<span style="color:#6b7280;font-size:0.78rem;">Chưa có</span>`;
-
-                // Cell Hành động — nút đơn mở modal toàn diện
-                const hanhDongHTML = `<button class="mv-ql-btn" onclick="window.moModalQuanLyThanhVien('${sdtSafe}')"><i class="fa-solid fa-gear"></i> Quản lý</button>`;
-
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                <td style="color:#64748b;font-size:0.8rem;">${i + 1}</td>
-                <td style="font-weight:700;font-size:0.85rem;">${g.ten}</td>
-                <td style="text-align:center;">${_vaiTroBadge(g.vai_tro)}</td>
-                <td>
-                    <a href="https://zalo.me/${g.sdt}" target="_blank"
-                        style="font-size:0.82rem;text-decoration:none;color:inherit;">
-                        <i class="fa-solid fa-comment" style="color:#00d4ff;"></i> ${g.sdt}
-                    </a>
-                </td>
-                <td style="font-size:0.8rem;color:#94a3b8;">${d}</td>
-                <td style="font-weight:700;color:#00ff88;">${g.soBuiloi} ca</td>
-                <td style="font-weight:700;color:#00ff88;">${_fVND(g.tongChi)}</td>
-                <td style="font-weight:700;color:#a78bfa;text-align:center;">${g.hosts.size}</td>
-                <td style="text-align:center;">${saoCellHTML}</td>
-                <td style="text-align:center;">${hanhDongHTML}</td>`;
-                tbody.appendChild(tr);
+            // Gán memberID theo thứ tự tạo tài khoản — admin gốc luôn = 1
+            const allArr = Array.from(map.values());
+            allArr.sort((a, b) => {
+                if (a.sdt === ADMIN_GOC_SDT) return -1;
+                if (b.sdt === ADMIN_GOC_SDT) return 1;
+                return (a.ngayTG ? new Date(a.ngayTG).getTime() : 0) - (b.ngayTG ? new Date(b.ngayTG).getTime() : 0);
             });
+            allArr.forEach((u, i) => { u.memberID = i + 1; });
+            _allKhachData = allArr;
+            _st("adminGuestCount", `${_allKhachData.length} thành viên`);
+            _capNhatMetric("metricTotalMembers", _allKhachData.length);
+            _apDungSortFilter();
         } catch (e) {
             console.error("[Admin] Lỗi tải thành viên:", e);
-            tbody.innerHTML = `<tr><td colspan="10" style="color:#ef4444;text-align:center;padding:16px;">
-                Lỗi tải dữ liệu: ${e.message || e}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="14" style="color:#ef4444;text-align:center;padding:16px;">
+                Lỗi: ${_escHtml(e.message || String(e))}</td></tr>`;
         }
     }
 
-    window.locKhachAdmin = function () {
-        const q = document.getElementById("adminGuestSearch")?.value?.toLowerCase() || "";
-        document.querySelectorAll("#adminGuestsBody tr").forEach(r => {
-            r.style.display = !q || r.textContent.toLowerCase().includes(q) ? "" : "none";
+    let _pageSizeTK  = 20;   // số dòng mỗi trang
+    let _pageNumTK   = 1;    // trang hiện tại
+    let _lastFiltered = [];   // kết quả sau filter (trước phân trang)
+
+    function _apDungSortFilter() {
+        try {
+            if (!_allKhachData || !_allKhachData.length) return; // chưa load xong data
+
+            const q          = (document.getElementById("adminGuestSearch")?.value || "").toLowerCase().trim();
+            const fVaiTro    = document.getElementById("filterVaiTro")?.value    || "";
+            const fTinhTrang = document.getElementById("filterTinhTrang")?.value || "";
+
+            // Tách admin gốc ra khỏi luồng filter/sort — luôn ghim đầu tiên
+            const adminGoc = _allKhachData.find(g => g.sdt === ADMIN_GOC_SDT);
+            const phannConLai = _allKhachData.filter(g => g.sdt !== ADMIN_GOC_SDT);
+
+            // Lọc tài khoản thường
+            let list = phannConLai.filter(g => {
+                if (q && !(g.ten.toLowerCase().includes(q) || g.sdt.includes(q))) return false;
+                if (fVaiTro && g.vai_tro !== fVaiTro) return false;
+                if (fTinhTrang === "active" && g.isActive !== true)  return false;
+                if (fTinhTrang === "locked" && g.isActive !== false) return false;
+                return true;
+            });
+
+            // Sắp xếp các tài khoản còn lại
+            const col = _sortKhachCol;
+            const dir = _sortKhachDir === "asc" ? 1 : -1;
+            list.sort((a, b) => {
+                let va = a[col], vb = b[col];
+                if (col === "ngayTG") {
+                    va = va ? new Date(va).getTime() : 0;
+                    vb = vb ? new Date(vb).getTime() : 0;
+                }
+                va = (va === null || va === undefined) ? (typeof vb === "number" ? -Infinity : "") : va;
+                vb = (vb === null || vb === undefined) ? (typeof va === "number" ? -Infinity : "") : vb;
+                if (typeof va === "string") return dir * va.localeCompare(vb, "vi");
+                return dir * ((va > vb ? 1 : va < vb ? -1 : 0));
+            });
+
+            // Nếu admin gốc khớp filter (hoặc không có filter vai trò/trạng thái), ghim lên đầu
+            if (adminGoc) {
+                const gocPhuHop = (
+                    (!q || (adminGoc.ten.toLowerCase().includes(q) || adminGoc.sdt.includes(q))) &&
+                    (!fVaiTro || adminGoc.vai_tro === fVaiTro) &&
+                    (fTinhTrang !== "locked" || adminGoc.isActive === false) &&
+                    (fTinhTrang !== "active" || adminGoc.isActive === true)
+                );
+                if (gocPhuHop) list = [adminGoc, ...list];
+            }
+
+            _lastFiltered = list;
+            _pageNumTK = 1; // reset về trang 1 khi filter thay đổi
+            _renderKhachVoiPhanTrang();
+
+            // Cập nhật sort icons
+            ["ngayTG","caDang","caTG","tongChi","diemUyTin","isActive","vai_tro","ten","sao","memberID"].forEach(c => {
+                const el = document.getElementById(`sortIcon_${c}`);
+                if (!el) return;
+                el.textContent = c === col ? (dir === 1 ? "↑" : "↓") : "↕";
+                el.style.color = c === col ? "#00ff88" : "#64748b";
+            });
+
+            // Hiện thị kết quả filter
+            const countEl = document.getElementById("adminGuestCount");
+            if (countEl) countEl.textContent = `${list.length}/${_allKhachData.length} thành viên`;
+
+        } catch (err) {
+            console.error("[Admin] Lỗi bộ lọc:", err);
+        }
+    }
+
+    function _renderKhachVoiPhanTrang() {
+        const total    = _lastFiltered.length;
+        const pageSize = _pageSizeTK;
+        const from     = (_pageNumTK - 1) * pageSize;
+        const to       = Math.min(from + pageSize, total);
+        const pageData = _lastFiltered.slice(from, to);
+
+        _renderKhachAdmin(pageData);
+        _renderPaginationTV(total, pageSize);
+    }
+
+    function _renderPaginationTV(total, pageSize) {
+        const container = document.getElementById("tvPaginationBar");
+        if (!container) return;
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
+        if (totalPages <= 1) { container.innerHTML = ""; return; }
+
+        const from = (_pageNumTK - 1) * pageSize + 1;
+        const to   = Math.min(_pageNumTK * pageSize, total);
+
+        container.innerHTML = `
+            <span style="font-size:0.78rem;color:#94a3b8;">${from}–${to} / ${total} thành viên</span>
+            <div style="display:flex;gap:4px;align-items:center;">
+                <button class="ad-btn-ghost" style="padding:4px 10px;font-size:0.78rem;"
+                    ${_pageNumTK <= 1 ? "disabled style='opacity:.4'" : ""}
+                    onclick="window._tvChuyenTrang(${_pageNumTK - 1})">‹ Trước</button>
+                <span style="font-size:0.78rem;color:#e2e8f0;padding:0 8px;white-space:nowrap;">
+                    Trang ${_pageNumTK} / ${totalPages}
+                </span>
+                <button class="ad-btn-ghost" style="padding:4px 10px;font-size:0.78rem;"
+                    ${_pageNumTK >= totalPages ? "disabled style='opacity:.4'" : ""}
+                    onclick="window._tvChuyenTrang(${_pageNumTK + 1})">Sau ›</button>
+            </div>`;
+    }
+
+    window._tvChuyenTrang = function(page) {
+        const totalPages = Math.ceil(_lastFiltered.length / _pageSizeTK);
+        _pageNumTK = Math.max(1, Math.min(page, totalPages));
+        _renderKhachVoiPhanTrang();
+        document.getElementById("adminGuestsBody")?.closest(".table-responsive")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    window._tvDoiSoTrang = function(n) {
+        _pageSizeTK = parseInt(n) || 20;
+        _pageNumTK  = 1;
+        _renderKhachVoiPhanTrang();
+    };
+
+    // Re-export rõ ràng để HTML onchange="locKhachAdmin()" gọi được
+    window.locKhachAdmin = function() { _apDungSortFilter(); };
+
+    window._sortKhach = function(col) {
+        if (_sortKhachCol === col) {
+            _sortKhachDir = _sortKhachDir === "asc" ? "desc" : "asc";
+        } else {
+            _sortKhachCol = col;
+            _sortKhachDir = "desc";
+        }
+        _apDungSortFilter();
+    };
+
+    // Format ngày + giờ: dd/mm/yyyy HH:MM
+    function _fNgayGio(raw) {
+        if (!raw) return "--";
+        const d = new Date(raw);
+        if (isNaN(d)) return "--";
+        const dd   = String(d.getDate()).padStart(2, "0");
+        const mm   = String(d.getMonth() + 1).padStart(2, "0");
+        const yyyy = d.getFullYear();
+        const hh   = String(d.getHours()).padStart(2, "0");
+        const mi   = String(d.getMinutes()).padStart(2, "0");
+        return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+    }
+
+    // Checkbox bulk select helpers
+    window._tvChonTatCa = function(checked) {
+        document.querySelectorAll("#adminGuestsBody .tv-chk").forEach(c => { c.checked = checked; });
+        _tvCapNhatBulkBar();
+    };
+    window._tvBoChonHet = function() {
+        document.querySelectorAll("#adminGuestsBody .tv-chk").forEach(c => { c.checked = false; });
+        const all = document.getElementById("tvChkAll"); if (all) all.checked = false;
+        _tvCapNhatBulkBar();
+    };
+    function _tvCapNhatBulkBar() {
+        const checked = document.querySelectorAll("#adminGuestsBody .tv-chk:checked");
+        const bar = document.getElementById("tvBulkBar");
+        const cnt = document.getElementById("tvBulkCount");
+        if (bar) bar.style.display = checked.length > 0 ? "flex" : "none";
+        if (cnt) cnt.textContent = `Đã chọn ${checked.length} tài khoản`;
+    }
+
+    function _renderKhachAdmin(list) {
+        const tbody = document.getElementById("adminGuestsBody");
+        if (!tbody) return;
+
+        if (!list.length) {
+            tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:32px;color:#64748b;">
+                <i class="fa-solid fa-users-slash" style="font-size:1.5rem;display:block;margin-bottom:8px;"></i>
+                Không tìm thấy thành viên nào phù hợp bộ lọc.</td></tr>`;
+            document.getElementById("tvBulkBar").style.display = "none";
+            return;
+        }
+
+        tbody.innerHTML = "";
+        list.forEach((g) => {
+            const sdtSafe   = _escHtml(g.sdt);
+            const tenSafe   = _escHtml(g.ten);
+            const isGoc     = g.sdt === ADMIN_GOC_SDT; // admin gốc — bất khả xâm phạm
+            const rv        = reviewMap[g.sdt];
+            const tb        = rv && rv.saoArr.length
+                ? (rv.saoArr.reduce((a,b)=>a+b,0)/rv.saoArr.length).toFixed(1)
+                : null;
+
+            const saoCellHTML = tb
+                ? `<span style="color:#fbbf24;font-weight:700;white-space:nowrap;">${tb}⭐<br><span style="font-size:0.68rem;color:#9ca3af;">(${rv.saoArr.length} lượt)</span></span>`
+                : `<span style="color:#4b5563;font-size:0.75rem;">—</span>`;
+
+            const fpShort = g.deviceFp ? g.deviceFp.substring(0, 10) + "…" : "—";
+            const deviceCell = g.deviceFp
+                ? `<div style="display:flex;align-items:center;gap:5px;justify-content:center;">
+                       <span style="font-family:monospace;font-size:0.68rem;color:#64748b;" title="${_escHtml(g.deviceFp)}">${_escHtml(fpShort)}</span>
+                       <button class="btn-mini" style="background:rgba(239,68,68,0.08);color:#f87171;border:1px solid rgba(239,68,68,0.2);flex-shrink:0;padding:2px 6px;"
+                           onclick="window.xoaFingerprintTV('${sdtSafe}')">
+                           <i class="fa-solid fa-trash-can"></i>
+                       </button>
+                   </div>`
+                : `<span style="color:#374151;font-size:0.75rem;">—</span>`;
+
+            // Nút thao tác — admin gốc không có nút sửa/xóa
+            const hanhDong = isGoc
+                ? `<span style="font-size:0.7rem;color:#fbbf24;" title="Admin gốc — không thể chỉnh sửa">🔱 Gốc</span>`
+                : `<button class="mv-ql-btn" onclick="window.moModalQuanLyThanhVien('${sdtSafe}')">
+                       <i class="fa-solid fa-gear"></i>
+                   </button>`;
+
+            // Checkbox — admin gốc không có checkbox
+            const chkCell = isGoc
+                ? `<span style="font-size:0.75rem;color:#64748b;">—</span>`
+                : `<input type="checkbox" class="tv-chk" data-sdt="${sdtSafe}"
+                       style="cursor:pointer;accent-color:#f87171;"
+                       onchange="(function(){
+                           const all = document.getElementById('tvChkAll');
+                           const chks = document.querySelectorAll('#adminGuestsBody .tv-chk');
+                           const checked = document.querySelectorAll('#adminGuestsBody .tv-chk:checked');
+                           if(all) all.checked = chks.length===checked.length;
+                           const bar = document.getElementById('tvBulkBar');
+                           const cnt = document.getElementById('tvBulkCount');
+                           if(bar) bar.style.display = checked.length>0?'flex':'none';
+                           if(cnt) cnt.textContent = 'Đã chọn '+checked.length+' tài khoản';
+                       })()">`;
+
+            const tr = document.createElement("tr");
+            if (isGoc) tr.style.background = "rgba(245,158,11,0.04)";
+            tr.dataset.sdt = g.sdt;
+            tr.innerHTML = `
+                <td>${chkCell}</td>
+                <td style="font-weight:800;font-size:0.85rem;color:${isGoc ? '#fbbf24' : '#94a3b8'};">${g.memberID}</td>
+                <td>${hanhDong}</td>
+                <td style="font-weight:700;font-size:0.85rem;white-space:nowrap;">${tenSafe}${isGoc ? ' <span title="Admin gốc bất khả xâm phạm" style="color:#fbbf24;">👑</span>' : ''}</td>
+                <td style="white-space:nowrap;">${_vaiTroBadge(g.vai_tro)}</td>
+                <td>
+                    <a href="https://zalo.me/${g.sdt}" target="_blank"
+                       style="font-size:0.8rem;text-decoration:none;color:#60a5fa;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
+                        <i class="fa-solid fa-comment" style="color:#00d4ff;flex-shrink:0;"></i>${g.sdt}
+                    </a>
+                </td>
+                <td style="font-weight:700;color:#a78bfa;">${g.caDang}</td>
+                <td style="font-weight:700;color:#00ff88;">${g.caTG}</td>
+                <td style="white-space:nowrap;">${_fVND(g.tongChi)}</td>
+                <td>${_trustBadge(g.diemUyTin)}</td>
+                <td>${saoCellHTML}</td>
+                <td style="white-space:nowrap;">${_tinhTrangBadge(g.isActive)}</td>
+                <td>${deviceCell}</td>
+                <td style="text-align:right;font-size:0.75rem;color:#64748b;white-space:nowrap;">${_fNgayGio(g.ngayTG)}</td>`;
+            tbody.appendChild(tr);
         });
+    }
+
+    // Xóa device fingerprint binding — cho phép đăng nhập lại từ thiết bị khác (dùng để test)
+    window.xoaFingerprintTV = async function(sdt) {
+        if (!confirm(`Xóa binding thiết bị của ${sdt}?\nSau đó tài khoản có thể đăng nhập từ thiết bị bất kỳ.`)) return;
+        try {
+            await window.dbEngine.ghi("nguoi_dung", { device_fingerprint: null }, { sdt_khach: sdt });
+            window.hienToast("Đã xóa", "Binding thiết bị đã được xóa.", "success");
+            _taiDanhSachKhach();
+        } catch(e) {
+            window.hienToast("Lỗi", e.message || "Không thể xóa.", "danger");
+        }
+    };
+
+    // Tạo tài khoản test hàng loạt
+    // Số thứ tự bằng chữ tiếng Việt
+    const _CHU_SO_VI = ["MỘT","HAI","BA","BỐN","NĂM","SÁU","BẢY","TÁM","CHÍN","MƯỜI",
+        "MƯỜI MỘT","MƯỜI HAI","MƯỜI BA","MƯỜI BỐN","MƯỜI LĂM","MƯỜI SÁU","MƯỜI BẢY","MƯỜI TÁM","MƯỜI CHÍN","HAI MƯƠI",
+        "HAI MƯƠI MỐT","HAI MƯƠI HAI","HAI MƯƠI BA","HAI MƯƠI BỐN","HAI MƯƠI LĂM","HAI MƯƠI SÁU","HAI MƯƠI BẢY","HAI MƯƠI TÁM","HAI MƯƠI CHÍN","BA MƯƠI",
+        "BA MƯƠI MỐT","BA MƯƠI HAI","BA MƯƠI BA","BA MƯƠI BỐN","BA MƯƠI LĂM","BA MƯƠI SÁU","BA MƯƠI BẢY","BA MƯƠI TÁM","BA MƯƠI CHÍN","BỐN MƯƠI",
+        "BỐN MƯƠI MỐT","BỐN MƯƠI HAI","BỐN MƯƠI BA","BỐN MƯƠI BỐN","BỐN MƯƠI LĂM","BỐN MƯƠI SÁU","BỐN MƯƠI BẢY","BỐN MƯƠI TÁM","BỐN MƯƠI CHÍN","NĂM MƯƠI"];
+
+    window.moModalTaoTaiKhoanTest = function() {
+        const existing = document.getElementById("modalTaoTestOverlay");
+        if (existing) { existing.style.display = "flex"; return; }
+        const box = document.createElement("div");
+        box.id = "modalTaoTestOverlay";
+        box.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;";
+        box.innerHTML = `
+            <div style="background:#1a2844;border:1px solid rgba(0,255,136,0.3);border-radius:16px;padding:28px 24px;max-width:420px;width:100%;">
+                <div style="font-size:1.05rem;font-weight:800;color:#00ff88;margin-bottom:10px;">🧪 Tạo Tài Khoản Demo Hàng Loạt</div>
+                <div style="color:#9ca3af;font-size:0.82rem;margin-bottom:16px;line-height:1.5;">
+                    Tạo tài khoản với SĐT ngẫu nhiên 10 số.<br>
+                    <strong style="color:#e2e8f0;">Mật khẩu mặc định = chính SĐT của tài khoản đó</strong> (dễ đăng nhập test).<br>
+                    Tên: <em style="color:#60a5fa;">TÀI KHOẢN DEMO MỘT, HAI, BA...</em>
+                </div>
+                <div class="ad-form-group">
+                    <label class="ad-label">Số lượng tài khoản (1–50)</label>
+                    <input type="number" id="testAccountQty" class="ad-input" value="5" min="1" max="50">
+                </div>
+                <div style="display:flex;gap:10px;margin-top:16px;">
+                    <button class="ad-btn-primary" onclick="window.taoTaiKhoanTestHangLoat()" style="flex:1;">
+                        <i class="fa-solid fa-user-plus"></i> Tạo ngay
+                    </button>
+                    <button class="ad-btn-ghost" onclick="document.getElementById('modalTaoTestOverlay').style.display='none';">
+                        Hủy
+                    </button>
+                </div>
+                <div id="testAccountProgress" style="margin-top:12px;font-size:0.8rem;color:#94a3b8;min-height:20px;"></div>
+            </div>`;
+        document.body.appendChild(box);
+    };
+
+    window.taoTaiKhoanTestHangLoat = async function() {
+        const qty      = Math.min(50, Math.max(1, parseInt(document.getElementById("testAccountQty")?.value || "5")));
+        const progress = document.getElementById("testAccountProgress");
+        if (progress) progress.textContent = `Đang chuẩn bị tạo ${qty} tài khoản...`;
+
+        const SALT = "tvl_pepper_2026";
+        const _hashSdt = async (sdt) => {
+            const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(sdt + SALT));
+            return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+        };
+
+        let ok = 0, fail = 0, firstErr = "";
+        for (let i = 0; i < qty; i++) {
+            const prefixArr = ["03","05","07","08","09"];
+            const randSdt = prefixArr[Math.floor(Math.random()*5)] + String(Math.floor(10000000 + Math.random() * 89999999));
+            const ten     = "TÀI KHOẢN DEMO " + (_CHU_SO_VI[i] || String(i + 1));
+            const passHash = await _hashSdt(randSdt); // mật khẩu = SĐT
+            const gt      = Math.random() > 0.5 ? "male" : "female";
+
+            let taoOK = false;
+
+            // Ưu tiên 1: RPC phan_he_dat_pass_lan_dau (SECURITY DEFINER — bypass RLS hoàn toàn)
+            if (window.guestRPC?.datPassLanDau) {
+                try {
+                    const r = await window.guestRPC.datPassLanDau(randSdt, ten, gt, passHash, null, null, null, null);
+                    if (r?.status === "ok") taoOK = true;
+                    else if (r?.status) { if (!firstErr) firstErr = `RPC trả về: ${r.status}`; }
+                } catch (e2) { if (!firstErr) firstErr = e2.message || "RPC lỗi"; }
+            }
+
+            // Ưu tiên 2: khoDuLieuVinhVien (dùng admin JWT — cần INSERT policy)
+            if (!taoOK) {
+                try {
+                    await window.khoDuLieuVinhVien.ghiData("nguoi_dung", {
+                        sdt_khach: randSdt, ten_khach: ten, mat_khau_hash: passHash,
+                        vai_tro: "guest", is_active: true, gioi_tinh: gt
+                    }, null);
+                    taoOK = true;
+                } catch (e3) { if (!firstErr) firstErr = e3.message || "Lỗi chèn DB"; }
+            }
+
+            if (taoOK) {
+                ok++;
+                if (progress) progress.textContent = `Đã tạo ${ok}/${qty} tài khoản...`;
+            } else { fail++; }
+        }
+
+        const isRLSErr = firstErr.includes("row-level security") || firstErr.includes("policy");
+        let moTa;
+        if (ok > 0) {
+            moTa = `Đã tạo thành công ${ok} tài khoản demo.${fail > 0 ? ` ${fail} thất bại.` : ""}`;
+        } else if (isRLSErr) {
+            moTa = "Bị chặn bởi chính sách bảo mật DB. Cần chạy SQL: CREATE POLICY admin_insert_users ON nguoi_dung FOR INSERT TO authenticated WITH CHECK (is_admin());";
+        } else {
+            moTa = `Không tạo được tài khoản nào. Nguyên nhân: ${firstErr || "Không rõ"}`;
+        }
+        window.hienToast(ok > 0 ? "Tạo Thành Công ✅" : "Tạo Thất Bại ❌", moTa, ok > 0 ? "success" : "danger");
+        document.getElementById("modalTaoTestOverlay").style.display = "none";
+        _taiDanhSachKhach();
+    };
+
+    // Xóa nhiều tài khoản đã chọn (bulk delete)
+    window.xoaNhieuTaiKhoanTest = async function() {
+        const checked = document.querySelectorAll("#adminGuestsBody .tv-chk:checked");
+        if (!checked.length) { window.hienToast("Thông báo", "Chưa chọn tài khoản nào.", "warning"); return; }
+        const sdts = Array.from(checked).map(c => c.dataset.sdt).filter(s => s && s !== ADMIN_GOC_SDT);
+        if (!sdts.length) { window.hienToast("Không thể xóa", "Các tài khoản đã chọn đều được bảo vệ.", "warning"); return; }
+        if (!confirm(`Xác nhận xóa vĩnh viễn ${sdts.length} tài khoản đã chọn?\nHành động này KHÔNG THỂ hoàn tác.`)) return;
+
+        let ok = 0, fail = 0;
+        for (const sdt of sdts) {
+            try {
+                await window.dbEngine.xoaData("nguoi_dung", { sdt_khach: sdt });
+                ok++;
+            } catch { fail++; }
+        }
+        window.hienToast(
+            ok > 0 ? "Đã Xóa ✅" : "Thất Bại ❌",
+            `Đã xóa ${ok} tài khoản.${fail > 0 ? ` ${fail} tài khoản xóa thất bại.` : ""}`,
+            ok > 0 ? "success" : "danger"
+        );
+        window._tvBoChonHet();
+        _taiDanhSachKhach();
     };
 
     /* ═══════════════════════════════════════════════════
@@ -872,6 +1222,11 @@
 
     // Mở modal Quản Lý Thành Viên (5 section xếp chồng)
     window.moModalQuanLyThanhVien = async function (sdt) {
+        // Admin gốc ID 1 — bất khả xâm phạm, không mở modal chỉnh sửa
+        if (sdt === ADMIN_GOC_SDT) {
+            window.hienToast("Không thể chỉnh sửa", "Tài khoản Admin gốc (ID 1) được bảo vệ và không thể thay đổi.", "warning");
+            return;
+        }
         const overlay = document.getElementById("modalThanhVienOverlay");
         const body    = document.getElementById("modalThanhVienTitle");
         const bodyEl  = document.getElementById("modalThanhVienBody");
@@ -978,7 +1333,7 @@
                 <div class="mv-section-title">🎭 Vai Trò &nbsp;<span style="color:#00ff88;font-weight:700;">${vaiTro}</span></div>
                 <div class="mv-role-btns">
                     <button class="mv-btn ${(vaiTro === 'user' || vaiTro === 'guest') ? 'mv-btn-active' : ''}"
-                        onclick="window._ap.xacNhanDoiVaiTro('${sdtAttr}', 'user')">👤 Thành Viên</button>
+                        onclick="window._ap.xacNhanDoiVaiTro('${sdtAttr}', 'guest')">👤 Thành Viên</button>
                     <button class="mv-btn ${vaiTro === 'admin' ? 'mv-btn-active' : ''}"
                         onclick="window._ap.xacNhanDoiVaiTro('${sdtAttr}', 'admin')">👑 Admin</button>
                 </div>
@@ -1148,7 +1503,7 @@
         try {
             const hash = await _hashMK(pw);
             await window.dbEngine.ghi("nguoi_dung", { mat_khau_hash: hash }, { sdt_khach: sdt });
-            window.hienToast("Mật khẩu mới đã lưu ✅", "Hash đã cập nhật vào DB.", "success");
+            window.hienToast("Mật khẩu mới đã lưu ✅", "Mật khẩu đã được cập nhật thành công.", "success");
             const p1 = document.getElementById("mvNewPassword");
             const p2 = document.getElementById("mvConfirmPassword");
             if (p1) p1.value = "";
@@ -1170,6 +1525,7 @@
 
     // D — Khóa hoặc mở khóa tài khoản (toggle is_active)
     window._khoaMoTV = async function (sdt, isActive) {
+        if (sdt === ADMIN_GOC_SDT) { window.hienToast("Không được phép", "Không thể khóa tài khoản Admin gốc.", "warning"); return; }
         const newActive = !isActive;
         const label     = newActive ? "Mở khóa" : "Khóa";
         try {
@@ -1188,8 +1544,9 @@
         }
     };
 
-    // E — Xóa tài khoản (kiểm tra SĐT nhập đúng → xóa ở cả 2 bảng)
+    // E — Xóa tài khoản (kiểm tra SĐT nhập đúng → xóa)
     window._xoaTV = async function (sdt) {
+        if (sdt === ADMIN_GOC_SDT) { window.hienToast("Không được phép", "Không thể xóa tài khoản Admin gốc.", "warning"); return; }
         const nhapSdt = (document.getElementById("mvXoaConfirmSdt")?.value || "").trim();
         if (nhapSdt !== sdt) {
             window.hienToast("Xác nhận sai", `SĐT nhập vào (${nhapSdt || "rỗng"}) không khớp với ${sdt}.`, "danger");

@@ -182,31 +182,19 @@
             dateEl.textContent = `Gia nhập: ${joined}`;
         }
 
-        // MODULE 4: Routing theo vai_tro
-        const isHost = g.vai_tro === "host";
-        // FIX 11: dùng btnNangCapHostHint (nút ? nhỏ) thay vì sectionNangCapHost (card to)
+        // Mọi người dùng đã đăng nhập đều có thể đăng kèo — không cần key
         const hintBtn      = document.getElementById("btnNangCapHostHint");
-        const sectionGuest = document.getElementById("sectionNangCapHost"); // giữ backward compat
+        const sectionGuest = document.getElementById("sectionNangCapHost");
         const sectionHost  = document.getElementById("sectionHostDaKichHoat");
-        const keyDisplay   = document.getElementById("profileHostKey");
+        // Ẩn nút hint và card nâng cấp key (không còn dùng)
+        if (hintBtn)      hintBtn.style.display      = "none";
+        if (sectionGuest) sectionGuest.style.display = "none";
+        if (sectionHost)  sectionHost.style.display  = "flex";
+        _capNhatUIHostDaKichHoat();
 
-        if (isHost) {
-            // Đã là Host → ẩn hint, ẩn card nâng cấp, hiện badge host
-            if (hintBtn)      hintBtn.style.display      = "none";
-            if (sectionGuest) sectionGuest.style.display = "none";
-            if (sectionHost)  sectionHost.style.display  = "flex";
-            // Hiện key + tải hạn sử dụng từ DB
-            _capNhatUIHostDaKichHoat(g.ma_key_host || "");
-        } else {
-            // Còn là guest → hiện nút hint ?, ẩn badge host
-            if (hintBtn)      hintBtn.style.display      = "flex";
-            if (sectionGuest) sectionGuest.style.display = "none"; // card to đã xóa khỏi HTML
-            if (sectionHost)  sectionHost.style.display  = "none";
-        }
-
-        // FEAT-1: Tích vàng xác minh Host — hiện kế bên tên
+        // FEAT-1: Tích vàng — hiện badge cho tất cả user (đều có thể đăng kèo)
         const hostBadgeEl = document.getElementById("profileHostBadge");
-        if (hostBadgeEl) hostBadgeEl.style.display = isHost ? "inline-flex" : "none";
+        if (hostBadgeEl) hostBadgeEl.style.display = "inline-flex";
 
         // Admin Access Card — hiện nút "Vào Admin" nếu vai_tro='admin'
         const isAdmin = g.vai_tro === 'admin';
@@ -380,7 +368,6 @@
             sdt_khach:      user.sdt_khach || "",
             gioi_tinh:      user.gioi_tinh || "male",
             vai_tro:        user.vai_tro || "guest",
-            ma_key_host:    user.ma_key_host || null,
             telegram_id:    user.telegram_id || null,
             ngay_tham_gia:  user.ngay_tham_gia || null,
             _token:         token || null,
@@ -824,108 +811,25 @@
         return deviceId;
     }
 
-    /**
-     * Kích hoạt Key Host từ trang Profile.
-     */
-    window.kichHoatKeyHost = async function () {
-        const key = (document.getElementById("inputKeyNangCap")?.value || "").trim().toUpperCase();
-
-        if (!window.VALIDATE.keyHost(key)) {
-            window.hienToast("Sai định dạng Key", "Mã Key phải theo dạng TVL-XXXXX-XXXX.", "danger"); return;
-        }
-
-        const btn = document.getElementById("btnKichHoatKey");
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
-
-        try {
-            // 1. Kiểm tra key trong quan_ly_key
-            const keys = await window.dbEngine.doc("quan_ly_key", { eq: { ma_key: key } });
-            const keyData = keys[0];
-
-            if (!keyData) {
-                window.hienToast("Key không tồn tại", "Mã Key không hợp lệ hoặc chưa được tạo.", "danger"); return;
-            }
-            if (keyData.trang_thai === "Bị khóa") {
-                window.hienToast("Key bị khóa", "Mã Key này đã bị Admin khóa.", "danger"); return;
-            }
-            if (keyData.ngay_het_han && new Date(keyData.ngay_het_han) < new Date()) {
-                window.hienToast("Key hết hạn", "Mã Key đã hết hạn sử dụng.", "danger"); return;
-            }
-
-            // 2. Kiểm tra device binding
-            const deviceId = _layHoacTaoDeviceId();
-            if (keyData.id_thiet_bi && keyData.id_thiet_bi !== deviceId) {
-                window.hienToast("Sai thiết bị", "Key đã được kích hoạt trên thiết bị khác. Liên hệ Admin để reset.", "danger"); return;
-            }
-
-            // 3. Nâng cấp vai_tro trong nguoi_dung
-            const phone = window.currentGuest?.sdt_khach;
-            if (!phone) {
-                window.hienToast("Chưa đăng nhập", "Vui lòng đăng nhập trước.", "danger"); return;
-            }
-            await window.dbEngine.ghi("nguoi_dung",
-                { vai_tro: "host", ma_key_host: key },
-                { sdt_khach: phone }
-            );
-
-            // 4. Cập nhật quan_ly_key: kích hoạt + ghi device binding
-            const ngayKichHoat = new Date().toISOString();
-            const soNgay = keyData.so_ngay_duoc_xai || 30;
-            const ngayHetHan = new Date(Date.now() + soNgay * 86400000).toISOString();
-            await window.dbEngine.ghi("quan_ly_key",
-                { trang_thai: "Đang chạy", id_thiet_bi: deviceId, ngay_kich_hoat: ngayKichHoat, ngay_het_han: ngayHetHan },
-                { ma_key: key }
-            );
-
-            // 5. Cập nhật local session + UI
-            window.currentGuest.vai_tro    = "host";
-            window.currentGuest.ma_key_host = key;
-            localStorage.setItem("tvl_guest", JSON.stringify(window.currentGuest));
-            _capNhatUIHostDaKichHoat(key);
-            window.hienToast("Thành công! 🏟️", "Tài khoản đã được nâng cấp thành Host Sân.", "success");
-        } catch (e) {
-            console.error("Lỗi kích hoạt key:", e);
-            window.hienToast("Lỗi", "Không thể kích hoạt Key. Thử lại sau.", "danger");
-        } finally {
-            if (btn) { btn.disabled = false; btn.innerHTML = 'Kích Hoạt →'; }
-        }
+    // Chức năng kích hoạt key đã bị gỡ bỏ — không cần key để đăng kèo
+    window.kichHoatKeyHost = function () {
+        window.hienToast("Thông báo", "Chức năng kích hoạt key đã không còn sử dụng. Bạn có thể đăng kèo ngay sau khi đăng nhập.", "info");
     };
 
     /**
      * Cập nhật UI sau khi kích hoạt Key thành công.
      * Cũng tải hạn sử dụng từ DB để hiển thị.
      */
-    function _capNhatUIHostDaKichHoat(key, ngayHetHanRaw) {
+    function _capNhatUIHostDaKichHoat() {
         const sectionGuest  = document.getElementById("sectionNangCapHost");
         const sectionHost   = document.getElementById("sectionHostDaKichHoat");
         const keyDisplay    = document.getElementById("profileHostKey");
         const expiryDisplay = document.getElementById("profileHostExpiry");
         if (sectionGuest) sectionGuest.style.display = "none";
         if (sectionHost)  sectionHost.style.display  = "flex";
-        if (keyDisplay)   keyDisplay.textContent      = key;
-        if (expiryDisplay) {
-            if (ngayHetHanRaw) {
-                const d = new Date(ngayHetHanRaw);
-                expiryDisplay.textContent = d.toLocaleDateString("vi-VN");
-                const conLai = Math.ceil((d - Date.now()) / 86400000);
-                expiryDisplay.style.color = conLai <= 7 ? "#f87171" : "#fbbf24";
-            } else {
-                // Nếu không có sẵn → tải từ DB
-                window.dbEngine.doc("quan_ly_key", { eq: { ma_key: key } })
-                    .then(rows => {
-                        const row = rows?.[0];
-                        if (row?.ngay_het_han) {
-                            const d = new Date(row.ngay_het_han);
-                            expiryDisplay.textContent = d.toLocaleDateString("vi-VN");
-                            const conLai = Math.ceil((d - Date.now()) / 86400000);
-                            expiryDisplay.style.color = conLai <= 7 ? "#f87171" : "#fbbf24";
-                        } else {
-                            expiryDisplay.textContent = "Chưa kích hoạt";
-                            expiryDisplay.style.color = "#94a3b8";
-                        }
-                    }).catch(() => { expiryDisplay.textContent = "--"; });
-            }
-        }
+        // Hiện SĐT thay vì mã key
+        if (keyDisplay)   keyDisplay.textContent = window.currentGuest?.sdt_khach || "";
+        if (expiryDisplay) { expiryDisplay.textContent = "Không giới hạn"; expiryDisplay.style.color = "#00ff88"; }
     }
 
     /**

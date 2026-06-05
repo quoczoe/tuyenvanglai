@@ -214,22 +214,14 @@
         if (auth) auth.style.display = "none";
         if (con)  con.style.display  = "block";
 
-        try {
-            // Tải thông tin key từ bảng quan_ly_key
-            const keys = await window.dbEngine.doc("quan_ly_key", { eq: { ma_key: window.currentHostKey } });
-            window.currentHostInfo = keys[0] || null;
-            const nameEl = document.getElementById("hostDisplayName");
-            const keyEl  = document.getElementById("hostDisplayKey");
-            const expEl  = document.getElementById("hostDisplayExpiry");
-            if (window.currentHostInfo) {
-                if (nameEl) nameEl.textContent = window.currentHostInfo.ten_host || "Host Sân";
-                if (keyEl)  keyEl.textContent  = window.currentHostKey;
-                if (expEl) {
-                    const exp = new Date(window.currentHostInfo.ngay_het_han);
-                    expEl.textContent = `Hết hạn: ${exp.toLocaleDateString("vi-VN")}`;
-                }
-            }
-        } catch (e) { console.warn("Không tải được info host:", e); }
+        // Hiện thông tin từ session — không cần key
+        const _g = window.currentGuest || window.currentUser;
+        const nameEl = document.getElementById("hostDisplayName");
+        const keyEl  = document.getElementById("hostDisplayKey");
+        const expEl  = document.getElementById("hostDisplayExpiry");
+        if (nameEl) nameEl.textContent = _g?.ten_khach || "Người dùng";
+        if (keyEl)  keyEl.style.display  = "none";
+        if (expEl)  expEl.style.display  = "none";
 
         _napDropdownTinhThanh("hostProvince", "hostDistrict");
 
@@ -1203,7 +1195,7 @@
         const scam_warning = !_hostDuDieu && _quetTuKhoaLuaDao(_combinedText);
 
         const payload = {
-            ma_key_host: _myUser?.ma_key_host || null,
+            ma_key_host: null,
             vung_mien:   _xacDinhVungMien(tinh_thanh),
             tinh_thanh, quan_huyen, ten_san, dia_chi_san,
             so_san_mo, so_san_cu_the,
