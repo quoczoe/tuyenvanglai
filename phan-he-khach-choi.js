@@ -72,40 +72,33 @@
                     _hienManDangNhap();
                 } else {
                     // === KIỂM TRA ĐỒNG BỘ (await) ===
-                    // KHÔNG hiện dashboard trước khi biết user còn tồn tại / còn hoạt động.
-                    // Đây là cách duy nhất để F5 log out ngay khi admin đã xóa tài khoản.
+                    // Dùng direct fetch tới Supabase — không phụ thuộc window.guestRPC,
+                    // window.dbEngine hay window.khoDuLieuVinhVien (tránh dependency issues).
+                    // Kết quả: nếu user bị xóa/khóa → hiện login form ngay, không hiện dashboard.
                     let _sessionHopLe = true;
 
-                    if (parsed._token && window.guestRPC) {
-                        // Đường ưu tiên: RPC token-verify (chính xác)
-                        try {
-                            const r = await window.guestRPC.refreshProfile(parsed._token, parsed.sdt_khach);
-                            if (r.status === 'blocked' || r.status === 'unauthorized' || r.status === 'not_found') {
+                    try {
+                        const _SB_URL  = "https://kyidswbpfafsoqsdhfpu.supabase.co";
+                        const _SB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5aWRzd2JwZmFmc29xc2RoZnB1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNDI1ODksImV4cCI6MjA5NDkxODU4OX0.ustQ0xaRQqxyCWid1dkC-1YuhX0yA0wQJ5JOyq98TRY";
+                        const _resp = await fetch(
+                            `${_SB_URL}/rest/v1/nguoi_dung?sdt_khach=eq.${encodeURIComponent(parsed.sdt_khach)}&select=sdt_khach,is_active,vai_tro,ten_khach`,
+                            { headers: { "apikey": _SB_ANON, "Authorization": `Bearer ${_SB_ANON}` } }
+                        );
+                        if (_resp.ok) {
+                            const _rows = await _resp.json();
+                            if (Array.isArray(_rows) && _rows.length === 0) {
+                                _sessionHopLe = false; // User đã bị Admin xóa
+                            } else if (Array.isArray(_rows) && _rows[0]?.is_active === false) {
                                 _sessionHopLe = false;
-                                if (r.status === 'blocked') window.hienToast("Tài khoản bị khóa", "Liên hệ Admin.", "danger");
-                            } else if (r.status === 'ok' && r.user) {
-                                Object.assign(parsed, r.user); // cập nhật vai_tro, is_active mới nhất
+                                window.hienToast("Tài khoản bị khóa", "Admin đã khóa tài khoản của bạn.", "danger");
+                            } else if (Array.isArray(_rows) && _rows[0]) {
+                                // Cập nhật thông tin mới nhất từ DB vào session
+                                Object.assign(parsed, _rows[0]);
                             }
-                        } catch (_) {
-                            // RPC chưa deploy → fallback: đọc thẳng nguoi_dung
-                            const arr = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: parsed.sdt_khach } });
-                            if (arr !== null && arr.length === 0) {
-                                _sessionHopLe = false; // User đã bị xóa
-                            } else if (arr !== null && arr[0]?.is_active === false) {
-                                _sessionHopLe = false;
-                                window.hienToast("Tài khoản bị khóa", "Liên hệ Admin.", "danger");
-                            }
-                            // arr === null → lỗi mạng, không kết luận, giữ session
                         }
-                    } else {
-                        // Không có token → kiểm tra thẳng nguoi_dung
-                        const arr = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: parsed.sdt_khach } });
-                        if (arr !== null && arr.length === 0) {
-                            _sessionHopLe = false;
-                        } else if (arr !== null && arr[0]?.is_active === false) {
-                            _sessionHopLe = false;
-                            window.hienToast("Tài khoản bị khóa", "Liên hệ Admin.", "danger");
-                        }
+                        // _resp not ok → lỗi mạng → giữ session (không kết luận)
+                    } catch (_fetchErr) {
+                        // Lỗi mạng hoàn toàn → không kết luận, giữ session
                     }
 
                     if (!_sessionHopLe) {
@@ -113,12 +106,10 @@
                         window.currentGuest = null;
                         _hienManDangNhap();
                     } else {
-                        // Lưu lại thông tin đã cập nhật (vai_tro, is_active mới nhất)
                         const stored = JSON.parse(localStorage.getItem("tvl_guest") || "{}");
                         localStorage.setItem("tvl_guest", JSON.stringify({ ...stored, ...parsed }));
                         window.currentGuest = { ...parsed };
                         _hienThiDashboardKhach();
-                        // Bắt đầu poll định kỳ — văng ngay khi admin xóa/khóa tài khoản
                         _batDauKiemTraSession();
                     }
                 }
