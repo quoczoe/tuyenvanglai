@@ -174,10 +174,10 @@
             background: rgba(255,85,0,0.1);
         }
 
-        /* ── APP BODY — padding-top = header(80) + buffer(16) = 96px ── */
+        /* ── APP BODY — padding-top = header height(80px) — sát mép dưới header ── */
         .app-body {
             max-width: 1700px; width: 100%; margin: 0 auto;
-            padding: 96px 20px 80px;
+            padding: 80px 20px 80px;
         }
         /* (mobile subtab overrides đã chuyển vào @media 768px chính bên dưới) */
 
@@ -927,7 +927,7 @@
             #headerUserName { display: none; }
             .btn-hamburger { display: flex; }    /* hiện hamburger */
             /* Body */
-            .app-body { padding: 72px 12px 80px; }
+            .app-body { padding: 56px 12px 80px; }
             /* Subtab nav sát header 56px — PHẢI đặt SAU .subtab-nav { top:80px } để override đúng */
             .subtab-nav { top: 56px; background: rgba(8,8,8,1); }
             /* Khi có subtab: đẩy nội dung xuống đủ (56 header + 44 subtab + 8 buffer) */
@@ -938,6 +938,15 @@
             #dql-content { padding-top: 52px; }
             /* Ẩn mô tả cọc trên mobile — đủ thông tin qua tooltip ? */
             .coc-toggle-desc { display: none; }
+            /* Tooltip cọc mobile: right-align để không tràn mép phải */
+            .coc-tip::after {
+                right: 0 !important; left: auto !important; transform: none !important;
+                width: min(240px, 72vw) !important; max-width: min(240px, 72vw) !important;
+            }
+            /* Tooltip ? ngoài button: right-align */
+            .fg-btn .tt::after {
+                left: auto !important; right: 0 !important; transform: none !important;
+            }
             /* Forms */
             .form-row, .form-row.col-3, .form-row.col-4, .form-row.col-san { grid-template-columns: 1fr; }
             .row-h5 { grid-template-columns: 1fr; }
@@ -2514,10 +2523,10 @@
                                    oninput="window._formatInputTienTeK&&window._formatInputTienTeK(this);window._tinhGoiYGia&&window._tinhGoiYGia();">
                         </div>
                         <div class="fg-btn">
-                            <button type="button" class="btn-kt-trigger" onclick="window.moKtModal && window.moKtModal()">
+                            <button type="button" class="btn-kt-trigger" style="flex:1;" onclick="window.moKtModal && window.moKtModal()">
                                 <i class="fa-solid fa-calculator"></i> Tính toán &amp; Gợi ý giá
-                                <span class="tt" data-tip="Mở máy tính kế toán nội bộ: nhập tiền sân, cầu, nước → hệ thống tự tính và đề xuất 3 mức giá. Click chọn mức giá để điền thẳng vào ô Giá Thu Nam / Nữ.">?</span>
                             </button>
+                            <span class="tt" data-tip="Mở máy tính kế toán nội bộ: nhập tiền sân, cầu, nước → hệ thống tự tính và đề xuất 3 mức giá. Click chọn mức giá để điền thẳng vào ô Giá Thu Nam / Nữ." style="flex-shrink:0;margin-bottom:11px;">?</span>
                         </div>
                     </div>
                     <!-- Thu Cọc Trước — inline compact -->
