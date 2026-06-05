@@ -1,32 +1,68 @@
-# TODO — Cập nhật: 2026-06-07 (phiên 7)
+# TODO — Cập nhật: 2026-06-09 (phiên 9)
 
 ---
 
-## 🔄 ĐANG LÀM DỞ
+## ✅ ĐÃ HOÀN THÀNH PHIÊN NÀY
+
+### CA ĐÃ ĐĂNG — index.html + phan-he-host.js (phiên 9)
+- [x] **Fix header cố định**: table-wrap max-height:60vh + overflow-y:auto + thead position:sticky;top:0
+- [x] **Gộp cột Ngày+Giờ**: 1 cột "Thứ/Ngày Giờ" — format "T6, 06/06/2026 | 18:00 → 20:00"
+- [x] **Fix cột Giá**: "Nam: Xk / Nữ: Xk" cùng 1-2 hàng, không cắt ngắn
+- [x] **Fix nút Slot (DS Khách)**: openGuestListModal mở #modal-guest-list (đã thêm vào index.html)
+- [x] **Fix nút Xóa ca**: post-delete verification — nếu RLS silently block → báo lỗi rõ thay vì "thành công"
+- [x] **Fix nút Chi tiết**: xemChiTietCaDau mở #modal-ca-detail (đã thêm vào index.html)
+- [x] **Fix nút Đánh giá**: moModalDanhGiaCa mở #modal-danh-gia-ca (đã thêm vào index.html)
+- [x] **Fix nút Sửa**: _moModalSuaCa mở #modal-sua-ca inline (không redirect sang tab Đăng)
+- [x] **Auto chốt ca**: moModalXacNhanChotCa mở #modal-xacnhan-chot (đã thêm vào index.html)
+- [x] **Bộ lọc**: dropdown trạng thái (Tất cả/Đang mở/Hết giờ/Đã chốt)
+- [x] **Ô tìm kiếm**: realtime filter theo sân, tên khách, SĐT (qua _caDauSearch)
+- [x] **Sort theo cột**: click header → asc/desc (# | Ngày | Sân | Giá | Trạng Thái)
+- [x] **Màu xen kẽ**: alternating row background giữa các hàng
+- [x] **Kẻ dòng cột**: border-right giữa các cột
+- [x] **Cột STT**: thêm cột # (index+1)
+- [ ] **Fix nút Chi tiết + Đánh giá**: không hoạt động sau khi chốt ca — fix
+- [ ] **Fix nút Sửa**: mở inline form/modal chỉnh giá, số cầu, số người — không redirect sang tab Đăng
+- [ ] **Auto chốt ca**: realtime check giờ hết → prompt chỉnh sửa lần cuối → xác nhận chốt
+- [ ] **Bộ lọc**: dropdown trạng thái (đang mở/đã chốt), ngày, sân
+- [ ] **Kẻ dòng + màu xen kẽ**: alternating row colors, border-bottom giữa các hàng
+- [ ] **Cột STT**: thêm số thứ tự
+- [ ] **Sort theo cột**: click header → sort asc/desc
+- [ ] **Ô tìm kiếm**: realtime filter theo tên sân, tên khách, SĐT khách
+
+**SQL cần chạy trước (góp ý fix):**
+```sql
+CREATE POLICY "gop_y_auth_select" ON gop_y_he_thong FOR SELECT TO authenticated USING (true);
+CREATE POLICY "gop_y_auth_delete" ON gop_y_he_thong FOR DELETE TO authenticated USING (true);
+```
 
 **SQL Migration security-auth-v4.sql — đang chạy từng phần:**
-- [x] Phần 1: Cấu trúc bảng (ALTER TABLE, CREATE TABLE guest_sessions, login_attempts)
-- [ ] Phần 2: is_admin() SECURITY DEFINER function ← **Cần chạy ngay để fix circular RLS**
-- [ ] Phần 3: RPC phan_he_guest_login ← **Cần để login hoạt động lại**
-- [ ] Phần 4: RPC phan_he_dat_pass_lan_dau
-- [ ] Phần 5: RPC verify_guest_token
-- [ ] Phần 6: RPC guest_dat_slot
-- [ ] Phần 7: RPC guest_huy_slot + get_current_guest_profile
-- [ ] Phần 8: RLS Policies (DROP cũ + CREATE mới dùng is_admin())
-
-**Sau khi chạy xong SQL — test 8 bước:**
-- [ ] Đăng nhập /admin/ bằng email mynameisanhquocpro@gmail.com
-- [ ] Đăng nhập khách bằng SĐT + pass → nhận _token trong tvl_guest
-- [ ] Đăng ký tài khoản mới (SĐT chưa tồn tại) → nhận token, vào dashboard
-- [ ] Đặt slot → mã 8 ký tự (VD: SLOT-A3B9F21C)
-- [ ] Hủy slot → trang_thai_di_danh="Khách hủy"
-- [ ] Sai pass 6 lần → "Quá nhiều lần thử, chờ 15 phút"
-- [ ] Console `window._xacNhanDoiVaiTro` → `undefined`
-- [ ] Tài khoản admin đăng nhập main site → thấy nút "Vào Admin →"
+- [x] Phần 1: Cấu trúc bảng
+- [ ] Phần 2→8: Còn lại (is_admin, 6 RPC, RLS)
 
 ---
 
 ## ✅ ĐÃ HOÀN THÀNH
+
+### Phiên 2026-06-08 (phiên 8) — Admin gopY + index.html fixes
+
+**Admin tab Góp Ý — phan-he-quan-tri.js + admin/index.html:**
+- [x] Fix RLS: gop_y_he_thong chỉ có policy anon → thêm authenticated SELECT+DELETE vào cms-seed.sql
+- [x] Error state rõ: phân biệt null (lỗi fetch) vs [] (thực sự trống)
+- [x] Expose `window._taiDanhSachGopY` để onclick inline gọi được
+- [x] Sort tường minh: `_gopYCompare(a,b,col,dir)` + `_gopYDoSort()` — không dùng closure
+- [x] _rank cố định sau load: oldest=rank1, hiển thị g._rank thay start+i+1
+- [x] Sort STT (#) hoạt động thực sự — số thứ tự thay đổi khi sort
+- [x] Filter + Pagination gộp 1 hàng (đầu bảng)
+- [x] Cột Người Dùng: 120px → 160px → 320px
+- [x] Rate limiting phan-he-gop-y.js: max 5/ngày + cooldown 5 phút
+- [x] Nút ? (coc-tip) mobile: right-align tooltip tránh tràn phải
+- [x] Btn-kt "?" chuyển ra ngoài button → tap mobile không mở modal
+
+**index.html fixes:**
+- [x] `body { display: block !important }` — override giao-dien.css flex layout
+- [x] Desktop padding-top: 96px → 80px (= header height, xóa dải đen)
+- [x] Mobile padding-top: 72px → 56px (= mobile header height)
+- [x] Hamburger: span background #fff, button border+bg rõ hơn
 
 ### Phiên 2026-06-07 (phiên 7) — UX Polish /tim-keo + /dang-quan-ly + /ca-nhan
 

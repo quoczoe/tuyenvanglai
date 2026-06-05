@@ -55,7 +55,7 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 // user-select: none toàn trang; input/textarea được select
 ```
 
-## CURRENT STATE (cập nhật: 2026-06-07)
+## CURRENT STATE (cập nhật: 2026-06-09)
 
 ### Trạng thái file
 | File | Version | Ghi chú |
@@ -63,36 +63,46 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 | `ket-noi-supabase.js` | v7.0 | supabaseAuth + guestRPC + _adminJWT |
 | `bo-may-du-lieu.js` | v2.0 | dbEngine proxy, 63 tỉnh |
 | `phan-he-ung-dung.js` | v3.1 | SPA routing + has-subtab toggle |
-| `phan-he-host.js` | v6.3 | smart time default, disable past hours, _onNgayDanhChange |
+| `phan-he-host.js` | v7.0 | Ca Đã Đăng: sort/filter/search/STT/modal-inline-sửa, xoaCaDau verify, modals |
 | `phan-he-khach-choi.js` | v8.1 | SĐT reveal click-area, modal HồSơ ẩn SĐT, trust bar redesign |
-| `phan-he-quan-tri.js` | v8.0 | cascade delete RPC, _fitTable, flex layout |
-| `index.html` | v8.0 | /tim-keo UX, /dang-quan-ly UX, /ca-nhan profile, mobile subtab fix |
-| `admin/index.html` | v8.0 | Flex layout, 7 tabs, border-collapse:separate |
-| `phan-he-gop-y.js` | stable | |
+| `phan-he-quan-tri.js` | v9.0 | gopY: sort/filter/pagination + _rank + compare tường minh |
+| `phan-he-gop-y.js` | v2.0 | rate limit: 5/ngày + cooldown 5 phút |
+| `index.html` | v9.0 | Ca Đã Đăng: bảng mới + filter bar + 5 modal (guest-list, ca-detail, danh-gia-ca, xacnhan-chot, sua-ca) |
+| `admin/index.html` | v9.0 | gopY tab: filter+pagination 1 hàng, sort STT, cột Người Dùng 320px |
+| `cms-seed.sql` | v2.1 | thêm gop_y_auth_select + gop_y_auth_delete policy cho authenticated role |
 | `giao-dien.css` | v7.0 | slot-grid gap:0, kh-san-link display:flex, trust card |
 | `components.css` | v5.1 | slot-card margin:0, footer grid 22fr 37fr 41fr |
 
-### Quyết định kỹ thuật quan trọng (phiên này)
-- **slot-grid**: dùng `gap:0` + `margin:1px` trên card, `border-radius:4px` thay 14px — cards sát nhau
-- **mobile subtab bug**: media query `.subtab-nav { top: 56px }` phải đặt SAU `.subtab-nav { top: 80px }` trong CSS cascade — lỗi này đã fix bằng cách chuyển vào @media 768px CHÍNH (dòng ~935)
-- **has-subtab class**: `chuyenTab()` trong phan-he-ung-dung.js tự toggle `body.has-subtab` → padding-top: 108px khi có subtab
-- **kh-san-link**: đổi `inline-flex` → `flex` + `width:100%` để fix "khu vực xuống dòng"
-- **SĐT reveal**: click cả dòng `.shb-phone-chip` → tự click nút reveal bên trong
-- **F5 trust bar bug**: expose `window._hienTrustScoreBar` từ phan-he-khach-choi.js, gọi trong `_renderProfile` phan-he-ung-dung.js
-- **coc-toggle**: `display: flex; width: fit-content` desktop, `width: 100%; justify-content: center` mobile; `.coc-toggle-desc` ẩn trên mobile
+### Quyết định kỹ thuật quan trọng
+- **gop_y RLS bug**: bảng có policy `TO anon` cho SELECT/DELETE nhưng admin dùng `authenticated` JWT → blocked. Fix: thêm policy `TO authenticated` — cần chạy SQL trên Supabase Dashboard
+- **gopY sort bug**: dùng `_gopYCompare(a,b,col,dir)` tham số tường minh thay closure variable. `_gopYSort` gọi `_gopYDoSort()` trực tiếp, không filter lại từ đầu
+- **gopY STT**: gán `_rank` cố định sau khi load (sort by id asc → oldest=rank1). Hiển thị `g._rank` thay `start+i+1` → sort STT thay đổi số thực sự
+- **body display:block**: giao-dien.css set `body{display:flex;flex-direction:column}` — index.html phải override `display:block !important` để tránh flex layout phá padding-top
+- **app-body padding**: desktop 96px→80px, mobile 72px→56px (= header height chính xác). Loại bỏ 16px buffer thừa gây dải đen dưới header
+- **coc-tip mobile**: `right:0;left:auto;transform:none; width:min(240px,72vw)` → tránh tràn phải với overflow-x:hidden container
+- **btn-kt ? ngoài button**: chuyển `<span class="tt">?</span>` ra ngoài `<button>` → tap mobile không bubble lên button trigger modal
+- **hamburger visibility**: `span background:#ffffff` (100%), button `rgba(255,255,255,0.12)`, border `rgba(255,255,255,0.28)`
 
 ### SQL cần chạy trên Supabase Dashboard
 1. `security-auth-v4.sql` — Parts 2→8 (is_admin, 6 RPC, RLS)
-2. `migration-admin-cascade.sql` — v2 (cascade delete + policies, không cần auth_uid)
+2. `migration-admin-cascade.sql` — v2 (cascade delete + policies)
+3. **GÓP Ý FIX** (urgent): chạy snippet sau để admin đọc/xóa được góp ý:
+```sql
+DROP POLICY IF EXISTS "gop_y_auth_select" ON gop_y_he_thong;
+DROP POLICY IF EXISTS "gop_y_auth_delete" ON gop_y_he_thong;
+CREATE POLICY "gop_y_auth_select" ON gop_y_he_thong FOR SELECT TO authenticated USING (true);
+CREATE POLICY "gop_y_auth_delete" ON gop_y_he_thong FOR DELETE TO authenticated USING (true);
+```
 
 ### Known issues
 - Admin xóa user → F5 vẫn thấy dashboard nếu chưa chạy migration-admin-cascade.sql
-- `phan_he_guest_login` RPC cần security-auth-v4.sql Part 3 để login hoạt động
-- Guest login fallback trực tiếp REST nếu RPC chưa deploy
+- `phan_he_guest_login` RPC cần security-auth-v4.sql Part 3
+- Góp ý admin tab không hiện data cho đến khi chạy SQL snippet trên
 
 ## NEXT UP
-- 🔴 Chạy `migration-admin-cascade.sql` trên Supabase → test xóa user
+- 🔴 Chạy SQL góp ý fix (snippet trên) → test admin tab Góp ý
 - 🔴 Chạy `security-auth-v4.sql` Parts 2→8 → full auth hoạt động
+- 🔴 **CA ĐÃ ĐĂNG** (tab Đăng & Quản Lý) — task LỚNA, nhiều sub-items (xem TODO.md)
 - 🟡 GĐ4A: Dashboard doanh thu Host (subtab + 4 metric + filter)
 - 🟡 GĐ4B: Export/In ca đấu (print popup + CSV)
 - 🟢 Deploy Vercel: GitHub repo → custom domain tuyenvanglai.io.vn

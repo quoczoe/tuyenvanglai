@@ -2602,17 +2602,36 @@
             <div id="subtab-dang-quan-ly-ds-ca" class="subtab-section">
                 <div class="app-card">
                     <div class="app-card-title"><i class="fa-solid fa-list-check"></i> Danh Sách Ca Đấu Của Tôi</div>
-                    <div class="table-wrap">
-                        <table class="app-table">
+
+                    <!-- Thanh filter + search -->
+                    <div id="cdd-toolbar" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px;">
+                        <input id="cdd-search" type="text" placeholder="🔍 Tìm sân, khách, SĐT..." autocomplete="off"
+                            style="flex:1;min-width:160px;padding:8px 12px;background:rgba(30,58,95,0.6);border:1px solid #1e3a5f;border-radius:8px;color:#e2e8f0;font-size:0.83rem;font-family:inherit;outline:none;"
+                            oninput="window._caDauTimKiem(this.value)">
+                        <select id="cdd-filter-status" onchange="window._caDauLocTrangThai(this.value)"
+                            style="padding:8px 10px;background:rgba(30,58,95,0.6);border:1px solid #1e3a5f;border-radius:8px;color:#e2e8f0;font-size:0.83rem;font-family:inherit;outline:none;">
+                            <option value="all">Tất cả trạng thái</option>
+                            <option value="running">Đang mở</option>
+                            <option value="expired">Hết giờ</option>
+                            <option value="closed">Đã chốt</option>
+                        </select>
+                        <button onclick="window.loadLichSuCaDauHost && window.loadLichSuCaDauHost()"
+                            style="padding:8px 14px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);border-radius:8px;color:#00ff88;font-size:0.82rem;cursor:pointer;white-space:nowrap;font-family:inherit;">
+                            <i class="fa-solid fa-rotate-right"></i> Tải lại
+                        </button>
+                    </div>
+
+                    <div class="table-wrap" style="max-height:60vh;overflow-y:auto;overflow-x:auto;border-radius:8px;border:1px solid rgba(255,255,255,0.07);">
+                        <table class="app-table" style="width:100%;border-collapse:collapse;min-width:700px;">
                             <thead>
-                                <tr>
-                                    <th>Ngày Đánh</th>
-                                    <th>Sân</th>
-                                    <th>Giờ</th>
-                                    <th>Slot</th>
-                                    <th>Giá</th>
-                                    <th>Trạng Thái</th>
-                                    <th>Hành Động</th>
+                                <tr style="position:sticky;top:0;z-index:3;background:#0f1e35;">
+                                    <th onclick="window._caDauSort('#')" style="cursor:pointer;user-select:none;width:44px;padding:10px 8px;border-right:1px solid rgba(255,255,255,0.07);text-align:center;white-space:nowrap;"># <span id="cdd-sort-icon-#"></span></th>
+                                    <th onclick="window._caDauSort('ngay_danh')" style="cursor:pointer;user-select:none;min-width:130px;padding:10px 10px;border-right:1px solid rgba(255,255,255,0.07);white-space:nowrap;">Thứ/Ngày Giờ <span id="cdd-sort-icon-ngay_danh">↓</span></th>
+                                    <th onclick="window._caDauSort('ten_san')" style="cursor:pointer;user-select:none;min-width:140px;padding:10px 10px;border-right:1px solid rgba(255,255,255,0.07);">Sân <span id="cdd-sort-icon-ten_san"></span></th>
+                                    <th style="min-width:110px;padding:10px 10px;border-right:1px solid rgba(255,255,255,0.07);">Slot / Khách</th>
+                                    <th onclick="window._caDauSort('gia_nam')" style="cursor:pointer;user-select:none;min-width:100px;padding:10px 10px;border-right:1px solid rgba(255,255,255,0.07);">Giá <span id="cdd-sort-icon-gia_nam"></span></th>
+                                    <th onclick="window._caDauSort('da_chot_ca')" style="cursor:pointer;user-select:none;min-width:90px;padding:10px 10px;border-right:1px solid rgba(255,255,255,0.07);">Trạng Thái <span id="cdd-sort-icon-da_chot_ca"></span></th>
+                                    <th style="min-width:130px;padding:10px 10px;">Hành Động</th>
                                 </tr>
                             </thead>
                             <tbody id="hostSlotsBody">
@@ -2621,6 +2640,7 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="cdd-info" style="font-size:0.75rem;color:#64748b;margin-top:6px;text-align:right;"></div>
                 </div>
             </div>
 
@@ -3304,6 +3324,135 @@ window.xoaBoLoc = xoaBoLoc;
             <p style="font-size:0.72rem;color:var(--text-muted);margin-top:8px;">
                 Click vào thẻ giá để tự động điền vào form Đăng Ca Mới và đóng cửa sổ này.
             </p>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MODAL: DANH SÁCH KHÁCH (openGuestListModal) ══ -->
+<div id="modal-guest-list" style="display:none;position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);"
+     onclick="if(event.target===this)window._dongGuestListModal()">
+    <div style="background:#0f1e35;border:1px solid #1e3a5f;border-radius:14px;width:min(98vw,760px);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 48px rgba(0,0,0,0.7);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;border-bottom:1px solid #1e3a5f;flex-shrink:0;">
+            <h3 id="modal-guest-list-title" style="margin:0;font-size:0.95rem;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:8px;">
+                <i class="fa-solid fa-users" style="color:#00ff88;"></i> DS Khách
+            </h3>
+            <button onclick="window._dongGuestListModal()"
+                style="background:rgba(100,116,139,0.2);border:1px solid rgba(100,116,139,0.4);color:#94a3b8;font-size:1rem;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">✕</button>
+        </div>
+        <div id="modal-guest-list-loading" style="display:none;text-align:center;padding:30px;color:#64748b;">
+            <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+        </div>
+        <div style="overflow-y:auto;flex:1;padding:12px 16px 16px;">
+            <table id="modal-guest-list-table" style="width:100%;border-collapse:collapse;display:none;">
+                <thead>
+                    <tr style="background:rgba(30,58,95,0.5);">
+                        <th style="padding:8px 10px;text-align:left;font-size:0.75rem;color:#94a3b8;border-bottom:1px solid #1e3a5f;white-space:nowrap;">#</th>
+                        <th style="padding:8px 10px;text-align:left;font-size:0.75rem;color:#94a3b8;border-bottom:1px solid #1e3a5f;">Khách</th>
+                        <th style="padding:8px 10px;text-align:left;font-size:0.75rem;color:#94a3b8;border-bottom:1px solid #1e3a5f;white-space:nowrap;">Giới Tính</th>
+                        <th style="padding:8px 10px;text-align:left;font-size:0.75rem;color:#94a3b8;border-bottom:1px solid #1e3a5f;">Trạng Thái</th>
+                        <th style="padding:8px 10px;text-align:left;font-size:0.75rem;color:#94a3b8;border-bottom:1px solid #1e3a5f;">Thu Tiền</th>
+                        <th style="padding:8px 10px;text-align:left;font-size:0.75rem;color:#94a3b8;border-bottom:1px solid #1e3a5f;">Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody id="modal-guest-list-body"></tbody>
+            </table>
+            <div id="modal-guest-list-empty" style="display:none;text-align:center;padding:32px;color:#64748b;">Chưa có khách đăng ký.</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MODAL: XÁC NHẬN SỐ LIỆU THỰC TẾ TRƯỚC KHI CHỐT CA ══ -->
+<div id="modal-xacnhan-chot" style="display:none;position:fixed;inset:0;z-index:1250;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);">
+    <div style="background:#0f1e35;border:1px solid rgba(251,191,36,0.3);border-radius:14px;width:min(98vw,520px);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 48px rgba(0,0,0,0.8);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;border-bottom:1px solid rgba(251,191,36,0.2);flex-shrink:0;">
+            <h3 style="margin:0;font-size:0.95rem;font-weight:700;color:#fbbf24;display:flex;align-items:center;gap:8px;">
+                <i class="fa-solid fa-clock"></i> Xác Nhận Số Liệu & Chốt Ca
+            </h3>
+            <button onclick="window.dongModalXacNhanChot()"
+                style="background:rgba(100,116,139,0.2);border:1px solid rgba(100,116,139,0.4);color:#94a3b8;font-size:1rem;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">✕</button>
+        </div>
+        <div id="modal-xacnhan-chot-body" style="overflow-y:auto;flex:1;padding:16px 18px;"></div>
+        <div style="display:flex;gap:8px;padding:12px 18px;border-top:1px solid rgba(255,255,255,0.07);flex-shrink:0;">
+            <button onclick="window.xacNhanVaChotCa()"
+                style="flex:1;padding:10px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);color:#fbbf24;font-size:0.88rem;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;">
+                <i class="fa-solid fa-lock"></i> Xác Nhận & Chốt Ca
+            </button>
+            <button onclick="window.dongModalXacNhanChot()"
+                style="padding:10px 18px;background:rgba(100,116,139,0.15);border:1px solid rgba(100,116,139,0.3);color:#94a3b8;font-size:0.88rem;border-radius:8px;cursor:pointer;font-family:inherit;">Bỏ qua</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MODAL: CHI TIẾT CA ĐẤU ══ -->
+<div id="modal-ca-detail" style="display:none;position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);"
+     onclick="if(event.target===this)this.style.display='none'">
+    <div style="background:#0f1e35;border:1px solid #1e3a5f;border-radius:14px;width:min(98vw,620px);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 48px rgba(0,0,0,0.7);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;border-bottom:1px solid #1e3a5f;flex-shrink:0;">
+            <h3 style="margin:0;font-size:0.95rem;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:8px;">
+                <i class="fa-solid fa-eye" style="color:#22d3ee;"></i> Chi Tiết Ca Đấu
+            </h3>
+            <button onclick="document.getElementById('modal-ca-detail').style.display='none'"
+                style="background:rgba(100,116,139,0.2);border:1px solid rgba(100,116,139,0.4);color:#94a3b8;font-size:1rem;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">✕</button>
+        </div>
+        <div id="modal-ca-detail-body" style="overflow-y:auto;flex:1;padding:16px 18px;">
+            <div style="text-align:center;padding:40px;color:#64748b;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>
+        </div>
+        <div style="padding:10px 18px;border-top:1px solid #1e3a5f;display:flex;justify-content:flex-end;flex-shrink:0;">
+            <button onclick="document.getElementById('modal-ca-detail').style.display='none'"
+                style="padding:8px 22px;background:rgba(30,58,95,0.6);border:1px solid #2d4a6e;color:#94a3b8;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MODAL: ĐÁNH GIÁ CA ĐẤU ══ -->
+<div id="modal-danh-gia-ca" style="display:none;position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);"
+     onclick="if(event.target===this)this.style.display='none'">
+    <div style="background:#0f1e35;border:1px solid #1e3a5f;border-radius:14px;width:min(98vw,480px);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 48px rgba(0,0,0,0.7);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;border-bottom:1px solid #1e3a5f;flex-shrink:0;">
+            <h3 style="margin:0;font-size:0.95rem;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:8px;">
+                <i class="fa-solid fa-star" style="color:#fbbf24;"></i> Đánh Giá Ca Đấu
+            </h3>
+            <button onclick="document.getElementById('modal-danh-gia-ca').style.display='none'"
+                style="background:rgba(100,116,139,0.2);border:1px solid rgba(100,116,139,0.4);color:#94a3b8;font-size:1rem;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">✕</button>
+        </div>
+        <div style="overflow-y:auto;flex:1;padding:16px 18px;">
+            <div id="modal-danh-gia-ca-sTitle" style="font-size:0.82rem;color:#94a3b8;margin-bottom:12px;"></div>
+            <label style="font-size:0.73rem;color:#94a3b8;display:block;margin-bottom:6px;">Ghi chú / Nhận xét về ca đấu này</label>
+            <textarea id="modal-danh-gia-ca-text" rows="5" placeholder="Nhập nhận xét ca đấu: số người thực tế, chất lượng sân, ghi chú thu chi..."
+                style="width:100%;padding:10px 12px;background:rgba(30,58,95,0.7);border:1px solid #2d4a6e;border-radius:8px;color:#e2e8f0;font-size:0.85rem;resize:vertical;box-sizing:border-box;font-family:inherit;outline:none;"></textarea>
+            <div style="display:flex;gap:8px;margin-top:12px;">
+                <button onclick="window.luuDanhGiaCa()"
+                    style="flex:1;padding:10px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);color:#fbbf24;font-size:0.88rem;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu Đánh Giá
+                </button>
+                <button onclick="window.dongModalDanhGiaCa()"
+                    style="padding:10px 18px;background:rgba(100,116,139,0.15);border:1px solid rgba(100,116,139,0.3);color:#94a3b8;font-size:0.88rem;border-radius:8px;cursor:pointer;font-family:inherit;">Đóng</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MODAL: SỬA CA ĐẤU (inline edit, không redirect sang tab Đăng) ══ -->
+<div id="modal-sua-ca" style="display:none;position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,0.8);align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);"
+     onclick="if(event.target===this)window._dongModalSuaCa()">
+    <div style="background:#0f1e35;border:1px solid #1e3a5f;border-radius:14px;width:min(98vw,560px);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 12px 48px rgba(0,0,0,0.8);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;border-bottom:1px solid #1e3a5f;flex-shrink:0;">
+            <h3 style="margin:0;font-size:0.95rem;font-weight:700;color:#fbbf24;display:flex;align-items:center;gap:8px;">
+                <i class="fa-solid fa-pen"></i> Chỉnh Sửa Ca Đấu
+            </h3>
+            <button onclick="window._dongModalSuaCa()"
+                style="background:rgba(100,116,139,0.2);border:1px solid rgba(100,116,139,0.4);color:#94a3b8;font-size:1rem;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">✕</button>
+        </div>
+        <div id="modal-sua-ca-body" style="overflow-y:auto;flex:1;padding:16px 18px;">
+            <div style="text-align:center;padding:40px;color:#64748b;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>
+        </div>
+        <div style="display:flex;gap:8px;padding:12px 18px;border-top:1px solid rgba(255,255,255,0.07);flex-shrink:0;">
+            <button onclick="window._luuSuaCa()"
+                style="flex:1;padding:10px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);color:#fbbf24;font-size:0.88rem;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;">
+                <i class="fa-solid fa-floppy-disk"></i> Lưu Thay Đổi
+            </button>
+            <button onclick="window._dongModalSuaCa()"
+                style="padding:10px 18px;background:rgba(100,116,139,0.15);border:1px solid rgba(100,116,139,0.3);color:#94a3b8;font-size:0.88rem;border-radius:8px;cursor:pointer;font-family:inherit;">Huỷ</button>
         </div>
     </div>
 </div>
