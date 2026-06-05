@@ -1,4 +1,4 @@
-# TODO — Cập nhật: 2026-06-05 (phiên 5)
+# TODO — Cập nhật: 2026-06-05 (phiên 6)
 
 ---
 
@@ -24,9 +24,51 @@
 - [ ] Console `window._xacNhanDoiVaiTro` → `undefined`
 - [ ] Tài khoản admin đăng nhập main site → thấy nút "Vào Admin →"
 
+**Admin UI — cần test trực quan sau khi SQL chạy xong:**
+- [ ] F5 trang admin → không flash login form
+- [ ] Đăng nhập → nút Đăng Xuất hiện trong header cạnh Trang Chủ
+- [ ] Scroll trong bất kỳ tab → 4 metric cards + tab nav KHÔNG scroll mất
+- [ ] Tab Thành Viên: danh sách dài → chỉ 1 thanh cuộn (trong bảng, không phải trang)
+- [ ] Tab Ca Đấu: dropdown (⋮) → hiện trên cùng, không bị clip
+- [ ] Tab Góp Ý: kích thước đồng bộ, không blank space
+- [ ] Tab Cấu Hình, Thống Kê, Báo Cáo, Đánh Giá: không bị che bởi sticky nav
+- [ ] Xóa user → biến mất hoàn toàn (kể cả slot và ca đấu của họ)
+
 ---
 
 ## ✅ ĐÃ HOÀN THÀNH
+
+### Phiên 2026-06-05 (phiên 6) — Admin UI/UX Overhaul
+
+**Layout fix (core):**
+- [x] Flex layout chuẩn: `body` → `ad-main` → `adminConsole (flex:1 column)` → `ad-sticky-top (flex-shrink:0)` + `ad-tab-content (flex:1)`
+- [x] `adminConsole` show bằng `display:flex` (không phải block) — quan trọng cho flex layout
+- [x] Xóa negative margin `margin: -1.5rem -2rem 0` khỏi sticky-top — root cause của overlap tất cả tabs
+- [x] `adminAuthPanel` khởi động `display:none` — fix F5 flash login form
+
+**Chống dual-scroll:**
+- [x] `_fitTable()`: JS function đo `offsetHeight` chính xác → set `table-responsive.maxHeight`
+- [x] Gọi `_fitTable` trong: chuyenTabAdmin, renderKhach, renderCaDau, taiGopY, taiDanhGia, window.resize (debounced)
+- [x] Kết quả: chỉ 1 thanh cuộn (trong bảng), không có page-level scroll
+
+**Logout button + header:**
+- [x] `#btnHeaderLogout` hiện sau login (`_hienConsole` shows), ẩn sau logout
+
+**Cascade delete:**
+- [x] `_cascadeXoaUser(sdt)`: xóa dat_slot → ca_dau (+ slots của ca) → guest_sessions → nguoi_dung
+- [x] `_xoaTV` + `xoaNhieuTaiKhoanTest` dùng cascade
+- [x] `_taiDanhSachKhach`: bỏ virtual user entry từ dat_slot → ghost user không còn
+
+**Ca đấu dropdown:**
+- [x] `_toggleCaMenu`: dùng `position:fixed` + `getBoundingClientRect` — không bị clip bởi overflow container
+- [x] Đóng khi scroll bảng
+
+**Column widths + misc:**
+- [x] ID column: 50px → 60px; THAO TÁC: 64px → 100px
+- [x] `thead th { overflow:visible }` — tên cột hiện đầy đủ
+- [x] Góp ý tab: thêm `ad-table-wrap` wrapper
+- [x] Xóa dead CSS: `.ad-console-bar`, `.ad-session-lbl`, `.ad-session-title`
+- [x] `.claude/commands/compact-save.md`: thêm gợi ý /compact instruction
 
 ### Phiên 2026-06-05 (phiên 5) — Hệ Thống Auth Bảo Mật Toàn Diện
 

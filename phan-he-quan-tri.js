@@ -64,7 +64,9 @@
 
     function _hienConsole() {
         _setDisplay("adminAuthPanel", "none");
-        _setDisplay("adminConsole",   "block");
+        // adminConsole là flex container (flex-direction:column) trong flex layout
+        const co = document.getElementById("adminConsole");
+        if (co) co.style.display = "flex";
         // Hiện nút Đăng Xuất trên header
         const btnLogout = document.getElementById("btnHeaderLogout");
         if (btnLogout) btnLogout.style.display = "inline-flex";
@@ -74,6 +76,8 @@
         window.chuyenTabAdmin(validTabs.includes(hashTab) ? hashTab : "guests");
         // Load metrics top dashboard ngay sau khi console hiện
         setTimeout(_loadMetrics, 200);
+        // Fit table height sau khi layout ổn định
+        setTimeout(window._fitTable, 50);
     }
 
     function _setDisplay(id, val) {
@@ -139,6 +143,61 @@
     };
 
     /* ═══════════════════════════════════════════════════
+     * 2B. TÍNH TOÁN CHIỀU CAO BẢNG (chống dual-scroll)
+     * Đặt max-height cho table-responsive bằng chiều cao còn lại sau khi
+     * trừ sticky-top và các phần tử trên/dưới bảng trong tab hiện tại.
+     * ═══════════════════════════════════════════════════ */
+    window._fitTable = function () {
+        try {
+            const activeTab = document.querySelector(".ad-tab-content.active");
+            if (!activeTab) return;
+            const tr = activeTab.querySelector(".table-responsive");
+            if (!tr) return; // tab config/stats không có bảng
+
+            // Chiều cao khả dụng của tab-content (flex:1 trong adminConsole)
+            const tabH = activeTab.clientHeight || activeTab.offsetHeight;
+            if (!tabH) return;
+
+            // Phần tử chứa table: ad-table-wrap hoặc chính table-responsive
+            const tableWrap = tr.closest(".ad-table-wrap") || tr;
+
+            // Đo chiều cao phần TRÊN bảng trong tab
+            let aboveH = 0;
+            let sibling = activeTab.firstElementChild;
+            while (sibling && sibling !== tableWrap) {
+                aboveH += sibling.offsetHeight;
+                const sStyle = getComputedStyle(sibling);
+                aboveH += parseFloat(sStyle.marginTop || 0) + parseFloat(sStyle.marginBottom || 0);
+                sibling = sibling.nextElementSibling;
+            }
+
+            // Đo chiều cao phần DƯỚI bảng trong tab (pagination, etc.)
+            let belowH = 0;
+            let nextEl = tableWrap.nextElementSibling;
+            while (nextEl) {
+                belowH += nextEl.offsetHeight;
+                const nStyle = getComputedStyle(nextEl);
+                belowH += parseFloat(nStyle.marginTop || 0) + parseFloat(nStyle.marginBottom || 0);
+                nextEl = nextEl.nextElementSibling;
+            }
+
+            // Padding của tab-content
+            const cs = getComputedStyle(activeTab);
+            const padV = parseFloat(cs.paddingTop || 0) + parseFloat(cs.paddingBottom || 0);
+
+            const maxH = Math.max(150, Math.floor(tabH - aboveH - belowH - padV));
+            tr.style.maxHeight = maxH + "px";
+        } catch (_) { /* silent */ }
+    };
+
+    // Fit lại khi resize (debounced)
+    let _fitTimer = null;
+    window.addEventListener("resize", function () {
+        clearTimeout(_fitTimer);
+        _fitTimer = setTimeout(window._fitTable, 120);
+    });
+
+    /* ═══════════════════════════════════════════════════
      * 3. ĐIỀU HƯỚNG TAB
      * ═══════════════════════════════════════════════════ */
     window.chuyenTabAdmin = function (tabName) {
@@ -163,6 +222,9 @@
         else if (tabName === "cadau")   _taiDanhSachCaDauAdmin();
         else if (tabName === "gopy")    _taiDanhSachGopY();
         else if (tabName === "baocao")  window.adminTaiBaoCao();
+
+        // Sau khi tab và dữ liệu đã render, fit chiều cao bảng
+        setTimeout(window._fitTable, 80);
     };
 
     /* ═══════════════════════════════════════════════════
@@ -343,6 +405,7 @@
         const from     = (_pageNumCaDau - 1) * _pageSizeCaDau;
         const to       = Math.min(from + _pageSizeCaDau, total);
         _renderCaDauAdmin(_lastFilteredCaDau.slice(from, to));
+        setTimeout(window._fitTable, 0);
 
         // Thanh phân trang
         const bar = document.getElementById("caDauPaginationBar");
@@ -818,6 +881,7 @@
         } catch (e) {
             tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#ef4444;padding:20px;">Lỗi tải dữ liệu.</td></tr>`;
         }
+        setTimeout(window._fitTable, 0);
     }
 
     window._moRongGopY = function (rowId) {
@@ -1085,6 +1149,8 @@
 
         _renderKhachAdmin(pageData);
         _renderPaginationTV(total, pageSize);
+        // Fit bảng sau khi render xong
+        setTimeout(window._fitTable, 0);
     }
 
     function _renderPaginationTV(total, pageSize) {
@@ -2058,6 +2124,7 @@
                 <i class="fa-solid fa-circle-exclamation"></i> Lỗi tải đánh giá: ${e.message || e}
             </td></tr>`;
         }
+        setTimeout(window._fitTable, 0);
     }
 
     window._capNhatBulkBarDanhGia = function () {

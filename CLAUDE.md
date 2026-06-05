@@ -1022,7 +1022,7 @@ Thêm CDN Chart.js vào `admin/index.html`:
 
 ---
 
-### Current State (cập nhật: 2026-06-05 phiên 5)
+### Current State (cập nhật: 2026-06-05 phiên 6)
 
 **Stack đã detect:**
 - HTML5 / Vanilla JS SPA — không framework
@@ -1030,7 +1030,6 @@ Thêm CDN Chart.js vào `admin/index.html`:
 - Auth: Admin → Supabase Auth JWT | Guest → Session Token UUID trong DB (`guest_sessions`)
 - CSS: Dark Neutral (`#181818` card, `#FF7A00` accent lịch sử, `#00ff88` card kèo), Mobile-First
 - Deploy target: Vercel (production tại `tuyenvanglai.io.vn`)
-- Cloudflare Turnstile: tắt hoàn toàn (rate limiting thay thế ở DB)
 - FingerprintJS v3 CDN tích hợp
 
 **Admin account (đã cấu hình):**
@@ -1044,18 +1043,40 @@ Thêm CDN Chart.js vào `admin/index.html`:
 | Dữ liệu | `bo-may-du-lieu.js` | ✅ Ổn định | 63 tỉnh, SHUTTLECOCK_BRANDS |
 | Hiệu ứng | `hieu-ung-giao-dien.js` | ✅ Ổn định | |
 | SPA routing | `phan-he-ung-dung.js` | ✅ v3.0 | |
-| CSS toàn cục | `giao-dien.css` | ✅ v6.9 | Đồng bộ màu neutral dark, sub-tab underline |
+| CSS toàn cục | `giao-dien.css` | ✅ v6.9 | Ổn định |
 | CSS component | `components.css` | ✅ v5.0 | Ổn định |
 | Host Portal | `phan-he-host.js` | ✅ v6.2 | Ổn định |
-| Host HTML | `index.html` | ✅ v7.0 | CDN Supabase JS v2, admin card `#sectionAdminAccess`, cache bust v7.0 |
-| Khách | `phan-he-khach-choi.js` | ✅ v7.0 | Login/register/datSlot/huySlot qua RPC, `_token` trong session, profile refresh, admin card |
-| Admin logic | `phan-he-quan-tri.js` | ✅ v7.0 | Auth qua Supabase JWT, `window._adminJWT`, `window._ap` namespace |
-| Admin HTML | `admin/index.html` | ✅ v7.0 | CDN Supabase JS v2, form email thay username |
+| Host HTML | `index.html` | ✅ v7.0 | Ổn định |
+| Khách | `phan-he-khach-choi.js` | ✅ v7.0 | Ổn định |
+| Admin logic | `phan-he-quan-tri.js` | ✅ v8.0 | + `_fitTable()` + `_cascadeXoaUser()` + `_toggleCaMenu` fixed (position:fixed) |
+| Admin HTML | `admin/index.html` | ✅ v8.0 | Flex layout chuẩn; logout btn; cascade delete; column widths; 7 tab UI fixes |
 | Góp ý | `phan-he-gop-y.js` | ✅ Ổn định | |
 | Security SQL | `security-auth-v4.sql` | ⏳ Cần chạy | v4.3 — chứa tất cả RPC + RLS + is_admin() + rate limiting |
 | Schema DB | `supabase-schema.sql` | ✅ Đã deploy | |
 
-**Kiến trúc Auth mới (phiên 5):**
+**Kiến trúc Admin Layout (phiên 6 — QUAN TRỌNG):**
+```
+body (flex column, height:100vh, overflow:hidden)
+├── .ad-header (flex-shrink:0, height:60px)
+└── .ad-main (flex:1, min-height:0, display:flex, flex-direction:column, overflow:hidden)
+    ├── #adminAuthPanel (display:block khi login fail — flex child)
+    └── #adminConsole (display:flex; flex:1; flex-direction:column — khi login OK)
+        ├── .ad-sticky-top (flex-shrink:0 — LUÔN HIỆN, không scroll mất)
+        │   ├── .ad-metrics-grid (4 metric cards)
+        │   └── .ad-tab-nav (7 tabs)
+        └── .ad-tab-content.active (flex:1; min-height:0; overflow-y:auto)
+            ├── [toolbar / filter]
+            ├── .ad-table-wrap → .table-responsive (max-height từ JS _fitTable)
+            └── [pagination]
+```
+
+**Hàm `_fitTable()` (quan trọng — chống dual-scroll):**
+- Đo `activeTab.clientHeight` (flex:1 trong adminConsole)
+- Trừ chiều cao toolbar, pagination, padding
+- Set `table-responsive.style.maxHeight = available + "px"`
+- Gọi trong: `chuyenTabAdmin`, `_renderKhachVoiPhanTrang`, `_renderCaDauVoiPhanTrang`, `_taiDanhSachGopY`, `_taiDanhSachDanhGia`, window.resize (debounced 120ms)
+
+**Kiến trúc Auth (phiên 5 — unchanged):**
 ```
 Admin login   → supabase.auth.signInWithPassword(email, pass) → JWT RS256
               → verify vai_tro='admin' trong nguoi_dung → set window._adminJWT
@@ -1064,45 +1085,58 @@ Admin login   → supabase.auth.signInWithPassword(email, pass) → JWT RS256
 Guest login   → guestRPC.login(sdt, sha256hash) → Postgres RPC SECURITY DEFINER
               → trả { status, token (UUID), user } → lưu _token vào tvl_guest localStorage
               → mọi mutation (datSlot, huySlot) phải có token
-
-Đăng ký mới  → guestRPC.datPassLanDau(...) → RPC tạo user + session token
 ```
 
-**Bảng DB mới (cần chạy security-auth-v4.sql):**
+**Bảng DB cần chạy (security-auth-v4.sql):**
 - `guest_sessions`: token TEXT PK, sdt_khach, expires_at
-- `login_attempts`: sdt_khach, attempt_at (rate limiting + phone enumeration protection)
-- Cột mới trong `nguoi_dung`: `auth_uid UUID UNIQUE`
+- `login_attempts`: sdt_khach, attempt_at
+- Cột mới `nguoi_dung`: `auth_uid UUID UNIQUE`
 
 **Known issues / cần test:**
-- `security-auth-v4.sql` chưa chạy đầy đủ → đang chạy dần từng phần
+- `security-auth-v4.sql` chưa chạy đầy đủ (Phần 2→8)
 - Admin login vẫn báo "không có quyền" nếu chưa chạy Phần 8 (RLS với is_admin)
 - Guest login báo "lỗi kết nối" nếu chưa chạy Phần 3 (RPC phan_he_guest_login)
-- Sau khi chạy đủ SQL → test theo checklist 8 bước ở TODO.md
-- `hoanTatDangKy` — fingerprint check bỏ (bảng fingerprint_blacklist chưa tồn tại)
+- Admin UI: cần test trực quan sau khi chạy SQL (7 tab layout fixes)
 
 ---
 
-### Recent Decisions (phiên 2026-06-05 phiên 5)
+### Recent Decisions (phiên 6 — 2026-06-05)
+| Quyết định | Lý do |
+|---|---|
+| `#adminConsole { display:flex }` khi show (không phải block) | adminConsole phải là flex container để sticky-top + tab-content layout đúng |
+| `_fitTable()` dùng JS thay vì CSS calc | CSS calc không biết chiều cao thực tế của sticky-top và toolbar; JS đo `offsetHeight` chính xác |
+| Cascade delete: xóa `dat_slot` + `ca_dau` + `guest_sessions` trước `nguoi_dung` | Xóa user phải xóa hoàn toàn — dat_slot còn → user ghost trong list; guest_sessions còn → session vẫn valid |
+| Không tạo virtual user entry từ `dat_slot` | User đã xóa khỏi `nguoi_dung` không được hiện lại trong member list qua dat_slot join |
+| `_toggleCaMenu` dùng `position:fixed` + `getBoundingClientRect` | Dropdown bị clip bởi `table-responsive { overflow-y:auto }` khi dùng `position:absolute` |
+| Xóa `margin: -1.5rem -2rem 0` khỏi `.ad-sticky-top` | Negative margin top -24px kéo sticky-top lên, gây tab content bị ăn vào sticky nav 24px |
+| `adminAuthPanel` khởi động `display:none` | Tránh F5 flash: hiện authPanel → check session → ẩn authPanel (khó chịu cho UX) |
+
+### Recent Decisions (phiên 5 — 2026-06-05)
 | Quyết định | Lý do |
 |---|---|
 | Admin dùng Supabase Auth JWT (không hardcode) | `TVL@2026` lộ plaintext trong JS — bất kỳ ai mở DevTools đều vào được admin |
 | Guest dùng Session Token UUID trong DB | localStorage sdt_khach có thể bị sửa → IDOR attack; UUID không đoán được |
-| `window._adminJWT` cache cho dbEngine | Admin panel dùng custom `dbEngine` (fetch thuần), không phải `_sbClient` — phải inject JWT để RLS authenticated context work |
+| `window._adminJWT` cache cho dbEngine | Admin panel dùng custom `dbEngine` (fetch thuần) — phải inject JWT để RLS authenticated context work |
 | `is_admin()` SECURITY DEFINER thay vì inline EXISTS | EXISTS subquery trong policy → circular dependency trên PostgreSQL → query trả rỗng |
-| Rate limit áp dụng cho `not_found` | Không ghi attempt khi phone không tồn tại → hacker scan toàn bộ số điện thoại mà không bị chặn |
-| Global rate limit 30/phút | Per-phone limit bị bypass bằng password spray (thử 1 pass cho nhiều phone) |
-| Cleanup xác suất 2% thay vì mỗi request | DELETE full-scan khi bị tấn công → block toàn bộ login queue |
-| `window._ap` namespace cho role functions | `window._thucHienDoiVaiTro` expose ra global → hacker thấy tên hàm và cấu trúc logic nội bộ |
-| Admin nút "Vào Admin →" trong tab Cá Nhân | Không cần nhớ URL `/admin/` — tài khoản `vai_tro='admin'` thấy nút tự động |
+| Rate limit áp dụng cho `not_found` | Không ghi attempt khi phone không tồn tại → hacker scan toàn bộ SĐT mà không bị chặn |
+| Global rate limit 30/phút | Per-phone limit bị bypass bằng password spray |
+| `window._ap` namespace cho role functions | Ẩn tên hàm nội bộ khỏi global scope |
 
 ---
 
-### Modified Files (phiên 2026-06-05 phiên 5)
+### Modified Files (phiên 6 — 2026-06-05)
 | File | Thay đổi |
 |---|---|
-| `security-auth-v4.sql` | 🆕 Tạo mới v4.3 — 8 phần: is_admin() SECURITY DEFINER, 6 RPC, RLS policies, rate limiting, phone enumeration fix |
-| `ket-noi-supabase.js` | +`window.supabaseAuth` (JWT admin) +`window.guestRPC` (login/datSlot/huySlot/refresh) +`_adminJWT` trong LAY_HEADERS_CHUAN; `datPassLanDau` thêm maGioiThieu+deviceFp **v7.0** |
-| `admin/index.html` | CDN Supabase JS v2, form login: `#adminUsername` → `#adminEmail`, button `id="btnAdminLogin"` **v7.0** |
-| `phan-he-quan-tri.js` | Xóa `ADMIN_USER`/`MAT_MAU_ADMIN`; auth qua Supabase JWT; `window._adminJWT` set/clear; `window._ap` namespace cho role functions **v7.0** |
-| `phan-he-khach-choi.js` | Login/register qua RPC; `_luuSessionVaDangNhap` lưu `_token`; datSlot/huySlot qua RPC; profile refresh sync is_active; admin card show/hide; `vaoTrangQuanTri()` **v7.0** |
-| `index.html` | CDN Supabase JS v2; `#sectionAdminAccess` HTML; cache bust **v7.0** |
+| `admin/index.html` | **v8.0** — Flex layout: body+adminConsole flex column; sticky-top flex-shrink:0 (bỏ position:sticky+negative margin); tab-content flex:1 overflow-y:auto; table-responsive max-height via JS; authPanel starts hidden; logout btn; col widths ID→60/THAO TÁC→100; thead th overflow:visible; gopy wrap; xóa dead CSS .ad-console-bar |
+| `phan-he-quan-tri.js` | **v8.0** — `_hienConsole` sets adminConsole display:flex + shows btnHeaderLogout; `_fitTable()` JS table height + resize listener; `_cascadeXoaUser()` xóa dat_slot+ca_dau+guest_sessions trước nguoi_dung; `_xoaTV`+`xoaNhieuTaiKhoanTest` dùng cascade; `_taiDanhSachKhach` bỏ virtual user entry; `_toggleCaMenu` position:fixed; `chuyenTabAdmin` gọi `_fitTable` |
+| `.claude/commands/compact-save.md` | Thêm gợi ý /compact instruction để giữ đúng context |
+
+### Modified Files (phiên 5 — 2026-06-05)
+| File | Thay đổi |
+|---|---|
+| `security-auth-v4.sql` | 🆕 Tạo mới v4.3 — 8 phần: is_admin() SECURITY DEFINER, 6 RPC, RLS policies, rate limiting |
+| `ket-noi-supabase.js` | +`window.supabaseAuth` +`window.guestRPC` +`_adminJWT` cache **v7.0** |
+| `admin/index.html` | CDN Supabase JS v2, form login email, btnAdminLogin **v7.0** |
+| `phan-he-quan-tri.js` | Auth JWT, _adminJWT, _ap namespace **v7.0** |
+| `phan-he-khach-choi.js` | Login/register/datSlot/huySlot qua RPC, _token session **v7.0** |
+| `index.html` | CDN Supabase JS v2, #sectionAdminAccess **v7.0** |

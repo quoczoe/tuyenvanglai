@@ -52,16 +52,14 @@
         html {
             box-sizing: border-box;
             height: 100%;
+            overflow: hidden; /* Ngăn html element tạo scrollbar riêng */
         }
         *, *::before, *::after { box-sizing: inherit; }
         body {
             margin: 0; padding: 0;
             height: 100vh;
             overflow: hidden;
-            /* Flex column: header cố định trên, ad-main cuộn độc lập phía dưới */
-            display: -webkit-flex;
             display: flex;
-            -webkit-flex-direction: column;
             flex-direction: column;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-base);
@@ -120,7 +118,7 @@
             padding: 0 1rem; height: 60px;
             background: rgba(15,30,53,0.98);
             border-bottom: 1px solid rgba(0,255,136,0.15);
-            flex-shrink: 0; /* Không bị nén — luôn ở trên cùng */
+            flex-shrink: 0;
             z-index: 200;
         }
         .ad-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
@@ -134,22 +132,33 @@
             color: var(--accent-green);
         }
 
-        /* ══ MAIN LAYOUT — scrollable flex child ══ */
+        /* ══ MAIN LAYOUT ══
+           ad-main chứa 2 thứ: adminAuthPanel + adminConsole.
+           Không padding ở đây — padding do sticky-top và tab-content tự quản.
+           Không overflow ở đây — overflow do adminConsole (flex:1 column) quản. */
         .ad-main {
-            width: 100%; max-width: 100%;
-            padding: 1.5rem 2rem 3rem;
-            box-sizing: border-box;
-            /* Vùng cuộn chính — ad-sticky-top sticky bên trong này */
             flex: 1;
-            overflow-y: auto;
-            overflow-x: hidden;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
-        @media (max-width: 768px) { .ad-main { padding: 0.75rem; } }
 
-        /* ══ AUTH PANEL ══ */
+        /* ══ AUTH PANEL WRAPPER — flex child của ad-main khi hiện ══ */
         .ad-auth-wrap {
             max-width: 440px; margin: 60px auto 0; padding: 0 1rem;
         }
+
+        /* ══ ADMIN CONSOLE — flex:1 column, chứa sticky-top + tab content ══ */
+        #adminConsole {
+            display: none; /* khi hiện: display:flex (set bởi JS) */
+            flex: 1;
+            min-height: 0;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ══ AUTH PANEL ══ */
         .ad-auth-card {
             background: var(--bg-card); border: 1px solid rgba(0,255,136,0.2);
             border-radius: var(--radius-lg); padding: 2.5rem 2rem; text-align: center;
@@ -251,24 +260,17 @@
         }
 
         /* ══ TABS ══ */
-        /* Sticky wrapper: header là flex-item cố định, ad-main là scroll container.
-           Trong ad-main, sticky top:0 = bám ngay đầu vùng cuộn → luôn nhìn thấy. */
+        /* Sticky wrapper: là flex-shrink:0 child của #adminConsole (flex column).
+           Luôn hiện ở đầu, không scroll → không cần position:sticky. */
         .ad-sticky-top {
-            position: sticky;
-            top: 0;
+            flex-shrink: 0;
             z-index: 100;
             background: var(--bg-base);
-            padding-bottom: 2px;
-            margin: -1.5rem -2rem 0;   /* bù padding ad-main để full-width */
-            padding: 1.5rem 2rem 0;
+            padding: 1.5rem 2rem 2px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.25);
         }
-        @media (max-width: 768px) {
-            .ad-sticky-top { margin: -0.75rem -0.75rem 0; padding: 0.75rem 0.75rem 0; }
-        }
-        @media (max-width: 480px) {
-            .ad-sticky-top { margin: -0.5rem -0.5rem 0; padding: 0.5rem 0.5rem 0; }
-        }
+        @media (max-width: 768px) { .ad-sticky-top { padding: 0.75rem 0.75rem 2px; } }
+        @media (max-width: 480px) { .ad-sticky-top { padding: 0.5rem 0.5rem 2px; } }
         .ad-tab-nav {
             display: flex; gap: 6px; flex-wrap: wrap;
             border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -302,16 +304,22 @@
          * box-sizing: border-box    → padding không làm tăng kích thước
          * ══════════════════════════════════════════════════════════════
          */
+        /* Tab content: flex:1 trong #adminConsole (flex column).
+           Tự điền hết chiều cao còn lại sau sticky-top.
+           overflow-y:auto → config/stats scroll được; table-tabs scroll qua table-responsive. */
         .ad-tab-content {
             display: none;
-            width: 100%;
-            max-width: 100%;
-            min-height: 500px;
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            overflow-x: hidden;
             box-sizing: border-box;
-            /* Không đặt overflow-x:hidden ở đây vì sẽ phá vỡ position:sticky của
-               ad-sticky-top và clip dropdown ca đấu. Overflow được xử lý trong .table-responsive */
+            padding: 1rem 2rem 2rem;
+            width: 100%;
         }
         .ad-tab-content.active { display: block; }
+        @media (max-width: 768px) { .ad-tab-content { padding: 0.75rem; } }
+        @media (max-width: 480px) { .ad-tab-content { padding: 0.5rem; } }
 
         /* ══ TOOLBAR ══ */
         .ad-toolbar {
@@ -368,36 +376,54 @@
             -webkit-overflow-scrolling: touch;
             border-radius: var(--radius-md);
             box-sizing: border-box;
-            /* max-height: cho phép thead sticky hoạt động bên trong container cuộn.
-               calc(100vh - 60px header - ~240px sticky-top - ~80px toolbar/buffer) */
-            max-height: calc(100vh - 380px);
-            min-height: 200px;
+            /* max-height được set bởi JS (_fitTable) dựa trên chiều cao thực tế.
+               CSS fallback cho lần đầu tải: 50vh. */
+            max-height: 50vh;
+            min-height: 150px;
         }
 
-        /* ══ TABLE STYLES ══ */
+        /* ══ TABLE STYLES ══
+         *
+         * ĐÃ ĐỔI SANG border-collapse: separate — đây là fix triệt để cho lỗi sticky header:
+         * Với border-collapse:collapse, Chromium bỏ qua z-index trên th → tbody tr vẽ đè lên thead.
+         * Với border-collapse:separate + border-spacing:0, z-index hoạt động đúng:
+         * thead th (z-index:50) che hoàn toàn tbody tr khi cuộn.
+         * Để tránh border nhân đôi tại junction, td chỉ dùng border-right + border-bottom.
+         * ══ */
         .ad-table {
-            width: 100%; border-collapse: collapse; min-width: 860px;
-            table-layout: fixed; /* cố định độ rộng cột, không co giãn theo nội dung */
+            width: 100%;
+            border-collapse: separate;  /* FIX sticky header — KHÔNG đổi lại collapse */
+            border-spacing: 0;          /* Loại bỏ khoảng cách giữa các ô */
+            min-width: 860px;
+            table-layout: fixed;
         }
         .ad-table thead th {
             padding: 10px 12px; text-align: center; font-size: 0.72rem;
             font-weight: 700; color: var(--text-muted); text-transform: uppercase;
-            letter-spacing: 0.05em; background: var(--bg-card2);
-            border: 1px solid rgba(30,58,95,0.8); white-space: nowrap;
-            position: sticky; top: 0; z-index: 10;
-            /* Không clip text tiêu đề cột — phải hiển thị đầy đủ chữ */
+            letter-spacing: 0.05em;
+            background: #162039; /* nền đặc tuyệt đối — không transparent */
+            white-space: nowrap;
+            /* Với border-collapse:separate, dùng border-right + bottom để tránh nhân đôi */
+            border-top: 1px solid rgba(30,58,95,0.8);
+            border-right: 1px solid rgba(30,58,95,0.8);
+            border-bottom: 2px solid rgba(30,58,95,0.95); /* dày hơn: phân tách header/body rõ */
+            border-left: none; /* sẽ được thêm bởi :first-child */
+            position: sticky; top: 0;
+            z-index: 50; /* cao hơn mọi tbody tr */
             overflow: visible;
         }
+        /* Cột đầu tiên cần border-left cho cạnh trái bảng */
+        .ad-table thead th:first-child { border-left: 1px solid rgba(30,58,95,0.8); }
         .ad-table tbody {
             /* min-height = 10 dòng × 40px/dòng = 400px; dùng pseudo-element để giữ chiều cao */
         }
         /* Hàng placeholder giúp tbody luôn cao ít nhất 10 dòng */
         .ad-table tbody:empty::after,
         .ad-table-min-rows {
-            content: ''; display: block; height: 360px; /* ~9 dòng trống khi list ngắn */
+            content: ''; display: block; height: 360px;
         }
         .ad-table tbody tr {
-            height: 42px; /* chiều cao cố định mỗi dòng */
+            height: 42px;
             transition: background 0.15s;
         }
         .ad-table tbody tr:nth-child(odd)  { background: var(--bg-card2); }
@@ -406,13 +432,17 @@
         .ad-table td {
             padding: 8px 12px; font-size: 0.82rem; color: var(--text-main);
             vertical-align: middle; text-align: center;
-            border: 1px solid rgba(30,58,95,0.55);
+            /* Chỉ border-right + border-bottom để tránh nhân đôi với th và ô bên trái */
+            border-right:  1px solid rgba(30,58,95,0.55);
+            border-bottom: 1px solid rgba(30,58,95,0.55);
             overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
+        /* Cột đầu tiên cần border-left */
+        .ad-table td:first-child { border-left: 1px solid rgba(30,58,95,0.55); }
         .ad-table td.mono { font-family: monospace; font-size: 0.8rem; color: var(--accent-green); }
         /* Wrapper giữ bảng không nhảy khi số dòng thay đổi */
         .ad-table-wrap {
-            min-height: 460px; /* 10 dòng × 42px + thead 44px + padding */
+            min-height: 460px;
         }
 
         /* ══ STATUS BADGES ══ */
@@ -514,10 +544,9 @@
             padding: 4px 12px; border-radius: 20px;
         }
 
-        /* Cả hai panel ẩn ban đầu — khoiTaoTrangAdmin() trong phan-he-quan-tri.js
-           sẽ kiểm tra session Supabase và hiện đúng panel mà không gây flicker */
-        #adminConsole   { display: none; }
+        /* Cả hai ẩn mặc định — khoiTaoTrangAdmin() set display khi session check xong */
         #adminAuthPanel { display: none; }
+        /* #adminConsole display được quản lý hoàn toàn bởi CSS #adminConsole block ở trên */
 
         /* ══ SORT ICONS ══ */
         .ad-table thead th.sortable { cursor:pointer; user-select:none; }
@@ -1197,126 +1226,132 @@
              TAB 4: CẤU HÌNH HỆ THỐNG
              ════════════════════════════════════════════ -->
         <div class="ad-tab-content" id="adminTab_config">
-            <div style="max-width:680px;">
+            <!-- Lưới 2 cột: trái (Popup + QR) / phải (Mô tả + Telegram) -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:16px;align-items:start;">
 
-                <!-- Thông báo popup trang chủ -->
-                <div class="ad-config-card">
-                    <div class="ad-config-title">
-                        <i class="fa-solid fa-bullhorn"></i>
-                        Nội Dung Thông Báo Popup Trang Chủ
-                    </div>
-                    <!-- C.1: Toggle bật/tắt popup -->
-                    <div class="ad-form-group">
-                        <label class="ad-label" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
-                            <input type="checkbox" id="adminPopupEnabled"
-                                   style="width:16px;height:16px;accent-color:#00ff88;cursor:pointer;">
-                            Bật popup thông báo trên trang chủ
-                        </label>
-                        <div style="font-size:0.72rem;color:#64748b;margin-top:4px;">
-                            Khi tắt — popup không hiện dù có nội dung.
+                <!-- ═══ CỘT TRÁI ═══ -->
+                <div>
+                    <!-- Thông báo popup trang chủ -->
+                    <div class="ad-config-card">
+                        <div class="ad-config-title">
+                            <i class="fa-solid fa-bullhorn"></i>
+                            Nội Dung Thông Báo Popup Trang Chủ
+                        </div>
+                        <div class="ad-form-group">
+                            <label class="ad-label" style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                                <input type="checkbox" id="adminPopupEnabled"
+                                       style="width:16px;height:16px;accent-color:#00ff88;cursor:pointer;">
+                                Bật popup thông báo trên trang chủ
+                            </label>
+                            <div style="font-size:0.72rem;color:#64748b;margin-top:4px;">
+                                Khi tắt — popup không hiện dù có nội dung.
+                            </div>
+                        </div>
+                        <div class="ad-form-group">
+                            <label class="ad-label">Thông báo hiển thị cho Khách khi vào trang chủ</label>
+                            <textarea class="ad-textarea" id="adminAnnouncementContent" rows="5"
+                                placeholder="Nhập nội dung thông báo... Để trống để tắt popup."></textarea>
+                            <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">
+                                <i class="fa-solid fa-circle-info"></i>
+                                Để trống = tắt popup. Lưu → tự động cập nhật cho tất cả Khách truy cập.
+                            </div>
                         </div>
                     </div>
-                    <div class="ad-form-group">
-                        <label class="ad-label">Thông báo hiển thị cho Khách khi vào trang chủ</label>
-                        <textarea class="ad-textarea" id="adminAnnouncementContent" rows="5"
-                            placeholder="Nhập nội dung thông báo... Để trống để tắt popup."></textarea>
-                        <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">
-                            <i class="fa-solid fa-circle-info"></i>
-                            Để trống = tắt popup. Lưu → tự động cập nhật cho tất cả Khách truy cập.
+
+                    <!-- QR Donate -->
+                    <div class="ad-config-card">
+                        <div class="ad-config-title">
+                            <i class="fa-solid fa-qrcode" style="color:#a78bfa;"></i>
+                            QR Code Ủng Hộ (Donate)
+                        </div>
+                        <div class="ad-form-group">
+                            <label class="ad-label">Link ảnh QR (URL đầy đủ)</label>
+                            <input type="text" class="ad-input" id="adminQrDonate"
+                                placeholder="https://img.vietqr.io/image/..."
+                                oninput="
+                                    var w=document.getElementById('qrPreviewWrap');
+                                    var i=document.getElementById('qrPreviewImg');
+                                    if(this.value.trim()){w.style.display='block';i.src=this.value.trim();}
+                                    else{w.style.display='none';}
+                                ">
+                            <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">
+                                Để trống → ẩn khối donate. Ảnh QR được render trực tiếp vào trang chủ.
+                            </div>
+                        </div>
+                        <div class="ad-form-group" style="margin-top:10px;">
+                            <label class="ad-label">Tiêu đề hiển thị phía trên QR</label>
+                            <input type="text" class="ad-input" id="adminTieuDeDonate"
+                                placeholder="MỜI ADMIN LY CAFE CHỐT KÈO ☕">
+                            <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">
+                                Dòng chữ nổi bật phía trên ảnh QR — viết hoa, ngắn gọn.
+                            </div>
+                        </div>
+                        <div class="ad-form-group" style="margin-top:10px;">
+                            <label class="ad-label">Text mô tả bên dưới QR</label>
+                            <input type="text" class="ad-input" id="adminTextDonate"
+                                placeholder="☕ Ủng hộ tác giả 1 ly cà phê nhé!">
+                        </div>
+                        <div id="qrPreviewWrap" style="margin-top:14px;display:none;text-align:center;">
+                            <div style="font-size:0.72rem;color:#64748b;margin-bottom:8px;">Preview:</div>
+                            <img id="qrPreviewImg" src="" alt="QR Preview"
+                                 style="max-width:180px;border-radius:10px;
+                                        border:1px solid var(--border);
+                                        box-shadow:0 4px 20px rgba(0,0,0,0.4);">
                         </div>
                     </div>
-                </div>
+                </div><!-- /cột trái -->
 
-
-                <!-- QR Donate -->
-                <div class="ad-config-card">
-                    <div class="ad-config-title">
-                        <i class="fa-solid fa-qrcode" style="color:#a78bfa;"></i>
-                        QR Code Ủng Hộ (Donate)
-                    </div>
-                    <div class="ad-form-group">
-                        <label class="ad-label">Link ảnh QR (URL đầy đủ)</label>
-                        <input type="text" class="ad-input" id="adminQrDonate"
-                            placeholder="https://img.vietqr.io/image/..."
-                            oninput="
-                                var w=document.getElementById('qrPreviewWrap');
-                                var i=document.getElementById('qrPreviewImg');
-                                if(this.value.trim()){w.style.display='block';i.src=this.value.trim();}
-                                else{w.style.display='none';}
-                            ">
-                        <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">
-                            Để trống → ẩn khối donate. Ảnh QR được render trực tiếp vào trang chủ.
+                <!-- ═══ CỘT PHẢI ═══ -->
+                <div>
+                    <!-- Text quảng cáo landing page -->
+                    <div class="ad-config-card">
+                        <div class="ad-config-title">
+                            <i class="fa-solid fa-rectangle-ad" style="color:#22d3ee;"></i>
+                            Mô Tả Tính Năng (Landing Page Hero)
+                        </div>
+                        <div class="ad-form-group">
+                            <label class="ad-label">Nội dung mô tả ngắn dưới tiêu đề trang chủ</label>
+                            <textarea class="ad-textarea" id="adminTextQuangCao" rows="3"
+                                placeholder="Kết nối người chơi vãng lai và chủ sân cầu lông toàn quốc..."></textarea>
+                            <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">
+                                Cập nhật realtime — không cần deploy lại code. Để trống = dùng text mặc định.
+                            </div>
                         </div>
                     </div>
-                    <div class="ad-form-group" style="margin-top:10px;">
-                        <label class="ad-label">Tiêu đề hiển thị phía trên QR</label>
-                        <input type="text" class="ad-input" id="adminTieuDeDonate"
-                            placeholder="MỜI ADMIN LY CAFE CHỐT KÈO ☕">
-                        <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">
-                            Dòng chữ nổi bật phía trên ảnh QR — viết hoa, ngắn gọn.
+
+                    <!-- Telegram Notification -->
+                    <div class="ad-config-card">
+                        <div class="ad-config-title">
+                            <i class="fa-brands fa-telegram" style="color:#22d3ee;"></i>
+                            Cấu Hình Thông Báo Telegram
+                        </div>
+                        <div class="ad-form-group">
+                            <label class="ad-label">Bot Token (lấy từ @BotFather)</label>
+                            <input type="text" class="ad-input" id="adminTgBotToken"
+                                placeholder="123456789:ABCDefgh...">
+                            <div style="font-size:0.72rem;color:#64748b;margin-top:4px;">
+                                Để trống = tắt thông báo Telegram.
+                            </div>
+                        </div>
+                        <div class="ad-form-group" style="margin-top:10px;">
+                            <label class="ad-label">Chat ID hoặc Channel ID nhận thông báo</label>
+                            <input type="text" class="ad-input" id="adminTgChatId"
+                                placeholder="-1001234567890">
+                            <div style="font-size:0.72rem;color:#64748b;margin-top:4px;">
+                                Mở Telegram bot, gõ /start → lấy chat_id từ đường dẫn.
+                            </div>
                         </div>
                     </div>
-                    <div class="ad-form-group" style="margin-top:10px;">
-                        <label class="ad-label">Text mô tả bên dưới QR</label>
-                        <input type="text" class="ad-input" id="adminTextDonate"
-                            placeholder="☕ Ủng hộ tác giả 1 ly cà phê nhé!">
-                    </div>
-                    <div id="qrPreviewWrap" style="margin-top:14px;display:none;text-align:center;">
-                        <div style="font-size:0.72rem;color:#64748b;margin-bottom:8px;">Preview:</div>
-                        <img id="qrPreviewImg" src="" alt="QR Preview"
-                             style="max-width:180px;border-radius:10px;
-                                    border:1px solid var(--border);
-                                    box-shadow:0 4px 20px rgba(0,0,0,0.4);">
-                    </div>
-                </div>
+                </div><!-- /cột phải -->
 
-                <!-- Text quảng cáo landing page -->
-                <div class="ad-config-card">
-                    <div class="ad-config-title">
-                        <i class="fa-solid fa-rectangle-ad" style="color:#22d3ee;"></i>
-                        Mô Tả Tính Năng (Landing Page Hero)
-                    </div>
-                    <div class="ad-form-group">
-                        <label class="ad-label">Nội dung mô tả ngắn dưới tiêu đề trang chủ</label>
-                        <textarea class="ad-textarea" id="adminTextQuangCao" rows="3"
-                            placeholder="Kết nối người chơi vãng lai và chủ sân cầu lông toàn quốc..."></textarea>
-                        <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">
-                            Cập nhật realtime — không cần deploy lại code. Để trống = dùng text mặc định.
-                        </div>
-                    </div>
-                </div>
+            </div><!-- /lưới 2 cột -->
 
-                <!-- Telegram Notification -->
-                <div class="ad-config-card">
-                    <div class="ad-config-title">
-                        <i class="fa-brands fa-telegram" style="color:#22d3ee;"></i>
-                        Cấu Hình Thông Báo Telegram
-                    </div>
-                    <div class="ad-form-group">
-                        <label class="ad-label">Bot Token (lấy từ @BotFather)</label>
-                        <input type="text" class="ad-input" id="adminTgBotToken"
-                            placeholder="123456789:ABCDefgh...">
-                        <div style="font-size:0.72rem;color:#64748b;margin-top:4px;">
-                            Để trống = tắt thông báo Telegram.
-                        </div>
-                    </div>
-                    <div class="ad-form-group" style="margin-top:10px;">
-                        <label class="ad-label">Chat ID hoặc Channel ID nhận thông báo</label>
-                        <input type="text" class="ad-input" id="adminTgChatId"
-                            placeholder="-1001234567890">
-                        <div style="font-size:0.72rem;color:#64748b;margin-top:4px;">
-                            Mở Telegram bot, gõ /start → lấy chat_id từ đường dẫn.
-                        </div>
-                    </div>
-                </div>
-
-
-                <button class="ad-btn-primary" id="btnLuuThongBao"
-                    style="width:100%;justify-content:center;padding:13px;font-size:0.95rem;"
-                    onclick="luuThongBaoAdmin()">
-                    <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình Hệ Thống
-                </button>
-            </div>
+            <!-- Nút Lưu toàn chiều rộng bên dưới lưới -->
+            <button class="ad-btn-primary" id="btnLuuThongBao"
+                style="width:100%;justify-content:center;padding:13px;font-size:0.95rem;margin-top:16px;"
+                onclick="luuThongBaoAdmin()">
+                <i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình Hệ Thống
+            </button>
         </div>
 
         <!-- ════════════════════════════════════════════
@@ -1403,27 +1438,21 @@
              TAB 6: CA ĐẤU — ADMIN QUẢN LÝ TOÀN BỘ
              ════════════════════════════════════════════ -->
         <div class="ad-tab-content" id="adminTab_cadau">
-            <!-- Toolbar -->
-            <div class="ad-toolbar">
-                <div class="ad-toolbar-left">
-                    <span style="font-size:1rem;font-weight:700;color:var(--text-main);">
-                        <i class="fa-solid fa-calendar-days" style="color:#60a5fa;"></i>
-                        Quản Lý Ca Đấu Toàn Hệ Thống
-                    </span>
-                    <span style="font-size:0.78rem;color:#64748b;margin-left:8px;">
-                        Xem, sửa, xóa ca đấu của bất kỳ Host nào
-                    </span>
-                </div>
-                <div class="ad-search-wrap">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                    <input type="text" class="ad-search-input" id="adminCaDauSearch"
-                        placeholder="Tìm tên sân, host, tỉnh thành..." oninput="locCaDauAdmin()">
-                </div>
+            <!-- Tiêu đề tab -->
+            <div style="margin-bottom:10px;">
+                <span style="font-size:1rem;font-weight:700;color:var(--text-main);">
+                    <i class="fa-solid fa-calendar-days" style="color:#60a5fa;"></i>
+                    Quản Lý Ca Đấu Toàn Hệ Thống
+                </span>
+                <span style="font-size:0.78rem;color:#64748b;margin-left:8px;">
+                    Xem, sửa, xóa ca đấu của bất kỳ Host nào
+                </span>
             </div>
 
-            <!-- Filter pills + số dòng -->
-            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                <div class="ad-filter-pills" style="margin-bottom:0;">
+            <!-- Toolbar gom cụm: filter pills + ô tìm kiếm + số dòng — 1 hàng ngang -->
+            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+                <!-- Pills bên trái — co giãn lấp đầy khoảng còn lại -->
+                <div class="ad-filter-pills" style="margin-bottom:0;flex:1;min-width:0;">
                     <button class="ad-pill active" onclick="locCaDauTheoTrangThai('all', this)">Tất cả</button>
                     <button class="ad-pill" onclick="locCaDauTheoTrangThai('open', this)">
                         <i class="fa-solid fa-circle" style="color:#00ff88;font-size:0.5em;"></i> Đang mở
@@ -1435,12 +1464,21 @@
                         <i class="fa-solid fa-calendar-day" style="color:#f59e0b;font-size:0.8em;"></i> Hôm nay
                     </button>
                 </div>
-                <select class="mv-filter-select" onchange="window._caDauDoiSoTrang(this.value)" style="min-width:100px;">
-                    <option value="10">10 dòng</option>
-                    <option value="20" selected>20 dòng</option>
-                    <option value="50">50 dòng</option>
-                    <option value="100">100 dòng</option>
-                </select>
+                <!-- Ô tìm kiếm + số dòng hiển thị — cố định bên phải -->
+                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                    <div class="ad-search-wrap">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" class="ad-search-input" id="adminCaDauSearch"
+                            placeholder="Tìm tên sân, host, tỉnh thành..." oninput="locCaDauAdmin()"
+                            style="width:220px;">
+                    </div>
+                    <select class="mv-filter-select" onchange="window._caDauDoiSoTrang(this.value)" style="min-width:100px;">
+                        <option value="10">10 dòng</option>
+                        <option value="20" selected>20 dòng</option>
+                        <option value="50">50 dòng</option>
+                        <option value="100">100 dòng</option>
+                    </select>
+                </div>
             </div>
 
             <!-- Thanh xóa hàng loạt -->
@@ -1506,6 +1544,69 @@
             <div id="caDauPaginationBar"
                  style="display:flex;align-items:center;justify-content:space-between;
                         flex-wrap:wrap;gap:10px;padding:12px 4px;margin-top:8px;"></div>
+        </div>
+
+        <!-- ════════════════════════════════════════════
+             TAB GOP Y: XEM PHẢN HỒI TỪ NGƯỜI DÙNG
+             ════════════════════════════════════════════ -->
+        <div class="ad-tab-content" id="adminTab_gopy">
+            <div style="margin-bottom:14px;">
+                <div style="font-size:1rem;font-weight:700;color:var(--text-main);margin-bottom:4px;">
+                    Phản Hồi &amp; Góp Ý Từ Người Dùng
+                </div>
+                <p style="font-size:0.78rem;color:#64748b;">
+                    Danh sách góp ý gửi qua popup "☕ Ủng hộ &amp; 💬 Góp ý". Mới nhất hiển thị đầu tiên.
+                </p>
+            </div>
+            <!-- Bulk action bar — ẩn khi không có dòng nào được tick -->
+            <div id="gopYBulkBar"
+                 style="display:none; margin-bottom:10px; padding:8px 14px;
+                        background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.28);
+                        border-radius:8px; align-items:center; gap:12px; flex-wrap:wrap;">
+                <span id="gopYChkCount"
+                      style="font-size:0.85rem;font-weight:700;color:#f87171;flex:1;"></span>
+                <button onclick="window.xoaNhieuGopY()"
+                        style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.45);
+                               color:#f87171;padding:5px 14px;border-radius:7px;
+                               cursor:pointer;font-size:0.82rem;font-weight:700;display:flex;align-items:center;gap:6px;">
+                    <i class="fa-solid fa-trash-can"></i> Xóa đã chọn
+                </button>
+                <button onclick="window._gopYBoChonHet()"
+                        style="background:transparent;border:1px solid rgba(255,255,255,0.12);
+                               color:#94a3b8;padding:5px 12px;border-radius:7px;
+                               cursor:pointer;font-size:0.82rem;">
+                    Bỏ chọn hết
+                </button>
+            </div>
+
+            <div class="ad-table-wrap">
+            <div class="table-responsive">
+                <table class="ad-table" style="min-width:700px;">
+                    <thead>
+                        <tr>
+                            <th style="width:36px;text-align:center;">
+                                <input type="checkbox" id="gopYChkAll"
+                                       style="cursor:pointer;accent-color:#f87171;"
+                                       onclick="window._gopYChkAllToggle(this)">
+                            </th>
+                            <th>Người Dùng</th>
+                            <th style="width:80px;">Sao</th>
+                            <th style="width:120px;">Loại Góp Ý</th>
+                            <th>Nội Dung</th>
+                            <th style="width:110px;">Thời Gian</th>
+                            <th style="width:60px;">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminGopyBody">
+                        <tr>
+                            <td colspan="7" style="text-align:center;padding:28px;color:#64748b;">
+                                <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            </div><!-- /ad-table-wrap -->
         </div>
 
     </div><!-- /adminConsole -->
@@ -1758,69 +1859,6 @@ input, textarea, [contenteditable] { user-select: text; -webkit-user-select: tex
         </div>
     </div>
 </div>
-
-        <!-- ════════════════════════════════════════════
-             TAB GOP Y: XEM PHẢN HỒI TỪ NGƯỜI DÙNG
-             ════════════════════════════════════════════ -->
-        <div class="ad-tab-content" id="adminTab_gopy">
-            <div style="margin-bottom:14px;">
-                <div style="font-size:1rem;font-weight:700;color:var(--text-main);margin-bottom:4px;">
-                    Phản Hồi &amp; Góp Ý Từ Người Dùng
-                </div>
-                <p style="font-size:0.78rem;color:#64748b;">
-                    Danh sách góp ý gửi qua popup "☕ Ủng hộ &amp; 💬 Góp ý". Mới nhất hiển thị đầu tiên.
-                </p>
-            </div>
-            <!-- Bulk action bar — ẩn khi không có dòng nào được tick -->
-            <div id="gopYBulkBar"
-                 style="display:none; margin-bottom:10px; padding:8px 14px;
-                        background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.28);
-                        border-radius:8px; align-items:center; gap:12px; flex-wrap:wrap;">
-                <span id="gopYChkCount"
-                      style="font-size:0.85rem;font-weight:700;color:#f87171;flex:1;"></span>
-                <button onclick="window.xoaNhieuGopY()"
-                        style="background:rgba(239,68,68,0.2);border:1px solid rgba(239,68,68,0.45);
-                               color:#f87171;padding:5px 14px;border-radius:7px;
-                               cursor:pointer;font-size:0.82rem;font-weight:700;display:flex;align-items:center;gap:6px;">
-                    <i class="fa-solid fa-trash-can"></i> Xóa đã chọn
-                </button>
-                <button onclick="window._gopYBoChonHet()"
-                        style="background:transparent;border:1px solid rgba(255,255,255,0.12);
-                               color:#94a3b8;padding:5px 12px;border-radius:7px;
-                               cursor:pointer;font-size:0.82rem;">
-                    Bỏ chọn hết
-                </button>
-            </div>
-
-            <div class="ad-table-wrap">
-            <div class="table-responsive">
-                <table class="ad-table" style="min-width:700px;">
-                    <thead>
-                        <tr>
-                            <th style="width:36px;text-align:center;">
-                                <input type="checkbox" id="gopYChkAll"
-                                       style="cursor:pointer;accent-color:#f87171;"
-                                       onclick="window._gopYChkAllToggle(this)">
-                            </th>
-                            <th>Người Dùng</th>
-                            <th style="width:80px;">Sao</th>
-                            <th style="width:120px;">Loại Góp Ý</th>
-                            <th>Nội Dung</th>
-                            <th style="width:110px;">Thời Gian</th>
-                            <th style="width:60px;">Xóa</th>
-                        </tr>
-                    </thead>
-                    <tbody id="adminGopyBody">
-                        <tr>
-                            <td colspan="7" style="text-align:center;padding:28px;color:#64748b;">
-                                <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            </div><!-- /ad-table-wrap -->
-        </div>
 
 <!-- ══════════════════════════════════════════════════════
      MODAL CHỈNH SỬA CA ĐẤU — Admin can edit any ca đấu
