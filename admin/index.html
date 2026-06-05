@@ -49,18 +49,20 @@
             --radius-sm:    8px;
         }
 
-        /* Body: cuộn bình thường — giao-dien.css đã được tháo, không còn xung đột */
-        /* Không dùng scrollbar-gutter (thiếu support 1 số build Cốc Cốc) */
         html {
             box-sizing: border-box;
+            height: 100%;
         }
         *, *::before, *::after { box-sizing: inherit; }
         body {
-            display: block;
-            height: auto;
-            min-height: 100vh;
             margin: 0; padding: 0;
-            /* Không dùng overflow-x:hidden — gây bug position:sticky + stacking context */
+            height: 100vh;
+            overflow: hidden;
+            /* Flex column: header cố định trên, ad-main cuộn độc lập phía dưới */
+            display: -webkit-flex;
+            display: flex;
+            -webkit-flex-direction: column;
+            flex-direction: column;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-base);
             color: var(--text-main);
@@ -116,11 +118,10 @@
         .ad-header {
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 1rem; height: 60px;
-            background: rgba(15,30,53,0.98); /* Đặc hơn — không cần blur mờ */
+            background: rgba(15,30,53,0.98);
             border-bottom: 1px solid rgba(0,255,136,0.15);
-            position: sticky; top: 0; z-index: 200;
-            /* Bỏ backdrop-filter: tránh tạo stacking context mới gây lỗi composite
-               trên Cốc Cốc (dùng background đặc thay thế) */
+            flex-shrink: 0; /* Không bị nén — luôn ở trên cùng */
+            z-index: 200;
         }
         .ad-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
         .ad-brand-text { font-size: 1rem; font-weight: 900; letter-spacing: 0.02em; white-space: nowrap; }
@@ -133,11 +134,15 @@
             color: var(--accent-green);
         }
 
-        /* ══ MAIN LAYOUT — full-width PC ══ */
+        /* ══ MAIN LAYOUT — scrollable flex child ══ */
         .ad-main {
             width: 100%; max-width: 100%;
             padding: 1.5rem 2rem 3rem;
             box-sizing: border-box;
+            /* Vùng cuộn chính — ad-sticky-top sticky bên trong này */
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
         @media (max-width: 768px) { .ad-main { padding: 0.75rem; } }
 
@@ -218,18 +223,6 @@
         .ad-btn-icon:hover { border-color: var(--accent-green); color: var(--accent-green); }
         .ad-btn-icon.red:hover { border-color: #ef4444; color: #ef4444; }
 
-        /* ══ CONSOLE BAR ══ */
-        .ad-console-bar {
-            display: flex; align-items: center; justify-content: space-between;
-            background: rgba(0,255,136,0.04); border: 1px solid rgba(0,255,136,0.15);
-            border-radius: var(--radius-md); padding: 14px 20px;
-            margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px;
-        }
-        .ad-console-left { display: flex; align-items: center; gap: 12px; }
-        .ad-shield-icon { font-size: 1.5rem; }
-        .ad-session-lbl { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; }
-        .ad-session-title { font-size: 1rem; font-weight: 800; color: var(--accent-green); }
-
         /* ══ DASHBOARD METRICS (top 4 cards) ══ */
         .ad-metrics-grid {
             display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
@@ -258,14 +251,23 @@
         }
 
         /* ══ TABS ══ */
-        /* Sticky wrapper: giữ metrics + tab nav cố định — top: 60px = chiều cao header */
+        /* Sticky wrapper: header là flex-item cố định, ad-main là scroll container.
+           Trong ad-main, sticky top:0 = bám ngay đầu vùng cuộn → luôn nhìn thấy. */
         .ad-sticky-top {
             position: sticky;
-            top: 60px;   /* đúng bằng height của .ad-header */
+            top: 0;
             z-index: 100;
             background: var(--bg-base);
             padding-bottom: 2px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.25); /* tách biệt với nội dung phía dưới */
+            margin: -1.5rem -2rem 0;   /* bù padding ad-main để full-width */
+            padding: 1.5rem 2rem 0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+        }
+        @media (max-width: 768px) {
+            .ad-sticky-top { margin: -0.75rem -0.75rem 0; padding: 0.75rem 0.75rem 0; }
+        }
+        @media (max-width: 480px) {
+            .ad-sticky-top { margin: -0.5rem -0.5rem 0; padding: 0.5rem 0.5rem 0; }
         }
         .ad-tab-nav {
             display: flex; gap: 6px; flex-wrap: wrap;
@@ -306,7 +308,8 @@
             max-width: 100%;
             min-height: 500px;
             box-sizing: border-box;
-            overflow-x: hidden; /* Chặn tràn ngang — bảng cuộn trong .table-responsive */
+            /* Không đặt overflow-x:hidden ở đây vì sẽ phá vỡ position:sticky của
+               ad-sticky-top và clip dropdown ca đấu. Overflow được xử lý trong .table-responsive */
         }
         .ad-tab-content.active { display: block; }
 
@@ -365,6 +368,10 @@
             -webkit-overflow-scrolling: touch;
             border-radius: var(--radius-md);
             box-sizing: border-box;
+            /* max-height: cho phép thead sticky hoạt động bên trong container cuộn.
+               calc(100vh - 60px header - ~240px sticky-top - ~80px toolbar/buffer) */
+            max-height: calc(100vh - 380px);
+            min-height: 200px;
         }
 
         /* ══ TABLE STYLES ══ */
@@ -377,8 +384,9 @@
             font-weight: 700; color: var(--text-muted); text-transform: uppercase;
             letter-spacing: 0.05em; background: var(--bg-card2);
             border: 1px solid rgba(30,58,95,0.8); white-space: nowrap;
-            position: sticky; top: 0; z-index: 10; /* sticky trong scrollable container */
-            overflow: hidden; text-overflow: ellipsis;
+            position: sticky; top: 0; z-index: 10;
+            /* Không clip text tiêu đề cột — phải hiển thị đầy đủ chữ */
+            overflow: visible;
         }
         .ad-table tbody {
             /* min-height = 10 dòng × 40px/dòng = 400px; dùng pseudo-element để giữ chiều cao */
@@ -506,9 +514,10 @@
             padding: 4px 12px; border-radius: 20px;
         }
 
-        /* Auth: adminConsole ẩn theo mặc định — adminAuthPanel hiện ngay (không phụ thuộc JS) */
+        /* Cả hai panel ẩn ban đầu — khoiTaoTrangAdmin() trong phan-he-quan-tri.js
+           sẽ kiểm tra session Supabase và hiện đúng panel mà không gây flicker */
         #adminConsole   { display: none; }
-        /* adminAuthPanel KHÔNG có display:none trong CSS — JS điều khiển hoàn toàn qua inline style */
+        #adminAuthPanel { display: none; }
 
         /* ══ SORT ICONS ══ */
         .ad-table thead th.sortable { cursor:pointer; user-select:none; }
@@ -524,7 +533,6 @@
 
         /* ══ MOBILE OPTIMIZATIONS ══ */
         @media (max-width: 768px) {
-            .ad-sticky-top { position: sticky; top: 0; }
             .ad-metrics-grid .ad-metric-val { font-size: 1.8rem; }
             .mv-toolbar { flex-direction: column; align-items: stretch; }
             .mv-filters { flex-wrap: wrap; }
@@ -837,30 +845,6 @@
 <!-- BANNER TẢI TRANG — hiện inline CSS thuần, tự ẩn sau 2s nếu nội dung đã load.
      Nếu còn hiện: bấm "Xóa Cache & Tải Lại" để reset.
      Pure inline styles — không phụ thuộc bất kỳ stylesheet nào. -->
-<div id="adminLoadingBanner" style="
-    position:fixed; top:0; left:0; right:0; z-index:99999;
-    background:#0f1e35; border-bottom:2px solid #00ff88;
-    color:#e2e8f0; font-family:system-ui,Arial,sans-serif; font-size:0.8rem;
-    padding:7px 16px; display:flex; align-items:center; gap:12px;">
-    <span style="color:#00ff88; font-weight:700; flex:1;">
-        ⚙️ TUYENVANGLAI ADMIN — đang tải...
-    </span>
-    <button onclick="sessionStorage.clear();location.reload();"
-        style="background:#00ff88; color:#0a1628; border:none; border-radius:5px;
-               padding:4px 12px; font-weight:700; font-size:0.78rem; cursor:pointer;
-               white-space:nowrap; font-family:inherit;">
-        🔄 Tải Lại
-    </button>
-    <button onclick="this.parentElement.style.display='none';"
-        style="background:transparent; border:1px solid #374151; color:#9ca3af;
-               border-radius:4px; padding:3px 8px; cursor:pointer; font-size:0.75rem;
-               font-family:inherit;">
-        ✕
-    </button>
-</div>
-<!-- Đẩy content xuống để không bị banner che -->
-<div id="bannerSpacer" style="height:38px;"></div>
-
 <!-- ══ HEADER ══ -->
 <header class="ad-header">
     <a href="../" class="ad-brand">
@@ -887,13 +871,22 @@
         <span class="ad-zone-badge">
             <i class="fa-solid fa-shield-halved"></i> ADMIN ZONE
         </span>
+        <button id="btnHeaderLogout" onclick="dangXuatAdmin()"
+            style="display:none;align-items:center;gap:6px;padding:7px 14px;
+                   border:1px solid rgba(239,68,68,0.35);border-radius:8px;
+                   background:transparent;color:#f87171;font-size:0.78rem;font-weight:700;
+                   cursor:pointer;font-family:inherit;transition:background 0.2s;"
+            onmouseover="this.style.background='rgba(239,68,68,0.1)'"
+            onmouseout="this.style.background='transparent'">
+            <i class="fa-solid fa-right-from-bracket"></i> Đăng Xuất
+        </button>
     </div>
 </header>
 
 <div class="ad-main">
 
     <!-- ══ PANEL ĐĂNG NHẬP ══ -->
-    <div id="adminAuthPanel" style="display:block">
+    <div id="adminAuthPanel" style="display:none">
         <div class="ad-auth-wrap">
             <div class="ad-auth-card">
                 <div class="ad-auth-badge">👑</div>
@@ -939,20 +932,6 @@
     </div>
     <!-- ══ CONSOLE QUẢN TRỊ ══ -->
     <div id="adminConsole">
-
-        <!-- Thanh trạng thái phiên Admin -->
-        <div class="ad-console-bar">
-            <div class="ad-console-left">
-                <div class="ad-shield-icon">👑</div>
-                <div>
-                    <div class="ad-session-lbl">Trạng thái phiên làm việc</div>
-                    <div class="ad-session-title">ROOT ADMIN SESSION ACTIVE</div>
-                </div>
-            </div>
-            <button class="ad-btn-danger" onclick="dangXuatAdmin()">
-                <i class="fa-solid fa-right-from-bracket"></i> Đăng xuất
-            </button>
-        </div>
 
         <!-- ══ STICKY: METRICS + TAB NAV ══ -->
         <div class="ad-sticky-top">
@@ -1093,11 +1072,11 @@
                                     onchange="window._tvChonTatCa(this.checked)">
                             </th>
                             <!-- Cột ID -->
-                            <th class="sortable" onclick="window._sortKhach('memberID')" style="width:50px;">
+                            <th class="sortable" onclick="window._sortKhach('memberID')" style="width:60px;min-width:60px;">
                                 ID <span class="sort-icon" id="sortIcon_memberID">↕</span>
                             </th>
                             <!-- Hành Động ngay đầu để dễ thao tác mobile -->
-                            <th style="width:80px;">Thao Tác</th>
+                            <th style="width:100px;min-width:100px;">Thao Tác</th>
                             <!-- Tên -->
                             <th class="sortable" onclick="window._sortKhach('ten')">
                                 Tên <span class="sort-icon" id="sortIcon_ten">↕</span>
@@ -1491,10 +1470,10 @@
                                 <input type="checkbox" id="caDauChkAll" style="cursor:pointer;accent-color:#f87171;"
                                     onchange="window._caDauChonTatCa(this.checked)">
                             </th>
-                            <th class="sortable" onclick="window._sortCaDau('_seqId')" style="width:54px;">
+                            <th class="sortable" onclick="window._sortCaDau('_seqId')" style="width:60px;min-width:60px;">
                                 ID <span class="sort-icon" id="sortIconCa__seqId">↕</span>
                             </th>
-                            <th style="width:64px;">Thao Tác</th>
+                            <th style="width:100px;min-width:100px;">Thao Tác</th>
                             <th class="sortable" onclick="window._sortCaDau('ten_san')">
                                 Tên Sân <span class="sort-icon" id="sortIconCa_ten_san">↕</span>
                             </th>
@@ -1556,40 +1535,6 @@
    Logic nghiệp vụ chính nằm trong phan-he-quan-tri.js
 ═══════════════════════════════════════════════════════════ */
 (function () {
-
-    document.addEventListener("DOMContentLoaded", function () {
-        try {
-            /* Hiện auth panel ngay — null-safe để tránh TypeError */
-            var ap = document.getElementById("adminAuthPanel");
-            if (ap) ap.style.display = "block";
-
-            /* Ẩn banner sau 2 giây nếu trang load thành công */
-            setTimeout(function () {
-                try {
-                    var banner  = document.getElementById("adminLoadingBanner");
-                    var spacer  = document.getElementById("bannerSpacer");
-                    if (!banner) return;
-                    var apEl = document.getElementById("adminAuthPanel");
-                    var coEl = document.getElementById("adminConsole");
-                    /* Ẩn khi auth panel HOẶC console đang hiện với chiều cao > 0 */
-                    var anyVisible = (apEl && apEl.offsetHeight > 0) ||
-                                     (coEl && coEl.offsetHeight > 0);
-                    if (anyVisible) {
-                        banner.style.display = "none";
-                        if (spacer) spacer.style.display = "none";
-                    }
-                } catch (_) {}
-            }, 2000);
-
-        } catch (err) {
-            console.warn("[admin] DOMContentLoaded lỗi:", err);
-            try {
-                var fb = document.getElementById("adminAuthPanel") ||
-                         document.querySelector(".ad-auth-wrap");
-                if (fb) fb.style.display = "block";
-            } catch (_) {}
-        }
-    });
 
     /* Search trong bảng Thành Viên */
     window.locKhachAdmin = function () {
@@ -1847,6 +1792,7 @@ input, textarea, [contenteditable] { user-select: text; -webkit-user-select: tex
                 </button>
             </div>
 
+            <div class="ad-table-wrap">
             <div class="table-responsive">
                 <table class="ad-table" style="min-width:700px;">
                     <thead>
@@ -1873,6 +1819,7 @@ input, textarea, [contenteditable] { user-select: text; -webkit-user-select: tex
                     </tbody>
                 </table>
             </div>
+            </div><!-- /ad-table-wrap -->
         </div>
 
 <!-- ══════════════════════════════════════════════════════

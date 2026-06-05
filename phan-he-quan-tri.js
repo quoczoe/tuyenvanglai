@@ -65,6 +65,9 @@
     function _hienConsole() {
         _setDisplay("adminAuthPanel", "none");
         _setDisplay("adminConsole",   "block");
+        // Hiện nút Đăng Xuất trên header
+        const btnLogout = document.getElementById("btnHeaderLogout");
+        if (btnLogout) btnLogout.style.display = "inline-flex";
         // Khôi phục tab từ URL hash nếu có, mặc định "guests"
         const hashTab   = (location.hash || "").replace("#tab-", "");
         const validTabs = ["guests", "reviews", "config", "stats", "cadau", "gopy", "baocao"];
@@ -128,6 +131,9 @@
     window.dangXuatAdmin = async function () {
         window._adminJWT = null; // Xóa JWT cache để dbEngine quay về anon key
         await window.supabaseAuth.dangXuat();
+        // Ẩn nút Đăng Xuất trên header
+        const btnLogout = document.getElementById("btnHeaderLogout");
+        if (btnLogout) btnLogout.style.display = "none";
         window.hienToast("Đã đăng xuất", "Phiên Admin đã kết thúc an toàn.", "info");
         _hienManLogin();
     };
@@ -454,17 +460,59 @@
         }).join("");
     }
 
-    // Toggle dropdown hành động ca đấu
+    // Toggle dropdown hành động ca đấu — dùng position:fixed để không bị clip bởi table-responsive
     window._toggleCaMenu = function(btn, caId) {
         window._closeCaMenus();
         const menu = document.querySelector(`.ca-action-menu[data-caid="${caId}"]`);
-        if (menu) menu.style.display = "block";
-        document.addEventListener("click", function handler(e) {
-            if (!btn.contains(e.target)) { window._closeCaMenus(); document.removeEventListener("click", handler); }
-        }, { once: false, capture: true });
+        if (!menu) return;
+
+        // Tính vị trí viewport của nút
+        const rect = btn.getBoundingClientRect();
+        menu.style.position   = "fixed";
+        menu.style.left       = rect.left + "px";
+        menu.style.top        = (rect.bottom + 3) + "px";
+        menu.style.zIndex     = "9500";
+        menu.style.display    = "block";
+        menu.style.minWidth   = "140px";
+
+        // Điều chỉnh nếu tràn phải / tràn dưới
+        requestAnimationFrame(function() {
+            const mr = menu.getBoundingClientRect();
+            if (mr.right > window.innerWidth - 8) {
+                menu.style.left = (rect.right - mr.width) + "px";
+            }
+            if (mr.bottom > window.innerHeight - 8) {
+                menu.style.top = (rect.top - mr.height - 3) + "px";
+            }
+        });
+
+        // Đóng khi click ngoài
+        function _handler(e) {
+            if (!btn.contains(e.target) && !menu.contains(e.target)) {
+                window._closeCaMenus();
+                document.removeEventListener("click", _handler, true);
+            }
+        }
+        // setTimeout để tránh đóng ngay lập tức do sự kiện click hiện tại
+        setTimeout(function() {
+            document.addEventListener("click", _handler, true);
+        }, 10);
+
+        // Đóng khi cuộn bảng (vì dùng fixed nên vị trí lệch khi scroll)
+        const tbl = document.querySelector("#adminTab_cadau .table-responsive");
+        if (tbl && !tbl._caMenuScrollBound) {
+            tbl._caMenuScrollBound = true;
+            tbl.addEventListener("scroll", function() { window._closeCaMenus(); });
+        }
     };
     window._closeCaMenus = function() {
-        document.querySelectorAll(".ca-action-menu").forEach(m => m.style.display = "none");
+        document.querySelectorAll(".ca-action-menu").forEach(function(m) {
+            m.style.display   = "none";
+            m.style.position  = "absolute";
+            m.style.left      = "0";
+            m.style.top       = "100%";
+            m.style.zIndex    = "300";
+        });
     };
 
     // Bulk select CA ĐẤU
@@ -922,18 +970,12 @@
             });
 
             // Đếm Ca tham gia + tổng chi từ dat_slot
+            // Chỉ cộng stats cho user đã tồn tại trong map (từ nguoi_dung)
+            // KHÔNG tạo virtual entry — tránh user đã xóa vẫn xuất hiện trong danh sách
             datSlots.forEach(slot => {
                 const sdt = slot.sdt_khach || "";
                 const ca  = mapCaDau.get(slot.id_ca_dau);
-                if (!sdt || !ca) return;
-                if (!map.has(sdt)) {
-                    map.set(sdt, {
-                        ten: slot.ten_khach || "Ẩn danh", sdt,
-                        ngayTG: slot.thoi_gian_dat || null, vai_tro: "guest",
-                        isActive: true, diemUyTin: 100, deviceFp: null,
-                        caDang: 0, caTG: 0, tongChi: 0
-                    });
-                }
+                if (!sdt || !ca || !map.has(sdt)) return;
                 if (ca.da_chot_ca === true && slot.trang_thai_di_danh === "Đã tham gia") {
                     const info = map.get(sdt);
                     info.caTG++;
@@ -1338,6 +1380,29 @@
         _taiDanhSachKhach();
     };
 
+    /* ─── Cascade delete một user — xóa toàn bộ dữ liệu liên quan ─── */
+    async function _cascadeXoaUser(sdt) {
+        // 1. Xóa tất cả slot khách này đã đặt
+        await window.dbEngine.xoa("dat_slot", { sdt_khach: sdt }).catch(() => {});
+
+        // 2. Tìm & xóa ca đấu do user này đăng + slot trong ca đó
+        let userCaDau = [];
+        try { userCaDau = await window.dbEngine.doc("ca_dau", { eq: { sdt_nguoi_tao: sdt } }); }
+        catch (_) { userCaDau = []; }
+        for (const ca of userCaDau) {
+            await window.dbEngine.xoa("dat_slot", { id_ca_dau: ca.id }).catch(() => {});
+        }
+        for (const ca of userCaDau) {
+            await window.dbEngine.xoa("ca_dau", { id: ca.id }).catch(() => {});
+        }
+
+        // 3. Xóa session token (văng khỏi app ngay khi hành động tiếp theo)
+        await window.dbEngine.xoa("guest_sessions", { sdt_khach: sdt }).catch(() => {});
+
+        // 4. Xóa tài khoản chính
+        await window.dbEngine.xoa("nguoi_dung", { sdt_khach: sdt });
+    }
+
     // Xóa nhiều tài khoản đã chọn (bulk delete)
     window.xoaNhieuTaiKhoanTest = async function() {
         const checked = document.querySelectorAll("#adminGuestsBody .tv-chk:checked");
@@ -1361,11 +1426,11 @@
 
         if (!confirm(`Xác nhận xóa vĩnh viễn ${sdts.length} tài khoản?\n${skipped > 0 ? `(${skipped} tài khoản slot-only sẽ bỏ qua)\n` : ""}Hành động này KHÔNG THỂ hoàn tác.`)) return;
 
-        // Xóa tuần tự — chờ từng request xong trước khi sang cái tiếp theo
+        // Xóa tuần tự cascade — slot, ca đấu, session rồi mới xóa tài khoản
         let ok = 0, fail = 0, errMsg = "";
         for (const sdt of sdts) {
             try {
-                await window.dbEngine.xoa("nguoi_dung", { sdt_khach: sdt });
+                await _cascadeXoaUser(sdt);
                 ok++;
             } catch(e) {
                 fail++;
@@ -1731,7 +1796,7 @@
         }
     };
 
-    // E — Xóa tài khoản (kiểm tra SĐT nhập đúng → xóa)
+    // E — Xóa tài khoản (kiểm tra SĐT nhập đúng → cascade delete)
     window._xoaTV = async function (sdt) {
         if (sdt === ADMIN_GOC_SDT) { window.hienToast("Không được phép", "Không thể xóa tài khoản Admin gốc.", "warning"); return; }
         const nhapSdt = (document.getElementById("mvXoaConfirmSdt")?.value || "").trim();
@@ -1740,13 +1805,13 @@
             return;
         }
         try {
-            // Xóa từ nguoi_dung — bảng duy nhất
-            await window.dbEngine.xoa("nguoi_dung", { sdt_khach: sdt });
-            window.hienToast("Đã xóa ✅", `Tài khoản ${sdt} đã bị xóa vĩnh viễn.`, "warning");
+            // Cascade: xóa slot, ca đấu, session rồi mới xóa tài khoản
+            await _cascadeXoaUser(sdt);
+            window.hienToast("Đã xóa ✅", `Tài khoản ${sdt} và toàn bộ dữ liệu liên quan đã bị xóa vĩnh viễn.`, "warning");
             window.dongModalThanhVien();
             _taiDanhSachKhach();
         } catch (e) {
-            window.hienToast("Lỗi", "Không thể xóa tài khoản.", "danger");
+            window.hienToast("Lỗi", "Không thể xóa tài khoản: " + (e.message || "").slice(0, 80), "danger");
         }
     };
 
