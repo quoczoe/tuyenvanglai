@@ -42,6 +42,24 @@
         document.body.style.overflow = "";
     };
 
+    /* Đo chiều cao header thực tế → set padding-top cho app-body qua inline style
+     * (Inline style > !important CSS → không bị override bởi bất kỳ cascade nào)
+     * Ngoại lệ: mobile + has-subtab → để CSS !important 108px xử lý */
+    window._syncBodyPadding = function () {
+        const header  = document.querySelector(".app-header");
+        const appBody = document.querySelector(".app-body");
+        if (!header || !appBody) return;
+        const hh       = Math.round(header.getBoundingClientRect().height);
+        const isMobile = window.innerWidth <= 768;
+        const hasSub   = document.body.classList.contains("has-subtab");
+        if (hasSub && isMobile) {
+            appBody.style.paddingTop = ""; // nhường CSS 108px !important
+        } else {
+            appBody.style.paddingTop = hh + "px";
+        }
+    };
+    window.addEventListener("resize", window._syncBodyPadding);
+
     // Đóng drawer khi chuyển tab (từ desktop hoặc external call)
     const _origChuyenTab = window.chuyenTab;
     window.addEventListener("DOMContentLoaded", () => {
@@ -154,6 +172,8 @@
 
         _capNhatHeaderState();
         chuyenTab(initTab, true); // true = không cập nhật URL lại (đã đúng)
+        // Đảm bảo padding-top khớp header thực tế sau khi layout ổn định
+        setTimeout(window._syncBodyPadding, 0);
 
         // Auto-open modal nếu URL có ?ca=<id>
         const caId = new URLSearchParams(window.location.search).get("ca");
@@ -194,6 +214,8 @@
         // Thêm has-subtab khi tab có subtab-nav — giúp padding-top đúng trên mobile
         const tabsWithSubtab = ["dang-quan-ly", "lich-su"];
         document.body.classList.toggle("has-subtab", tabsWithSubtab.includes(tabId));
+        // Sync padding-top theo chiều cao header thực tế (fix dải đen mobile)
+        window._syncBodyPadding?.();
 
         // Cập nhật URL sạch qua History API (server Vercel đã cấu hình fallback /:path* → index.html)
         if (!_noUpdateUrl) {
