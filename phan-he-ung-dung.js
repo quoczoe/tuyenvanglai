@@ -191,6 +191,9 @@
         if (btn) btn.classList.add("active");
 
         document.body.classList.toggle("is-landing-tab", tabId === "gioi-thieu");
+        // Thêm has-subtab khi tab có subtab-nav — giúp padding-top đúng trên mobile
+        const tabsWithSubtab = ["dang-quan-ly", "lich-su"];
+        document.body.classList.toggle("has-subtab", tabsWithSubtab.includes(tabId));
 
         // Cập nhật URL sạch qua History API (server Vercel đã cấu hình fallback /:path* → index.html)
         if (!_noUpdateUrl) {
