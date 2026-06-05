@@ -356,6 +356,44 @@
             box-shadow: 0 0 12px rgba(255,85,0,0.18);
         }
 
+        /* ── Thu Cọc Trước toggle row ── */
+        .coc-toggle-row {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 12px; padding: 12px 14px; border-radius: 10px; margin-bottom: 14px;
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+            transition: border-color .18s;
+        }
+        .coc-toggle-row:has(#hostRequireCoc:not(:disabled)) { border-color: rgba(255,85,0,0.25); }
+        .coc-toggle-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+        .coc-toggle-icon { font-size: 1.3rem; flex-shrink: 0; }
+        .coc-toggle-info { min-width: 0; }
+        .coc-toggle-title {
+            font-size: 0.85rem; font-weight: 700; color: #e2e8f0;
+            display: flex; align-items: center; gap: 6px; margin-bottom: 3px;
+        }
+        .coc-toggle-desc { font-size: 0.72rem; color: #64748b; line-height: 1.4; }
+        .coc-help-btn {
+            background: none; border: none; cursor: pointer; padding: 0;
+            color: #475569; font-size: 0.78rem; display: inline-flex; align-items: center;
+            transition: color .15s;
+        }
+        .coc-help-btn:hover { color: #60a5fa; }
+        /* Toggle switch */
+        .coc-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; cursor: pointer; }
+        .coc-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+        .coc-switch-slider {
+            position: absolute; inset: 0; background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 24px;
+            transition: all .2s;
+        }
+        .coc-switch-slider::before {
+            content: ""; position: absolute; width: 18px; height: 18px; border-radius: 50%;
+            background: #64748b; left: 2px; top: 2px; transition: all .2s;
+        }
+        .coc-switch input:checked + .coc-switch-slider { background: rgba(255,85,0,0.25); border-color: rgba(255,85,0,0.6); }
+        .coc-switch input:checked + .coc-switch-slider::before { background: #FF5500; transform: translateX(20px); }
+        .coc-switch input:disabled + .coc-switch-slider { opacity: 0.45; cursor: not-allowed; }
+
         /* ── Tooltip dấu hỏi ── */
         .tt {
             display: inline-flex; align-items: center; justify-content: center;
@@ -2393,7 +2431,7 @@
                             <label class="form-label">Giờ bắt đầu</label>
                             <div style="display:flex;align-items:center;gap:5px;">
                                 <select id="hostTimeStartH" class="app-select" style="flex:1;min-width:0;"
-                                        onchange="window._tinhThoiGian&&window._tinhThoiGian()">
+                                        onchange="window._capNhatPhutSelect&&window._capNhatPhutSelect();window._tinhThoiGian&&window._tinhThoiGian()">
                                     <!-- Điền bởi _napThoiGianPair() -->
                                 </select>
                                 <span style="color:var(--text-muted);font-weight:700;font-size:1.1rem;flex-shrink:0;">:</span>
@@ -2423,7 +2461,9 @@
                         </div>
                         <div class="form-group">
                             <label class="form-label">Ngày đánh</label>
-                            <input type="date" id="hostDatePlay" class="app-input" oninput="window._tinhThoiGian && window._tinhThoiGian()">
+                            <input type="date" id="hostDatePlay" class="app-input"
+                                   oninput="window._onNgayDanhChange&&window._onNgayDanhChange()"
+                                   onchange="window._onNgayDanhChange&&window._onNgayDanhChange()">
                         </div>
                     </div>
                 </div>
@@ -2469,14 +2509,27 @@
                             </button>
                         </div>
                     </div>
-                    <!-- Toggle đặt cọc — chỉ mở khi host đủ điều kiện -->
-                    <div class="form-group" style="margin-bottom:4px;">
-                        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.85rem;color:#e2e8f0;">
-                            <input type="checkbox" id="hostRequireCoc" disabled
-                                style="width:18px;height:18px;accent-color:#FF5500;">
-                            <span id="hostRequireCocLabel">
-                                🔒 Yêu cầu đặt cọc <span style="font-size:0.75rem;color:#64748b;font-weight:400;">(Khóa — cần tối thiểu 7 ngày hoạt động &amp; 3 ca thành công)</span>
-                            </span>
+                    <!-- Yêu cầu thu cọc — chỉ mở khi host đủ điều kiện -->
+                    <div class="coc-toggle-row" id="cocToggleRow">
+                        <div class="coc-toggle-left">
+                            <span class="coc-toggle-icon">💰</span>
+                            <div class="coc-toggle-info">
+                                <div class="coc-toggle-title">
+                                    Thu Cọc Trước
+                                    <button type="button" class="coc-help-btn"
+                                        title="Khi bật: khách đặt slot phải chuyển khoản tiền cọc cho bạn trước khi được xác nhận giữ chỗ. Giúp tránh bỏ slot phút chót. Yêu cầu: tài khoản ≥7 ngày + ≥3 ca thành công."
+                                        onclick="window.hienToast&&window.hienToast('Thu Cọc Trước','Khi bật: khách đặt slot phải chuyển khoản cọc trước khi được giữ chỗ. Giúp giảm tình trạng bỏ kèo phút chót. Điều kiện mở: tài khoản ≥ 7 ngày hoạt động và ≥ 3 ca đấu thành công.','info')">
+                                        <i class="fa-solid fa-circle-question"></i>
+                                    </button>
+                                </div>
+                                <div class="coc-toggle-desc" id="hostRequireCocLabel">
+                                    🔒 Cần ≥ 7 ngày hoạt động &amp; ≥ 3 ca thành công để mở
+                                </div>
+                            </div>
+                        </div>
+                        <label class="coc-switch" title="Bật/tắt yêu cầu thu cọc">
+                            <input type="checkbox" id="hostRequireCoc" disabled>
+                            <span class="coc-switch-slider"></span>
                         </label>
                     </div>
                     <!-- Trình độ Nam — 100% rộng, ẩn/hiện theo giới tính -->

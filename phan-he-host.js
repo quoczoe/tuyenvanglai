@@ -151,7 +151,7 @@
                 const lbl = document.getElementById("hostRequireCocLabel");
                 if (chk && duDieu) {
                     chk.disabled = false;
-                    if (lbl) lbl.innerHTML = '💰 Yêu cầu đặt cọc <span style="font-size:0.75rem;color:#64748b;font-weight:400;">(bật để host nhận cọc trước)</span>';
+                    if (lbl) lbl.textContent = 'Bật để yêu cầu khách chuyển cọc trước khi giữ chỗ';
                 }
             }).catch(() => {});
         }
@@ -232,9 +232,19 @@
             if (!dateInput.value) dateInput.value = today;
         }
 
-        // Điền cặp select giờ:phút và set giá trị mặc định
-        _napThoiGianPair("hostTimeStart", "18:00");
-        _napThoiGianPair("hostTimeEnd",   "20:00");
+        // Điền cặp select giờ:phút — mặc định realtime+20p khi hôm nay, 18:00 khi ngày khác
+        {
+            const _dv = document.getElementById("hostDatePlay")?.value;
+            const _today = new Date().toLocaleDateString("sv-SE");
+            const _isToday = !_dv || _dv === _today;
+            const startDef = _isToday ? _gioMacDinhHomNay() : "18:00";
+            const [_sh, _sm] = startDef.split(":").map(Number);
+            const _endMin = _sh * 60 + _sm + 120;
+            const endDef = `${String(Math.floor(_endMin / 60) % 24).padStart(2,"0")}:${String(_endMin % 60).padStart(2,"0")}`;
+            _napThoiGianPair("hostTimeStart", startDef);
+            _napThoiGianPair("hostTimeEnd",   endDef);
+            _capNhatGioSelect(_isToday);
+        }
 
         window.shuttlecocksList = [];
         const ctr = document.getElementById("shuttlecockListContainer");
@@ -570,6 +580,85 @@
      * prefix = "hostTimeStart" hoặc "hostTimeEnd"
      * → điền vào id="${prefix}H" (00-23) và id="${prefix}M" (00,05,...,55)
      * ═══════════════════════════════════════════════════ */
+    // Tính giờ mặc định hôm nay = realtime + 20 phút, snap lên bội số 15 gần nhất
+    function _gioMacDinhHomNay() {
+        const now = new Date();
+        const totalMin = now.getHours() * 60 + now.getMinutes() + 20;
+        const snapped  = Math.ceil(totalMin / 15) * 15;
+        const h = Math.floor(snapped / 60) % 24;
+        const m = snapped % 60;
+        return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}`;
+    }
+
+    // Cập nhật disabled trên option phút theo giờ đang chọn (chỉ khi ngày = hôm nay)
+    function _capNhatPhutSelect() {
+        const dateVal  = document.getElementById("hostDatePlay")?.value || "";
+        const todayStr = new Date().toLocaleDateString("sv-SE");
+        const selH = document.getElementById("hostTimeStartH");
+        const selM = document.getElementById("hostTimeStartM");
+        if (!selH || !selM) return;
+        if (dateVal !== todayStr) {
+            Array.from(selM.options).forEach(o => { o.disabled = false; o.style.color = ""; });
+            return;
+        }
+        const now = new Date();
+        const curH = now.getHours();
+        const curM = now.getMinutes();
+        const selHVal = parseInt(selH.value, 10);
+        Array.from(selM.options).forEach(o => {
+            const m = parseInt(o.value, 10);
+            const isPast = selHVal < curH || (selHVal === curH && m <= curM);
+            o.disabled = isPast;
+            o.style.color = isPast ? "#334155" : "";
+        });
+    }
+    window._capNhatPhutSelect = _capNhatPhutSelect;
+
+    // Disable giờ quá khứ trong select Giờ Bắt Đầu khi ngày = hôm nay
+    function _capNhatGioSelect(isToday) {
+        const selH = document.getElementById("hostTimeStartH");
+        if (!selH) return;
+        const curH = new Date().getHours();
+        Array.from(selH.options).forEach(o => {
+            const h = parseInt(o.value, 10);
+            const isPast = isToday && h < curH;
+            o.disabled = isPast;
+            o.style.color = isPast ? "#334155" : "";
+        });
+        _capNhatPhutSelect();
+    }
+
+    // Xử lý khi user thay đổi ngày đánh
+    window._onNgayDanhChange = function () {
+        const dateInput = document.getElementById("hostDatePlay");
+        const todayStr  = new Date().toLocaleDateString("sv-SE");
+        const isToday   = dateInput?.value === todayStr;
+        _capNhatGioSelect(isToday);
+        // Nếu giờ đang chọn đã qua → snap về giờ hợp lệ
+        if (isToday) {
+            const selH = document.getElementById("hostTimeStartH");
+            const selM = document.getElementById("hostTimeStartM");
+            if (selH && selM) {
+                const now = new Date();
+                const selectedTotalMin = parseInt(selH.value, 10) * 60 + parseInt(selM.value, 10);
+                const curTotalMin = now.getHours() * 60 + now.getMinutes();
+                if (selectedTotalMin <= curTotalMin) {
+                    const nextStr = _gioMacDinhHomNay();
+                    const [nh, nm] = nextStr.split(":").map(Number);
+                    selH.value = String(nh).padStart(2, "0");
+                    selM.value = String(nm).padStart(2, "0");
+                    // End = start + 2h
+                    const endTotalMin = nh * 60 + nm + 120;
+                    const eH = document.getElementById("hostTimeEndH");
+                    const eM = document.getElementById("hostTimeEndM");
+                    if (eH) eH.value = String(Math.floor(endTotalMin / 60) % 24).padStart(2, "0");
+                    if (eM) eM.value = String(endTotalMin % 60).padStart(2, "0");
+                }
+            }
+        }
+        window._tinhThoiGian?.();
+    };
+
     function _napThoiGianPair(prefix, defaultHHMM) {
         const parts = (defaultHHMM || "00:00").split(":");
         const defH  = parts[0] || "00";
@@ -615,6 +704,7 @@
     window._tinhThoiGian           = _tinhThoiGian; // alias cho index.html SPA
 
     function _tinhThoiGian() {
+        _capNhatPhutSelect(); // cập nhật disabled phút khi giờ thay đổi
         let startStr = _getTimeFromPair("hostTimeStart");
         const endStr = _getTimeFromPair("hostTimeEnd");
         const durEl  = document.getElementById("hostTotalDuration");
@@ -1303,9 +1393,19 @@
             if (el) el.checked = (id === "inc_san" || id === "inc_cau");
         });
 
-        // Reset cặp select giờ:phút về mặc định + clear hint sân cụ thể
-        _napThoiGianPair("hostTimeStart", "18:00");
-        _napThoiGianPair("hostTimeEnd",   "20:00");
+        // Reset giờ về smart default (realtime+20p nếu hôm nay, 18:00 nếu ngày khác)
+        {
+            const _dv2    = document.getElementById("hostDatePlay")?.value;
+            const _tod2   = new Date().toLocaleDateString("sv-SE");
+            const _isTod2 = !_dv2 || _dv2 === _tod2;
+            const _sd2    = _isTod2 ? _gioMacDinhHomNay() : "18:00";
+            const [_sh2, _sm2] = _sd2.split(":").map(Number);
+            const _em2 = _sh2 * 60 + _sm2 + 120;
+            const _ed2 = `${String(Math.floor(_em2 / 60) % 24).padStart(2,"0")}:${String(_em2 % 60).padStart(2,"0")}`;
+            _napThoiGianPair("hostTimeStart", _sd2);
+            _napThoiGianPair("hostTimeEnd",   _ed2);
+            _capNhatGioSelect(_isTod2);
+        }
         const hintEl2 = document.getElementById("hintSanCuThe");
         if (hintEl2) hintEl2.textContent = "";
 
