@@ -789,7 +789,6 @@
     /* ═══════════════════════════════════════════════════
      * 5.5 — GÓP Ý HỆ THỐNG
      * ═══════════════════════════════════════════════════ */
-    /* Màu badge theo loại góp ý */
     const _LOAI_COLOR = {
         "Lỗi/Bug":       { bg:"rgba(239,68,68,0.15)",   color:"#f87171" },
         "Ý tưởng mới":   { bg:"rgba(234,179,8,0.15)",   color:"#facc15" },
@@ -797,7 +796,13 @@
         "Khác":          { bg:"rgba(148,163,184,0.12)", color:"#94a3b8" },
     };
 
-    /* Reset bulk bar mỗi khi load lại bảng */
+    let _gopYAllData  = [];
+    let _gopYFiltered = [];
+    let _gopYPage     = 1;
+    let _gopYPerPage  = 10;
+    let _gopYSortCol  = "created_at";
+    let _gopYSortDir  = "desc";
+
     function _resetBulkBar() {
         const bar = document.getElementById("gopYBulkBar");
         if (bar) bar.style.display = "none";
@@ -805,103 +810,191 @@
         if (chkAll) chkAll.checked = false;
     }
 
+    /* Tải toàn bộ data từ DB, lưu vào _gopYAllData rồi render */
     window._taiDanhSachGopY = async function _taiDanhSachGopY() {
         _resetBulkBar();
         const tbody = document.getElementById("adminGopyBody");
         if (!tbody) return;
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:#64748b;">
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:20px;color:#64748b;">
             <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>`;
-        try {
-            const list = await window.dbEngine.docThu("gop_y_he_thong", {
-                order: "created_at.desc"
-            });
-            if (list === null) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#f87171;">
-                    ⚠️ Không tải được dữ liệu góp ý. Kiểm tra RLS policy hoặc kết nối mạng.
-                    <br><button onclick="_taiDanhSachGopY()" style="margin-top:8px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.35);color:#f87171;padding:4px 14px;border-radius:6px;cursor:pointer;font-size:0.82rem;">Thử lại</button>
-                    </td></tr>`;
-                return;
-            }
-            if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:24px;color:#64748b;">
-                    Chưa có góp ý nào.</td></tr>`;
-                return;
-            }
-            const stars = n => {
-                const filled = n || 0;
-                return `<span style="color:#fbbf24;">${"★".repeat(filled)}</span><span style="color:rgba(255,255,255,0.18);">${"★".repeat(5-filled)}</span>
-                        <span style="color:#9ca3af;font-size:0.72rem;margin-left:2px;">${filled}/5</span>`;
-            };
-            tbody.innerHTML = list.map((g, i) => {
-                const loai  = g.loai_gop_y || "Khác";
-                const lc    = _LOAI_COLOR[loai] || { bg:"rgba(34,211,238,0.1)", color:"#22d3ee" };
-                // Thời gian: ngày + giờ:phút
-                let thoiGian = "—";
-                if (g.created_at) {
-                    const d = new Date(g.created_at);
-                    thoiGian = d.toLocaleDateString("vi-VN") + "<br>"
-                             + `<span style="color:#64748b;font-size:0.72rem;">${d.toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"})}</span>`;
-                }
-                // Tên user — clickable nếu có SĐT
-                const sdtSafe = _escHtml(g.sdt_user || "");
-                const tenHtml = sdtSafe
-                    ? `<span style="cursor:pointer;color:#60a5fa;text-decoration:underline;text-underline-offset:2px;"
-                             onclick="window.moModalQuanLyThanhVien('${sdtSafe}')" title="Xem thông tin user">${_escHtml(g.ten_user||"Ẩn danh")}</span>`
-                    : `<span style="color:#e2e8f0;">${_escHtml(g.ten_user||"Ẩn danh")}</span>`;
-                // Nội dung: cắt 80 ký tự, có nút xem thêm
-                const nd     = g.noi_dung || "";
-                const MAX    = 80;
-                let   ndHtml = "";
-                if (nd.length <= MAX) {
-                    ndHtml = `<span style="color:#cbd5e1;font-size:0.82rem;">${_escHtml(nd) || "<span style='color:#475569;font-style:italic;'>Không có nội dung</span>"}</span>`;
-                } else {
-                    const short  = _escHtml(nd.slice(0, MAX));
-                    const full   = _escHtml(nd);
-                    const rowId  = `gy_${g.id}`;
-                    ndHtml = `<span id="${rowId}_short" style="color:#cbd5e1;font-size:0.82rem;">${short}…
-                                <button onclick="window._moRongGopY('${rowId}')" style="background:none;border:none;color:#60a5fa;font-size:0.75rem;cursor:pointer;padding:0 4px;">Xem thêm</button>
-                              </span>
-                              <span id="${rowId}_full" style="display:none;color:#cbd5e1;font-size:0.82rem;">${full}
-                                <button onclick="window._thuGonGopY('${rowId}')" style="background:none;border:none;color:#60a5fa;font-size:0.75rem;cursor:pointer;padding:0 4px;">Thu gọn</button>
-                              </span>`;
-                }
-                return `<tr>
-                    <td style="text-align:center;">
-                        <input type="checkbox" class="gy-chk" value="${g.id}"
-                               style="cursor:pointer;accent-color:#f87171;"
-                               onchange="window._capNhatBulkBar()">
-                    </td>
-                    <td>${tenHtml}</td>
-                    <td style="white-space:nowrap;">${stars(g.so_sao)}</td>
-                    <td><span style="background:${lc.bg};color:${lc.color};padding:2px 9px;border-radius:10px;font-size:0.73rem;white-space:nowrap;">${_escHtml(loai)}</span></td>
-                    <td style="max-width:260px;">${ndHtml}</td>
-                    <td style="font-size:0.75rem;white-space:nowrap;">${thoiGian}</td>
-                    <td style="text-align:center;">
-                        <button onclick="window.xoaGopY(${g.id})"
-                                style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#f87171;
-                                       padding:3px 8px;border-radius:6px;cursor:pointer;font-size:0.72rem;">
-                            <i class="fa-solid fa-trash-can"></i>
-                        </button>
-                    </td>
-                </tr>`;
-            }).join("");
-        } catch (e) {
-            tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#ef4444;padding:20px;">Lỗi tải dữ liệu.</td></tr>`;
+        const list = await window.dbEngine.docThu("gop_y_he_thong", { order: "created_at.desc" });
+        if (list === null) {
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#f87171;">
+                ⚠️ Không tải được dữ liệu. Kiểm tra RLS policy hoặc kết nối mạng.
+                <br><button onclick="window._taiDanhSachGopY()" style="margin-top:8px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.35);color:#f87171;padding:4px 14px;border-radius:6px;cursor:pointer;font-size:0.82rem;">Thử lại</button>
+                </td></tr>`;
+            return;
         }
+        _gopYAllData = list;
+        _gopYPage    = 1;
+        window._gopYApplyFilter();
+    };
+
+    /* Lọc + sắp xếp + render trang hiện tại */
+    window._gopYApplyFilter = function () {
+        const kw   = (document.getElementById("gopYSearch")?.value || "").trim().toLowerCase();
+        const loai = document.getElementById("gopYFilterLoai")?.value || "";
+        const sao  = document.getElementById("gopYFilterSao")?.value || "";
+
+        _gopYFiltered = _gopYAllData.filter(g => {
+            if (loai && g.loai_gop_y !== loai) return false;
+            if (sao  && String(g.so_sao) !== sao) return false;
+            if (kw) {
+                const hay = `${g.ten_user || ""} ${g.noi_dung || ""}`.toLowerCase();
+                if (!hay.includes(kw)) return false;
+            }
+            return true;
+        });
+
+        _gopYFiltered.sort((a, b) => {
+            let va = a[_gopYSortCol] ?? "";
+            let vb = b[_gopYSortCol] ?? "";
+            if (typeof va === "string") va = va.toLowerCase();
+            if (typeof vb === "string") vb = vb.toLowerCase();
+            if (va < vb) return _gopYSortDir === "asc" ? -1 : 1;
+            if (va > vb) return _gopYSortDir === "asc" ?  1 : -1;
+            return 0;
+        });
+
+        _gopYPage = 1;
+        _gopYRenderPage();
+    };
+
+    /* Đổi cột sắp xếp hoặc toggle chiều */
+    window._gopYSort = function (col) {
+        if (_gopYSortCol === col) {
+            _gopYSortDir = _gopYSortDir === "asc" ? "desc" : "asc";
+        } else {
+            _gopYSortCol = col;
+            _gopYSortDir = col === "created_at" ? "desc" : "asc";
+        }
+        window._gopYApplyFilter();
+    };
+
+    window._gopYResetFilter = function () {
+        ["gopYSearch","gopYFilterLoai","gopYFilterSao"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = "";
+        });
+        window._gopYApplyFilter();
+    };
+
+    window._gopYPrevPage = function () {
+        if (_gopYPage > 1) { _gopYPage--; _gopYRenderPage(); }
+    };
+    window._gopYNextPage = function () {
+        if (_gopYPage < Math.ceil(_gopYFiltered.length / _gopYPerPage)) { _gopYPage++; _gopYRenderPage(); }
+    };
+    window._gopYSetPerPage = function () {
+        _gopYPerPage = Number(document.getElementById("gopYPerPage")?.value || 10);
+        _gopYPage    = 1;
+        _gopYRenderPage();
+    };
+
+    /* Render slice của trang hiện tại */
+    function _gopYRenderPage() {
+        const tbody = document.getElementById("adminGopyBody");
+        if (!tbody) return;
+        _resetBulkBar();
+
+        const total      = _gopYFiltered.length;
+        const start      = (_gopYPage - 1) * _gopYPerPage;
+        const end        = Math.min(start + _gopYPerPage, total);
+        const page       = _gopYFiltered.slice(start, end);
+        const totalPages = Math.max(1, Math.ceil(total / _gopYPerPage));
+
+        const pageInfo = document.getElementById("gopYPageInfo");
+        const pageNum  = document.getElementById("gopYPageNum");
+        const prevBtn  = document.getElementById("gopYPrevBtn");
+        const nextBtn  = document.getElementById("gopYNextBtn");
+        if (pageInfo) pageInfo.textContent = total > 0 ? `${start + 1}–${end} / ${total} góp ý` : "0 góp ý";
+        if (pageNum)  pageNum.textContent  = `Trang ${_gopYPage} / ${totalPages}`;
+        if (prevBtn)  prevBtn.disabled     = _gopYPage <= 1;
+        if (nextBtn)  nextBtn.disabled     = _gopYPage >= totalPages;
+
+        document.querySelectorAll(".gy-sort-th").forEach(th => {
+            const col   = th.dataset.sort;
+            const arrow = th.querySelector(".gy-arr");
+            if (!arrow) return;
+            arrow.textContent = col === _gopYSortCol ? (_gopYSortDir === "asc" ? " ↑" : " ↓") : " ↕";
+            arrow.style.opacity = col === _gopYSortCol ? "1" : "0.35";
+        });
+
+        if (page.length === 0) {
+            const msg = _gopYAllData.length === 0 ? "Chưa có góp ý nào." : "Không tìm thấy kết quả phù hợp.";
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b;">${msg}</td></tr>`;
+            return;
+        }
+
+        const _stars = n => {
+            const f = n || 0;
+            return `<span style="color:#fbbf24;letter-spacing:1px;">${"★".repeat(f)}</span><span style="color:rgba(255,255,255,0.18);letter-spacing:1px;">${"★".repeat(5 - f)}</span><span style="color:#9ca3af;font-size:0.7rem;margin-left:3px;">${f}/5</span>`;
+        };
+
+        tbody.innerHTML = page.map((g, i) => {
+            const stt   = start + i + 1;
+            const loai  = g.loai_gop_y || "Khác";
+            const lc    = _LOAI_COLOR[loai] || { bg:"rgba(34,211,238,0.1)", color:"#22d3ee" };
+            const nd    = g.noi_dung || "";
+            const rowId = `gy_${g.id}`;
+
+            let thoiGian = "—";
+            if (g.created_at) {
+                const d = new Date(g.created_at);
+                thoiGian = `${d.toLocaleDateString("vi-VN")} ${d.toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"})}`;
+            }
+
+            const sdtSafe = _escHtml(g.sdt_user || "");
+            const tenHtml = sdtSafe
+                ? `<span style="cursor:pointer;color:#60a5fa;text-decoration:underline;text-underline-offset:2px;" onclick="window.moModalQuanLyThanhVien('${sdtSafe}')" title="Xem thông tin user">${_escHtml(g.ten_user||"Ẩn danh")}</span>`
+                : `<span style="color:#e2e8f0;">${_escHtml(g.ten_user||"Ẩn danh")}</span>`;
+
+            let ndHtml;
+            if (!nd) {
+                ndHtml = `<span style="color:#475569;font-style:italic;font-size:0.8rem;">—</span>`;
+            } else {
+                const esc = _escHtml(nd);
+                if (nd.length <= 55) {
+                    ndHtml = `<span style="color:#cbd5e1;font-size:0.82rem;">${esc}</span>`;
+                } else {
+                    ndHtml = `<span id="${rowId}_s" style="display:block;color:#cbd5e1;font-size:0.82rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc}</span>
+                              <span id="${rowId}_f" style="display:none;color:#cbd5e1;font-size:0.82rem;white-space:pre-wrap;word-break:break-word;">${esc}</span>
+                              <button id="${rowId}_btn" onclick="window._moRongGopY('${rowId}')" style="background:none;border:none;color:#60a5fa;font-size:0.72rem;cursor:pointer;padding:2px 0;">Xem thêm ▼</button>`;
+                }
+            }
+
+            return `<tr>
+                <td style="text-align:center;padding:6px 4px;">
+                    <input type="checkbox" class="gy-chk" value="${g.id}" style="cursor:pointer;accent-color:#f87171;" onchange="window._capNhatBulkBar()">
+                </td>
+                <td style="text-align:center;color:#64748b;font-size:0.78rem;padding:6px 4px;">${stt}</td>
+                <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tenHtml}</td>
+                <td style="white-space:nowrap;">${_stars(g.so_sao)}</td>
+                <td><span style="background:${lc.bg};color:${lc.color};padding:2px 8px;border-radius:10px;font-size:0.73rem;white-space:nowrap;">${_escHtml(loai)}</span></td>
+                <td style="max-width:220px;">${ndHtml}</td>
+                <td style="font-size:0.75rem;white-space:nowrap;color:#94a3b8;">${thoiGian}</td>
+                <td style="text-align:center;">
+                    <button onclick="window.xoaGopY(${g.id})" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#f87171;padding:3px 8px;border-radius:6px;cursor:pointer;font-size:0.72rem;">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </td>
+            </tr>`;
+        }).join("");
+
         setTimeout(window._fitTable, 0);
     }
 
     window._moRongGopY = function (rowId) {
-        const s = document.getElementById(rowId + "_short");
-        const f = document.getElementById(rowId + "_full");
-        if (s) s.style.display = "none";
-        if (f) f.style.display = "inline";
+        document.getElementById(rowId + "_s")?.style.setProperty("display", "none");
+        document.getElementById(rowId + "_f")?.style.setProperty("display", "block");
+        const btn = document.getElementById(rowId + "_btn");
+        if (btn) { btn.textContent = "Thu gọn ▲"; btn.onclick = () => window._thuGonGopY(rowId); }
     };
     window._thuGonGopY = function (rowId) {
-        const s = document.getElementById(rowId + "_short");
-        const f = document.getElementById(rowId + "_full");
-        if (f) f.style.display = "none";
-        if (s) s.style.display = "inline";
+        document.getElementById(rowId + "_s")?.style.setProperty("display", "block");
+        document.getElementById(rowId + "_f")?.style.setProperty("display", "none");
+        const btn = document.getElementById(rowId + "_btn");
+        if (btn) { btn.textContent = "Xem thêm ▼"; btn.onclick = () => window._moRongGopY(rowId); }
     };
 
     window.xoaGopY = async function (id) {
@@ -909,13 +1002,13 @@
         try {
             await window.dbEngine.xoa("gop_y_he_thong", { id });
             window.hienToast("Đã xóa", `Góp ý #${id} đã bị xóa.`, "success");
-            _taiDanhSachGopY();
+            _gopYAllData = _gopYAllData.filter(g => g.id !== id);
+            window._gopYApplyFilter();
         } catch (e) {
             window.hienToast("Xóa thất bại", "Không thể xóa. Kiểm tra kết nối mạng và thử lại.", "danger");
         }
     };
 
-    /* Cập nhật bulk bar: đếm số dòng đang tick */
     window._capNhatBulkBar = function () {
         const ticked = document.querySelectorAll(".gy-chk:checked");
         const bar    = document.getElementById("gopYBulkBar");
@@ -923,24 +1016,21 @@
         const chkAll = document.getElementById("gopYChkAll");
         const total  = document.querySelectorAll(".gy-chk").length;
         if (bar)    bar.style.display    = ticked.length > 0 ? "flex" : "none";
-        if (cnt)    cnt.textContent       = `Đã chọn ${ticked.length} / ${total} dòng`;
-        if (chkAll) chkAll.indeterminate  = ticked.length > 0 && ticked.length < total;
-        if (chkAll) chkAll.checked        = ticked.length === total && total > 0;
+        if (cnt)    cnt.textContent      = `Đã chọn ${ticked.length} / ${total} dòng trang này`;
+        if (chkAll) chkAll.indeterminate = ticked.length > 0 && ticked.length < total;
+        if (chkAll) chkAll.checked       = ticked.length === total && total > 0;
     };
 
-    /* Tick / bỏ tick toàn bộ */
     window._gopYChkAllToggle = function (chkAll) {
         document.querySelectorAll(".gy-chk").forEach(c => { c.checked = chkAll.checked; });
         window._capNhatBulkBar();
     };
 
-    /* Bỏ chọn hết */
     window._gopYBoChonHet = function () {
         document.querySelectorAll(".gy-chk").forEach(c => { c.checked = false; });
         window._capNhatBulkBar();
     };
 
-    /* Xóa nhiều — xóa song song các ID đang tick */
     window.xoaNhieuGopY = async function () {
         const ticked = [...document.querySelectorAll(".gy-chk:checked")];
         if (ticked.length === 0) return;
@@ -949,10 +1039,11 @@
         try {
             await Promise.all(ids.map(id => window.dbEngine.xoa("gop_y_he_thong", { id })));
             window.hienToast("Đã xóa", `Xóa thành công ${ids.length} góp ý.`, "success");
-            _taiDanhSachGopY();
+            _gopYAllData = _gopYAllData.filter(g => !ids.includes(g.id));
+            window._gopYApplyFilter();
         } catch (e) {
             window.hienToast("Xóa không hoàn toàn", "Một số góp ý không thể xóa — kiểm tra kết nối.", "danger");
-            _taiDanhSachGopY();
+            window._taiDanhSachGopY();
         }
     };
 

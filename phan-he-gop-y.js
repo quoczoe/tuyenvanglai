@@ -11,12 +11,42 @@
 
 (function () {
     // ── Trạng thái module ──
-    let _cmsData     = null;   // Cache CMS config (chỉ fetch 1 lần)
-    let _tgToken     = "";
-    let _tgChatId    = "";
+    let _cmsData      = null;  // Cache CMS config (chỉ fetch 1 lần)
+    let _tgToken      = "";
+    let _tgChatId     = "";
     let _selectedStar = 0;     // Sao đang được chọn (1–5)
     let _selectedChip = "";    // Chip category đang active
     let _dangGui      = false; // Prevent double-submit
+
+    // ── Rate limiting: tối đa 5 góp ý/ngày, cách nhau ít nhất 5 phút ──
+    const _RL_MAX_DAY   = 5;
+    const _RL_COOLDOWN  = 5 * 60 * 1000; // 5 phút (ms)
+
+    function _docLichSuGopY() {
+        try { return JSON.parse(localStorage.getItem("tvl_gopy_ts") || "[]"); }
+        catch { return []; }
+    }
+    function _kiemTraRateLimit() {
+        const now    = Date.now();
+        const dayAgo = now - 24 * 60 * 60 * 1000;
+        const hist   = _docLichSuGopY().filter(ts => ts > dayAgo);
+        const last   = hist[hist.length - 1];
+        if (last && now - last < _RL_COOLDOWN) {
+            const waitMin = Math.ceil((_RL_COOLDOWN - (now - last)) / 60000);
+            return { ok: false, msg: `⏳ Vui lòng đợi ${waitMin} phút trước khi gửi tiếp.` };
+        }
+        if (hist.length >= _RL_MAX_DAY) {
+            return { ok: false, msg: `📋 Bạn đã gửi ${_RL_MAX_DAY} góp ý hôm nay. Vui lòng thử lại vào ngày mai.` };
+        }
+        return { ok: true };
+    }
+    function _ghiNhanGopY() {
+        const now    = Date.now();
+        const dayAgo = now - 24 * 60 * 60 * 1000;
+        const hist   = _docLichSuGopY().filter(ts => ts > dayAgo);
+        hist.push(now);
+        localStorage.setItem("tvl_gopy_ts", JSON.stringify(hist));
+    }
 
     /* ═══════════════════════════════════════════════════
      * MỞ MODAL
@@ -165,6 +195,13 @@
     window.guiGopY = async function () {
         if (_dangGui) return;
 
+        // Kiểm tra rate limit trước khi validate
+        const rl = _kiemTraRateLimit();
+        if (!rl.ok) {
+            _hienThongBaoUho("warning", rl.msg);
+            return;
+        }
+
         // Validate sao
         if (_selectedStar < 1) {
             const starRow = document.getElementById("uhoStarRow");
@@ -198,6 +235,9 @@
                 loai_gop_y: loai,
                 noi_dung:   noiDung || null
             }, null);
+
+            // Ghi nhận lần gửi vào lịch sử rate limit
+            _ghiNhanGopY();
 
             // Lưu đánh giá sao vào localStorage (chỉ lần đầu chưa có)
             if (!_layDanhGiaDaLuu()) {
