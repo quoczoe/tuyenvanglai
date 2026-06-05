@@ -435,15 +435,20 @@
                     </div>
                 </td>
                 <td style="font-weight:600;white-space:nowrap;">${tenSan}</td>
-                <td style="font-size:0.8rem;color:#60a5fa;white-space:nowrap;">${nguoiDang}</td>
+                <td style="font-size:0.8rem;white-space:nowrap;">
+                    ${c.sdt_nguoi_tao
+                        ? `<a href="#" onclick="event.preventDefault();window.moModalQuanLyThanhVien('${_escHtml(c.sdt_nguoi_tao)}')"
+                               style="color:#60a5fa;text-decoration:none;" title="Ấn để quản lý tài khoản này">${nguoiDang}</a>`
+                        : `<span style="color:#64748b;">${nguoiDang}</span>`}
+                </td>
                 <td style="font-size:0.78rem;color:#9ca3af;white-space:nowrap;">${khuVuc}</td>
                 <td style="white-space:nowrap;font-size:0.8rem;">${ngay}</td>
                 <td style="font-size:0.78rem;color:#94a3b8;white-space:nowrap;">${gioBD}–${gioKT}</td>
                 <td><span style="background:rgba(99,102,241,0.15);color:#a78bfa;padding:2px 8px;border-radius:10px;font-size:0.8rem;font-weight:700;">${soKhach}</span></td>
                 <td>${trangThai}</td>
-                <td style="font-size:0.78rem;text-align:right;">
-                    <span style="color:#00ff88;white-space:nowrap;">${_vnd(c.gia_nam)}</span><br>
-                    <span style="color:#f472b6;white-space:nowrap;">${_vnd(c.gia_nu)}</span>
+                <td style="font-size:0.75rem;text-align:left;">
+                    <div style="white-space:nowrap;">Nam: <span style="color:#00ff88;font-weight:600;">${_vnd(c.gia_nam)}</span></div>
+                    <div style="white-space:nowrap;">Nữ: <span style="color:#f472b6;font-weight:600;">${_vnd(c.gia_nu)}</span></div>
                 </td>
             </tr>`;
         }).join("");
@@ -523,15 +528,20 @@
                 return;
             }
 
-            const tenHost = _keyHostMap[c.ma_key_host] || c.ma_key_host || "—";
+            // Người đăng: ưu tiên sdt_nguoi_tao → tìm tên từ _userMapCaDau
+            const nguoiDangSdt = c.sdt_nguoi_tao || c.ma_key_host || "";
+            const nguoiDangTen = _userMapCaDau[nguoiDangSdt] || nguoiDangSdt || "—";
 
             body.innerHTML = `
-                <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:8px;margin-bottom:4px;">
-                    <i class="fa-solid fa-circle-info" style="color:#60a5fa;"></i>
+                <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);border-radius:8px;margin-bottom:4px;cursor:pointer;"
+                     onclick="${nguoiDangSdt ? `window.moModalQuanLyThanhVien('${_escHtml(nguoiDangSdt)}')` : ''}">
+                    <i class="fa-solid fa-user" style="color:#60a5fa;"></i>
                     <div>
-                        <div style="font-size:0.78rem;color:#64748b;">Host</div>
-                        <div style="font-weight:700;color:#60a5fa;">${_escHtml(tenHost)}</div>
+                        <div style="font-size:0.78rem;color:#64748b;">Người Đăng (ấn để quản lý)</div>
+                        <div style="font-weight:700;color:#60a5fa;">${_escHtml(nguoiDangTen)}</div>
+                        <div style="font-size:0.72rem;color:#64748b;font-family:monospace;">${_escHtml(nguoiDangSdt)}</div>
                     </div>
+                    <i class="fa-solid fa-arrow-right" style="color:#60a5fa;margin-left:auto;font-size:0.8rem;"></i>
                 </div>
 
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -891,16 +901,17 @@
                 const sdt = u.sdt_khach || "";
                 if (!sdt) return;
                 map.set(sdt, {
-                    ten:        u.ten_khach || "Ẩn danh",
+                    ten:            u.ten_khach || "Ẩn danh",
                     sdt,
-                    ngayTG:     u.created_at || u.ngay_tham_gia || null,
-                    vai_tro:    u.vai_tro || "guest",
-                    isActive:   u.is_active !== false,
-                    diemUyTin:  u.diem_uy_tin ?? 100,
-                    deviceFp:   u.device_fingerprint || null,
-                    caDang:     0,  // số ca đã tạo/đăng
-                    caTG:       0,  // số ca đã tham gia (chốt + Đã tham gia)
-                    tongChi:    0
+                    ngayTG:         u.created_at || u.ngay_tham_gia || null,
+                    vai_tro:        u.vai_tro || "guest",
+                    isActive:       u.is_active !== false,
+                    diemUyTin:      u.diem_uy_tin ?? 100,
+                    deviceFp:       u.device_fingerprint || null,
+                    caDang:         0,
+                    caTG:           0,
+                    tongChi:        0,
+                    _fromNguoiDung: true  // flag: có record trong bảng nguoi_dung
                 });
             });
 
@@ -1071,8 +1082,9 @@
         _renderKhachVoiPhanTrang();
     };
 
-    // Re-export rõ ràng để HTML onchange gọi được
-    window.locKhachAdmin = function() { _apDungSortFilter(); };
+    // Re-export rõ ràng để HTML gọi được
+    window.locKhachAdmin       = function() { _apDungSortFilter(); };
+    window.adminLamMoiThanhVien = function() { _pageNumTK=1; _taiDanhSachKhach(); };
 
     // Gắn event listener sau khi tab guests được hiện (gọi từ _taiDanhSachKhach)
     function _ganEventListenerFilter() {
@@ -1330,24 +1342,45 @@
     window.xoaNhieuTaiKhoanTest = async function() {
         const checked = document.querySelectorAll("#adminGuestsBody .tv-chk:checked");
         if (!checked.length) { window.hienToast("Thông báo", "Chưa chọn tài khoản nào.", "warning"); return; }
-        const sdts = Array.from(checked).map(c => c.dataset.sdt).filter(s => s && s !== ADMIN_GOC_SDT);
-        if (!sdts.length) { window.hienToast("Không thể xóa", "Các tài khoản đã chọn đều được bảo vệ.", "warning"); return; }
-        if (!confirm(`Xác nhận xóa vĩnh viễn ${sdts.length} tài khoản đã chọn?\nHành động này KHÔNG THỂ hoàn tác.`)) return;
 
-        let ok = 0, fail = 0;
+        // Chỉ lấy SĐT của tài khoản tồn tại trong nguoi_dung (xuất hiện trong _allKhachData từ nguoi_dung)
+        const sdtsTuNguoiDung = new Set(_allKhachData.filter(g => g._fromNguoiDung).map(g => g.sdt));
+        const sdts = Array.from(checked)
+            .map(c => c.dataset.sdt)
+            .filter(s => s && s !== ADMIN_GOC_SDT && sdtsTuNguoiDung.has(s));
+
+        const toanBoChon = Array.from(checked).map(c => c.dataset.sdt).filter(s => s && s !== ADMIN_GOC_SDT);
+        const skipped    = toanBoChon.length - sdts.length;
+
+        if (!sdts.length) {
+            window.hienToast("Không thể xóa", skipped > 0
+                ? `${skipped} tài khoản chỉ tồn tại trong lịch sử đặt slot, không có trong bảng người dùng.`
+                : "Các tài khoản đã chọn đều được bảo vệ.", "warning");
+            return;
+        }
+
+        if (!confirm(`Xác nhận xóa vĩnh viễn ${sdts.length} tài khoản?\n${skipped > 0 ? `(${skipped} tài khoản slot-only sẽ bỏ qua)\n` : ""}Hành động này KHÔNG THỂ hoàn tác.`)) return;
+
+        // Xóa tuần tự — chờ từng request xong trước khi sang cái tiếp theo
+        let ok = 0, fail = 0, errMsg = "";
         for (const sdt of sdts) {
             try {
                 await window.dbEngine.xoa("nguoi_dung", { sdt_khach: sdt });
                 ok++;
-            } catch { fail++; }
+            } catch(e) {
+                fail++;
+                if (!errMsg) errMsg = e?.message || "Lỗi không rõ";
+            }
         }
+
         window.hienToast(
             ok > 0 ? "Đã Xóa ✅" : "Thất Bại ❌",
-            `Đã xóa ${ok} tài khoản.${fail > 0 ? ` ${fail} tài khoản xóa thất bại.` : ""}`,
+            `Đã xóa ${ok} tài khoản.${fail > 0 ? ` ${fail} thất bại: ${errMsg.slice(0,60)}` : ""}`,
             ok > 0 ? "success" : "danger"
         );
         window._tvBoChonHet();
-        _taiDanhSachKhach();
+        // Reload sau 300ms để đảm bảo DB đã xử lý xong
+        setTimeout(() => _taiDanhSachKhach(), 300);
     };
 
     /* ═══════════════════════════════════════════════════

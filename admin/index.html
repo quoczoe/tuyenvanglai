@@ -258,12 +258,14 @@
         }
 
         /* ══ TABS ══ */
-        /* Sticky wrapper: giữ metrics + tab nav cố định ở đầu khi cuộn */
+        /* Sticky wrapper: giữ metrics + tab nav cố định — top: 60px = chiều cao header */
         .ad-sticky-top {
-            position: sticky; top: 0; z-index: 100;
+            position: sticky;
+            top: 60px;   /* đúng bằng height của .ad-header */
+            z-index: 100;
             background: var(--bg-base);
-            padding-top: 1rem;
-            margin-top: -1rem;
+            padding-bottom: 2px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25); /* tách biệt với nội dung phía dưới */
         }
         .ad-tab-nav {
             display: flex; gap: 6px; flex-wrap: wrap;
@@ -357,23 +359,37 @@
          */
         .table-responsive {
             width: 100%;
+            max-width: 100%;
             overflow-x: auto;
-            -webkit-overflow-scrolling: touch; /* Cuộn mượt trên iOS */
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             border-radius: var(--radius-md);
+            box-sizing: border-box;
         }
 
         /* ══ TABLE STYLES ══ */
         .ad-table {
             width: 100%; border-collapse: collapse; min-width: 860px;
+            table-layout: fixed; /* cố định độ rộng cột, không co giãn theo nội dung */
         }
         .ad-table thead th {
             padding: 10px 12px; text-align: center; font-size: 0.72rem;
             font-weight: 700; color: var(--text-muted); text-transform: uppercase;
             letter-spacing: 0.05em; background: var(--bg-card2);
             border: 1px solid rgba(30,58,95,0.8); white-space: nowrap;
-            position: sticky; top: 0; z-index: 5;
+            position: sticky; top: 0; z-index: 10; /* sticky trong scrollable container */
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        .ad-table tbody {
+            /* min-height = 10 dòng × 40px/dòng = 400px; dùng pseudo-element để giữ chiều cao */
+        }
+        /* Hàng placeholder giúp tbody luôn cao ít nhất 10 dòng */
+        .ad-table tbody:empty::after,
+        .ad-table-min-rows {
+            content: ''; display: block; height: 360px; /* ~9 dòng trống khi list ngắn */
         }
         .ad-table tbody tr {
+            height: 42px; /* chiều cao cố định mỗi dòng */
             transition: background 0.15s;
         }
         .ad-table tbody tr:nth-child(odd)  { background: var(--bg-card2); }
@@ -383,8 +399,13 @@
             padding: 8px 12px; font-size: 0.82rem; color: var(--text-main);
             vertical-align: middle; text-align: center;
             border: 1px solid rgba(30,58,95,0.55);
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
         .ad-table td.mono { font-family: monospace; font-size: 0.8rem; color: var(--accent-green); }
+        /* Wrapper giữ bảng không nhảy khi số dòng thay đổi */
+        .ad-table-wrap {
+            min-height: 460px; /* 10 dòng × 42px + thead 44px + padding */
+        }
 
         /* ══ STATUS BADGES ══ */
         .ad-badge-running {
@@ -1035,7 +1056,7 @@
                     <button class="ad-btn-secondary" onclick="window.moModalTaoTaiKhoanTest()">
                         <i class="fa-solid fa-flask"></i> Tạo TK Test
                     </button>
-                    <button class="ad-btn-ghost" onclick="_taiDanhSachKhach()">
+                    <button class="ad-btn-ghost" onclick="window.adminLamMoiThanhVien()" title="Tải lại danh sách thành viên">
                         <i class="fa-solid fa-rotate-right"></i>
                     </button>
                 </div>
@@ -1060,7 +1081,8 @@
                 </button>
             </div>
 
-            <!-- Bảng thành viên -->
+            <!-- Bảng thành viên — min-height cố định 10 dòng -->
+            <div class="ad-table-wrap">
             <div class="table-responsive">
                 <table class="ad-table" style="min-width:1250px;">
                     <thead>
@@ -1120,6 +1142,8 @@
                     </tbody>
                 </table>
             </div>
+
+            </div><!-- /ad-table-wrap -->
 
             <!-- Thanh phân trang -->
             <div id="tvPaginationBar"
