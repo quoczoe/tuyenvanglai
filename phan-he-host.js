@@ -1433,6 +1433,8 @@
     let _caDauSortDir  = "desc";
     let _caDauFilterSt = "all"; // all | running | expired | closed
     let _caDauSearch   = "";
+    let _caDauPage     = 1;
+    let _caDauPerPage  = 10;
 
     window.loadLichSuCaDauHost = _taiLichSuCaDau;
 
@@ -1445,7 +1447,8 @@
     }
 
     function _caDauStatus(slot) {
-        if (slot.da_chot_ca) return "closed";
+        if (slot.da_chot_ca)   return "closed";
+        if (slot.is_tam_khoa)  return "tam_khoa";
         if (_isExpiredCa(slot)) return "expired";
         return "running";
     }
@@ -1464,13 +1467,31 @@
         });
     }
 
-    // Render bảng từ dữ liệu đã filter+sort
+    // Cập nhật UI phân trang (nút prev/next, page info)
+    function _caDauUpdatePagination(totalFiltered) {
+        const totalPages = Math.max(1, Math.ceil(totalFiltered / _caDauPerPage));
+        if (_caDauPage > totalPages) _caDauPage = totalPages;
+        if (_caDauPage < 1)         _caDauPage = 1;
+        const pi   = document.getElementById("cdd-page-info");
+        const prev = document.getElementById("cdd-prev");
+        const next = document.getElementById("cdd-next");
+        if (pi)   pi.textContent = `${_caDauPage} / ${totalPages}`;
+        if (prev) prev.disabled = _caDauPage <= 1;
+        if (next) next.disabled = _caDauPage >= totalPages;
+        const info = document.getElementById("cdd-info");
+        if (info) {
+            const start = ((_caDauPage - 1) * _caDauPerPage) + 1;
+            const end   = Math.min(_caDauPage * _caDauPerPage, totalFiltered);
+            info.textContent = totalFiltered > 0
+                ? `Hiển thị ${start}–${end} / ${totalFiltered} ca đấu`
+                : "Không có ca đấu nào phù hợp.";
+        }
+    }
+
+    // Render bảng từ dữ liệu đã filter+sort+paginate
     function _caDauRenderTable(list) {
         const tbody = document.getElementById("hostSlotsBody");
         if (!tbody) return;
-
-        const info = document.getElementById("cdd-info");
-        if (info) info.textContent = `Hiển thị ${list.length} / ${_caDauRawData.length} ca đấu`;
 
         if (list.length === 0) {
             tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#64748b;padding:24px;">Không có ca đấu nào phù hợp.</td></tr>`;
@@ -1479,6 +1500,8 @@
 
         tbody.innerHTML = "";
         list.forEach((slot, idx) => {
+            // idx = vị trí trong trang hiện tại, STT = toàn cục
+            const globalIdx = (_caDauPage - 1) * _caDauPerPage + idx + 1;
             const guests    = _caDauSlotMap[slot.id] || [];
             const daDen     = guests.filter(g => g.trang_thai_di_danh === "Đã tham gia").length;
             const tongKhach = guests.length;
@@ -1486,73 +1509,110 @@
             const isExpired = _isExpiredCa(slot);
             const st        = _caDauStatus(slot);
 
-            // Giá: hiển thị Nam / Nữ hoặc chỉ bên có giá > 0
+            // Giá: .price-container căn giữa khối trong cột; label+value thẳng hàng dọc
             const giaNam = slot.gia_nam || 0;
             const giaNu  = slot.gia_nu  || 0;
-            const giaHtml = (giaNam > 0 && giaNu > 0)
-                ? `<div style="font-size:0.8rem;font-weight:700;color:#00ff88;white-space:nowrap;">Nam: ${_formatVND(giaNam)}</div><div style="font-size:0.8rem;font-weight:700;color:#f472b6;white-space:nowrap;">Nữ: ${_formatVND(giaNu)}</div>`
-                : (giaNam > 0
-                    ? `<div style="font-size:0.8rem;font-weight:700;color:#00ff88;white-space:nowrap;">Nam: ${_formatVND(giaNam)}</div>`
-                    : `<div style="font-size:0.8rem;font-weight:700;color:#f472b6;white-space:nowrap;">Nữ: ${_formatVND(giaNu)}</div>`);
+            const giaHtml = `<div class="price-container">${
+                giaNam > 0 ? `<div class="price-row"><span class="price-label">Nam:</span><span class="price-value" style="color:#00ff88;">${_formatVND(giaNam)}</span></div>` : ""
+            }${
+                giaNu  > 0 ? `<div class="price-row"><span class="price-label">Nữ:</span><span class="price-value" style="color:#f472b6;">${_formatVND(giaNu)}</span></div>`  : ""
+            }${
+                giaNam === 0 && giaNu === 0 ? `<span style="color:#64748b;font-size:0.75rem;">--</span>` : ""
+            }</div>`;
 
-            // Ngày+Giờ gộp 1 cột
+            // Ngày+Giờ gộp 1 cột — căn giữa
             const ngayGioHtml = slot.ngay_danh
-                ? `<div style="font-weight:700;font-size:0.82rem;color:#e2e8f0;white-space:nowrap;">${_formatDate(slot.ngay_danh)}</div>
-                   <div style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;">${(slot.gio_bat_dau||"--").slice(0,5)} → ${(slot.gio_ket_thuc||"--").slice(0,5)}</div>`
-                : `<div style="color:#64748b;">--</div>`;
+                ? `<div style="font-weight:700;font-size:0.82rem;color:#e2e8f0;white-space:nowrap;text-align:center;">${_formatDate(slot.ngay_danh)}</div>
+                   <div style="font-size:0.75rem;color:#94a3b8;white-space:nowrap;text-align:center;">${(slot.gio_bat_dau||"--").slice(0,5)} → ${(slot.gio_ket_thuc||"--").slice(0,5)}</div>`
+                : `<div style="color:#64748b;text-align:center;">--</div>`;
 
             // Màu hàng xen kẽ
             const rowBg = idx % 2 === 0
                 ? "rgba(15,30,53,1)"
                 : "rgba(26,40,68,0.7)";
 
-            // Status badge
-            const statusBadge = daChot
-                ? `<span class="status-badge status-closed"><i class="fa-solid fa-lock"></i> Đã chốt</span>`
-                : (isExpired
-                    ? `<span class="status-badge" style="background:rgba(251,146,60,0.12);color:#fb923c;border:1px solid rgba(251,146,60,0.3);padding:4px 8px;border-radius:6px;font-size:0.72rem;white-space:nowrap;"><i class="fa-solid fa-clock"></i> Hết giờ</span>`
-                    : `<span class="status-badge status-active"><i class="fa-solid fa-circle" style="font-size:0.5rem;"></i> Đang mở</span>`);
+            const isTamKhoa = !!slot.is_tam_khoa;
 
-            const tdBorder = "border-right:1px solid rgba(255,255,255,0.07);";
+            // Status badge — bao gồm TẠM KHÓA
+            let statusBadge;
+            if (daChot) {
+                statusBadge = `<span class="status-badge status-closed"><i class="fa-solid fa-lock"></i> Đã chốt</span>`;
+            } else if (isTamKhoa) {
+                statusBadge = `<span class="status-badge" style="background:rgba(234,88,12,0.12);color:#ea580c;border:1px solid rgba(234,88,12,0.3);padding:4px 8px;border-radius:6px;font-size:0.72rem;white-space:nowrap;"><i class="fa-solid fa-ban"></i> Tạm khóa</span>`;
+            } else if (isExpired) {
+                statusBadge = `<span class="status-badge" style="background:rgba(251,146,60,0.12);color:#fb923c;border:1px solid rgba(251,146,60,0.3);padding:4px 8px;border-radius:6px;font-size:0.72rem;white-space:nowrap;"><i class="fa-solid fa-clock"></i> Hết giờ</span>`;
+            } else {
+                statusBadge = `<span class="status-badge status-active"><i class="fa-solid fa-circle" style="font-size:0.5rem;"></i> Đang mở</span>`;
+            }
+
+            const tenSanEsc = (slot.ten_san||"").replace(/'/g,"\\x27");
+            const tdB  = "border-right:1px solid rgba(255,255,255,0.07);";
             const tr = document.createElement("tr");
             tr.style.background = rowBg;
             tr.dataset.status = st;
             tr.innerHTML = `
-                <td style="padding:8px 6px;text-align:center;${tdBorder}font-size:0.78rem;color:#64748b;">${idx + 1}</td>
-                <td style="padding:8px 10px;${tdBorder}">${ngayGioHtml}</td>
-                <td style="padding:8px 10px;${tdBorder}">
+                <td style="padding:8px 6px;text-align:center;${tdB}font-size:0.78rem;color:#64748b;">${globalIdx}</td>
+                <td style="padding:8px 10px;text-align:center;${tdB}">${ngayGioHtml}</td>
+                <td style="padding:8px 10px;text-align:left;${tdB}">
                     <div style="font-weight:600;font-size:0.82rem;color:#e2e8f0;">${slot.ten_san || "--"}</div>
-                    <div style="font-size:0.7rem;color:#64748b;">${slot.quan_huyen || ""}${slot.tinh_thanh ? ", " + slot.tinh_thanh : ""}</div>
-                    <div style="font-size:0.68rem;color:#475569;margin-top:1px;">${_hienThiGioiTinh(slot.gioi_tinh_can)} · ${_hienThiTrinhDo(slot)}</div>
+                    <div style="font-size:0.75rem;color:#94a3b8;margin-top:1px;">${slot.quan_huyen || ""}${slot.tinh_thanh ? ", " + slot.tinh_thanh : ""}</div>
+                    <div style="font-size:0.75rem;color:#7dd3fc;margin-top:2px;">${_hienThiGioiTinh(slot.gioi_tinh_can)} · ${_hienThiTrinhDo(slot)}</div>
                 </td>
-                <td style="padding:8px 10px;${tdBorder}">
-                    <div style="font-size:0.75rem;color:#e2e8f0;margin-bottom:4px;"><i class="fa-solid fa-users" style="color:#60a5fa;font-size:0.68rem;"></i> ${tongKhach}${slot.tong_slot_can > 0 ? " / " + slot.tong_slot_can : ""} đặt · ${daDen} tham gia</div>
-                    <button class="btn-mini btn-mini-cyan" style="width:100%;justify-content:center;font-size:0.72rem;"
-                        onclick="window.openGuestListModal('${slot.id}','${(slot.ten_san||"").replace(/'/g,"\\x27")}')">
-                        <i class="fa-solid fa-list-check"></i> DS Khách
+                <td style="padding:8px 8px;text-align:center;${tdB}">
+                    <div style="font-size:0.82rem;font-weight:700;color:#60a5fa;">${tongKhach}${slot.tong_slot_can > 0 ? `<span style='color:#64748b;font-weight:400;'>/${slot.tong_slot_can}</span>` : ""}</div>
+                    <div style="font-size:0.72rem;color:#94a3b8;margin-bottom:4px;">${daDen} tham gia</div>
+                    <button class="btn-mini btn-mini-cyan"
+                        style="width:100%;justify-content:center;font-size:0.72rem;padding:4px 6px;"
+                        onclick="window.openGuestListModal('${slot.id}','${tenSanEsc}')">
+                        <i class="fa-solid fa-users"></i> DS Khách
                     </button>
                 </td>
-                <td style="padding:8px 10px;${tdBorder}">${giaHtml}</td>
-                <td style="padding:8px 10px;${tdBorder}">${statusBadge}</td>
-                <td style="padding:8px 8px;">
-                    <div style="display:flex;flex-direction:column;gap:4px;">
+                <td style="padding:8px 10px;text-align:left;${tdB}">${giaHtml}</td>
+                <td style="padding:8px 8px;text-align:center;${tdB}">${statusBadge}</td>
+                <td style="padding:6px 8px;text-align:center;">
+                    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;">
                         ${!daChot ? `
-                        <button class="btn-mini btn-mini-gold" style="width:100%;justify-content:center;font-size:0.72rem;" onclick="window._moModalSuaCa('${slot.id}')">
+                        <button class="btn-mini btn-mini-gold"
+                            style="justify-content:center;white-space:nowrap;font-size:0.71rem;padding:5px 6px;"
+                            onclick="window._moModalSuaCa('${slot.id}')">
                             <i class="fa-solid fa-pen"></i> Sửa
                         </button>
-                        <button class="btn-mini btn-mini-green" style="width:100%;justify-content:center;font-size:0.72rem;" onclick="window.chotCaDau('${slot.id}')">
+                        <button class="btn-mini btn-mini-green"
+                            style="justify-content:center;white-space:nowrap;font-size:0.71rem;padding:5px 6px;"
+                            onclick="window.chotCaDau('${slot.id}')">
                             <i class="fa-solid fa-flag-checkered"></i> Chốt Ca
+                        </button>
+                        ${isTamKhoa ? `
+                        <button class="btn-mini"
+                            style="justify-content:center;white-space:nowrap;font-size:0.71rem;padding:5px 6px;background:rgba(34,197,94,0.1);color:#4ade80;border:1px solid rgba(34,197,94,0.3);"
+                            onclick="window.moLaiCaDau('${slot.id}')">
+                            <i class="fa-solid fa-lock-open"></i> Mở Lại
                         </button>` : `
-                        <button class="btn-mini" style="width:100%;justify-content:center;font-size:0.72rem;background:rgba(34,211,238,0.1);color:#22d3ee;border:1px solid rgba(34,211,238,0.3);"
+                        <button class="btn-mini"
+                            style="justify-content:center;white-space:nowrap;font-size:0.71rem;padding:5px 6px;background:rgba(234,88,12,0.1);color:#ea580c;border:1px solid rgba(234,88,12,0.3);"
+                            onclick="window.tamKhoaCaDau('${slot.id}')">
+                            <i class="fa-solid fa-ban"></i> Tạm Khóa
+                        </button>`}
+                        <button class="btn-mini btn-mini-red"
+                            style="justify-content:center;white-space:nowrap;font-size:0.71rem;padding:5px 6px;"
+                            onclick="window.xoaCaDau('${slot.id}')">
+                            <i class="fa-solid fa-trash"></i> Xóa
+                        </button>` : `
+                        <button class="btn-mini"
+                            style="justify-content:center;white-space:nowrap;font-size:0.71rem;padding:5px 6px;background:rgba(34,211,238,0.1);color:#22d3ee;border:1px solid rgba(34,211,238,0.3);"
                             onclick="window.xemChiTietCaDau('${slot.id}')">
                             <i class="fa-solid fa-eye"></i> Chi tiết
                         </button>
-                        <button class="btn-mini btn-mini-cyan" style="width:100%;justify-content:center;font-size:0.72rem;" onclick="window.moModalDanhGiaCa('${slot.id}','${(slot.ten_san||"").replace(/'/g,"\\x27")}')">
+                        <button class="btn-mini btn-mini-cyan"
+                            style="justify-content:center;white-space:nowrap;font-size:0.71rem;padding:5px 6px;"
+                            onclick="window.moModalDanhGiaCa('${slot.id}','${tenSanEsc}')">
                             <i class="fa-solid fa-star"></i> Đánh giá
-                        </button>`}
-                        <button class="btn-mini btn-mini-red" style="width:100%;justify-content:center;font-size:0.72rem;" onclick="window.xoaCaDau('${slot.id}')" ${daChot ? "disabled title='Ca đã chốt, không xóa được'" : ""}>
+                        </button>
+                        <button class="btn-mini btn-mini-red" disabled
+                            style="justify-content:center;white-space:nowrap;font-size:0.71rem;padding:5px 6px;">
                             <i class="fa-solid fa-trash"></i> Xóa
                         </button>
+                        <span></span>`}
                     </div>
                 </td>`;
             tbody.appendChild(tr);
@@ -1609,8 +1669,14 @@
             return 0;
         });
 
+        // Phân trang: slice list theo trang hiện tại
+        const totalFiltered = list.length;
+        const start = (_caDauPage - 1) * _caDauPerPage;
+        const pageList = list.slice(start, start + _caDauPerPage);
+
         _caDauUpdateSortIcons();
-        _caDauRenderTable(list);
+        _caDauUpdatePagination(totalFiltered);
+        _caDauRenderTable(pageList);
     }
 
     // Hàm public: sort theo cột
@@ -1621,18 +1687,34 @@
             _caDauSortCol = col;
             _caDauSortDir = col === "ngay_danh" ? "desc" : "asc";
         }
+        _caDauPage = 1; // reset về trang 1 khi sort
         _caDauApply();
     };
 
     // Hàm public: filter trạng thái
     window._caDauLocTrangThai = function (val) {
         _caDauFilterSt = val;
+        _caDauPage = 1; // reset về trang 1 khi filter
         _caDauApply();
     };
 
     // Hàm public: tìm kiếm
     window._caDauTimKiem = function (val) {
         _caDauSearch = val;
+        _caDauPage = 1; // reset về trang 1 khi search
+        _caDauApply();
+    };
+
+    // Hàm public: đổi số dòng/trang
+    window._caDauSetPerPage = function (val) {
+        _caDauPerPage = Number(val) || 10;
+        _caDauPage = 1;
+        _caDauApply();
+    };
+
+    // Hàm public: chuyển trang (delta = +1 hoặc -1)
+    window._caDauChangePage = function (delta) {
+        _caDauPage += delta;
         _caDauApply();
     };
 
@@ -2047,6 +2129,41 @@
     };
 
     /* ═══════════════════════════════════════════════════
+     * 13B. TẠM KHÓA / MỞ LẠI CA ĐẤU
+     *   is_tam_khoa=true → không nhận slot mới, vẫn hiển thị ngoài trang chủ
+     *   Cần chạy SQL: ALTER TABLE ca_dau ADD COLUMN IF NOT EXISTS is_tam_khoa BOOLEAN DEFAULT FALSE;
+     * ═══════════════════════════════════════════════════ */
+    window.tamKhoaCaDau = async function (id) {
+        if (!await window.xacNhanModal(
+            "Tạm khóa ca đấu này?\nKhách đã đăng ký vẫn giữ slot, nhưng không ai đăng ký thêm được.\nBạn có thể mở lại bất cứ lúc nào.",
+            '🔒')) return;
+        try {
+            await window.dbEngine.ghi("ca_dau", { is_tam_khoa: true }, { id });
+            // Cập nhật local state
+            const slot = _caDauRawData.find(s => s.id === id);
+            if (slot) slot.is_tam_khoa = true;
+            _caDauApply();
+            window.hienToast("Đã tạm khóa 🔒", "Ca đấu không nhận thêm đăng ký mới.", "info");
+        } catch (e) {
+            console.error("Lỗi tạm khóa:", e);
+            window.hienToast("Lỗi", "Không thể tạm khóa. Thử lại sau.", "danger");
+        }
+    };
+
+    window.moLaiCaDau = async function (id) {
+        try {
+            await window.dbEngine.ghi("ca_dau", { is_tam_khoa: false }, { id });
+            const slot = _caDauRawData.find(s => s.id === id);
+            if (slot) slot.is_tam_khoa = false;
+            _caDauApply();
+            window.hienToast("Đã mở lại ✅", "Ca đấu đang nhận đăng ký bình thường.", "success");
+        } catch (e) {
+            console.error("Lỗi mở lại ca:", e);
+            window.hienToast("Lỗi", "Không thể mở lại. Thử lại sau.", "danger");
+        }
+    };
+
+    /* ═══════════════════════════════════════════════════
      * 14. MODAL DANH SÁCH KHÁCH (đọc từ bảng dat_slot)
      * ═══════════════════════════════════════════════════ */
     window.moModalDanhSachKhach = async function (slotId) {
@@ -2212,9 +2329,15 @@
                 return;
             }
 
-            // Render bảng
+            // Render bảng — sort cố định theo created_at asc để thứ tự không đảo sau khi update trạng thái
+            const sortedGuests = [...guests].sort((a, b) =>
+                new Date(a.created_at || 0) - new Date(b.created_at || 0)
+            );
+            // Lưu daChotCa trên modal để doiTrangThaiDiDanh đọc mà không cần refetch
+            if (modal) modal.dataset.daChotCa = daChotCa ? "1" : "0";
+
             if (table) table.style.display = "table";
-            const rowsHTML = guests.map((g, idx) => {
+            const rowsHTML = sortedGuests.map((g, idx) => {
                 const trangThai  = g.trang_thai_di_danh || "Chờ đánh";
                 const isActive   = trangThai === "Đã tham gia";
                 const isKhachHuy = trangThai === "Khách hủy";   // khách tự hủy — host không can thiệp
@@ -2231,11 +2354,14 @@
                 else if (isKhachHuy)  badgeStyle = "background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);";
                 else                  badgeStyle = "background:rgba(100,116,139,0.2);color:#94a3b8;";
 
-                // Cột Xác nhận tham gia — select 3 trạng thái
-                // Chỉ disable khi "Khách hủy" (khách tự hủy qua portal, host không đổi được)
+                // Cột Trạng thái: select đổi được (trừ Khách hủy). Lưu đủ data để DOM update không cần refetch.
                 const selectHTML = isKhachHuy
                     ? `<span style="color:#475569;font-size:0.72rem;">—</span>`
                     : `<select data-guest-id="${g.id}" data-ca-id="${matchId}"
+                               data-sdt="${(g.sdt_khach||"").replace(/"/g,"")}"
+                               data-ten="${(g.ten_khach||"").replace(/"/g,"")}"
+                               data-da-thanh-toan="${g.da_thanh_toan ? "1" : "0"}"
+                               data-tien-bung="${g.tien_thu_bung || 0}"
                                onchange="window.doiTrangThaiDiDanh(this)"
                                style="background:rgba(15,30,53,0.9);border:1px solid #2d4a6e;color:#e2e8f0;
                                       border-radius:7px;padding:5px 7px;font-size:0.76rem;font-family:inherit;
@@ -2245,35 +2371,37 @@
                            <option value="Bùng kèo"    ${trangThai==="Bùng kèo"    ?"selected":""}>❌ Bùng kèo</option>
                        </select>`;
 
-                // Cột Thanh toán — theo từng trạng thái
+                // Cột Thanh toán — ràng buộc nghiêm ngặt theo trạng thái
                 let ttCellHTML;
                 if (isKhachHuy) {
-                    // Khách tự hủy — không thu được
+                    // Khách tự hủy — không thu được, khóa hoàn toàn
                     ttCellHTML = `<span style="color:#475569;font-size:0.72rem;">—</span>`;
                 } else if (isBung) {
-                    // Bùng kèo — cho nhập số tiền thu tùy chọn (0 = không thu được, >0 = thu tiền phạt)
+                    // Bùng kèo — input tiền phạt (0 = không thu, >0 = thu phạt)
                     const tienBung = g.tien_thu_bung || 0;
                     ttCellHTML = `<div style="display:flex;align-items:center;gap:4px;justify-content:center;">
                         <input type="number" data-slot-id="${g.id}" value="${tienBung}" min="0" step="1000"
                                onchange="window.capNhatTienBung(this)" placeholder="0"
-                               style="width:80px;background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.3);
+                               style="width:82px;background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.3);
                                       color:#fb923c;border-radius:6px;padding:4px 7px;font-size:0.75rem;
                                       text-align:right;font-family:inherit;outline:none;box-sizing:border-box;">
                         <span style="font-size:0.7rem;color:#64748b;flex-shrink:0;">đ</span>
                     </div>`;
-                } else {
-                    // Chờ đánh hoặc Đã tham gia — checkbox Đã trả / Chưa trả
+                } else if (isActive) {
+                    // Đã tham gia — cho phép đánh dấu thanh toán
                     const daTT = !!g.da_thanh_toan;
                     const ttBadgeStyle = daTT
                         ? "background:rgba(6,78,59,0.6);color:#34d399;border:1px solid rgba(5,46,37,0.5);"
                         : "background:rgba(51,65,85,0.5);color:#94a3b8;";
-                    const ttBadgeText = daTT ? "Đã trả" : "Chưa trả";
                     ttCellHTML = `<label style="display:flex;align-items:center;gap:6px;justify-content:center;cursor:pointer;">
                         <input type="checkbox" data-slot-id="${g.id}" ${daTT ? "checked" : ""}
                                onchange="window.capNhatThanhToan(this)"
                                style="width:14px;height:14px;accent-color:#34d399;cursor:pointer;">
-                        <span id="tt-badge-${g.id}" style="padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;${ttBadgeStyle}">${ttBadgeText}</span>
+                        <span id="tt-badge-${g.id}" style="padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;${ttBadgeStyle}">${daTT ? "Đã trả" : "Chưa trả"}</span>
                     </label>`;
+                } else {
+                    // Chờ đánh — chưa có hành động thanh toán
+                    ttCellHTML = `<span style="color:#475569;font-size:0.72rem;">—</span>`;
                 }
 
                 // Cột Thời gian hủy
@@ -2305,13 +2433,20 @@
                     }
                 }
 
-                // Lỗi 5: bỏ badge riêng, gộp vào cột Trạng Thái → chỉ hiện dropdown (hoặc badge nếu Khách hủy)
-                // Lỗi 4: tên khách không gạch chân, màu #e2e8f0, hover underline qua onmouseover/out
                 const rowBgOdd  = "rgba(15,30,53,0.95)";
                 const rowBgEven = "rgba(20,38,65,0.7)";
                 const bg = idx % 2 === 0 ? rowBgEven : rowBgOdd;
+                // td() helper: border-bottom + border-right + căn lề
                 const td = (content, extra="") =>
-                    `<td style="padding:9px 10px;border-bottom:1px solid rgba(30,58,95,0.4);${extra}">${content}</td>`;
+                    `<td style="padding:8px 9px;border-bottom:1px solid rgba(30,58,95,0.4);border-right:1px solid rgba(255,255,255,0.04);${extra}">${content}</td>`;
+                const tdLast = (content, extra="") =>
+                    `<td style="padding:8px 9px;border-bottom:1px solid rgba(30,58,95,0.4);${extra}">${content}</td>`;
+
+                // Trình độ từ dat_slot (nếu có field trinh_do)
+                const trinhDo = g.trinh_do || g.trinh_do_tu_danh_gia || "--";
+                const trinhDoHtml = trinhDo !== "--"
+                    ? `<span style="padding:2px 7px;border-radius:10px;font-size:0.72rem;background:rgba(96,165,250,0.12);color:#60a5fa;border:1px solid rgba(96,165,250,0.25);white-space:nowrap;">${trinhDo}</span>`
+                    : `<span style="color:#475569;font-size:0.72rem;">—</span>`;
 
                 return `<tr style="background:${bg};transition:background 0.12s;"
                             onmouseover="this.style.background='rgba(30,58,95,0.5)'"
@@ -2322,16 +2457,17 @@
                                   onmouseout="this.style.textDecoration='none'"
                                   style="background:none;border:none;color:#e2e8f0;font-weight:600;cursor:pointer;padding:0;font-family:inherit;font-size:0.82rem;text-decoration:none;text-align:left;white-space:nowrap;">
                             ${g.ten_khach || "—"}
-                        </button>`, "min-width:110px;")}
-                    ${td(`<span style="color:#94a3b8;font-family:monospace;font-size:0.8rem;white-space:nowrap;">${g.sdt_khach || "—"}</span>`)}
+                        </button>`, "text-align:left;min-width:100px;")}
+                    ${td(`<span style="color:#94a3b8;font-family:monospace;font-size:0.79rem;white-space:nowrap;">${g.sdt_khach || "—"}</span>`, "text-align:center;")}
                     ${td(`<span style="color:${genderClr};font-weight:600;font-size:0.8rem;">${gioiTinh}</span>`, "text-align:center;")}
-                    ${td(`<span style="color:#94a3b8;font-size:0.75rem;white-space:nowrap;">${_formatTS(g.created_at)}</span>`, "text-align:center;")}
-                    ${td(`<span style="color:${tgHuyClr};font-size:0.75rem;white-space:nowrap;">${tgHuy}</span>`, "text-align:center;")}
+                    ${td(trinhDoHtml, "text-align:center;")}
+                    ${td(`<span style="color:#94a3b8;font-size:0.74rem;white-space:nowrap;">${_formatTS(g.created_at)}</span>`, "text-align:center;")}
+                    ${td(`<span style="color:${tgHuyClr};font-size:0.74rem;white-space:nowrap;">${tgHuy}</span>`, "text-align:center;")}
                     ${td(ttCellHTML, "text-align:center;")}
                     ${td(isKhachHuy
                         ? `<span style="padding:3px 9px;border-radius:10px;font-size:0.73rem;font-weight:600;white-space:nowrap;${badgeStyle}">${trangThai}</span>`
                         : selectHTML, "text-align:center;")}
-                    ${td(ratingCellHTML, "text-align:center;")}
+                    ${tdLast(ratingCellHTML, "text-align:center;")}
                 </tr>`;
             }).join("");
 
@@ -2339,7 +2475,7 @@
 
         } catch (err) {
             if (loading) loading.style.display = "none";
-            if (tbody)   tbody.innerHTML = `<tr><td colspan="9" style="padding:24px;text-align:center;color:#f87171;">Lỗi tải danh sách: ${(err.message || "").slice(0, 80)}</td></tr>`;
+            if (tbody)   tbody.innerHTML = `<tr><td colspan="10" style="padding:24px;text-align:center;color:#f87171;">Lỗi tải danh sách: ${(err.message || "").slice(0, 80)}</td></tr>`;
             if (table)   table.style.display = "table";
             console.error("openGuestListModal error:", err);
         }
@@ -2524,17 +2660,69 @@
         try {
             await window.dbEngine.ghi("dat_slot", { trang_thai_di_danh: newState }, { id: guestId });
             selectEl.dataset.prev = newState;
-            window.hienToast("Đã cập nhật", newState, "success");
-            // Reload modal DS Khách để cập nhật cột Thanh toán + Đánh giá theo trạng thái mới
-            const modal = document.getElementById("modal-guest-list");
-            if (modal?.dataset.matchId) {
-                const titleEl = document.getElementById("modal-guest-list-title");
-                const currentTitle = (titleEl?.textContent || "").replace(/^DS Khách — /, "");
-                window.openGuestListModal(modal.dataset.matchId, currentTitle).catch(() => {});
+            window.hienToast("Đã cập nhật ✅", newState, "success");
+
+            // Cập nhật DOM trực tiếp — KHÔNG reload lại modal (tránh đảo thứ tự + mất UX)
+            const tr = selectEl.closest("tr");
+            if (tr) {
+                const cells       = tr.querySelectorAll("td");
+                const ttCell      = cells[7]; // cột Thanh Toán (index 7)
+                const rateCell    = cells[9]; // cột Đánh Giá (index 9)
+                const isNewActive = newState === "Đã tham gia";
+                const isNewBung   = newState === "Bùng kèo";
+                const daChotCa    = document.getElementById("modal-guest-list")?.dataset.daChotCa === "1";
+                const daTT        = selectEl.dataset.daThanh === "1";
+                const tienBung    = Number(selectEl.dataset.tienBung) || 0;
+                const sdtEsc      = (selectEl.dataset.sdt || "").replace(/'/g,"\\x27");
+                const tenEsc      = (selectEl.dataset.ten || "").replace(/'/g,"\\x27");
+                const matchId     = selectEl.dataset.caId;
+
+                // Cập nhật ô Thanh Toán
+                if (ttCell) {
+                    if (isNewBung) {
+                        ttCell.innerHTML = `<div style="display:flex;align-items:center;gap:4px;justify-content:center;">
+                            <input type="number" data-slot-id="${guestId}" value="${tienBung}" min="0" step="1000"
+                                   onchange="window.capNhatTienBung(this)" placeholder="0"
+                                   style="width:82px;background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.3);
+                                          color:#fb923c;border-radius:6px;padding:4px 7px;font-size:0.75rem;
+                                          text-align:right;font-family:inherit;outline:none;box-sizing:border-box;">
+                            <span style="font-size:0.7rem;color:#64748b;flex-shrink:0;">đ</span>
+                        </div>`;
+                    } else if (isNewActive) {
+                        const ttBadgeStyle = daTT
+                            ? "background:rgba(6,78,59,0.6);color:#34d399;border:1px solid rgba(5,46,37,0.5);"
+                            : "background:rgba(51,65,85,0.5);color:#94a3b8;";
+                        ttCell.innerHTML = `<label style="display:flex;align-items:center;gap:6px;justify-content:center;cursor:pointer;">
+                            <input type="checkbox" data-slot-id="${guestId}" ${daTT ? "checked" : ""}
+                                   onchange="window.capNhatThanhToan(this)"
+                                   style="width:14px;height:14px;accent-color:#34d399;cursor:pointer;">
+                            <span id="tt-badge-${guestId}" style="padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;${ttBadgeStyle}">${daTT ? "Đã trả" : "Chưa trả"}</span>
+                        </label>`;
+                    } else {
+                        ttCell.innerHTML = `<span style="color:#475569;font-size:0.72rem;">—</span>`;
+                    }
+                }
+
+                // Cập nhật ô Đánh Giá
+                if (rateCell && (isNewActive || isNewBung)) {
+                    if (daChotCa) {
+                        rateCell.innerHTML = `<button
+                            onclick="window.moQuickDanhGiaKhach('${sdtEsc}','${tenEsc}','${matchId}')"
+                            style="background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.3);color:#fbbf24;padding:4px 12px;border-radius:7px;cursor:pointer;font-size:0.75rem;font-family:inherit;white-space:nowrap;">
+                            ⭐ Đánh giá
+                        </button>`;
+                    } else {
+                        rateCell.innerHTML = `<span style="color:#475569;font-size:0.7rem;white-space:nowrap;">Chờ chốt ca</span>`;
+                    }
+                } else if (rateCell && !isNewActive && !isNewBung) {
+                    rateCell.innerHTML = `<span style="color:#475569;font-size:0.72rem;">—</span>`;
+                }
             }
+
+            // Cập nhật bảng chính Ca Đã Đăng (cập nhật count tham gia) — không cần refetch modal
             _taiLichSuCaDau().catch(() => {});
         } catch (e) {
-            selectEl.value = prevVal; // rollback UI
+            selectEl.value = prevVal; // rollback select về giá trị cũ
             console.error("Lỗi doiTrangThaiDiDanh:", e);
             window.hienToast("Lỗi cập nhật", "Không thể lưu trạng thái. Thử lại sau.", "danger");
         } finally {

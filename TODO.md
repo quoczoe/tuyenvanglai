@@ -1,33 +1,35 @@
-# TODO — Cập nhật: 2026-06-09 (phiên 9)
+# TODO — Cập nhật: 2026-06-09 (phiên 10)
 
 ---
 
-## ✅ ĐÃ HOÀN THÀNH PHIÊN NÀY
+## ✅ ĐÃ HOÀN THÀNH (phiên 9+10) — CA ĐÃ ĐĂNG FULL OVERHAUL
 
-### CA ĐÃ ĐĂNG — index.html + phan-he-host.js (phiên 9)
-- [x] **Fix header cố định**: table-wrap max-height:60vh + overflow-y:auto + thead position:sticky;top:0
-- [x] **Gộp cột Ngày+Giờ**: 1 cột "Thứ/Ngày Giờ" — format "T6, 06/06/2026 | 18:00 → 20:00"
-- [x] **Fix cột Giá**: "Nam: Xk / Nữ: Xk" cùng 1-2 hàng, không cắt ngắn
-- [x] **Fix nút Slot (DS Khách)**: openGuestListModal mở #modal-guest-list (đã thêm vào index.html)
-- [x] **Fix nút Xóa ca**: post-delete verification — nếu RLS silently block → báo lỗi rõ thay vì "thành công"
-- [x] **Fix nút Chi tiết**: xemChiTietCaDau mở #modal-ca-detail (đã thêm vào index.html)
-- [x] **Fix nút Đánh giá**: moModalDanhGiaCa mở #modal-danh-gia-ca (đã thêm vào index.html)
-- [x] **Fix nút Sửa**: _moModalSuaCa mở #modal-sua-ca inline (không redirect sang tab Đăng)
-- [x] **Auto chốt ca**: moModalXacNhanChotCa mở #modal-xacnhan-chot (đã thêm vào index.html)
-- [x] **Bộ lọc**: dropdown trạng thái (Tất cả/Đang mở/Hết giờ/Đã chốt)
-- [x] **Ô tìm kiếm**: realtime filter theo sân, tên khách, SĐT (qua _caDauSearch)
-- [x] **Sort theo cột**: click header → asc/desc (# | Ngày | Sân | Giá | Trạng Thái)
-- [x] **Màu xen kẽ**: alternating row background giữa các hàng
-- [x] **Kẻ dòng cột**: border-right giữa các cột
-- [x] **Cột STT**: thêm cột # (index+1)
-- [ ] **Fix nút Chi tiết + Đánh giá**: không hoạt động sau khi chốt ca — fix
-- [ ] **Fix nút Sửa**: mở inline form/modal chỉnh giá, số cầu, số người — không redirect sang tab Đăng
-- [ ] **Auto chốt ca**: realtime check giờ hết → prompt chỉnh sửa lần cuối → xác nhận chốt
-- [ ] **Bộ lọc**: dropdown trạng thái (đang mở/đã chốt), ngày, sân
-- [ ] **Kẻ dòng + màu xen kẽ**: alternating row colors, border-bottom giữa các hàng
-- [ ] **Cột STT**: thêm số thứ tự
-- [ ] **Sort theo cột**: click header → sort asc/desc
-- [ ] **Ô tìm kiếm**: realtime filter theo tên sân, tên khách, SĐT khách
+### Bảng Ca Đã Đăng (index.html + phan-he-host.js)
+- [x] Flat card (no border/bg), border-radius:14px + overflow:hidden → bo góc sạch
+- [x] table-layout:fixed + colgroup % (4/13/26/13/13/13/18%) → cột không nhảy khi chuyển trang
+- [x] CSS: `min-height:0` trên table-wrap → flex scroll hoạt động đúng
+- [x] Pagination: cố định 10/trang, xóa per-page select, giữ ‹ 1/1 ›
+- [x] Sort/filter/search state: `_caDauRawData`, `_caDauSortCol/Dir`, `_caDauFilterSt`, `_caDauSearch`
+- [x] Cột STT global (idx theo trang), màu xen kẽ, border-right giữa cột
+- [x] Cột Thời Gian, Sân, Slot Đăng Ký, Giá (price-container căn giữa + label 34px)
+- [x] Cột Trạng Thái: Đang mở / Hết giờ / Tạm khóa (cam) / Đã chốt
+- [x] Cột Hành Động: grid 2×2, icon+text — ca mở: Sửa/Chốt Ca/Tạm Khóa/Xóa; ca chốt: Chi tiết/Đánh giá
+- [x] tamKhoaCaDau() + moLaiCaDau() → UPDATE is_tam_khoa
+- [x] xoaCaDau: post-delete verify (RLS block → báo lỗi rõ)
+- [x] _moModalSuaCa: edit inline modal (giá/số người/cầu), không redirect sang tab Đăng
+- [x] overflow-x:clip (thay hidden) trên #tab-dang-quan-ly, #dql-content mobile → fix sticky
+
+### Modal DS Khách (openGuestListModal + index.html)
+- [x] Modal rộng 90%/max-width:1100px PC; mobile giữ overflow-x:auto
+- [x] thead 10 cột: #/Tên/SĐT/GT/Trình Độ/Đặt Lúc/Hủy Lúc/Thanh Toán/Trạng Thái/Đánh Giá
+- [x] Sort guests by created_at asc → thứ tự STT cố định sau update
+- [x] daChotCa lưu trên modal.dataset.daChotCa → DOM update không refetch
+- [x] doiTrangThaiDiDanh: DOM update cells[7]+cells[9] trực tiếp, không reload modal
+- [x] ttCellHTML conditional: Đã tham gia→checkbox; Bùng kèo→input; Khách hủy/Chờ→—
+- [x] select có data-sdt/ten/da-thanh-toan/tien-bung để DOM update dùng
+- [x] Thêm #modal-ho-so-khach (fix click Tên Khách không hiện modal)
+- [x] Thêm #modal-quick-dg với qd-stars/qd-comment/qd-submit-btn (fix nút Đánh giá)
+- [x] toast z-index: 1000→9999 (fix toast bị che modal)
 
 **SQL cần chạy trước (góp ý fix):**
 ```sql

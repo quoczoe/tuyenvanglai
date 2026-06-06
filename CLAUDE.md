@@ -55,7 +55,7 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 // user-select: none toàn trang; input/textarea được select
 ```
 
-## CURRENT STATE (cập nhật: 2026-06-09)
+## CURRENT STATE (cập nhật: 2026-06-09 phiên 10)
 
 ### Trạng thái file
 | File | Version | Ghi chú |
@@ -63,46 +63,52 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 | `ket-noi-supabase.js` | v7.0 | supabaseAuth + guestRPC + _adminJWT |
 | `bo-may-du-lieu.js` | v2.0 | dbEngine proxy, 63 tỉnh |
 | `phan-he-ung-dung.js` | v3.1 | SPA routing + has-subtab toggle |
-| `phan-he-host.js` | v7.0 | Ca Đã Đăng: sort/filter/search/STT/modal-inline-sửa, xoaCaDau verify, modals |
+| `phan-he-host.js` | v8.0 | Ca Đã Đăng FULL: sort/filter/search/pagination/table-layout-fixed, TamKhoa, DS Khách no-reload DOM update, xemHoSoKhach, moQuickDanhGia |
 | `phan-he-khach-choi.js` | v8.1 | SĐT reveal click-area, modal HồSơ ẩn SĐT, trust bar redesign |
 | `phan-he-quan-tri.js` | v9.0 | gopY: sort/filter/pagination + _rank + compare tường minh |
 | `phan-he-gop-y.js` | v2.0 | rate limit: 5/ngày + cooldown 5 phút |
-| `index.html` | v9.0 | Ca Đã Đăng: bảng mới + filter bar + 5 modal (guest-list, ca-detail, danh-gia-ca, xacnhan-chot, sua-ca) |
+| `index.html` | v10.0 | Ca Đã Đăng: table-layout:fixed colgroup%, flat card, CSS sticky, 7 modal; DS Khách: responsive, modal-ho-so-khach + modal-quick-dg thêm mới |
 | `admin/index.html` | v9.0 | gopY tab: filter+pagination 1 hàng, sort STT, cột Người Dùng 320px |
 | `cms-seed.sql` | v2.1 | thêm gop_y_auth_select + gop_y_auth_delete policy cho authenticated role |
-| `giao-dien.css` | v7.0 | slot-grid gap:0, kh-san-link display:flex, trust card |
+| `giao-dien.css` | v7.1 | toast z-index: 1000→9999 (fix toast bị che modal) |
 | `components.css` | v5.1 | slot-card margin:0, footer grid 22fr 37fr 41fr |
 
 ### Quyết định kỹ thuật quan trọng
-- **gop_y RLS bug**: bảng có policy `TO anon` cho SELECT/DELETE nhưng admin dùng `authenticated` JWT → blocked. Fix: thêm policy `TO authenticated` — cần chạy SQL trên Supabase Dashboard
-- **gopY sort bug**: dùng `_gopYCompare(a,b,col,dir)` tham số tường minh thay closure variable. `_gopYSort` gọi `_gopYDoSort()` trực tiếp, không filter lại từ đầu
-- **gopY STT**: gán `_rank` cố định sau khi load (sort by id asc → oldest=rank1). Hiển thị `g._rank` thay `start+i+1` → sort STT thay đổi số thực sự
-- **body display:block**: giao-dien.css set `body{display:flex;flex-direction:column}` — index.html phải override `display:block !important` để tránh flex layout phá padding-top
-- **app-body padding**: desktop 96px→80px, mobile 72px→56px (= header height chính xác). Loại bỏ 16px buffer thừa gây dải đen dưới header
-- **coc-tip mobile**: `right:0;left:auto;transform:none; width:min(240px,72vw)` → tránh tràn phải với overflow-x:hidden container
-- **btn-kt ? ngoài button**: chuyển `<span class="tt">?</span>` ra ngoài `<button>` → tap mobile không bubble lên button trigger modal
-- **hamburger visibility**: `span background:#ffffff` (100%), button `rgba(255,255,255,0.12)`, border `rgba(255,255,255,0.28)`
+- **table-layout:fixed + colgroup %**: Ca Đã Đăng — cố định tỷ lệ cột (4/13/26/13/13/13/18%), columns không nhảy khi chuyển trang
+- **min-height:0 on flex child**: KEY FIX — flex child `.table-wrap` mặc định `min-height:auto` nên không shrink được, overflow-y không kích hoạt. Fix: `min-height:0`
+- **overflow-x:clip thay hidden**: CSS `overflow-x:hidden` tạo scroll context phụ trên mobile. `clip` ngăn overflow mà không tạo scroll context → sticky hoạt động đúng
+- **doiTrangThaiDiDanh no-reload**: Sau DB update → cập nhật DOM trực tiếp (`selectEl.closest('tr')` → `cells[7]` Thanh Toán, `cells[9]` Đánh Giá). Không gọi `openGuestListModal` → thứ tự row không bị đảo
+- **Guests sort by created_at asc**: `sortedGuests = [...guests].sort(...)` khi load → thứ tự STT cố định suốt session
+- **daChotCa trên modal dataset**: `modal.dataset.daChotCa = "1"/"0"` → DOM update trong doiTrangThaiDiDanh đọc được mà không refetch
+- **is_tam_khoa field**: Tạm Khóa ca không nhận slot mới nhưng vẫn hiển thị ngoài trang. Cần SQL: `ALTER TABLE ca_dau ADD COLUMN IF NOT EXISTS is_tam_khoa BOOLEAN DEFAULT FALSE`
+- **modal-ho-so-khach + modal-quick-dg**: Hai modal này THIẾU khỏi index.html → click Tên Khách và nút Đánh Giá đều fail. Đã thêm vào (phiên 10)
+- **toast z-index 9999**: toast `z-index:1000` bị che bởi modal `z-index:1200+`. Fix: tăng lên 9999
+- **ttCellHTML conditional**: "Chỉ Đã tham gia → checkbox thanh toán; Bùng kèo → input tiền phạt; Khách hủy/Chờ đánh → —"
+- **gopY RLS bug + sort + STT**: (giữ từ phiên 8)
+- **body display:block**: (giữ từ phiên 8)
 
 ### SQL cần chạy trên Supabase Dashboard
 1. `security-auth-v4.sql` — Parts 2→8 (is_admin, 6 RPC, RLS)
 2. `migration-admin-cascade.sql` — v2 (cascade delete + policies)
-3. **GÓP Ý FIX** (urgent): chạy snippet sau để admin đọc/xóa được góp ý:
+3. **GÓP Ý FIX** (urgent):
 ```sql
 DROP POLICY IF EXISTS "gop_y_auth_select" ON gop_y_he_thong;
 DROP POLICY IF EXISTS "gop_y_auth_delete" ON gop_y_he_thong;
 CREATE POLICY "gop_y_auth_select" ON gop_y_he_thong FOR SELECT TO authenticated USING (true);
 CREATE POLICY "gop_y_auth_delete" ON gop_y_he_thong FOR DELETE TO authenticated USING (true);
 ```
+4. **TẠM KHÓA CA** (mới): `ALTER TABLE ca_dau ADD COLUMN IF NOT EXISTS is_tam_khoa BOOLEAN DEFAULT FALSE;`
 
 ### Known issues
 - Admin xóa user → F5 vẫn thấy dashboard nếu chưa chạy migration-admin-cascade.sql
-- `phan_he_guest_login` RPC cần security-auth-v4.sql Part 3
 - Góp ý admin tab không hiện data cho đến khi chạy SQL snippet trên
+- Tạm Khóa ca đấu không hoạt động cho đến khi chạy SQL ALTER TABLE trên
+- xoaCaDau: silently fail nếu RLS anon không cho DELETE (cần security-auth-v4.sql)
+- Cột "Trình Độ" trong DS Khách hiện `--` vì `dat_slot` chưa có field `trinh_do`
 
 ## NEXT UP
-- 🔴 Chạy SQL góp ý fix (snippet trên) → test admin tab Góp ý
+- 🔴 Chạy SQL góp ý fix + TẠM KHÓA migration → test
 - 🔴 Chạy `security-auth-v4.sql` Parts 2→8 → full auth hoạt động
-- 🔴 **CA ĐÃ ĐĂNG** (tab Đăng & Quản Lý) — task LỚNA, nhiều sub-items (xem TODO.md)
 - 🟡 GĐ4A: Dashboard doanh thu Host (subtab + 4 metric + filter)
 - 🟡 GĐ4B: Export/In ca đấu (print popup + CSV)
 - 🟢 Deploy Vercel: GitHub repo → custom domain tuyenvanglai.io.vn
