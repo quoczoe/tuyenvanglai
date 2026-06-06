@@ -263,6 +263,23 @@
             table-layout: fixed;
             width: 100%;
         }
+        /* Wrapper cuộn ngang nội bộ cho bảng Ca Đã Đăng trên mobile */
+        .cdd-scroll-outer {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch; /* iOS/Android vuốt mượt */
+        }
+        /* PC ≥ 1025px: bảng chiếm full width, % cột hoạt động như cũ */
+        @media (min-width: 1025px) {
+            #subtab-dang-quan-ly-ds-ca .app-table { width: 100%; min-width: 0; }
+        }
+        /* Tablet + Mobile ≤ 1024px: bảng có chiều rộng tối thiểu để không bị ép cột */
+        @media (max-width: 1024px) {
+            #subtab-dang-quan-ly-ds-ca .app-table {
+                width: auto;       /* Bỏ ràng buộc 100% để min-width có hiệu lực */
+                min-width: 780px;  /* Đủ không gian hiển thị 7 cột, user vuốt ngang xem Hành Động */
+            }
+        }
         /* Tất cả th: clip text dài, không wrap */
         #subtab-dang-quan-ly-ds-ca .app-table th {
             overflow: hidden;
@@ -1050,8 +1067,8 @@
             .subtab-nav { top: 56px; background: rgba(8,8,8,1); }
             /* Khi có subtab: đẩy nội dung xuống đủ (56 header + 44 subtab + 8 buffer) */
             body.has-subtab .app-body { padding-top: 108px !important; }
-            /* Chặn horizontal scroll — dùng clip thay hidden để không tạo scroll context phụ */
-            #tab-dang-quan-ly, #dql-content { overflow-x: clip; max-width: 100vw; }
+            /* overflow-x: visible — scroll ngang được xử lý bởi .cdd-scroll-outer bên trong, không clip ở đây */
+            #tab-dang-quan-ly, #dql-content { overflow-x: visible; max-width: 100vw; }
             /* padding-top cho dql-content: subtab cao ~44px, cộng thêm 8px buffer */
             #dql-content { padding-top: 52px; }
             /* Ẩn mô tả cọc trên mobile — đủ thông tin qua tooltip ? */
@@ -2751,8 +2768,10 @@
 
                     <!-- Vùng cuộn nội bộ (via CSS) — background fill khoảng trống, bo góc qua card -->
                     <div class="table-wrap">
+                        <!-- .cdd-scroll-outer: cuộn ngang trên mobile; table có min-width qua media query CSS -->
+                        <div class="cdd-scroll-outer">
                         <!-- table-layout:fixed via CSS class + colgroup % widths = cột không nhảy khi chuyển trang -->
-                        <table class="app-table" style="border-collapse:collapse;min-width:640px;">
+                        <table class="app-table" style="border-collapse:collapse;">
                             <colgroup>
                                 <col style="width:4%">
                                 <col style="width:13%">
@@ -2778,6 +2797,7 @@
                                     <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>
                             </tbody>
                         </table>
+                        </div><!-- /.cdd-scroll-outer -->
                     </div>
 
                     <!-- Info bar: ẩn via CSS, giữ lại để JS vẫn update nội dung -->
@@ -3494,7 +3514,7 @@ window.xoaBoLoc = xoaBoLoc;
             <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
         </div>
         <div id="modal-guest-list-scroll" style="flex:1;padding:0;">
-            <table id="modal-guest-list-table" style="width:100%;border-collapse:collapse;display:none;table-layout:auto;">
+            <table id="modal-guest-list-table" style="width:100%;min-width:700px;border-collapse:collapse;display:none;table-layout:auto;">
                 <thead>
                     <tr style="background:rgba(15,30,53,0.97);position:sticky;top:0;z-index:2;border-bottom:1px solid rgba(0,255,136,0.15);">
                         <th style="padding:9px 8px;text-align:center;font-size:0.72rem;color:#94a3b8;border-right:1px solid rgba(255,255,255,0.06);white-space:nowrap;width:34px;">#</th>

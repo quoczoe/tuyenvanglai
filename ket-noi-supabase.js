@@ -68,6 +68,16 @@
                     }
                 }
 
+                // 1b. Áp dụng bộ lọc IN — { sdt_khach: ["0901","0902"] } → sdt_khach=in.(0901,0902)
+                if (boLoc.in) {
+                    for (const [key, vals] of Object.entries(boLoc.in)) {
+                        if (Array.isArray(vals) && vals.length > 0) {
+                            const joined = vals.map(v => encodeURIComponent(v)).join(",");
+                            thamSoUrl.push(`${key}=in.(${joined})`);
+                        }
+                    }
+                }
+
                 // 2. Áp dụng cấu hình cột cần lấy (mặc định lấy hết '*')
                 const selectCol = boLoc.select || "*";
                 thamSoUrl.push(`select=${encodeURIComponent(selectCol)}`);

@@ -2322,6 +2322,16 @@
             // Map: sdt_nguoi_bi_danh_gia → review object
             const reviewsMap = new Map((reviewsRaw || []).map(r => [r.sdt_nguoi_bi_danh_gia, r]));
 
+            // [4b] Fetch trinh_do từ nguoi_dung theo danh sách SĐT của khách
+            const sdtList = (guests || []).map(g => g.sdt_khach).filter(Boolean);
+            const userList = sdtList.length > 0
+                ? await window.dbEngine.doc("nguoi_dung", {
+                    in: { sdt_khach: sdtList },
+                    select: "sdt_khach,trinh_do"
+                }).catch(() => [])
+                : [];
+            const userMap = new Map((userList || []).map(u => [u.sdt_khach, u]));
+
             if (loading) loading.style.display = "none";
 
             if (!guests || guests.length === 0) {
@@ -2329,10 +2339,17 @@
                 return;
             }
 
-            // Render bảng — sort cố định theo created_at asc để thứ tự không đảo sau khi update trạng thái
-            const sortedGuests = [...guests].sort((a, b) =>
-                new Date(a.created_at || 0) - new Date(b.created_at || 0)
-            );
+            // Debug: in ra field names của guest đầu tiên để verify mapping (xem DevTools Console)
+            if (guests.length > 0) {
+                console.log("[DS Khách] Mẫu dữ liệu guest[0]:", JSON.stringify(guests[0], null, 2));
+            }
+
+            // Render bảng — sort cố định theo thoi_gian_dat/created_at asc để thứ tự không đảo
+            const sortedGuests = [...guests].sort((a, b) => {
+                const ta = new Date(a.thoi_gian_dat || a.created_at || 0);
+                const tb = new Date(b.thoi_gian_dat || b.created_at || 0);
+                return ta - tb;
+            });
             // Lưu daChotCa trên modal để doiTrangThaiDiDanh đọc mà không cần refetch
             if (modal) modal.dataset.daChotCa = daChotCa ? "1" : "0";
 
@@ -2393,9 +2410,9 @@
                     const ttBadgeStyle = daTT
                         ? "background:rgba(6,78,59,0.6);color:#34d399;border:1px solid rgba(5,46,37,0.5);"
                         : "background:rgba(51,65,85,0.5);color:#94a3b8;";
-                    ttCellHTML = `<label style="display:flex;align-items:center;gap:6px;justify-content:center;cursor:pointer;">
+                    ttCellHTML = `<label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px;justify-content:center;cursor:pointer;">
                         <input type="checkbox" data-slot-id="${g.id}" ${daTT ? "checked" : ""}
-                               onchange="window.capNhatThanhToan(this)"
+                               onchange="window.capNhatThanhToan(this,event)"
                                style="width:14px;height:14px;accent-color:#34d399;cursor:pointer;">
                         <span id="tt-badge-${g.id}" style="padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;${ttBadgeStyle}">${daTT ? "Đã trả" : "Chưa trả"}</span>
                     </label>`;
@@ -2404,9 +2421,10 @@
                     ttCellHTML = `<span style="color:#475569;font-size:0.72rem;">—</span>`;
                 }
 
-                // Cột Thời gian hủy
-                const tgHuyClr = isBung ? "#fb923c" : (isKhachHuy ? "#f87171" : "#475569");
-                const tgHuy    = isHuy ? _formatTS(g.huy_luc || g.updated_at) : "--";
+                // Cột Thời gian hủy — thử nhiều tên field (huy_luc, thoi_gian_huy, cancelled_at, updated_at)
+                const tgHuyClr  = isBung ? "#fb923c" : (isKhachHuy ? "#f87171" : "#475569");
+                const _tgHuyRaw = g.huy_luc || g.thoi_gian_huy || g.cancelled_at || g.updated_at;
+                const tgHuy     = isHuy ? _formatTS(_tgHuyRaw) : "--";
 
                 // Cột Đánh giá — cho phép cả "Đã tham gia" lẫn "Bùng kèo"
                 const tenKhachEsc = (g.ten_khach || "").replace(/'/g, "\\x27");
@@ -2442,8 +2460,8 @@
                 const tdLast = (content, extra="") =>
                     `<td style="padding:8px 9px;border-bottom:1px solid rgba(30,58,95,0.4);${extra}">${content}</td>`;
 
-                // Trình độ từ dat_slot (nếu có field trinh_do)
-                const trinhDo = g.trinh_do || g.trinh_do_tu_danh_gia || "--";
+                // Trình độ lấy từ nguoi_dung (dat_slot không lưu field này)
+                const trinhDo = userMap.get(g.sdt_khach)?.trinh_do || "--";
                 const trinhDoHtml = trinhDo !== "--"
                     ? `<span style="padding:2px 7px;border-radius:10px;font-size:0.72rem;background:rgba(96,165,250,0.12);color:#60a5fa;border:1px solid rgba(96,165,250,0.25);white-space:nowrap;">${trinhDo}</span>`
                     : `<span style="color:#475569;font-size:0.72rem;">—</span>`;
@@ -2461,7 +2479,7 @@
                     ${td(`<span style="color:#94a3b8;font-family:monospace;font-size:0.79rem;white-space:nowrap;">${g.sdt_khach || "—"}</span>`, "text-align:center;")}
                     ${td(`<span style="color:${genderClr};font-weight:600;font-size:0.8rem;">${gioiTinh}</span>`, "text-align:center;")}
                     ${td(trinhDoHtml, "text-align:center;")}
-                    ${td(`<span style="color:#94a3b8;font-size:0.74rem;white-space:nowrap;">${_formatTS(g.created_at)}</span>`, "text-align:center;")}
+                    ${td(`<span style="color:#94a3b8;font-size:0.74rem;white-space:nowrap;">${_formatTS(g.thoi_gian_dat || g.created_at)}</span>`, "text-align:center;")}
                     ${td(`<span style="color:${tgHuyClr};font-size:0.74rem;white-space:nowrap;">${tgHuy}</span>`, "text-align:center;")}
                     ${td(ttCellHTML, "text-align:center;")}
                     ${td(isKhachHuy
@@ -2658,7 +2676,12 @@
         selectEl.disabled = true;
 
         try {
-            await window.dbEngine.ghi("dat_slot", { trang_thai_di_danh: newState }, { id: guestId });
+            // Ghi thêm huy_luc = now() khi đổi sang trạng thái hủy/bùng (cần cột huy_luc — migration-dat-slot-v2.sql)
+            const payload = { trang_thai_di_danh: newState };
+            if (newState === "Bùng kèo" || newState === "Khách hủy") {
+                payload.huy_luc = new Date().toISOString();
+            }
+            await window.dbEngine.ghi("dat_slot", payload, { id: guestId });
             selectEl.dataset.prev = newState;
             window.hienToast("Đã cập nhật ✅", newState, "success");
 
@@ -2671,7 +2694,7 @@
                 const isNewActive = newState === "Đã tham gia";
                 const isNewBung   = newState === "Bùng kèo";
                 const daChotCa    = document.getElementById("modal-guest-list")?.dataset.daChotCa === "1";
-                const daTT        = selectEl.dataset.daThanh === "1";
+                const daTT        = selectEl.dataset.daThanhtoan === "1"; // data-da-thanh-toan → daThanhtoan
                 const tienBung    = Number(selectEl.dataset.tienBung) || 0;
                 const sdtEsc      = (selectEl.dataset.sdt || "").replace(/'/g,"\\x27");
                 const tenEsc      = (selectEl.dataset.ten || "").replace(/'/g,"\\x27");
@@ -2692,9 +2715,9 @@
                         const ttBadgeStyle = daTT
                             ? "background:rgba(6,78,59,0.6);color:#34d399;border:1px solid rgba(5,46,37,0.5);"
                             : "background:rgba(51,65,85,0.5);color:#94a3b8;";
-                        ttCell.innerHTML = `<label style="display:flex;align-items:center;gap:6px;justify-content:center;cursor:pointer;">
+                        ttCell.innerHTML = `<label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px;justify-content:center;cursor:pointer;">
                             <input type="checkbox" data-slot-id="${guestId}" ${daTT ? "checked" : ""}
-                                   onchange="window.capNhatThanhToan(this)"
+                                   onchange="window.capNhatThanhToan(this,event)"
                                    style="width:14px;height:14px;accent-color:#34d399;cursor:pointer;">
                             <span id="tt-badge-${guestId}" style="padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;${ttBadgeStyle}">${daTT ? "Đã trả" : "Chưa trả"}</span>
                         </label>`;
@@ -2724,7 +2747,7 @@
         } catch (e) {
             selectEl.value = prevVal; // rollback select về giá trị cũ
             console.error("Lỗi doiTrangThaiDiDanh:", e);
-            window.hienToast("Lỗi cập nhật", "Không thể lưu trạng thái. Thử lại sau.", "danger");
+            // KHÔNG show toast ở đây — dbEngine.ghi đã gọi hienLoiMang() rồi (tránh double toast)
         } finally {
             selectEl.disabled = false;
         }
@@ -2753,33 +2776,63 @@
         }
     };
 
-    /* L2 — Cập nhật trạng thái thanh toán qua checkbox trong modal DS Khách */
-    window.capNhatThanhToan = async function (checkbox) {
-        const slotId    = checkbox.dataset.slotId;
+    /* L2 — Cập nhật trạng thái thanh toán qua checkbox trong modal DS Khách
+     * Guard kép:
+     *   _thanhToanDangXu (Set)  → ngăn concurrent call trong khi request đang chạy
+     *   _thanhToanCooldown (Map) → khóa 3 giây sau khi fail, tránh user spam click khi API lỗi
+     */
+    const _thanhToanDangXu   = new Set();
+    const _thanhToanCooldown = new Map(); // slotId → timestamp hết cooldown
+
+    window.capNhatThanhToan = function (checkbox, domEvent) {
+        // Chặn sủi bọt sự kiện lên các phần tử cha (label, tr, ...)
+        if (domEvent) domEvent.stopPropagation();
+
+        const slotId = checkbox.dataset.slotId;
+        if (!slotId) return;
+
+        // Chặn nếu đang xử lý request
+        if (_thanhToanDangXu.has(slotId)) {
+            checkbox.checked = !checkbox.checked; // rollback visual
+            return;
+        }
+
+        // Chặn nếu đang trong cooldown (3 giây sau khi fail)
+        const cooldownUntil = _thanhToanCooldown.get(slotId) || 0;
+        if (Date.now() < cooldownUntil) {
+            checkbox.checked = !checkbox.checked; // rollback visual
+            return;
+        }
+
         const isChecked = checkbox.checked;
+        _thanhToanDangXu.add(slotId);
         checkbox.disabled = true;
 
-        try {
-            await window.dbEngine.ghi("dat_slot", { da_thanh_toan: isChecked }, { id: slotId });
-            // Cập nhật badge ngay mà không reload toàn bộ modal
-            const badge = document.getElementById(`tt-badge-${slotId}`);
-            if (badge) {
-                if (isChecked) {
-                    badge.textContent = "Đã trả";
-                    badge.style.cssText = "padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;background:rgba(6,78,59,0.6);color:#34d399;border:1px solid rgba(5,46,37,0.5);";
-                } else {
-                    badge.textContent = "Chưa trả";
-                    badge.style.cssText = "padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;background:rgba(51,65,85,0.5);color:#94a3b8;";
+        window.dbEngine.ghi("dat_slot", { da_thanh_toan: isChecked }, { id: slotId })
+            .then(() => {
+                _thanhToanCooldown.delete(slotId); // reset cooldown khi thành công
+                const badge = document.getElementById(`tt-badge-${slotId}`);
+                if (badge) {
+                    if (isChecked) {
+                        badge.textContent = "Đã trả";
+                        badge.style.cssText = "padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;background:rgba(6,78,59,0.6);color:#34d399;border:1px solid rgba(5,46,37,0.5);";
+                    } else {
+                        badge.textContent = "Chưa trả";
+                        badge.style.cssText = "padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;background:rgba(51,65,85,0.5);color:#94a3b8;";
+                    }
                 }
-            }
-            window.hienToast("Đã cập nhật.", isChecked ? "Đã đánh dấu thanh toán." : "Đã bỏ đánh dấu.", "success");
-        } catch (e) {
-            checkbox.checked = !isChecked;   // rollback
-            console.error("Lỗi capNhatThanhToan:", e);
-            window.hienToast("Lỗi cập nhật thanh toán!", "Không thể lưu. Thử lại sau.", "danger");
-        } finally {
-            checkbox.disabled = false;
-        }
+                window.hienToast("Đã cập nhật.", isChecked ? "Đã đánh dấu thanh toán." : "Đã bỏ đánh dấu.", "success");
+            })
+            .catch(e => {
+                checkbox.checked = !isChecked; // rollback visual
+                _thanhToanCooldown.set(slotId, Date.now() + 3000); // cooldown 3 giây
+                console.error("Lỗi capNhatThanhToan:", e);
+                // KHÔNG show toast — dbEngine.ghi đã gọi hienLoiMang() (tránh double toast)
+            })
+            .finally(() => {
+                checkbox.disabled = false;
+                _thanhToanDangXu.delete(slotId);
+            });
     };
 
     /* ═══════════════════════════════════════════════════
