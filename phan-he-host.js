@@ -3462,110 +3462,156 @@
 
             // Bảng cầu tiêu thụ
             const cauList  = Array.isArray(ca.loai_cau_su_dung) ? ca.loai_cau_su_dung : [];
+            const _thStyle = "padding:8px 10px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #1e3a5f;background:rgba(15,30,53,0.6);";
+            const _tdStyle = "padding:9px 10px;font-size:0.8rem;color:#e2e8f0;border-bottom:1px solid rgba(30,58,95,0.5);";
             const cauHTML  = cauList.length === 0
-                ? `<p style="color:#64748b;text-align:center;padding:12px;border:1px dashed #1e3a5f;border-radius:8px;">Không có dữ liệu cầu.</p>`
-                : `<div style="overflow-x:auto;"><table class="hs-table" style="min-width:380px;font-size:0.8rem;">
+                ? `<div style="color:#64748b;text-align:center;padding:14px;border:1px dashed rgba(30,58,95,0.8);border-radius:8px;font-size:0.82rem;">Không có dữ liệu cầu.</div>`
+                : `<div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3a5f;"><table style="width:100%;min-width:380px;font-size:0.8rem;border-collapse:collapse;">
                     <thead><tr>
-                        <th>Loại cầu</th><th>Quy cách</th>
-                        <th style="text-align:right;">Giá/quả</th>
-                        <th style="text-align:right;">Đã dùng</th>
-                        <th style="text-align:right;">Thành tiền</th>
+                        <th style="${_thStyle}">Loại cầu</th>
+                        <th style="${_thStyle}">Quy cách</th>
+                        <th style="${_thStyle}text-align:right;">Giá/quả</th>
+                        <th style="${_thStyle}text-align:right;">Số lượng</th>
+                        <th style="${_thStyle}text-align:right;">Thành tiền</th>
                     </tr></thead>
-                    <tbody>${cauList.map(cb => `<tr>
-                        <td>${cb.ten || "--"}</td>
-                        <td style="color:#94a3b8;">${cb.don_vi || cb.quy_cach || "--"}</td>
-                        <td style="text-align:right;">${_formatVND(cb.gia_qua || 0)}</td>
-                        <td style="text-align:right;">${cb.so_luong || 0} quả</td>
-                        <td style="text-align:right;color:#f59e0b;">${_formatVND(cb.thanh_tien || 0)}</td>
+                    <tbody>${cauList.map(cb => `<tr style="transition:background .15s;" onmouseover="this.style.background='rgba(30,58,95,0.4)'" onmouseout="this.style.background=''">
+                        <td style="${_tdStyle}font-weight:600;">${cb.ten || "--"}</td>
+                        <td style="${_tdStyle}color:#94a3b8;">${cb.don_vi || cb.quy_cach || "--"}</td>
+                        <td style="${_tdStyle}text-align:right;color:#94a3b8;">${_formatVND(cb.gia_qua || 0)}</td>
+                        <td style="${_tdStyle}text-align:right;">${cb.so_luong || 0} quả</td>
+                        <td style="${_tdStyle}text-align:right;color:#f59e0b;font-weight:600;">${_formatVND(cb.thanh_tien || 0)}</td>
                     </tr>`).join("")}</tbody>
                 </table></div>`;
 
             // Bảng khách
             const guestHTML = slots.length === 0
-                ? `<p style="color:#64748b;text-align:center;padding:12px;border:1px dashed #1e3a5f;border-radius:8px;">Không có khách đăng ký.</p>`
-                : `<div style="overflow-x:auto;"><table class="hs-table" style="min-width:360px;font-size:0.8rem;">
-                    <thead><tr><th>Tên</th><th>SĐT</th><th style="text-align:center;">GT</th><th style="text-align:center;">Trạng thái</th><th style="text-align:right;">Tiền</th></tr></thead>
+                ? `<div style="color:#64748b;text-align:center;padding:14px;border:1px dashed rgba(30,58,95,0.8);border-radius:8px;font-size:0.82rem;">Không có khách đăng ký.</div>`
+                : `<div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3a5f;"><table style="width:100%;min-width:360px;font-size:0.8rem;border-collapse:collapse;">
+                    <thead><tr>
+                        <th style="${_thStyle}">Tên khách</th>
+                        <th style="${_thStyle}">SĐT</th>
+                        <th style="${_thStyle}text-align:center;">GT</th>
+                        <th style="${_thStyle}text-align:center;">Trạng thái</th>
+                        <th style="${_thStyle}text-align:right;">Tiền</th>
+                    </tr></thead>
                     <tbody>${slots.map(s => {
                         const gt    = s.gioi_tinh === "female" ? "Nữ" : "Nam";
+                        const gtBg  = s.gioi_tinh === "female" ? "rgba(244,114,182,0.12)" : "rgba(96,165,250,0.12)";
                         const gtClr = s.gioi_tinh === "female" ? "#f472b6" : "#60a5fa";
                         const tt    = s.trang_thai_di_danh || "Chờ đánh";
                         const ttClr = tt === "Đã tham gia" ? "#00ff88" : tt === "Bùng kèo" ? "#fb923c" : tt === "Khách hủy" ? "#f87171" : "#94a3b8";
-                        let tienText = "—";
+                        const ttBg  = tt === "Đã tham gia" ? "rgba(0,255,136,0.1)" : tt === "Bùng kèo" ? "rgba(251,146,60,0.1)" : tt === "Khách hủy" ? "rgba(239,68,68,0.1)" : "rgba(100,116,139,0.1)";
+                        const ttBd  = tt === "Đã tham gia" ? "rgba(0,255,136,0.25)" : tt === "Bùng kèo" ? "rgba(251,146,60,0.25)" : tt === "Khách hủy" ? "rgba(239,68,68,0.25)" : "rgba(100,116,139,0.2)";
+                        let tienText = `<span style="color:#475569;">—</span>`;
                         if (tt === "Đã tham gia") {
                             const gia = s.gioi_tinh === "female" ? (ca.gia_nu || 0) : (ca.gia_nam || 0);
-                            tienText = `<span style="color:#f59e0b;">${_formatVND(gia)}</span>`;
+                            tienText = `<span style="color:#f59e0b;font-weight:600;">${_formatVND(gia)}</span>`;
                         } else if (tt === "Bùng kèo" && s.tien_thu_bung > 0) {
-                            tienText = `<span style="color:#fb923c;">${_formatVND(s.tien_thu_bung)}</span>`;
+                            tienText = `<span style="color:#fb923c;font-weight:600;">${_formatVND(s.tien_thu_bung)}</span>`;
                         }
-                        return `<tr>
-                            <td>${s.ten_khach || "—"}</td>
-                            <td style="font-family:monospace;color:#94a3b8;font-size:0.75rem;">${s.sdt_khach || "—"}</td>
-                            <td style="text-align:center;color:${gtClr};">${gt}</td>
-                            <td style="text-align:center;"><span style="color:${ttClr};font-weight:600;">${tt}</span></td>
-                            <td style="text-align:right;">${tienText}</td>
+                        return `<tr style="transition:background .15s;" onmouseover="this.style.background='rgba(30,58,95,0.35)'" onmouseout="this.style.background=''">
+                            <td style="${_tdStyle}font-weight:600;">${s.ten_khach || "—"}</td>
+                            <td style="${_tdStyle}font-family:monospace;font-size:0.75rem;color:#64748b;">${s.sdt_khach || "—"}</td>
+                            <td style="${_tdStyle}text-align:center;"><span style="background:${gtBg};color:${gtClr};padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:600;">${gt}</span></td>
+                            <td style="${_tdStyle}text-align:center;"><span style="background:${ttBg};color:${ttClr};border:1px solid ${ttBd};padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:600;">${tt}</span></td>
+                            <td style="${_tdStyle}text-align:right;">${tienText}</td>
                         </tr>`;
                     }).join("")}</tbody>
                 </table></div>`;
 
             if (body) body.innerHTML = `
-                <!-- Thông tin ca -->
-                <div style="background:rgba(0,255,136,0.06);border:1px solid rgba(0,255,136,0.2);border-radius:10px;padding:14px 18px;margin-bottom:18px;">
-                    <div style="font-size:1rem;font-weight:700;color:#e2e8f0;margin-bottom:4px;">
+                <!-- ── THÔNG TIN CA ── -->
+                <div style="background:rgba(0,255,136,0.05);border:1px solid rgba(0,255,136,0.18);border-radius:12px;padding:16px 20px;margin-bottom:20px;">
+                    <div style="font-size:1.05rem;font-weight:700;color:#e2e8f0;margin-bottom:10px;display:flex;align-items:center;gap:8px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00ff88" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                         ${ca.ten_san || "—"}
-                        <span style="font-size:0.75rem;color:#64748b;font-weight:400;"> — ${ca.quan_huyen||""}, ${ca.tinh_thanh||""}</span>
+                        <span style="font-size:0.72rem;color:#64748b;font-weight:400;">${ca.quan_huyen ? ca.quan_huyen + ", " : ""}${ca.tinh_thanh || ""}</span>
                     </div>
-                    <div style="font-size:0.82rem;color:#94a3b8;">
-                        📅 ${_formatDate(ca.ngay_danh)} &nbsp;|&nbsp; ⏰ ${ca.gio_bat_dau||""} – ${ca.gio_ket_thuc||""} (${ca.so_gio_choi||"?"} giờ)
-                        &nbsp;|&nbsp; 🏟 ${ca.so_san_mo||1} sân${ca.so_san_cu_the ? " ("+ca.so_san_cu_the+")" : ""}
+                    <div style="display:flex;flex-direction:column;gap:7px;">
+                        <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:#94a3b8;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                            ${_formatDate(ca.ngay_danh)}
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:#94a3b8;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            ${ca.gio_bat_dau || "—"} – ${ca.gio_ket_thuc || "—"} <span style="color:#64748b;margin-left:4px;">(${ca.so_gio_choi || "?"} giờ)</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:8px;font-size:0.82rem;color:#94a3b8;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                            ${ca.so_san_mo || 1} sân${ca.so_san_cu_the ? " — " + ca.so_san_cu_the : ""}
+                        </div>
+                        ${ca.dia_chi_san ? `<div style="display:flex;align-items:flex-start;gap:8px;font-size:0.82rem;color:#94a3b8;">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fb923c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                            <span>${ca.dia_chi_san}</span>
+                        </div>` : ""}
                     </div>
-                    ${ca.dia_chi_san ? `<div style="font-size:0.75rem;color:#64748b;margin-top:4px;">📍 ${ca.dia_chi_san}</div>` : ""}
                 </div>
 
-                <!-- 3 card tài chính -->
-                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:18px;">
-                    <div style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:12px;text-align:center;">
-                        <div style="font-size:0.68rem;color:#f87171;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">TỔNG CHI</div>
-                        <div style="font-size:1rem;font-weight:700;color:#fca5a5;">${_formatVND(tongChi)}</div>
-                        <div style="font-size:0.65rem;color:#64748b;margin-top:5px;line-height:1.7;">
-                            🏟 Sân: ${_formatVND(ca.chi_phi_san_co_dinh||0)}<br>
-                            🏸 Cầu: ${_formatVND(ca.tong_chi_phi_cau||0)}<br>
-                            💧 Khác: ${_formatVND(ca.chi_phi_nuoc_khac||0)}
+                <!-- ── 3 CARD TÀI CHÍNH ── -->
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+                    <div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:14px 12px;text-align:center;">
+                        <div style="display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:8px;">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            <span style="font-size:0.62rem;color:#f87171;font-weight:700;text-transform:uppercase;letter-spacing:.8px;">TỔNG CHI</span>
+                        </div>
+                        <div style="font-size:1.05rem;font-weight:800;color:#fca5a5;margin-bottom:8px;">${_formatVND(tongChi)}</div>
+                        <div style="font-size:0.68rem;color:#475569;line-height:2;border-top:1px solid rgba(239,68,68,0.15);padding-top:8px;">
+                            <div style="display:flex;justify-content:space-between;"><span>Thuê sân</span><span style="color:#64748b;">${_formatVND(ca.chi_phi_san_co_dinh||0)}</span></div>
+                            <div style="display:flex;justify-content:space-between;"><span>Mua cầu</span><span style="color:#64748b;">${_formatVND(ca.tong_chi_phi_cau||0)}</span></div>
+                            <div style="display:flex;justify-content:space-between;"><span>Chi phí khác</span><span style="color:#64748b;">${_formatVND(ca.chi_phi_nuoc_khac||0)}</span></div>
                         </div>
                     </div>
-                    <div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:12px;text-align:center;">
-                        <div style="font-size:0.68rem;color:#f59e0b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">TỔNG THU</div>
-                        <div style="font-size:1rem;font-weight:700;color:#fcd34d;">${_formatVND(tongThu)}</div>
-                        <div style="font-size:0.65rem;color:#64748b;margin-top:5px;line-height:1.7;">
-                            👤 Tham gia: ${_formatVND(doanhThuVe)}<br>
-                            ❌ Phạt bùng: ${_formatVND(tienBung)}
+                    <div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:14px 12px;text-align:center;">
+                        <div style="display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:8px;">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                            <span style="font-size:0.62rem;color:#f59e0b;font-weight:700;text-transform:uppercase;letter-spacing:.8px;">TỔNG THU</span>
+                        </div>
+                        <div style="font-size:1.05rem;font-weight:800;color:#fcd34d;margin-bottom:8px;">${_formatVND(tongThu)}</div>
+                        <div style="font-size:0.68rem;color:#475569;line-height:2;border-top:1px solid rgba(245,158,11,0.15);padding-top:8px;">
+                            <div style="display:flex;justify-content:space-between;"><span>Tham gia (${slotsDiDanh.length})</span><span style="color:#64748b;">${_formatVND(doanhThuVe)}</span></div>
+                            <div style="display:flex;justify-content:space-between;"><span>Phạt bùng (${slotsBung.length})</span><span style="color:#64748b;">${_formatVND(tienBung)}</span></div>
                         </div>
                     </div>
-                    <div style="background:rgba(${loiLo >= 0 ? "0,255,136" : "239,68,68"},0.08);border:1px solid rgba(${loiLo >= 0 ? "0,255,136" : "239,68,68"},0.25);border-radius:8px;padding:12px;text-align:center;">
-                        <div style="font-size:0.68rem;color:${loiLoColor};font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">LỜI / LỖ</div>
-                        <div style="font-size:1.2rem;font-weight:700;color:${loiLoColor};">${loiLoPrefix}${_formatVND(Math.abs(loiLo))}</div>
-                        <div style="font-size:0.7rem;color:#64748b;margin-top:5px;">${loiLo >= 0 ? "🎉 Có lời" : "⚠️ Lỗ buổi này"}</div>
+                    <div style="background:rgba(${loiLo >= 0 ? "0,255,136" : "239,68,68"},0.07);border:1px solid rgba(${loiLo >= 0 ? "0,255,136" : "239,68,68"},0.2);border-radius:12px;padding:14px 12px;text-align:center;">
+                        <div style="display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:8px;">
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="${loiLoColor}" stroke-width="2.5" stroke-linecap="round"><polyline points="${loiLo >= 0 ? "18 15 12 9 6 15" : "6 9 12 15 18 9"}"/></svg>
+                            <span style="font-size:0.62rem;color:${loiLoColor};font-weight:700;text-transform:uppercase;letter-spacing:.8px;">LỜI / LỖ</span>
+                        </div>
+                        <div style="font-size:1.25rem;font-weight:800;color:${loiLoColor};margin-bottom:8px;">${loiLoPrefix}${_formatVND(Math.abs(loiLo))}</div>
+                        <div style="font-size:0.72rem;color:${loiLo >= 0 ? "#34d399" : "#fdba74"};border-top:1px solid rgba(${loiLo >= 0 ? "0,255,136" : "239,68,68"},0.15);padding-top:10px;font-weight:600;">
+                            ${loiLo >= 0 ? "Buổi này có lời" : "Buổi này bị lỗ"}
+                        </div>
                     </div>
                 </div>
 
-                <!-- Thống kê khách -->
-                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
-                    <span style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.25);padding:3px 12px;border-radius:20px;font-size:0.75rem;">✅ Tham gia: ${slotsDiDanh.length}</span>
-                    <span style="background:rgba(251,146,60,0.1);color:#fb923c;border:1px solid rgba(251,146,60,0.25);padding:3px 12px;border-radius:20px;font-size:0.75rem;">❌ Bùng kèo: ${slotsBung.length}</span>
-                    <span style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);padding:3px 12px;border-radius:20px;font-size:0.75rem;">🚫 Khách hủy: ${slotsHuy.length}</span>
-                    ${slotsCho.length > 0 ? `<span style="background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.3);padding:3px 12px;border-radius:20px;font-size:0.75rem;">⏳ Chờ: ${slotsCho.length}</span>` : ""}
+                <!-- ── BADGE THỐNG KÊ KHÁCH ── -->
+                <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:20px;padding:10px 14px;background:rgba(15,30,53,0.5);border:1px solid rgba(30,58,95,0.7);border-radius:10px;">
+                    <span style="font-size:0.68rem;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Khách:</span>
+                    <span style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.25);padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:600;">Tham gia: ${slotsDiDanh.length}</span>
+                    <span style="background:rgba(251,146,60,0.1);color:#fb923c;border:1px solid rgba(251,146,60,0.25);padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:600;">Bùng kèo: ${slotsBung.length}</span>
+                    <span style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:600;">Khách hủy: ${slotsHuy.length}</span>
+                    ${slotsCho.length > 0 ? `<span style="background:rgba(100,116,139,0.1);color:#94a3b8;border:1px solid rgba(100,116,139,0.2);padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:600;">Chờ đánh: ${slotsCho.length}</span>` : ""}
                 </div>
 
-                <!-- Bảng cầu -->
-                <h4 style="color:#e2e8f0;font-size:0.82rem;margin:0 0 8px;display:flex;align-items:center;gap:6px;">
-                    <i class="fa-solid fa-feather" style="color:#00ff88;"></i> Cầu tiêu thụ (${cauList.length} loại)
-                </h4>
-                <div style="margin-bottom:16px;">${cauHTML}</div>
+                <!-- ── BẢNG CẦU TIÊU THỤ ── -->
+                <div style="margin-bottom:20px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                        <div style="width:4px;height:16px;background:#00ff88;border-radius:2px;flex-shrink:0;"></div>
+                        <span style="font-size:0.82rem;font-weight:700;color:#e2e8f0;">Cầu tiêu thụ</span>
+                        <span style="font-size:0.72rem;color:#64748b;">${cauList.length} loại</span>
+                    </div>
+                    ${cauHTML}
+                </div>
 
-                <!-- Bảng khách -->
-                <h4 style="color:#e2e8f0;font-size:0.82rem;margin:0 0 8px;display:flex;align-items:center;gap:6px;">
-                    <i class="fa-solid fa-users" style="color:#60a5fa;"></i> Danh sách khách (${slots.length} người)
-                </h4>
-                ${guestHTML}`;
+                <!-- ── BẢNG KHÁCH ── -->
+                <div>
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                        <div style="width:4px;height:16px;background:#60a5fa;border-radius:2px;flex-shrink:0;"></div>
+                        <span style="font-size:0.82rem;font-weight:700;color:#e2e8f0;">Danh sách khách</span>
+                        <span style="font-size:0.72rem;color:#64748b;">${slots.length} người</span>
+                    </div>
+                    ${guestHTML}
+                </div>`;
 
         } catch(e) {
             console.error("xemChiTietCaDau error:", e);
@@ -3575,7 +3621,7 @@
 
     window.dongModalCaDetail = function () {
         const modal = document.getElementById("modal-ca-detail");
-        if (modal) modal.classList.add("hidden");
+        if (modal) { modal.style.display = "none"; modal.classList.add("hidden"); }
         document.body.style.overflow = "";
     };
 
