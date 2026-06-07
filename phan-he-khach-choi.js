@@ -333,8 +333,8 @@
 
     // ── TRUST SCORE HELPERS ──────────────────────────────────────────
 
-    // Trừ điểm uy tín (bỏ qua nếu whitelisted)
-    async function _truDiemUyTin(sdt, diemTru) {
+    // Trừ điểm uy tín (bỏ qua nếu whitelisted) — expose để phan-he-host.js dùng cho "Bùng kèo"
+    window._truDiemUyTin = async function _truDiemUyTin(sdt, diemTru) {
         try {
             const users = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: sdt } });
             const u = (users || [])[0];
@@ -1854,7 +1854,7 @@
                            </button>`)
                     : slot.is_tam_khoa
                         ? `<button style="background:#1e293b;border:1px solid #334155;color:#64748b;cursor:not-allowed;padding:9px 10px;border-radius:9px;font-size:0.78rem;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;pointer-events:none;" disabled onclick="event.stopPropagation()">
-                               <i class="fa-solid fa-ban"></i> Tạm khóa
+                               <i class="fa-solid fa-ban"></i> NGƯNG NHẬN SLOT
                            </button>`
                     : (window.currentGuest
                         ? (daDatSet.has(slot.id)
@@ -1883,6 +1883,24 @@
     /* ═══════════════════════════════════════════════════
      * 5. ĐẶT SLOT → INSERT vào bảng dat_slot
      * ═══════════════════════════════════════════════════ */
+    // Cấu hình giới hạn đặt slot — Admin có thể chỉnh các thông số này
+    window.SLOT_LIMIT_CONFIG = {
+        newAccount: {           // Tài khoản mới < 7 ngày
+            maxPerDay: 2,       // Tối đa 2 slot/ngày
+            maxChoNgay7: 5,     // Tối đa 5 "Chờ đánh" trong 7 ngày gần nhất
+        },
+        lowTrust: {             // Điểm < 60 (Cảnh cáo)
+            maxPerDay: 1,
+        },
+        normal: {               // Điểm 60-79
+            // Không giới hạn slot/ngày
+        },
+        highTrust: {            // Điểm >= 80
+            maxPerDay: 3,
+            maxActiveSlots: 5,  // "Chờ đánh" trong 30 ngày gần nhất
+        },
+    };
+
     window.datSlot = async function (caDauId) {
         if (!window.currentGuest) {
             window.hienToast("Cần đăng nhập", "Vui lòng đăng nhập để đăng bài hoặc đặt slot tham gia ca đấu!", "warning"); return;
@@ -1896,9 +1914,10 @@
             if (caDau.da_chot_ca) { window.hienToast("Đã đóng", "Ca đấu này đã được chốt, không nhận thêm người.", "warning"); return; }
             if (caDau.is_tam_khoa) { window.hienToast("Tạm khóa", "Ca đấu này đang tạm khóa, không nhận thêm đăng ký.", "warning"); return; }
 
-            // Kiểm tra trust score
-            const myDiem = await _layDiemUyTin();
-
+            // Fetch user để lấy trust score + created_at (1 lần duy nhất)
+            const _myUserArr = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: window.currentGuest.sdt_khach } }).catch(() => []);
+            const _myUser    = (_myUserArr || [])[0];
+            const myDiem     = _myUser?.diem_uy_tin ?? 100;
 
             if (myDiem < 40) {
                 window.hienToast("Tài khoản bị hạn chế", "Điểm uy tín của bạn dưới 40 — tài khoản tạm khóa hành động đặt slot.", "danger");
@@ -1908,7 +1927,41 @@
             const _VN_OFFSET = 7 * 3600 * 1000;
             const _todayVnStr = new Date(Date.now() + _VN_OFFSET).toISOString().slice(0, 10);
 
-            if (myDiem < 60) {
+            // Kiểm tra tài khoản mới (< 7 ngày kể từ created_at)
+            const _cfg = window.SLOT_LIMIT_CONFIG;
+            const _createdAt = _myUser?.created_at;
+            const _isNewAccount = _createdAt
+                ? (Date.now() - new Date(_createdAt).getTime()) < 7 * 24 * 3600 * 1000
+                : false;
+
+            if (_isNewAccount) {
+                const _slotsNew = await window.dbEngine.doc("dat_slot", { eq: { sdt_khach: window.currentGuest.sdt_khach } }).catch(() => []);
+                // Giới hạn ngày: đếm slot có trạng thái hoạt động (không phải "Khách hủy") đặt trong ngày hôm nay
+                const _soHomNayNew = _slotsNew.filter(s => {
+                    if (!s.thoi_gian_dat || s.trang_thai_di_danh === "Khách hủy") return false;
+                    const vnD = new Date(new Date(s.thoi_gian_dat).getTime() + _VN_OFFSET).toISOString().slice(0, 10);
+                    return vnD === _todayVnStr;
+                }).length;
+                if (_soHomNayNew >= _cfg.newAccount.maxPerDay) {
+                    window.hienToast("Giới hạn tài khoản mới",
+                        `Tài khoản dưới 7 ngày chỉ được đặt tối đa ${_cfg.newAccount.maxPerDay} slot/ngày.`, "warning");
+                    return;
+                }
+                // Giới hạn tuần: "Chờ đánh" trong 7 ngày gần nhất
+                const _cutoff7 = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
+                const _soCho7Ngay = _slotsNew.filter(s =>
+                    s.trang_thai_di_danh === "Chờ đánh" &&
+                    s.thoi_gian_dat &&
+                    s.thoi_gian_dat >= _cutoff7
+                ).length;
+                if (_soCho7Ngay >= _cfg.newAccount.maxChoNgay7) {
+                    window.hienToast("Giới hạn tài khoản mới",
+                        `Bạn đang có ${_soCho7Ngay} ca chờ đánh trong tuần — tối đa ${_cfg.newAccount.maxChoNgay7} ca. Hoàn thành các ca hiện tại trước.`, "warning");
+                    return;
+                }
+            }
+
+            if (!_isNewAccount && myDiem < 60) {
                 // Giới hạn 1 slot/ngày — so sánh theo giờ VN (UTC+7) để tránh lệch ngày
                 const slotsHom = await window.dbEngine.doc("dat_slot", { eq: { sdt_khach: window.currentGuest.sdt_khach } }).catch(() => []);
                 const soHomNay = slotsHom.filter(s => {
@@ -1916,22 +1969,28 @@
                     const vnDate = new Date(new Date(s.thoi_gian_dat).getTime() + _VN_OFFSET).toISOString().slice(0, 10);
                     return vnDate === _todayVnStr;
                 }).length;
-                if (soHomNay >= 1) {
+                if (soHomNay >= _cfg.lowTrust.maxPerDay) {
                     window.hienToast("Giới hạn 1 slot/ngày", `Uy tín ${myDiem}đ (mức Cảnh cáo) — chỉ được đặt tối đa 1 slot mỗi ngày.`, "warning");
                     return;
                 }
             }
 
-            if (myDiem >= 80) {
-                // Giới hạn chống spam cho tài khoản uy tín tốt: tối đa 3 slot/ngày VN HOẶC 5 slot "Chờ đánh" active
+            if (!_isNewAccount && myDiem >= 80) {
+                // Giới hạn chống spam cho tài khoản uy tín tốt: tối đa 3 slot/ngày VN HOẶC 5 slot "Chờ đánh" trong 30 ngày gần nhất
                 const allMySlots = await window.dbEngine.doc("dat_slot", { eq: { sdt_khach: window.currentGuest.sdt_khach } }).catch(() => []);
                 const soHomNay = allMySlots.filter(s => {
                     if (!s.thoi_gian_dat || s.trang_thai_di_danh === "Khách hủy") return false;
                     const vnDate = new Date(new Date(s.thoi_gian_dat).getTime() + _VN_OFFSET).toISOString().slice(0, 10);
                     return vnDate === _todayVnStr;
                 }).length;
-                const soActiveSlots = allMySlots.filter(s => s.trang_thai_di_danh === "Chờ đánh").length;
-                if (soHomNay >= 3 || soActiveSlots >= 5) {
+                // Chỉ đếm "Chờ đánh" trong 30 ngày gần nhất — tránh slot cũ chưa được host chốt chặn mãi mãi
+                const _cutoff30 = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+                const soActiveSlots = allMySlots.filter(s =>
+                    s.trang_thai_di_danh === "Chờ đánh" &&
+                    s.thoi_gian_dat &&
+                    s.thoi_gian_dat >= _cutoff30
+                ).length;
+                if (soHomNay >= _cfg.highTrust.maxPerDay || soActiveSlots >= _cfg.highTrust.maxActiveSlots) {
                     window.hienToast(
                         "Giới hạn đặt slot",
                         "Bạn đã đạt giới hạn đặt slot tối đa trong ngày để tránh spam. Vui lòng hoàn thành các ca đấu hiện tại!",
@@ -2708,14 +2767,14 @@
                             }, { sdt_khach: mySdt });
                             window.hienToast("Free pass đã dùng", "Lần huỷ sát giờ này được miễn phạt (free pass tháng).", "info");
                         } else {
-                            await _truDiemUyTin(mySdt, 7);
+                            await window._truDiemUyTin(mySdt, 7);
                             window.hienToast("Trừ 7 điểm uy tín", "Huỷ sát giờ đánh (< 2 tiếng) bị phạt.", "warning");
                         }
                     } else if (diffH < 4) {
                         if (freePass > 0) {
                             await window.dbEngine.ghi("nguoi_dung", { free_pass_thang: 0, free_pass_reset_thang: thangNow }, { sdt_khach: mySdt });
                         } else {
-                            await _truDiemUyTin(mySdt, 3);
+                            await window._truDiemUyTin(mySdt, 3);
                             window.hienToast("Trừ 3 điểm uy tín", "Huỷ trong vòng 2-4 tiếng trước giờ đánh.", "warning");
                         }
                     }
@@ -3574,7 +3633,13 @@
                 const gioFmt  = ca.gio_bat_dau
                     ? ca.gio_bat_dau.slice(0,5) + (ca.gio_ket_thuc ? "–" + ca.gio_ket_thuc.slice(0,5) : "")
                     : "--";
-                const tt     = ttMap[slot.trang_thai_di_danh] || { stripe: "#546e7a", badgeCls: "ls-badge-cancel", label: slot.trang_thai_di_danh };
+                // Nếu slot "Chờ đánh" nhưng ca đã kết thúc → hiển thị "Đã Tham Gia" (không ghi DB)
+                let _displayTT = slot.trang_thai_di_danh;
+                if (_displayTT === "Chờ đánh" && ca.ngay_danh && ca.gio_ket_thuc) {
+                    const _caEnd = new Date(ca.ngay_danh + "T" + ca.gio_ket_thuc);
+                    if (Date.now() > _caEnd.getTime()) _displayTT = "Đã tham gia";
+                }
+                const tt     = ttMap[_displayTT] || { stripe: "#546e7a", badgeCls: "ls-badge-cancel", label: _displayTT };
                 const itemId = "lsItem_" + slot.id;
                 const baoGom = ca.tien_ich_bao_gom || {};
 

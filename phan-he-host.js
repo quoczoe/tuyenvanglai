@@ -2901,7 +2901,19 @@
             }
             await window.dbEngine.ghi("dat_slot", payload, { id: guestId });
             selectEl.dataset.prev = newState;
-            window.hienToast("Đã cập nhật ✅", newState, "success");
+
+            // Trừ điểm uy tín khi Host chọn "Bùng kèo" (10 điểm)
+            if (newState === "Bùng kèo") {
+                const _sdtBung = selectEl.dataset.sdt;
+                if (_sdtBung && typeof window._truDiemUyTin === "function") {
+                    window._truDiemUyTin(_sdtBung, 10).catch(() => {});
+                    window.hienToast("Trừ 10 điểm uy tín", `Khách bùng kèo — tài khoản bị phạt.`, "warning");
+                } else {
+                    window.hienToast("Đã cập nhật ✅", newState, "success");
+                }
+            } else {
+                window.hienToast("Đã cập nhật ✅", newState, "success");
+            }
 
             // Cập nhật DOM trực tiếp — KHÔNG reload lại modal (tránh đảo thứ tự + mất UX)
             const tr = selectEl.closest("tr");
