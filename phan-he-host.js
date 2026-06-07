@@ -2599,54 +2599,24 @@
         const modal = document.getElementById("modal-guest-list");
         if (modal) { modal.classList.add("hidden"); modal.style.display = "none"; }
         document.body.style.overflow = "";
-        // Đóng portal nếu đang mở
-        window._closeGlPortal && window._closeGlPortal();
+        // Đóng dropdown inline nếu đang mở
+        _closeAllGlCdd();
     };
     window._dongGuestListModal = window.closeGuestListModal;
 
     /* ── Custom dropdown helpers ─────────────────────────────────── */
-    // Đóng tất cả dropdown đang mở (gọi khi click ngoài)
-    document.addEventListener("click", function (e) {
-        // Đóng portal nếu click ra ngoài trigger button hoặc ngoài portal
-        if (!e.target.closest(".gl-cdd") && !e.target.closest("#gl-cdd-portal")) {
-            window._closeGlPortal();
-        }
-    }, true);
-
-    // Đóng portal khi bảng danh sách khách được scroll (tránh menu lạc vị trí)
-    document.addEventListener("scroll", function (e) {
-        const p = document.getElementById("gl-cdd-portal");
-        if (p && p.style.display !== "none") window._closeGlPortal();
-    }, true);
-
-    // Helper: lấy hoặc tạo portal div trên body (dùng chung cho tất cả dropdown)
-    function _getGlPortal() {
-        let p = document.getElementById("gl-cdd-portal");
-        if (!p) {
-            p = document.createElement("div");
-            p.id = "gl-cdd-portal";
-            p.style.cssText = [
-                "position:fixed",
-                "z-index:999999",
-                "display:none",
-                "background:#0f1e35",
-                "border:1px solid #1e3a5f",
-                "border-radius:9px",
-                "box-shadow:0 8px 32px rgba(0,0,0,0.75)",
-                "min-width:148px",
-                "overflow:hidden",
-                "animation:glFadeIn .12s ease"
-            ].join(";");
-            document.body.appendChild(p);
-        }
-        return p;
+    // Đóng tất cả dropdown inline đang mở
+    function _closeAllGlCdd() {
+        document.querySelectorAll(".gl-cdd-menu").forEach(m => {
+            m.style.display = "none";
+            m.classList.remove("is-drop-up");
+        });
+        document.querySelectorAll(".tr-cdd-open").forEach(r => r.classList.remove("tr-cdd-open"));
     }
 
-    window._closeGlPortal = function () {
-        const p = document.getElementById("gl-cdd-portal");
-        if (p) { p.style.display = "none"; p.dataset.uid = ""; }
-        document.querySelectorAll(".tr-cdd-open").forEach(r => r.classList.remove("tr-cdd-open"));
-    };
+    document.addEventListener("click", function (e) {
+        if (!e.target.closest(".gl-cdd")) _closeAllGlCdd();
+    }, true);
 
     window._toggleGlCdd = function (uid) {
         const wrap = document.getElementById(uid);
@@ -2654,44 +2624,28 @@
         const menu = wrap.querySelector(".gl-cdd-menu");
         if (!menu) return;
 
-        const portal = _getGlPortal();
-        const isThisOpen = portal.style.display !== "none" && portal.dataset.uid === uid;
+        const isOpen = menu.style.display !== "none";
+        _closeAllGlCdd();
+        if (isOpen) return; // Toggle: đang mở thì đóng
 
-        // Đóng portal (dù là cùng uid hay khác uid)
-        window._closeGlPortal();
-        if (isThisOpen) return; // Toggle: đang mở thì đóng thôi
+        // Hiện menu ở trạng thái drop-down trước để đo chiều cao thực
+        menu.classList.remove("is-drop-up");
+        menu.style.display = "block";
 
-        // Đổ nội dung các option vào portal
-        portal.innerHTML = menu.innerHTML;
+        // So sánh bottom của menu với bottom của modal inner container
+        const menuRect      = menu.getBoundingClientRect();
+        const modalInner    = document.getElementById("modal-guest-list-inner");
+        const containerBtm  = modalInner
+            ? modalInner.getBoundingClientRect().bottom
+            : window.innerHeight;
+        const spaceBelow    = containerBtm - menuRect.bottom;
 
-        // Đo vị trí trigger button để định vị portal
-        const btn     = wrap.querySelector("button[data-guest-id]");
-        const btnRect = btn.getBoundingClientRect();
-
-        // Hiện tạm (invisible) để đo chiều cao thực
-        portal.style.visibility = "hidden";
-        portal.style.display    = "block";
-        const portalH = portal.offsetHeight;
-        portal.style.visibility = "";
-
-        // Tính top/bottom: ưu tiên mở xuống, đảo ngược nếu không đủ chỗ
-        const spaceBelow = window.innerHeight - btnRect.bottom - 8;
-        if (spaceBelow >= portalH) {
-            portal.style.top    = (btnRect.bottom + 4) + "px";
-            portal.style.bottom = "auto";
-        } else {
-            portal.style.top    = Math.max(4, btnRect.top - portalH - 4) + "px";
-            portal.style.bottom = "auto";
+        // Nếu menu tràn ra ngoài đáy container → lật lên trên
+        if (spaceBelow < 0) {
+            menu.classList.add("is-drop-up");
         }
 
-        // Canh trái — tránh bị cắt ở cạnh phải màn hình
-        const portalW = portal.offsetWidth || 148;
-        const leftPos = Math.min(btnRect.left, window.innerWidth - portalW - 8);
-        portal.style.left = Math.max(4, leftPos) + "px";
-
-        portal.dataset.uid = uid;
-
-        // Đẩy <tr> lên z-index cao
+        // Đẩy <tr> lên z-index cao để menu không bị che bởi các hàng phía dưới
         const tr = wrap.closest("tr");
         if (tr) tr.classList.add("tr-cdd-open");
     };
@@ -2701,8 +2655,8 @@
         if (!wrap) return;
         const btn = wrap.querySelector("button[data-guest-id]");
         if (!btn) return;
-        // Đóng portal
-        window._closeGlPortal();
+        // Đóng menu inline
+        _closeAllGlCdd();
         // Không làm gì nếu chọn lại trạng thái hiện tại
         if (btn.dataset.current === newState) return;
         // Tạo proxy object giống select element để doiTrangThaiDiDanh dùng được
@@ -3814,11 +3768,11 @@
 
             // Bảng cầu tiêu thụ
             const cauList  = Array.isArray(ca.loai_cau_su_dung) ? ca.loai_cau_su_dung : [];
-            const _thStyle = "padding:8px 10px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #1e3a5f;background:rgba(15,30,53,0.6);";
-            const _tdStyle = "padding:9px 10px;font-size:0.8rem;color:#e2e8f0;border-bottom:1px solid rgba(30,58,95,0.5);";
+            const _thStyle = "padding:8px 10px;text-align:left;font-size:0.72rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid #1e3a5f;background:rgba(15,30,53,0.6);white-space:nowrap;";
+            const _tdStyle = "padding:9px 10px;font-size:0.8rem;color:#e2e8f0;border-bottom:1px solid rgba(30,58,95,0.5);white-space:nowrap;";
             const cauHTML  = cauList.length === 0
                 ? `<div style="color:#64748b;text-align:center;padding:14px;border:1px dashed rgba(30,58,95,0.8);border-radius:8px;font-size:0.82rem;">Không có dữ liệu cầu.</div>`
-                : `<div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3a5f;"><table style="width:100%;min-width:380px;font-size:0.8rem;border-collapse:collapse;">
+                : `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid #1e3a5f;"><table style="width:100%;min-width:380px;font-size:0.8rem;border-collapse:collapse;">
                     <thead><tr>
                         <th style="${_thStyle}">Loại cầu</th>
                         <th style="${_thStyle}">Quy cách</th>
@@ -3838,7 +3792,7 @@
             // Bảng khách — thêm cột Thanh Toán, logic Tiền theo da_thanh_toan
             const guestHTML = slots.length === 0
                 ? `<div style="color:#64748b;text-align:center;padding:14px;border:1px dashed rgba(30,58,95,0.8);border-radius:8px;font-size:0.82rem;">Không có khách đăng ký.</div>`
-                : `<div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3a5f;"><table style="width:100%;min-width:440px;font-size:0.8rem;border-collapse:collapse;">
+                : `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid #1e3a5f;"><table style="width:100%;min-width:560px;font-size:0.8rem;border-collapse:collapse;">
                     <thead><tr>
                         <th style="${_thStyle}">Tên khách</th>
                         <th style="${_thStyle}">SĐT</th>
@@ -3922,7 +3876,7 @@
                 </div>
 
                 <!-- ── 3 CARD TÀI CHÍNH ── -->
-                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+                <div class="cd-finance-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
                     <div style="background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.2);border-radius:12px;padding:14px 12px;text-align:center;">
                         <div style="display:flex;align-items:center;justify-content:center;gap:5px;margin-bottom:8px;">
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>

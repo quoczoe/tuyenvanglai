@@ -3501,17 +3501,47 @@ window.xoaBoLoc = xoaBoLoc;
 }
 /* Khóa cứng layout bảng — chống layout shift khi đổi trạng thái */
 #modal-guest-list-table { table-layout: fixed !important; }
-/* Portal menu (render ra body, position:fixed — bypass mọi overflow/stacking) */
-#gl-cdd-portal { animation: glFadeIn .12s ease; }
+/* Custom dropdown menu — mặc định mở xuống dưới */
+.gl-cdd-menu {
+    position: absolute;
+    top: calc(100% + 4px); bottom: auto;
+    left: 0; z-index: 999 !important;
+    animation: glFadeIn .12s ease;
+}
+/* Drop-up: mở ngược lên khi không đủ chỗ phía dưới */
+.gl-cdd-menu.is-drop-up {
+    top: auto !important;
+    bottom: calc(100% + 6px) !important;
+    animation: glFadeUp .12s ease;
+}
 @keyframes glFadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
-/* Row đang mở dropdown: z-index tăng để button nổi trên các row khác */
-#modal-guest-list-table tr.tr-cdd-open { position: relative; z-index: 50; }
-/* td chứa trigger button — không clip */
+@keyframes glFadeUp { from { opacity:0; transform:translateY(4px);  } to { opacity:1; transform:translateY(0); } }
+/* Row đang mở dropdown: nổi lên trên tất cả các hàng khác */
+#modal-guest-list-table tr.tr-cdd-open { position: relative !important; z-index: 99 !important; }
+/* td chứa dropdown — không clip, là containing block cho menu */
 #modal-guest-list-table td.td-cdd { overflow: visible !important; position: relative; }
 /* Ẩn spinner số của input tiền bùng */
 #modal-guest-list-body input[type=number]::-webkit-outer-spin-button,
 #modal-guest-list-body input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 #modal-guest-list-body input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+
+/* ── ANTI-WORD-WRAP: chống chữ bị bẻ dọc trong ô bảng DS Khách ── */
+#modal-guest-list-table td,
+#modal-guest-list-table th { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* Cho phép select dropdown trong td-cdd overflow ra ngoài */
+#modal-guest-list-table td.td-cdd { overflow: visible !important; }
+
+/* ── BULK ACTION BAR: nút không bị bẻ dòng ── */
+#gl-bulk-bar button { white-space: nowrap; flex-shrink: 0; }
+
+/* ── 3 CARD TÀI CHÍNH CHI TIẾT CA ĐẤU: responsive mobile ── */
+@media (max-width: 768px) {
+    .cd-finance-grid { grid-template-columns: 1fr !important; }
+    /* Bảng DS Khách: giữ min-width, scroll ngang */
+    #modal-guest-list-table { min-width: 860px; }
+    /* Modal Chi Tiết Ca Đấu: cuộn ngang cho bảng bên trong */
+    #modal-ca-detail-body .cd-table-scroll { min-width: 560px; }
+}
 </style>
 <div id="modal-guest-list" style="display:none;position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);"
      onclick="if(event.target===this)window._dongGuestListModal()">
