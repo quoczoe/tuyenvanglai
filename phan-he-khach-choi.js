@@ -2669,6 +2669,14 @@
                 window.hienToast("Không thể huỷ", "Ca đấu đã được chốt. Liên hệ trực tiếp chủ sân.", "warning");
                 return;
             }
+            // Chặn hủy sau khi ca đã bắt đầu — khách chỉ được hủy trước giờ đánh
+            if (caDau?.ngay_danh && caDau?.gio_bat_dau) {
+                const startDt = new Date(`${caDau.ngay_danh}T${caDau.gio_bat_dau}`);
+                if (Date.now() >= startDt.getTime()) {
+                    window.hienToast("Không thể huỷ", "Ca đấu đã bắt đầu. Chỉ Host mới có thể đổi trạng thái lúc này.", "warning");
+                    return;
+                }
+            }
 
             // Tính điểm trừ dựa trên thời gian còn lại trước giờ đánh
             const mySdt = window.currentGuest?.sdt_khach;
@@ -2795,8 +2803,10 @@
                     : slot.trang_thai_di_danh === "Bùng kèo"   ? "#ef4444"
                     : slot.trang_thai_di_danh === "Khách hủy"  ? "#9ca3af" : "#fbbf24";
 
-                // Điều kiện hiện nút Huỷ: chưa bị chốt + đang "Chờ đánh"
-                const coTheHuy = !da_chot && slot.trang_thai_di_danh === "Chờ đánh";
+                // Điều kiện hiện nút Huỷ: chưa bị chốt + đang "Chờ đánh" + ca chưa bắt đầu
+                const _caStartDt = ca?.ngay_danh && ca?.gio_bat_dau ? new Date(`${ca.ngay_danh}T${ca.gio_bat_dau}`) : null;
+                const _caStarted = _caStartDt ? Date.now() >= _caStartDt.getTime() : false;
+                const coTheHuy = !da_chot && !_caStarted && slot.trang_thai_di_danh === "Chờ đánh";
 
                 return `<div class="kh-slot-row">
                     <div class="kh-slot-info">
@@ -3613,8 +3623,10 @@
                 const tenSanEsc = (ca.ten_san || "").replace(/'/g, "\\'");
                 let actionBtns = "";
                 if (slot.trang_thai_di_danh === "Chờ đánh" || slot.trang_thai_di_danh === "Chờ Host duyệt") {
-                    // "Hủy đăng ký" chỉ hiện khi ca chưa chốt; "Liên hệ Host" LUÔN hiện
-                    const huyBtn = !ca.da_chot_ca
+                    // "Hủy đăng ký" chỉ hiện khi ca chưa chốt VÀ ca chưa bắt đầu
+                    const _lsStartDt = ca?.ngay_danh && ca?.gio_bat_dau ? new Date(`${ca.ngay_danh}T${ca.gio_bat_dau}`) : null;
+                    const _lsStarted = _lsStartDt ? Date.now() >= _lsStartDt.getTime() : false;
+                    const huyBtn = (!ca.da_chot_ca && !_lsStarted)
                         ? `<button class="ls-btn-cancel" onclick="event.stopPropagation();window.huyDatSlot('${slot.id}','${slot.id_ca_dau}')">
                                <i class="fa-solid fa-xmark"></i> Hủy đăng ký
                            </button>` : "";

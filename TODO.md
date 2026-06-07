@@ -1,4 +1,27 @@
-# TODO — Cập nhật: 2026-06-09 (phiên 10)
+# TODO — Cập nhật: 2026-06-09 (phiên 11)
+
+---
+
+## ✅ ĐÃ HOÀN THÀNH (phiên 11) — Chi Tiết Ca Đấu redesign + DS Khách fixes
+
+### Modal Chi Tiết Ca Đấu — index.html + phan-he-host.js
+- [x] Modal wrapper: border-radius:16px, padding:18-24px, backdrop blur(6px), shadow sâu hơn
+- [x] Header: icon SVG dashboard + subtitle, nút ✕ có hover đỏ
+- [x] Khối thông tin ca: SVG icons Calendar/Clock/Grid/MapPin thay emoji
+- [x] 3 card tài chính: breakdown bảng 2 cột (label+giá), border-radius:12px
+- [x] Card Lời/Lỗ: mũi tên SVG động theo chiều; "Buổi này bị lỗ" đổi màu #fdba74 (cam nhạt, tương phản tốt)
+- [x] Badge bar thống kê khách: nằm trong panel có viền
+- [x] Section heading: accent bar 4px thay icon FontAwesome
+- [x] Bảng cầu + bảng khách: border-radius container, padding th/td chuẩn, badge GT+Trạng thái, hover row
+- [x] dongModalCaDetail: fix set cả style.display='none' + classList.add('hidden')
+
+### DS Khách fixes — phan-he-host.js + ket-noi-supabase.js
+- [x] capNhatThanhToan: Set+Map double-guard, remove double toast từ catch
+- [x] doiTrangThaiDiDanh: fix dataset.daThanhtoan (camelCase bug), remove double toast, write huy_luc
+- [x] openGuestListModal: batch fetch trinh_do từ nguoi_dung, dùng thoi_gian_dat (đúng field)
+- [x] ket-noi-supabase.js: thêm boLoc.in support cho docData
+- [x] Mobile Ca Đã Đăng: thêm .cdd-scroll-outer, đổi overflow-x:clip → visible
+- [x] Tạo migration-dat-slot-v2.sql (chưa chạy)
 
 ---
 

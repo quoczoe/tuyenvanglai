@@ -2291,6 +2291,11 @@
         if (loading) loading.style.display = "block";
         if (empty)   empty.style.display   = "none";
         if (table)   table.style.display   = "none";
+        // Reset bulk bar
+        const _bulkBarInit = document.getElementById("gl-bulk-bar");
+        const _cbAll = document.getElementById("gl-cb-all");
+        if (_bulkBarInit) _bulkBarInit.style.display = "none";
+        if (_cbAll) _cbAll.checked = false;
 
         // Hiện modal
         modal.classList.remove("hidden");
@@ -2319,6 +2324,25 @@
                 }).catch(() => [])
             ]);
             const daChotCa   = !!(caDauList[0]?.da_chot_ca);
+            // Kiểm tra ca đã bắt đầu chưa — dùng để disable "Khách hủy" option
+            const _caInfo = caDauList[0];
+            const isMatchStarted = (() => {
+                if (!_caInfo?.ngay_danh || !_caInfo?.gio_bat_dau) return false;
+                return Date.now() >= new Date(`${_caInfo.ngay_danh}T${_caInfo.gio_bat_dau}`).getTime();
+            })();
+            // Lưu trên modal dataset để bulkDoiTrangThai + _triggerGlCdd đọc được
+            if (modal) modal.dataset.matchStarted = isMatchStarted ? "1" : "0";
+            // Cập nhật nút "Khách hủy" trong bulk bar
+            const _bulkHuyBtn = document.querySelector("#gl-bulk-bar button[onclick*='Khách hủy']");
+            if (_bulkHuyBtn) {
+                _bulkHuyBtn.disabled = isMatchStarted;
+                _bulkHuyBtn.title = isMatchStarted ? "Ca đã bắt đầu — chỉ dùng Bùng kèo" : "";
+                _bulkHuyBtn.style.opacity = isMatchStarted ? "0.35" : "";
+                _bulkHuyBtn.style.cursor  = isMatchStarted ? "not-allowed" : "";
+            }
+            // Auto-update Chờ đánh → Đã tham gia nếu ca đã hết giờ
+            const _gioKetThuc = _caInfo?.gio_ket_thuc || _caInfo?.thoi_gian_ket_thuc;
+            if (_gioKetThuc) window.autoUpdateChoDao(matchId, _gioKetThuc).catch(() => {});
             // Map: sdt_nguoi_bi_danh_gia → review object
             const reviewsMap = new Map((reviewsRaw || []).map(r => [r.sdt_nguoi_bi_danh_gia, r]));
 
@@ -2354,84 +2378,150 @@
             if (modal) modal.dataset.daChotCa = daChotCa ? "1" : "0";
 
             if (table) table.style.display = "table";
+
+            // ── Bulk action bar ─────────────────────────────────────────────
+            const _bulkBar = document.getElementById("gl-bulk-bar");
+            const _bulkCount = document.getElementById("gl-bulk-count");
+            function _capNhatBulkBar() {
+                const checkedBoxes = tbody ? tbody.querySelectorAll(".gl-row-cb:checked") : [];
+                const n = checkedBoxes.length;
+                if (_bulkBar) _bulkBar.style.display = n > 0 ? "flex" : "none";
+                if (_bulkCount) _bulkCount.textContent = `${n} người`;
+            }
+            window._glCapNhatBulkBar = _capNhatBulkBar;
+
+            // Hàm helper render toggle switch thanh toán
+            function _renderToggleTT(slotId, daTT) {
+                const onStyle  = "background:#00ff88;";
+                const offStyle = "background:#334155;";
+                const knobOn   = "transform:translateX(16px);";
+                const knobOff  = "transform:translateX(2px);";
+                return `<div onclick="event.stopPropagation();window.capNhatThanhToanToggle('${slotId}',this)" data-slot-id="${slotId}" data-checked="${daTT ? "1" : "0"}"
+                    title="${daTT ? "Đã trả — click để bỏ" : "Chưa trả — click để đánh dấu"}"
+                    style="display:inline-flex;align-items:center;gap:7px;cursor:pointer;user-select:none;">
+                    <div id="tt-sw-track-${slotId}" style="position:relative;width:34px;height:18px;border-radius:9px;transition:background 0.22s;flex-shrink:0;${daTT ? onStyle : offStyle}">
+                        <div id="tt-sw-knob-${slotId}" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform 0.22s;box-shadow:0 1px 3px rgba(0,0,0,0.4);${daTT ? knobOn : knobOff}"></div>
+                    </div>
+                    <span id="tt-badge-${slotId}" style="font-size:0.72rem;font-weight:600;white-space:nowrap;${daTT ? "color:#34d399;" : "color:#64748b;"}">${daTT ? "Đã trả" : "Chưa trả"}</span>
+                </div>`;
+            }
+
+            // Custom dropdown trạng thái — thay <select> native, hỗ trợ cả Khách hủy đổi ngược
+            // isMatchStarted được đóng gói từ scope ngoài (tính ở đầu openGuestListModal)
+            function _renderCustomDropdown(guestId, caId, trangThai, sdt, ten, daTT, tienBung) {
+                // "Khách hủy" bị disable khi ca đã bắt đầu
+                const _khachHuyDisabled = isMatchStarted;
+                const _opts = [
+                    { val: "Chờ đánh",    label: "Chờ đánh",    color: "#94a3b8", bg: "rgba(100,116,139,0.15)", border: "rgba(100,116,139,0.3)",
+                      icon: `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="11" height="11" rx="3" stroke="#94a3b8" stroke-width="1.3"/><path d="M6.5 3.5v3l2 1.5" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
+                    { val: "Đã tham gia", label: "Đã tham gia", color: "#00ff88", bg: "rgba(0,255,136,0.10)", border: "rgba(0,255,136,0.3)",
+                      icon: `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#00ff88" stroke-width="1.3"/><path d="M4 6.5l1.8 1.8L9 4" stroke="#00ff88" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
+                    { val: "Bùng kèo",    label: "Bùng kèo",    color: "#fb923c", bg: "rgba(251,146,60,0.10)", border: "rgba(251,146,60,0.3)",
+                      icon: `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.5L12 11.5H1L6.5 1.5Z" stroke="#fb923c" stroke-width="1.3" stroke-linejoin="round"/><path d="M6.5 5v3M6.5 9.5v.2" stroke="#fb923c" stroke-width="1.3" stroke-linecap="round"/></svg>` },
+                    { val: "Khách hủy",   label: "Khách hủy",   color: "#f87171", bg: "rgba(239,68,68,0.10)", border: "rgba(239,68,68,0.28)",
+                      disabled: _khachHuyDisabled, disabledTitle: "Ca đã bắt đầu — không thể dùng Khách hủy",
+                      icon: `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#f87171" stroke-width="1.3"/><path d="M4.5 4.5l4 4M8.5 4.5l-4 4" stroke="#f87171" stroke-width="1.3" stroke-linecap="round"/></svg>` },
+                ];
+                const cur = _opts.find(o => o.val === trangThai) || _opts[0];
+                const uid = `cdd-${guestId}`;
+                // data-* encode để doiTrangThaiDiDanh đọc được qua _triggerCustomDd()
+                return `<div id="${uid}" class="gl-cdd" style="position:relative;display:inline-block;min-width:130px;">
+                    <button type="button"
+                        onclick="window._toggleGlCdd('${uid}')"
+                        data-guest-id="${guestId}" data-ca-id="${caId}"
+                        data-sdt="${sdt}" data-ten="${ten}"
+                        data-da-thanh-toan="${daTT}" data-tien-bung="${tienBung}"
+                        data-current="${trangThai}"
+                        style="display:flex;align-items:center;gap:6px;width:100%;padding:5px 8px;
+                               background:${cur.bg};border:1px solid ${cur.border};border-radius:8px;
+                               color:${cur.color};font-size:0.76rem;font-family:inherit;cursor:pointer;
+                               white-space:nowrap;justify-content:space-between;">
+                        <span style="display:flex;align-items:center;gap:6px;">${cur.icon}${cur.label}</span>
+                        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="${cur.color}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                    <div class="gl-cdd-menu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:9999;
+                         background:#0f1e35;border:1px solid #1e3a5f;border-radius:9px;
+                         box-shadow:0 8px 24px rgba(0,0,0,0.6);min-width:140px;overflow:hidden;">
+                        ${_opts.map(o => o.disabled
+                            ? `<div class="gl-cdd-opt" title="${o.disabledTitle||""}"
+                                 style="display:flex;align-items:center;gap:7px;padding:8px 12px;font-size:0.76rem;
+                                        color:${o.color};opacity:0.3;cursor:not-allowed;user-select:none;">
+                                ${o.icon}<span>${o.label}</span>
+                                <span style="margin-left:auto;font-size:0.65rem;color:#64748b;">🔒</span>
+                               </div>`
+                            : `<div onclick="window._triggerGlCdd('${uid}','${o.val}')" class="gl-cdd-opt"
+                                 style="display:flex;align-items:center;gap:7px;padding:8px 12px;cursor:pointer;font-size:0.76rem;
+                                        color:${o.color};transition:background 0.12s;${trangThai===o.val?"background:"+o.bg+";":""}"
+                                 onmouseover="this.style.background='${o.bg}'"
+                                 onmouseout="this.style.background='${trangThai===o.val?o.bg:"transparent"}'">
+                                ${o.icon}<span>${o.label}</span>
+                                ${trangThai===o.val?`<svg style="margin-left:auto;" width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="${o.color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`:""}
+                               </div>`
+                        ).join("")}
+                    </div>
+                </div>`;
+            }
+
+            // Hàm helper render badge trạng thái dạng pill SVG
+            function _renderBadgeTT(trangThai) {
+                if (trangThai === "Đã tham gia") return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:rgba(0,255,136,0.10);color:#00ff88;border:1px solid rgba(0,255,136,0.25);white-space:nowrap;"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><circle cx="4" cy="4" r="3.5" fill="#00ff88"/><path d="M2 4l1.5 1.5L6 2.5" stroke="#0f1e35" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Đã tham gia</span>`;
+                if (trangThai === "Bùng kèo")    return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:rgba(239,68,68,0.10);color:#f87171;border:1px solid rgba(239,68,68,0.25);white-space:nowrap;"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><circle cx="4" cy="4" r="3.5" fill="#f87171"/><path d="M2.5 2.5l3 3M5.5 2.5l-3 3" stroke="#0f1e35" stroke-width="1.2" stroke-linecap="round"/></svg>Bùng kèo</span>`;
+                if (trangThai === "Khách hủy")   return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:rgba(239,68,68,0.08);color:#f87171;border:1px solid rgba(239,68,68,0.20);white-space:nowrap;"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><circle cx="4" cy="4" r="3.5" fill="#f87171" opacity=".7"/><path d="M2.5 2.5l3 3M5.5 2.5l-3 3" stroke="#0f1e35" stroke-width="1.2" stroke-linecap="round"/></svg>Khách hủy</span>`;
+                return `<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:0.72rem;font-weight:700;background:rgba(100,116,139,0.15);color:#94a3b8;border:1px solid rgba(100,116,139,0.25);white-space:nowrap;"><svg width="8" height="8" viewBox="0 0 8 8" fill="none"><circle cx="4" cy="4" r="3.5" fill="#64748b"/></svg>Chờ đánh</span>`;
+            }
+
             const rowsHTML = sortedGuests.map((g, idx) => {
                 const trangThai  = g.trang_thai_di_danh || "Chờ đánh";
                 const isActive   = trangThai === "Đã tham gia";
-                const isKhachHuy = trangThai === "Khách hủy";   // khách tự hủy — host không can thiệp
-                const isBung     = trangThai === "Bùng kèo";    // host đánh dấu vắng mặt
-                const isHuy      = isKhachHuy || isBung;        // dùng chung cho cột Thời gian hủy
-                const canRate    = isActive || isBung;          // cả 2 đều được đánh giá
+                const isKhachHuy = trangThai === "Khách hủy";
+                const isBung     = trangThai === "Bùng kèo";
+                const isHuy      = isKhachHuy || isBung;
+                const canRate    = isActive || isBung;
                 const gioiTinh   = g.gioi_tinh === "female" ? "Nữ" : "Nam";
                 const genderClr  = g.gioi_tinh === "female" ? "#f472b6" : "#60a5fa";
 
-                // Badge trạng thái — màu riêng: xanh/cam/đỏ/xám
-                let badgeStyle;
-                if      (isActive)    badgeStyle = "background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.3);";
-                else if (isBung)      badgeStyle = "background:rgba(251,146,60,0.12);color:#fb923c;border:1px solid rgba(251,146,60,0.3);";
-                else if (isKhachHuy)  badgeStyle = "background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);";
-                else                  badgeStyle = "background:rgba(100,116,139,0.2);color:#94a3b8;";
+                // Cột Trạng thái: custom dropdown cho tất cả (kể cả Khách hủy có thể đổi ngược)
+                const selectHTML = _renderCustomDropdown(g.id, matchId, trangThai,
+                    (g.sdt_khach||"").replace(/"/g,""),
+                    (g.ten_khach||"").replace(/"/g,""),
+                    g.da_thanh_toan ? "1" : "0",
+                    g.tien_thu_bung || 0);
 
-                // Cột Trạng thái: select đổi được (trừ Khách hủy). Lưu đủ data để DOM update không cần refetch.
-                const selectHTML = isKhachHuy
-                    ? `<span style="color:#475569;font-size:0.72rem;">—</span>`
-                    : `<select data-guest-id="${g.id}" data-ca-id="${matchId}"
-                               data-sdt="${(g.sdt_khach||"").replace(/"/g,"")}"
-                               data-ten="${(g.ten_khach||"").replace(/"/g,"")}"
-                               data-da-thanh-toan="${g.da_thanh_toan ? "1" : "0"}"
-                               data-tien-bung="${g.tien_thu_bung || 0}"
-                               onchange="window.doiTrangThaiDiDanh(this)"
-                               style="background:rgba(15,30,53,0.9);border:1px solid #2d4a6e;color:#e2e8f0;
-                                      border-radius:7px;padding:5px 7px;font-size:0.76rem;font-family:inherit;
-                                      cursor:pointer;outline:none;min-width:118px;">
-                           <option value="Chờ đánh"    ${trangThai==="Chờ đánh"    ?"selected":""}>⏳ Chờ đánh</option>
-                           <option value="Đã tham gia" ${trangThai==="Đã tham gia" ?"selected":""}>✅ Đã tham gia</option>
-                           <option value="Bùng kèo"    ${trangThai==="Bùng kèo"    ?"selected":""}>❌ Bùng kèo</option>
-                       </select>`;
-
-                // Cột Thanh toán — ràng buộc nghiêm ngặt theo trạng thái
+                // Cột Thanh toán
                 let ttCellHTML;
                 if (isKhachHuy) {
-                    // Khách tự hủy — không thu được, khóa hoàn toàn
                     ttCellHTML = `<span style="color:#475569;font-size:0.72rem;">—</span>`;
                 } else if (isBung) {
-                    // Bùng kèo — input tiền phạt (0 = không thu, >0 = thu phạt)
-                    const tienBung = g.tien_thu_bung || 0;
-                    ttCellHTML = `<div style="display:flex;align-items:center;gap:4px;justify-content:center;">
-                        <input type="number" data-slot-id="${g.id}" value="${tienBung}" min="0" step="1000"
-                               onchange="window.capNhatTienBung(this)" placeholder="0"
-                               style="width:82px;background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.3);
-                                      color:#fb923c;border-radius:6px;padding:4px 7px;font-size:0.75rem;
-                                      text-align:right;font-family:inherit;outline:none;box-sizing:border-box;">
-                        <span style="font-size:0.7rem;color:#64748b;flex-shrink:0;">đ</span>
+                    const tienBung = Math.round((g.tien_thu_bung || 0) / 1000);
+                    ttCellHTML = `<div style="display:inline-flex;align-items:center;gap:0;position:relative;">
+                        <input type="number" data-slot-id="${g.id}" value="${tienBung}" min="0" step="1"
+                               onchange="window.capNhatTienBung(this)"
+                               placeholder="0"
+                               style="width:62px;background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.3);
+                                      color:#fb923c;border-radius:6px 0 0 6px;padding:4px 6px;font-size:0.75rem;
+                                      text-align:right;font-family:inherit;outline:none;box-sizing:border-box;
+                                      -moz-appearance:textfield;appearance:textfield;">
+                        <span style="background:rgba(251,146,60,0.15);border:1px solid rgba(251,146,60,0.3);border-left:none;
+                                     color:#fb923c;font-size:0.7rem;font-weight:700;padding:4px 5px;border-radius:0 6px 6px 0;
+                                     line-height:1;display:flex;align-items:center;">K</span>
                     </div>`;
                 } else if (isActive) {
-                    // Đã tham gia — cho phép đánh dấu thanh toán
                     const daTT = !!g.da_thanh_toan;
-                    const ttBadgeStyle = daTT
-                        ? "background:rgba(6,78,59,0.6);color:#34d399;border:1px solid rgba(5,46,37,0.5);"
-                        : "background:rgba(51,65,85,0.5);color:#94a3b8;";
-                    ttCellHTML = `<label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px;justify-content:center;cursor:pointer;">
-                        <input type="checkbox" data-slot-id="${g.id}" ${daTT ? "checked" : ""}
-                               onchange="window.capNhatThanhToan(this,event)"
-                               style="width:14px;height:14px;accent-color:#34d399;cursor:pointer;">
-                        <span id="tt-badge-${g.id}" style="padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;${ttBadgeStyle}">${daTT ? "Đã trả" : "Chưa trả"}</span>
-                    </label>`;
+                    ttCellHTML = _renderToggleTT(g.id, daTT);
                 } else {
-                    // Chờ đánh — chưa có hành động thanh toán
                     ttCellHTML = `<span style="color:#475569;font-size:0.72rem;">—</span>`;
                 }
 
-                // Cột Thời gian hủy — thử nhiều tên field (huy_luc, thoi_gian_huy, cancelled_at, updated_at)
+                // Cột Thời gian hủy — lấy huy_luc ưu tiên, fallback các field khác
                 const tgHuyClr  = isBung ? "#fb923c" : (isKhachHuy ? "#f87171" : "#475569");
-                const _tgHuyRaw = g.huy_luc || g.thoi_gian_huy || g.cancelled_at || g.updated_at;
+                const _tgHuyRaw = g.huy_luc || g.cancelled_at || (isHuy ? g.updated_at : null);
                 const tgHuy     = isHuy ? _formatTS(_tgHuyRaw) : "--";
 
-                // Cột Đánh giá — cho phép cả "Đã tham gia" lẫn "Bùng kèo"
+                // Cột Đánh giá
                 const tenKhachEsc = (g.ten_khach || "").replace(/'/g, "\\x27");
                 const sdtKhachEsc = (g.sdt_khach || "").replace(/'/g, "\\x27");
                 let ratingCellHTML;
                 if (!canRate) {
-                    // Khách tự hủy hoặc Chờ đánh → không đánh giá
                     ratingCellHTML = `<span style="color:#475569;font-size:0.72rem;">—</span>`;
                 } else {
                     const existingRev = reviewsMap.get(g.sdt_khach);
@@ -2454,37 +2544,42 @@
                 const rowBgOdd  = "rgba(15,30,53,0.95)";
                 const rowBgEven = "rgba(20,38,65,0.7)";
                 const bg = idx % 2 === 0 ? rowBgEven : rowBgOdd;
-                // td() helper: border-bottom + border-right + căn lề
-                const td = (content, extra="") =>
-                    `<td style="padding:8px 9px;border-bottom:1px solid rgba(30,58,95,0.4);border-right:1px solid rgba(255,255,255,0.04);${extra}">${content}</td>`;
+                // table-layout:fixed — clip text ở td thường; td dropdown KHÔNG clip (overflow:visible)
+                const _tdBase = "padding:7px 8px;border-bottom:1px solid rgba(30,58,95,0.4);border-right:1px solid rgba(255,255,255,0.04);overflow:hidden;";
+                const td = (content, extra="") => `<td style="${_tdBase}${extra}">${content}</td>`;
                 const tdLast = (content, extra="") =>
-                    `<td style="padding:8px 9px;border-bottom:1px solid rgba(30,58,95,0.4);${extra}">${content}</td>`;
+                    `<td style="padding:7px 8px;border-bottom:1px solid rgba(30,58,95,0.4);overflow:hidden;${extra}">${content}</td>`;
+                // td dành cho cột dropdown — class td-cdd + overflow:visible để menu thoát ra ngoài
+                const tdDd = (content) =>
+                    `<td class="td-cdd" style="padding:7px 8px;border-bottom:1px solid rgba(30,58,95,0.4);border-right:1px solid rgba(255,255,255,0.04);">${content}</td>`;
 
-                // Trình độ lấy từ nguoi_dung (dat_slot không lưu field này)
                 const trinhDo = userMap.get(g.sdt_khach)?.trinh_do || "--";
                 const trinhDoHtml = trinhDo !== "--"
-                    ? `<span style="padding:2px 7px;border-radius:10px;font-size:0.72rem;background:rgba(96,165,250,0.12);color:#60a5fa;border:1px solid rgba(96,165,250,0.25);white-space:nowrap;">${trinhDo}</span>`
+                    ? `<span style="padding:2px 6px;border-radius:10px;font-size:0.71rem;background:rgba(96,165,250,0.12);color:#60a5fa;border:1px solid rgba(96,165,250,0.25);white-space:nowrap;display:inline-block;">${trinhDo}</span>`
                     : `<span style="color:#475569;font-size:0.72rem;">—</span>`;
 
-                return `<tr style="background:${bg};transition:background 0.12s;"
+                // Checkbox bulk-select — Khách hủy vẫn có checkbox để có thể chọn khôi phục
+                const cbHTML = `<input type="checkbox" class="gl-row-cb" data-guest-id="${g.id}"
+                              onchange="window._glCapNhatBulkBar && window._glCapNhatBulkBar()"
+                              style="width:14px;height:14px;accent-color:#00ff88;cursor:pointer;">`;
+
+                return `<tr data-guest-idx="${idx}" style="background:${bg};transition:background 0.12s;"
                             onmouseover="this.style.background='rgba(30,58,95,0.5)'"
                             onmouseout="this.style.background='${bg}'">
-                    ${td(`<span style="color:#64748b;font-size:0.78rem;">${idx + 1}</span>`, "text-align:center;")}
+                    ${td(cbHTML, "text-align:center;")}
                     ${td(`<button onclick="window.xemHoSoKhach('${sdtKhachEsc}','${tenKhachEsc}','${matchId}')"
                                   onmouseover="this.style.textDecoration='underline'"
                                   onmouseout="this.style.textDecoration='none'"
-                                  style="background:none;border:none;color:#e2e8f0;font-weight:600;cursor:pointer;padding:0;font-family:inherit;font-size:0.82rem;text-decoration:none;text-align:left;white-space:nowrap;">
+                                  style="background:none;border:none;color:#e2e8f0;font-weight:600;cursor:pointer;padding:0;font-family:inherit;font-size:0.81rem;text-decoration:none;text-align:left;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:block;">
                             ${g.ten_khach || "—"}
-                        </button>`, "text-align:left;min-width:100px;")}
-                    ${td(`<span style="color:#94a3b8;font-family:monospace;font-size:0.79rem;white-space:nowrap;">${g.sdt_khach || "—"}</span>`, "text-align:center;")}
+                        </button>`, "text-align:left;")}
+                    ${td(`<span style="color:#94a3b8;font-family:monospace;font-size:0.76rem;white-space:nowrap;">${g.sdt_khach || "—"}</span>`, "text-align:center;")}
                     ${td(`<span style="color:${genderClr};font-weight:600;font-size:0.8rem;">${gioiTinh}</span>`, "text-align:center;")}
                     ${td(trinhDoHtml, "text-align:center;")}
-                    ${td(`<span style="color:#94a3b8;font-size:0.74rem;white-space:nowrap;">${_formatTS(g.thoi_gian_dat || g.created_at)}</span>`, "text-align:center;")}
-                    ${td(`<span style="color:${tgHuyClr};font-size:0.74rem;white-space:nowrap;">${tgHuy}</span>`, "text-align:center;")}
+                    ${td(`<span style="color:#94a3b8;font-size:0.73rem;white-space:nowrap;">${_formatTS(g.thoi_gian_dat || g.created_at)}</span>`, "text-align:center;")}
+                    ${td(`<span style="color:${tgHuyClr};font-size:0.73rem;white-space:nowrap;">${tgHuy}</span>`, "text-align:center;")}
                     ${td(ttCellHTML, "text-align:center;")}
-                    ${td(isKhachHuy
-                        ? `<span style="padding:3px 9px;border-radius:10px;font-size:0.73rem;font-weight:600;white-space:nowrap;${badgeStyle}">${trangThai}</span>`
-                        : selectHTML, "text-align:center;")}
+                    ${tdDd(selectHTML)}
                     ${tdLast(ratingCellHTML, "text-align:center;")}
                 </tr>`;
             }).join("");
@@ -2504,8 +2599,168 @@
         const modal = document.getElementById("modal-guest-list");
         if (modal) { modal.classList.add("hidden"); modal.style.display = "none"; }
         document.body.style.overflow = "";
+        // Đóng portal nếu đang mở
+        window._closeGlPortal && window._closeGlPortal();
     };
     window._dongGuestListModal = window.closeGuestListModal;
+
+    /* ── Custom dropdown helpers ─────────────────────────────────── */
+    // Đóng tất cả dropdown đang mở (gọi khi click ngoài)
+    document.addEventListener("click", function (e) {
+        // Đóng portal nếu click ra ngoài trigger button hoặc ngoài portal
+        if (!e.target.closest(".gl-cdd") && !e.target.closest("#gl-cdd-portal")) {
+            window._closeGlPortal();
+        }
+    }, true);
+
+    // Đóng portal khi bảng danh sách khách được scroll (tránh menu lạc vị trí)
+    document.addEventListener("scroll", function (e) {
+        const p = document.getElementById("gl-cdd-portal");
+        if (p && p.style.display !== "none") window._closeGlPortal();
+    }, true);
+
+    // Helper: lấy hoặc tạo portal div trên body (dùng chung cho tất cả dropdown)
+    function _getGlPortal() {
+        let p = document.getElementById("gl-cdd-portal");
+        if (!p) {
+            p = document.createElement("div");
+            p.id = "gl-cdd-portal";
+            p.style.cssText = [
+                "position:fixed",
+                "z-index:999999",
+                "display:none",
+                "background:#0f1e35",
+                "border:1px solid #1e3a5f",
+                "border-radius:9px",
+                "box-shadow:0 8px 32px rgba(0,0,0,0.75)",
+                "min-width:148px",
+                "overflow:hidden",
+                "animation:glFadeIn .12s ease"
+            ].join(";");
+            document.body.appendChild(p);
+        }
+        return p;
+    }
+
+    window._closeGlPortal = function () {
+        const p = document.getElementById("gl-cdd-portal");
+        if (p) { p.style.display = "none"; p.dataset.uid = ""; }
+        document.querySelectorAll(".tr-cdd-open").forEach(r => r.classList.remove("tr-cdd-open"));
+    };
+
+    window._toggleGlCdd = function (uid) {
+        const wrap = document.getElementById(uid);
+        if (!wrap) return;
+        const menu = wrap.querySelector(".gl-cdd-menu");
+        if (!menu) return;
+
+        const portal = _getGlPortal();
+        const isThisOpen = portal.style.display !== "none" && portal.dataset.uid === uid;
+
+        // Đóng portal (dù là cùng uid hay khác uid)
+        window._closeGlPortal();
+        if (isThisOpen) return; // Toggle: đang mở thì đóng thôi
+
+        // Đổ nội dung các option vào portal
+        portal.innerHTML = menu.innerHTML;
+
+        // Đo vị trí trigger button để định vị portal
+        const btn     = wrap.querySelector("button[data-guest-id]");
+        const btnRect = btn.getBoundingClientRect();
+
+        // Hiện tạm (invisible) để đo chiều cao thực
+        portal.style.visibility = "hidden";
+        portal.style.display    = "block";
+        const portalH = portal.offsetHeight;
+        portal.style.visibility = "";
+
+        // Tính top/bottom: ưu tiên mở xuống, đảo ngược nếu không đủ chỗ
+        const spaceBelow = window.innerHeight - btnRect.bottom - 8;
+        if (spaceBelow >= portalH) {
+            portal.style.top    = (btnRect.bottom + 4) + "px";
+            portal.style.bottom = "auto";
+        } else {
+            portal.style.top    = Math.max(4, btnRect.top - portalH - 4) + "px";
+            portal.style.bottom = "auto";
+        }
+
+        // Canh trái — tránh bị cắt ở cạnh phải màn hình
+        const portalW = portal.offsetWidth || 148;
+        const leftPos = Math.min(btnRect.left, window.innerWidth - portalW - 8);
+        portal.style.left = Math.max(4, leftPos) + "px";
+
+        portal.dataset.uid = uid;
+
+        // Đẩy <tr> lên z-index cao
+        const tr = wrap.closest("tr");
+        if (tr) tr.classList.add("tr-cdd-open");
+    };
+
+    window._triggerGlCdd = function (uid, newState) {
+        const wrap = document.getElementById(uid);
+        if (!wrap) return;
+        const btn = wrap.querySelector("button[data-guest-id]");
+        if (!btn) return;
+        // Đóng portal
+        window._closeGlPortal();
+        // Không làm gì nếu chọn lại trạng thái hiện tại
+        if (btn.dataset.current === newState) return;
+        // Tạo proxy object giống select element để doiTrangThaiDiDanh dùng được
+        const proxy = {
+            dataset: { ...btn.dataset },
+            value: newState,
+            disabled: false,
+            closest: (sel) => btn.closest(sel)
+        };
+        Object.defineProperty(proxy, "disabled", {
+            get() { return btn.disabled; },
+            set(v) { btn.disabled = v; }
+        });
+        // Cập nhật data-current để tránh gọi lại
+        btn.dataset.current = newState;
+        window.doiTrangThaiDiDanh(proxy).then(() => {
+            // Sau khi thành công → cập nhật visual button
+            const _opts = [
+                { val: "Chờ đánh",    color: "#94a3b8", bg: "rgba(100,116,139,0.15)", border: "rgba(100,116,139,0.3)",
+                  icon: `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="1" y="1" width="11" height="11" rx="3" stroke="#94a3b8" stroke-width="1.3"/><path d="M6.5 3.5v3l2 1.5" stroke="#94a3b8" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
+                { val: "Đã tham gia", color: "#00ff88", bg: "rgba(0,255,136,0.10)", border: "rgba(0,255,136,0.3)",
+                  icon: `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#00ff88" stroke-width="1.3"/><path d="M4 6.5l1.8 1.8L9 4" stroke="#00ff88" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>` },
+                { val: "Bùng kèo",    color: "#fb923c", bg: "rgba(251,146,60,0.10)", border: "rgba(251,146,60,0.3)",
+                  icon: `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1.5L12 11.5H1L6.5 1.5Z" stroke="#fb923c" stroke-width="1.3" stroke-linejoin="round"/><path d="M6.5 5v3M6.5 9.5v.2" stroke="#fb923c" stroke-width="1.3" stroke-linecap="round"/></svg>` },
+                { val: "Khách hủy",   color: "#f87171", bg: "rgba(239,68,68,0.10)", border: "rgba(239,68,68,0.28)",
+                  icon: `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#f87171" stroke-width="1.3"/><path d="M4.5 4.5l4 4M8.5 4.5l-4 4" stroke="#f87171" stroke-width="1.3" stroke-linecap="round"/></svg>` },
+            ];
+            const cur = _opts.find(o => o.val === newState) || _opts[0];
+            btn.style.background = cur.bg;
+            btn.style.borderColor = cur.border;
+            btn.style.color = cur.color;
+            const labelSpan = btn.querySelector("span");
+            if (labelSpan) labelSpan.innerHTML = `${cur.icon}${cur.label}`;
+            const chevron = btn.querySelector("svg:last-child");
+            if (chevron) chevron.querySelector("path").setAttribute("stroke", cur.color);
+            // Cập nhật trạng thái active trong menu opts
+            wrap.querySelectorAll(".gl-cdd-opt").forEach(opt => {
+                const optVal = opt.getAttribute("onclick")?.match(/'([^']+)'\)$/)?.[1] || "";
+                const optCur = _opts.find(o => o.val === optVal);
+                if (!optCur) return;
+                if (optVal === newState) {
+                    opt.style.background = optCur.bg;
+                    if (!opt.querySelector("svg:last-child")) {
+                        opt.innerHTML += `<svg style="margin-left:auto;" width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M2 5.5l2.5 2.5L9 3" stroke="${optCur.color}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+                    }
+                } else {
+                    opt.style.background = "transparent";
+                    opt.onmouseover = () => opt.style.background = optCur.bg;
+                    opt.onmouseout  = () => opt.style.background = "transparent";
+                    const chk = opt.querySelector("svg:last-child");
+                    if (chk) chk.remove();
+                }
+            });
+        }).catch(() => {
+            // Rollback visual
+            btn.dataset.current = proxy.dataset.current;
+        });
+    };
 
     /* ═══════════════════════════════════════════════════
      * [4] QUICK ĐÁNH GIÁ KHÁCH từ modal DS Khách
@@ -2676,6 +2931,15 @@
         selectEl.disabled = true;
 
         try {
+            // Frontend guard: chặn "Khách hủy" sau khi ca đã bắt đầu
+            if (newState === "Khách hủy") {
+                const _modal = document.getElementById("modal-guest-list");
+                if (_modal?.dataset.matchStarted === "1") {
+                    window.hienToast("Không được phép", "Ca đã bắt đầu — chỉ dùng Bùng kèo.", "warning");
+                    selectEl.disabled = false;
+                    return;
+                }
+            }
             // Ghi thêm huy_luc = now() khi đổi sang trạng thái hủy/bùng (cần cột huy_luc — migration-dat-slot-v2.sql)
             const payload = { trang_thai_di_danh: newState };
             if (newState === "Bùng kèo" || newState === "Khách hủy") {
@@ -2703,24 +2967,27 @@
                 // Cập nhật ô Thanh Toán
                 if (ttCell) {
                     if (isNewBung) {
-                        ttCell.innerHTML = `<div style="display:flex;align-items:center;gap:4px;justify-content:center;">
-                            <input type="number" data-slot-id="${guestId}" value="${tienBung}" min="0" step="1000"
+                        const tienBungK = Math.round(tienBung / 1000);
+                        ttCell.innerHTML = `<div style="display:inline-flex;align-items:center;gap:0;position:relative;">
+                            <input type="number" data-slot-id="${guestId}" value="${tienBungK}" min="0" step="1"
                                    onchange="window.capNhatTienBung(this)" placeholder="0"
-                                   style="width:82px;background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.3);
-                                          color:#fb923c;border-radius:6px;padding:4px 7px;font-size:0.75rem;
-                                          text-align:right;font-family:inherit;outline:none;box-sizing:border-box;">
-                            <span style="font-size:0.7rem;color:#64748b;flex-shrink:0;">đ</span>
+                                   style="width:62px;background:rgba(251,146,60,0.08);border:1px solid rgba(251,146,60,0.3);
+                                          color:#fb923c;border-radius:6px 0 0 6px;padding:4px 6px;font-size:0.75rem;
+                                          text-align:right;font-family:inherit;outline:none;box-sizing:border-box;
+                                          -moz-appearance:textfield;appearance:textfield;">
+                            <span style="background:rgba(251,146,60,0.15);border:1px solid rgba(251,146,60,0.3);border-left:none;
+                                         color:#fb923c;font-size:0.7rem;font-weight:700;padding:4px 5px;border-radius:0 6px 6px 0;
+                                         line-height:1;display:flex;align-items:center;">K</span>
                         </div>`;
                     } else if (isNewActive) {
-                        const ttBadgeStyle = daTT
-                            ? "background:rgba(6,78,59,0.6);color:#34d399;border:1px solid rgba(5,46,37,0.5);"
-                            : "background:rgba(51,65,85,0.5);color:#94a3b8;";
-                        ttCell.innerHTML = `<label onclick="event.stopPropagation()" style="display:flex;align-items:center;gap:6px;justify-content:center;cursor:pointer;">
-                            <input type="checkbox" data-slot-id="${guestId}" ${daTT ? "checked" : ""}
-                                   onchange="window.capNhatThanhToan(this,event)"
-                                   style="width:14px;height:14px;accent-color:#34d399;cursor:pointer;">
-                            <span id="tt-badge-${guestId}" style="padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;${ttBadgeStyle}">${daTT ? "Đã trả" : "Chưa trả"}</span>
-                        </label>`;
+                        ttCell.innerHTML = `<div onclick="event.stopPropagation();window.capNhatThanhToanToggle('${guestId}',this)" data-slot-id="${guestId}" data-checked="${daTT ? "1" : "0"}"
+                            title="${daTT ? "Đã trả — click để bỏ" : "Chưa trả — click để đánh dấu"}"
+                            style="display:inline-flex;align-items:center;gap:7px;cursor:pointer;user-select:none;">
+                            <div id="tt-sw-track-${guestId}" style="position:relative;width:34px;height:18px;border-radius:9px;transition:background 0.22s;flex-shrink:0;background:${daTT ? "#00ff88" : "#334155"};">
+                                <div id="tt-sw-knob-${guestId}" style="position:absolute;top:2px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform 0.22s;box-shadow:0 1px 3px rgba(0,0,0,0.4);transform:${daTT ? "translateX(16px)" : "translateX(2px)"};"></div>
+                            </div>
+                            <span id="tt-badge-${guestId}" style="font-size:0.72rem;font-weight:600;white-space:nowrap;${daTT ? "color:#34d399;" : "color:#64748b;"}">${daTT ? "Đã trả" : "Chưa trả"}</span>
+                        </div>`;
                     } else {
                         ttCell.innerHTML = `<span style="color:#475569;font-size:0.72rem;">—</span>`;
                     }
@@ -2759,7 +3026,9 @@
      * ──────────────────────────────────────────────────────────────── */
     window.capNhatTienBung = async function (inputEl) {
         const slotId = inputEl.dataset.slotId;
-        const amount = Math.max(0, parseInt(inputEl.value) || 0);
+        // Input đơn vị K → nhân 1000 để lưu vào DB
+        const kVal  = Math.max(0, parseInt(inputEl.value) || 0);
+        const amount = kVal * 1000;
         inputEl.disabled = true;
         try {
             await window.dbEngine.ghi("dat_slot", { tien_thu_bung: amount }, { id: slotId });
@@ -2776,63 +3045,141 @@
         }
     };
 
-    /* L2 — Cập nhật trạng thái thanh toán qua checkbox trong modal DS Khách
-     * Guard kép:
-     *   _thanhToanDangXu (Set)  → ngăn concurrent call trong khi request đang chạy
-     *   _thanhToanCooldown (Map) → khóa 3 giây sau khi fail, tránh user spam click khi API lỗi
+    /* L2 — Toggle switch thanh toán (thay checkbox cũ)
+     * Guard kép: _thanhToanDangXu (Set) + _thanhToanCooldown (Map+timestamp 3s)
      */
     const _thanhToanDangXu   = new Set();
-    const _thanhToanCooldown = new Map(); // slotId → timestamp hết cooldown
+    const _thanhToanCooldown = new Map();
 
     window.capNhatThanhToan = function (checkbox, domEvent) {
-        // Chặn sủi bọt sự kiện lên các phần tử cha (label, tr, ...)
         if (domEvent) domEvent.stopPropagation();
-
         const slotId = checkbox.dataset.slotId;
         if (!slotId) return;
-
-        // Chặn nếu đang xử lý request
-        if (_thanhToanDangXu.has(slotId)) {
-            checkbox.checked = !checkbox.checked; // rollback visual
-            return;
-        }
-
-        // Chặn nếu đang trong cooldown (3 giây sau khi fail)
+        if (_thanhToanDangXu.has(slotId)) { checkbox.checked = !checkbox.checked; return; }
         const cooldownUntil = _thanhToanCooldown.get(slotId) || 0;
-        if (Date.now() < cooldownUntil) {
-            checkbox.checked = !checkbox.checked; // rollback visual
-            return;
-        }
-
+        if (Date.now() < cooldownUntil) { checkbox.checked = !checkbox.checked; return; }
         const isChecked = checkbox.checked;
         _thanhToanDangXu.add(slotId);
         checkbox.disabled = true;
-
         window.dbEngine.ghi("dat_slot", { da_thanh_toan: isChecked }, { id: slotId })
             .then(() => {
-                _thanhToanCooldown.delete(slotId); // reset cooldown khi thành công
+                _thanhToanCooldown.delete(slotId);
                 const badge = document.getElementById(`tt-badge-${slotId}`);
                 if (badge) {
-                    if (isChecked) {
-                        badge.textContent = "Đã trả";
-                        badge.style.cssText = "padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;background:rgba(6,78,59,0.6);color:#34d399;border:1px solid rgba(5,46,37,0.5);";
-                    } else {
-                        badge.textContent = "Chưa trả";
-                        badge.style.cssText = "padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;background:rgba(51,65,85,0.5);color:#94a3b8;";
-                    }
+                    badge.textContent = isChecked ? "Đã trả" : "Chưa trả";
+                    badge.style.cssText = isChecked
+                        ? "padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;background:rgba(6,78,59,0.6);color:#34d399;border:1px solid rgba(5,46,37,0.5);"
+                        : "padding:2px 7px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;background:rgba(51,65,85,0.5);color:#94a3b8;";
                 }
                 window.hienToast("Đã cập nhật.", isChecked ? "Đã đánh dấu thanh toán." : "Đã bỏ đánh dấu.", "success");
             })
             .catch(e => {
-                checkbox.checked = !isChecked; // rollback visual
-                _thanhToanCooldown.set(slotId, Date.now() + 3000); // cooldown 3 giây
+                checkbox.checked = !isChecked;
+                _thanhToanCooldown.set(slotId, Date.now() + 3000);
                 console.error("Lỗi capNhatThanhToan:", e);
-                // KHÔNG show toast — dbEngine.ghi đã gọi hienLoiMang() (tránh double toast)
             })
-            .finally(() => {
-                checkbox.disabled = false;
-                _thanhToanDangXu.delete(slotId);
-            });
+            .finally(() => { checkbox.disabled = false; _thanhToanDangXu.delete(slotId); });
+    };
+
+    /* Toggle switch mới — thay thế checkbox cho cột Thanh Toán */
+    window.capNhatThanhToanToggle = function (slotId, wrapEl) {
+        if (_thanhToanDangXu.has(slotId)) return;
+        const cooldownUntil = _thanhToanCooldown.get(slotId) || 0;
+        if (Date.now() < cooldownUntil) return;
+
+        const isChecked = wrapEl.dataset.checked !== "1"; // toggle
+        _thanhToanDangXu.add(slotId);
+        wrapEl.style.opacity = "0.5";
+        wrapEl.style.pointerEvents = "none";
+
+        window.dbEngine.ghi("dat_slot", { da_thanh_toan: isChecked }, { id: slotId })
+            .then(() => {
+                _thanhToanCooldown.delete(slotId);
+                wrapEl.dataset.checked = isChecked ? "1" : "0";
+                wrapEl.title = isChecked ? "Đã trả — click để bỏ" : "Chưa trả — click để đánh dấu";
+                const track = document.getElementById(`tt-sw-track-${slotId}`);
+                const knob  = document.getElementById(`tt-sw-knob-${slotId}`);
+                const badge = document.getElementById(`tt-badge-${slotId}`);
+                if (track) track.style.background = isChecked ? "#00ff88" : "#334155";
+                if (knob)  knob.style.transform   = isChecked ? "translateX(16px)" : "translateX(2px)";
+                if (badge) { badge.textContent = isChecked ? "Đã trả" : "Chưa trả"; badge.style.color = isChecked ? "#34d399" : "#64748b"; }
+                window.hienToast("Đã cập nhật.", isChecked ? "Đã đánh dấu thanh toán." : "Đã bỏ đánh dấu.", "success");
+            })
+            .catch(e => {
+                _thanhToanCooldown.set(slotId, Date.now() + 3000);
+                console.error("Lỗi capNhatThanhToanToggle:", e);
+            })
+            .finally(() => { wrapEl.style.opacity = ""; wrapEl.style.pointerEvents = ""; _thanhToanDangXu.delete(slotId); });
+    };
+
+    /* ── Bulk confirm popover cho "Khách hủy" ─────────────────────── */
+    window.bulkDoiTrangThaiConfirm = function (newState) {
+        if (newState === "Khách hủy") {
+            // Chặn ngay nếu ca đã bắt đầu — không cần confirm
+            const _modal = document.getElementById("modal-guest-list");
+            if (_modal?.dataset.matchStarted === "1") {
+                window.hienToast("Không được phép", "Ca đã bắt đầu — chỉ dùng Bùng kèo.", "warning");
+                return;
+            }
+            const confirmEl = document.getElementById("gl-confirm-huy");
+            if (confirmEl) { confirmEl.style.display = "flex"; return; }
+        }
+        window.bulkDoiTrangThai(newState);
+    };
+
+    /* ── Bulk action: đổi trạng thái nhiều khách cùng lúc ─────────── */
+    window.bulkDoiTrangThai = async function (newState) {
+        const tbody = document.getElementById("modal-guest-list-body");
+        if (!tbody) return;
+        const checkedBoxes = Array.from(tbody.querySelectorAll(".gl-row-cb:checked"));
+        if (checkedBoxes.length === 0) return;
+
+        const _glModal = document.getElementById("modal-guest-list");
+        const matchId = _glModal?.dataset.matchId;
+        // Backend-side guard: chặn bulk "Khách hủy" sau khi ca đã bắt đầu
+        if (newState === "Khách hủy" && _glModal?.dataset.matchStarted === "1") {
+            window.hienToast("Không được phép", "Ca đã bắt đầu — chỉ dùng Bùng kèo.", "warning");
+            return;
+        }
+        const payload = { trang_thai_di_danh: newState };
+        if (newState === "Bùng kèo" || newState === "Khách hủy") payload.huy_luc = new Date().toISOString();
+
+        let ok = 0, fail = 0;
+        await Promise.all(checkedBoxes.map(async cb => {
+            const guestId = cb.dataset.guestId;
+            try {
+                await window.dbEngine.ghi("dat_slot", payload, { id: guestId });
+                ok++;
+            } catch { fail++; }
+        }));
+
+        window.hienToast(`Bulk update xong`, `${ok} thành công${fail > 0 ? `, ${fail} lỗi` : ""}`, ok > 0 ? "success" : "danger");
+        // Reload lại modal để cập nhật DOM
+        if (matchId) {
+            const titleEl = document.getElementById("modal-guest-list-title");
+            const currentTitle = (titleEl?.textContent || "").replace(/^DS Khách — /, "");
+            window.openGuestListModal(matchId, currentTitle).catch(() => {});
+        }
+    };
+
+    /* ── Auto-update: Chờ đánh → Đã tham gia khi hết giờ ca ──────── */
+    window.autoUpdateChoDao = async function (matchId, gioKetThuc) {
+        if (!matchId || !gioKetThuc) return;
+        const ketThuc = new Date(gioKetThuc);
+        if (isNaN(ketThuc) || Date.now() < ketThuc.getTime()) return; // Ca chưa kết thúc
+
+        try {
+            const guests = await window.dbEngine.doc("dat_slot", { eq: { id_ca_dau: matchId } });
+            const choDao = (guests || []).filter(g => (g.trang_thai_di_danh || "Chờ đánh") === "Chờ đánh");
+            if (choDao.length === 0) return;
+
+            await Promise.all(choDao.map(g =>
+                window.dbEngine.ghi("dat_slot", { trang_thai_di_danh: "Đã tham gia" }, { id: g.id }).catch(() => {})
+            ));
+            window.hienToast("Tự động cập nhật", `${choDao.length} khách "Chờ đánh" → "Đã tham gia"`, "success");
+        } catch (e) {
+            console.error("autoUpdateChoDao error:", e);
+        }
     };
 
     /* ═══════════════════════════════════════════════════
@@ -3255,8 +3602,11 @@
             const slots = slotMap[c.id] || [];
             const slotsDiDanh = slots.filter(s => s.trang_thai_di_danh === "Đã tham gia");
             const soKhach    = slotsDiDanh.length;
-            const doanhThuVe = slotsDiDanh.reduce((sum, s) =>
-                sum + (s.gioi_tinh === "female" ? (c.gia_nu || 0) : (c.gia_nam || 0)), 0);
+            // Chỉ tính tiền từ khách ĐÃ THANH TOÁN (da_thanh_toan=true)
+            const doanhThuVe = slotsDiDanh
+                .filter(s => !!s.da_thanh_toan)
+                .reduce((sum, s) =>
+                    sum + (s.gioi_tinh === "female" ? (c.gia_nu || 0) : (c.gia_nam || 0)), 0);
             // Cộng thêm tiền thu từ bùng kèo (phạt bùng)
             const tienBungThu = slots
                 .filter(s => s.trang_thai_di_danh === "Bùng kèo")
@@ -3450,8 +3800,10 @@
             const slotsHuy    = slots.filter(s => s.trang_thai_di_danh === "Khách hủy");
             const slotsCho    = slots.filter(s => !["Đã tham gia","Bùng kèo","Khách hủy"].includes(s.trang_thai_di_danh));
 
-            // Tính toán tài chính
-            const doanhThuVe  = slotsDiDanh.reduce((sum, s) =>
+            // Tính toán tài chính — chỉ cộng tiền khi Đã tham gia VÀ da_thanh_toan=true
+            const slotsDaTra   = slotsDiDanh.filter(s => !!s.da_thanh_toan);
+            const slotsChưaTra = slotsDiDanh.filter(s => !s.da_thanh_toan);
+            const doanhThuVe  = slotsDaTra.reduce((sum, s) =>
                 sum + (s.gioi_tinh === "female" ? (ca.gia_nu || 0) : (ca.gia_nam || 0)), 0);
             const tienBung    = slotsBung.reduce((sum, s) => sum + (s.tien_thu_bung || 0), 0);
             const tongThu     = doanhThuVe + tienBung;
@@ -3483,15 +3835,16 @@
                     </tr>`).join("")}</tbody>
                 </table></div>`;
 
-            // Bảng khách
+            // Bảng khách — thêm cột Thanh Toán, logic Tiền theo da_thanh_toan
             const guestHTML = slots.length === 0
                 ? `<div style="color:#64748b;text-align:center;padding:14px;border:1px dashed rgba(30,58,95,0.8);border-radius:8px;font-size:0.82rem;">Không có khách đăng ký.</div>`
-                : `<div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3a5f;"><table style="width:100%;min-width:360px;font-size:0.8rem;border-collapse:collapse;">
+                : `<div style="overflow-x:auto;border-radius:10px;border:1px solid #1e3a5f;"><table style="width:100%;min-width:440px;font-size:0.8rem;border-collapse:collapse;">
                     <thead><tr>
                         <th style="${_thStyle}">Tên khách</th>
                         <th style="${_thStyle}">SĐT</th>
                         <th style="${_thStyle}text-align:center;">GT</th>
                         <th style="${_thStyle}text-align:center;">Trạng thái</th>
+                        <th style="${_thStyle}text-align:center;">Thanh Toán</th>
                         <th style="${_thStyle}text-align:right;">Tiền</th>
                     </tr></thead>
                     <tbody>${slots.map(s => {
@@ -3502,10 +3855,30 @@
                         const ttClr = tt === "Đã tham gia" ? "#00ff88" : tt === "Bùng kèo" ? "#fb923c" : tt === "Khách hủy" ? "#f87171" : "#94a3b8";
                         const ttBg  = tt === "Đã tham gia" ? "rgba(0,255,136,0.1)" : tt === "Bùng kèo" ? "rgba(251,146,60,0.1)" : tt === "Khách hủy" ? "rgba(239,68,68,0.1)" : "rgba(100,116,139,0.1)";
                         const ttBd  = tt === "Đã tham gia" ? "rgba(0,255,136,0.25)" : tt === "Bùng kèo" ? "rgba(251,146,60,0.25)" : tt === "Khách hủy" ? "rgba(239,68,68,0.25)" : "rgba(100,116,139,0.2)";
-                        let tienText = `<span style="color:#475569;">—</span>`;
+
+                        // Cột Thanh Toán — badge nhỏ theo trạng thái
+                        let ttBadge;
                         if (tt === "Đã tham gia") {
+                            ttBadge = s.da_thanh_toan
+                                ? `<span style="background:rgba(6,78,59,0.5);color:#34d399;border:1px solid rgba(52,211,153,0.3);padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:700;white-space:nowrap;">Đã trả</span>`
+                                : `<span style="background:rgba(51,65,85,0.4);color:#94a3b8;border:1px solid rgba(100,116,139,0.25);padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:700;white-space:nowrap;">Chưa trả</span>`;
+                        } else if (tt === "Bùng kèo") {
+                            const pb = s.tien_thu_bung || 0;
+                            ttBadge = pb > 0
+                                ? `<span style="background:rgba(251,146,60,0.12);color:#fb923c;border:1px solid rgba(251,146,60,0.3);padding:2px 8px;border-radius:12px;font-size:0.7rem;font-weight:700;white-space:nowrap;">Phạt ${_formatVND(pb)}</span>`
+                                : `<span style="background:rgba(51,65,85,0.3);color:#64748b;padding:2px 8px;border-radius:12px;font-size:0.7rem;white-space:nowrap;">0đ</span>`;
+                        } else {
+                            ttBadge = `<span style="color:#475569;font-size:0.72rem;">—</span>`;
+                        }
+
+                        // Cột Tiền — chỉ hiển thị tiền thực sự thu được
+                        let tienText = `<span style="color:#475569;">—</span>`;
+                        if (tt === "Đã tham gia" && s.da_thanh_toan) {
                             const gia = s.gioi_tinh === "female" ? (ca.gia_nu || 0) : (ca.gia_nam || 0);
                             tienText = `<span style="color:#f59e0b;font-weight:600;">${_formatVND(gia)}</span>`;
+                        } else if (tt === "Đã tham gia" && !s.da_thanh_toan) {
+                            const gia = s.gioi_tinh === "female" ? (ca.gia_nu || 0) : (ca.gia_nam || 0);
+                            tienText = `<span style="color:#475569;text-decoration:line-through;font-size:0.73rem;">${_formatVND(gia)}</span>`;
                         } else if (tt === "Bùng kèo" && s.tien_thu_bung > 0) {
                             tienText = `<span style="color:#fb923c;font-weight:600;">${_formatVND(s.tien_thu_bung)}</span>`;
                         }
@@ -3514,6 +3887,7 @@
                             <td style="${_tdStyle}font-family:monospace;font-size:0.75rem;color:#64748b;">${s.sdt_khach || "—"}</td>
                             <td style="${_tdStyle}text-align:center;"><span style="background:${gtBg};color:${gtClr};padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:600;">${gt}</span></td>
                             <td style="${_tdStyle}text-align:center;"><span style="background:${ttBg};color:${ttClr};border:1px solid ${ttBd};padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:600;">${tt}</span></td>
+                            <td style="${_tdStyle}text-align:center;">${ttBadge}</td>
                             <td style="${_tdStyle}text-align:right;">${tienText}</td>
                         </tr>`;
                     }).join("")}</tbody>
@@ -3568,7 +3942,7 @@
                         </div>
                         <div style="font-size:1.05rem;font-weight:800;color:#fcd34d;margin-bottom:8px;">${_formatVND(tongThu)}</div>
                         <div style="font-size:0.68rem;color:#475569;line-height:2;border-top:1px solid rgba(245,158,11,0.15);padding-top:8px;">
-                            <div style="display:flex;justify-content:space-between;"><span>Tham gia (${slotsDiDanh.length})</span><span style="color:#64748b;">${_formatVND(doanhThuVe)}</span></div>
+                            <div style="display:flex;justify-content:space-between;"><span>Tham gia (${slotsDaTra.length}/${slotsDiDanh.length})</span><span style="color:#64748b;">${_formatVND(doanhThuVe)}</span></div>
                             <div style="display:flex;justify-content:space-between;"><span>Phạt bùng (${slotsBung.length})</span><span style="color:#64748b;">${_formatVND(tienBung)}</span></div>
                         </div>
                     </div>
@@ -3587,7 +3961,7 @@
                 <!-- ── BADGE THỐNG KÊ KHÁCH ── -->
                 <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:20px;padding:10px 14px;background:rgba(15,30,53,0.5);border:1px solid rgba(30,58,95,0.7);border-radius:10px;">
                     <span style="font-size:0.68rem;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.5px;">Khách:</span>
-                    <span style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.25);padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:600;">Tham gia: ${slotsDiDanh.length}</span>
+                    <span style="background:rgba(0,255,136,0.1);color:#00ff88;border:1px solid rgba(0,255,136,0.25);padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:600;">Tham gia: ${slotsDiDanh.length} (đã trả: ${slotsDaTra.length})</span>
                     <span style="background:rgba(251,146,60,0.1);color:#fb923c;border:1px solid rgba(251,146,60,0.25);padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:600;">Bùng kèo: ${slotsBung.length}</span>
                     <span style="background:rgba(239,68,68,0.1);color:#f87171;border:1px solid rgba(239,68,68,0.25);padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:600;">Khách hủy: ${slotsHuy.length}</span>
                     ${slotsCho.length > 0 ? `<span style="background:rgba(100,116,139,0.1);color:#94a3b8;border:1px solid rgba(100,116,139,0.2);padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:600;">Chờ đánh: ${slotsCho.length}</span>` : ""}

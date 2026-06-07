@@ -55,31 +55,38 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 // user-select: none toàn trang; input/textarea được select
 ```
 
-## CURRENT STATE (cập nhật: 2026-06-09 phiên 10)
+## CURRENT STATE (cập nhật: 2026-06-09 phiên 11)
 
 ### Trạng thái file
 | File | Version | Ghi chú |
 |---|---|---|
-| `ket-noi-supabase.js` | v7.0 | supabaseAuth + guestRPC + _adminJWT |
+| `ket-noi-supabase.js` | v7.1 | +boLoc.in support cho docData (batch fetch nguoi_dung.trinh_do) |
 | `bo-may-du-lieu.js` | v2.0 | dbEngine proxy, 63 tỉnh |
 | `phan-he-ung-dung.js` | v3.1 | SPA routing + has-subtab toggle |
-| `phan-he-host.js` | v8.0 | Ca Đã Đăng FULL: sort/filter/search/pagination/table-layout-fixed, TamKhoa, DS Khách no-reload DOM update, xemHoSoKhach, moQuickDanhGia |
+| `phan-he-host.js` | v9.0 | +capNhatThanhToan rewrite (Set+Map guard), doiTrangThaiDiDanh no double-toast, huy_luc write, xemChiTietCaDau redesign dashboard, openGuestListModal batch trinh_do+thoi_gian_dat |
 | `phan-he-khach-choi.js` | v8.1 | SĐT reveal click-area, modal HồSơ ẩn SĐT, trust bar redesign |
 | `phan-he-quan-tri.js` | v9.0 | gopY: sort/filter/pagination + _rank + compare tường minh |
 | `phan-he-gop-y.js` | v2.0 | rate limit: 5/ngày + cooldown 5 phút |
-| `index.html` | v10.0 | Ca Đã Đăng: table-layout:fixed colgroup%, flat card, CSS sticky, 7 modal; DS Khách: responsive, modal-ho-so-khach + modal-quick-dg thêm mới |
+| `index.html` | v10.1 | +modal-ca-detail redesign (border-radius:16px, SVG icons, hover buttons); +cdd-scroll-outer wrapper; overflow-x:visible |
 | `admin/index.html` | v9.0 | gopY tab: filter+pagination 1 hàng, sort STT, cột Người Dùng 320px |
 | `cms-seed.sql` | v2.1 | thêm gop_y_auth_select + gop_y_auth_delete policy cho authenticated role |
 | `giao-dien.css` | v7.1 | toast z-index: 1000→9999 (fix toast bị che modal) |
 | `components.css` | v5.1 | slot-card margin:0, footer grid 22fr 37fr 41fr |
+| `migration-dat-slot-v2.sql` | NEW | ADD COLUMN da_thanh_toan/tien_thu_bung/huy_luc — CHƯA CHẠY |
 
 ### Quyết định kỹ thuật quan trọng
 - **table-layout:fixed + colgroup %**: Ca Đã Đăng — cố định tỷ lệ cột (4/13/26/13/13/13/18%), columns không nhảy khi chuyển trang
 - **min-height:0 on flex child**: KEY FIX — flex child `.table-wrap` mặc định `min-height:auto` nên không shrink được, overflow-y không kích hoạt. Fix: `min-height:0`
-- **overflow-x:clip thay hidden**: CSS `overflow-x:hidden` tạo scroll context phụ trên mobile. `clip` ngăn overflow mà không tạo scroll context → sticky hoạt động đúng
+- **overflow-x:visible + cdd-scroll-outer**: `clip` bị đổi thành `visible` trên `#tab-dang-quan-ly`; `.cdd-scroll-outer` wrap table với `overflow-x:auto` + media query `width:auto;min-width:780px` trên mobile
 - **doiTrangThaiDiDanh no-reload**: Sau DB update → cập nhật DOM trực tiếp (`selectEl.closest('tr')` → `cells[7]` Thanh Toán, `cells[9]` Đánh Giá). Không gọi `openGuestListModal` → thứ tự row không bị đảo
-- **Guests sort by created_at asc**: `sortedGuests = [...guests].sort(...)` khi load → thứ tự STT cố định suốt session
-- **daChotCa trên modal dataset**: `modal.dataset.daChotCa = "1"/"0"` → DOM update trong doiTrangThaiDiDanh đọc được mà không refetch
+- **dataset camelCase bug**: `data-da-thanh-toan` → JS `dataset.daThanhtoan` (KHÔNG phải `dataset.daThanh`)
+- **capNhatThanhToan double-guard**: `_thanhToanDangXu` (Set, chặn concurrent) + `_thanhToanCooldown` (Map+timestamp, 3s sau failure). dbEngine.ghi re-throw sau khi gọi hienLoiMang → catch KHÔNG thêm toast nữa
+- **dat_slot missing columns**: `da_thanh_toan`, `tien_thu_bung`, `huy_luc` chưa có → mọi PATCH fail. File: `migration-dat-slot-v2.sql` — PHẢI CHẠY TRƯỚC KHI TEST
+- **huy_luc write on status change**: doiTrangThaiDiDanh khi đổi sang "Bùng kèo"/"Khách hủy" → payload thêm `huy_luc: new Date().toISOString()`
+- **boLoc.in trong docData**: thêm vào ket-noi-supabase.js để batch fetch `nguoi_dung` bằng `sdt_khach=in.(a,b,c)`
+- **thoi_gian_dat vs created_at**: field thực trong dat_slot là `thoi_gian_dat` (không phải `created_at`)
+- **xemChiTietCaDau redesign (phiên 11)**: modal border-radius:16px, SVG icons (Calendar/Clock/MapPin/Grid), financial cards 3-col với breakdown bảng 2 cột, badge bar cho trạng thái khách, section heading accent bar 4px, bảng cầu/khách có border-radius+hover row, "Buổi này bị lỗ" màu `#fdba74` (cam nhạt, dễ đọc trên nền tối)
+- **dongModalCaDetail**: set cả `style.display='none'` lẫn `classList.add('hidden')` (trước chỉ classList)
 - **is_tam_khoa field**: Tạm Khóa ca không nhận slot mới nhưng vẫn hiển thị ngoài trang. Cần SQL: `ALTER TABLE ca_dau ADD COLUMN IF NOT EXISTS is_tam_khoa BOOLEAN DEFAULT FALSE`
 - **modal-ho-so-khach + modal-quick-dg**: Hai modal này THIẾU khỏi index.html → click Tên Khách và nút Đánh Giá đều fail. Đã thêm vào (phiên 10)
 - **toast z-index 9999**: toast `z-index:1000` bị che bởi modal `z-index:1200+`. Fix: tăng lên 9999
@@ -88,26 +95,34 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 - **body display:block**: (giữ từ phiên 8)
 
 ### SQL cần chạy trên Supabase Dashboard
-1. `security-auth-v4.sql` — Parts 2→8 (is_admin, 6 RPC, RLS)
-2. `migration-admin-cascade.sql` — v2 (cascade delete + policies)
-3. **GÓP Ý FIX** (urgent):
+1. **DAT SLOT MIGRATION** (urgent — checkbox Thanh Toán fail nếu chưa chạy):
+   File: `migration-dat-slot-v2.sql`
+   ```sql
+   ALTER TABLE dat_slot ADD COLUMN IF NOT EXISTS da_thanh_toan BOOLEAN DEFAULT FALSE;
+   ALTER TABLE dat_slot ADD COLUMN IF NOT EXISTS tien_thu_bung INTEGER DEFAULT 0;
+   ALTER TABLE dat_slot ADD COLUMN IF NOT EXISTS huy_luc TIMESTAMPTZ;
+   ```
+2. `security-auth-v4.sql` — Parts 2→8 (is_admin, 6 RPC, RLS)
+3. `migration-admin-cascade.sql` — v2 (cascade delete + policies)
+4. **GÓP Ý FIX**:
 ```sql
 DROP POLICY IF EXISTS "gop_y_auth_select" ON gop_y_he_thong;
 DROP POLICY IF EXISTS "gop_y_auth_delete" ON gop_y_he_thong;
 CREATE POLICY "gop_y_auth_select" ON gop_y_he_thong FOR SELECT TO authenticated USING (true);
 CREATE POLICY "gop_y_auth_delete" ON gop_y_he_thong FOR DELETE TO authenticated USING (true);
 ```
-4. **TẠM KHÓA CA** (mới): `ALTER TABLE ca_dau ADD COLUMN IF NOT EXISTS is_tam_khoa BOOLEAN DEFAULT FALSE;`
+5. **TẠM KHÓA CA**: `ALTER TABLE ca_dau ADD COLUMN IF NOT EXISTS is_tam_khoa BOOLEAN DEFAULT FALSE;`
 
 ### Known issues
+- Checkbox "Thanh Toán" fail → cần chạy migration-dat-slot-v2.sql
 - Admin xóa user → F5 vẫn thấy dashboard nếu chưa chạy migration-admin-cascade.sql
-- Góp ý admin tab không hiện data cho đến khi chạy SQL snippet trên
-- Tạm Khóa ca đấu không hoạt động cho đến khi chạy SQL ALTER TABLE trên
+- Góp ý admin tab không hiện data cho đến khi chạy SQL gop_y fix
+- Tạm Khóa ca đấu không hoạt động cho đến khi chạy SQL ALTER TABLE is_tam_khoa
 - xoaCaDau: silently fail nếu RLS anon không cho DELETE (cần security-auth-v4.sql)
-- Cột "Trình Độ" trong DS Khách hiện `--` vì `dat_slot` chưa có field `trinh_do`
 
 ## NEXT UP
-- 🔴 Chạy SQL góp ý fix + TẠM KHÓA migration → test
+- 🔴 Chạy `migration-dat-slot-v2.sql` → test checkbox Thanh Toán
+- 🔴 Chạy SQL góp ý fix + TẠM KHÓA migration
 - 🔴 Chạy `security-auth-v4.sql` Parts 2→8 → full auth hoạt động
 - 🟡 GĐ4A: Dashboard doanh thu Host (subtab + 4 metric + filter)
 - 🟡 GĐ4B: Export/In ca đấu (print popup + CSV)
