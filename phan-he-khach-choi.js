@@ -1852,6 +1852,10 @@
                         : `<button class="btn-dang-dien-ra" disabled onclick="event.stopPropagation()">
                                <span class="live-dot"></span> Đang diễn ra
                            </button>`)
+                    : slot.is_tam_khoa
+                        ? `<button style="background:#1e293b;border:1px solid #334155;color:#64748b;cursor:not-allowed;padding:9px 10px;border-radius:9px;font-size:0.78rem;font-weight:700;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:5px;white-space:nowrap;pointer-events:none;" disabled onclick="event.stopPropagation()">
+                               <i class="fa-solid fa-ban"></i> Tạm khóa
+                           </button>`
                     : (window.currentGuest
                         ? (daDatSet.has(slot.id)
                             ? `<button class="btn-da-dat" disabled onclick="event.stopPropagation()">
@@ -1890,6 +1894,7 @@
             const caDau = caDauList[0];
             if (!caDau) { window.hienToast("Không tìm thấy", "Ca đấu không còn tồn tại.", "danger"); return; }
             if (caDau.da_chot_ca) { window.hienToast("Đã đóng", "Ca đấu này đã được chốt, không nhận thêm người.", "warning"); return; }
+            if (caDau.is_tam_khoa) { window.hienToast("Tạm khóa", "Ca đấu này đang tạm khóa, không nhận thêm đăng ký.", "warning"); return; }
 
             // Kiểm tra trust score
             const myDiem = await _layDiemUyTin();
@@ -2522,6 +2527,7 @@
             ${(() => {
                 if (s.da_chot_ca) return `<div class="kmd-footer kmd-footer-chot"><i class="fa-solid fa-lock" style="margin-right:6px;"></i>Ca đấu đã được chốt — không nhận thêm đăng ký.</div>`;
                 if (isLockedModal) return `<div class="kmd-footer kmd-footer-locked"><i class="fa-solid fa-hourglass-half" style="color:#fbbf24;margin-right:6px;"></i>${isStartedModal ? "Ca đấu đang diễn ra." : "Đã đủ slot — không nhận thêm."}</div>`;
+                if (s.is_tam_khoa) return `<div class="kmd-footer kmd-footer-locked"><i class="fa-solid fa-ban" style="color:#94a3b8;margin-right:6px;"></i>Ca đấu đang tạm khóa — không nhận đăng ký mới.</div>`;
                 if (!window.currentGuest) return `<div style="text-align:center;padding:4px 0;"><p style="font-size:0.82rem;color:#64748b;margin-bottom:10px;">Đăng nhập để đặt slot tham gia ca này.</p><button class="btn-dat-slot" style="width:100%;" onclick="event.stopPropagation();window.chuyenTab('ca-nhan');window.dongModalChiTietKeo();if(window.innerWidth<768){setTimeout(()=>window.openLoginSheet?.(),300);}"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập / Đăng ký</button></div>`;
                 const alreadyBooked = datSlotList.some(sl => sl.sdt_khach === window.currentGuest.sdt_khach && sl.trang_thai_di_danh !== "Khách hủy");
                 const mySlotHere = datSlotList.find(sl => sl.sdt_khach === window.currentGuest.sdt_khach && sl.trang_thai_di_danh === "Đã tham gia");
