@@ -1,4 +1,33 @@
-# TODO — Cập nhật: 2026-06-09 (phiên 11)
+# TODO — Cập nhật: 2026-06-10 (phiên 12)
+
+---
+
+## ✅ ĐÃ HOÀN THÀNH (phiên 12) — DS Khách dropdown fix + mobile responsive
+
+### Custom Dropdown Trạng Thái (phan-he-host.js + index.html)
+- [x] Thay native `<select>` bằng custom dropdown SVG (4 trạng thái, icon màu)
+- [x] Bulk action bar: Đã tham gia / Bùng kèo / Khách hủy (có confirm modal)
+- [x] Toggle switch Thanh Toán thay checkbox (`capNhatThanhToanToggle`)
+- [x] Time-guard: block Khách hủy khi ca đã bắt đầu (3 lớp: UI disable, JS guard, backend)
+- [x] Guest side: ẩn nút hủy slot khi ca đã started (`huyDatSlot` + dashboard)
+- [x] Drop-up detection: `_toggleGlCdd` đo menu.bottom vs modal-guest-list-inner.bottom → `.is-drop-up`
+- [x] CSS: `.gl-cdd-menu` position:absolute, `.is-drop-up` top:auto/bottom:calc(100%+6px), `tr.tr-cdd-open z-index:99`, `td.td-cdd overflow:visible`
+- [x] `_closeAllGlCdd()`: đóng tất cả dropdown khi click ngoài / đóng modal / chọn option
+
+### Chi Tiết Ca Đấu — xemChiTietCaDau (phan-he-host.js)
+- [x] Thêm cột THANH TOÁN (badge Đã trả / Chưa trả / Phạt X)
+- [x] Tổng Thu chỉ tính slot da_thanh_toan=true
+- [x] Hiển thị "Tham gia (M/N)" trong badge bar và card
+- [x] _thStyle + _tdStyle có white-space:nowrap
+- [x] class `cd-finance-grid` trên div 3 card tài chính
+
+### Mobile Responsive (index.html)
+- [x] `#modal-guest-list-table { min-width:1100px }` trên `@media 768px`
+- [x] Colgroup col 9 (Trạng Thái) min-width:150px, col 10 (Đánh Giá) min-width:120px
+- [x] `#modal-guest-list-table td,th { white-space:nowrap; overflow:hidden; text-overflow:ellipsis }`
+- [x] `.cd-finance-grid { grid-template-columns:1fr }` trên mobile (3 card stack dọc)
+- [x] `#gl-bulk-bar button { white-space:nowrap; flex-shrink:0 }`
+- [x] Bảng cầu + bảng khách trong Chi Tiết: overflow-x:auto + -webkit-overflow-scrolling:touch
 
 ---
 
@@ -9,7 +38,7 @@
 - [x] Header: icon SVG dashboard + subtitle, nút ✕ có hover đỏ
 - [x] Khối thông tin ca: SVG icons Calendar/Clock/Grid/MapPin thay emoji
 - [x] 3 card tài chính: breakdown bảng 2 cột (label+giá), border-radius:12px
-- [x] Card Lời/Lỗ: mũi tên SVG động theo chiều; "Buổi này bị lỗ" đổi màu #fdba74 (cam nhạt, tương phản tốt)
+- [x] Card Lời/Lỗ: mũi tên SVG động theo chiều; "Buổi này bị lỗ" đổi màu #fdba74
 - [x] Badge bar thống kê khách: nằm trong panel có viền
 - [x] Section heading: accent bar 4px thay icon FontAwesome
 - [x] Bảng cầu + bảng khách: border-radius container, padding th/td chuẩn, badge GT+Trạng thái, hover row

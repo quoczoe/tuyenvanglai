@@ -55,7 +55,7 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 // user-select: none toàn trang; input/textarea được select
 ```
 
-## CURRENT STATE (cập nhật: 2026-06-09 phiên 11)
+## CURRENT STATE (cập nhật: 2026-06-10 phiên 12)
 
 ### Trạng thái file
 | File | Version | Ghi chú |
@@ -63,11 +63,11 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 | `ket-noi-supabase.js` | v7.1 | +boLoc.in support cho docData (batch fetch nguoi_dung.trinh_do) |
 | `bo-may-du-lieu.js` | v2.0 | dbEngine proxy, 63 tỉnh |
 | `phan-he-ung-dung.js` | v3.1 | SPA routing + has-subtab toggle |
-| `phan-he-host.js` | v9.0 | +capNhatThanhToan rewrite (Set+Map guard), doiTrangThaiDiDanh no double-toast, huy_luc write, xemChiTietCaDau redesign dashboard, openGuestListModal batch trinh_do+thoi_gian_dat |
-| `phan-he-khach-choi.js` | v8.1 | SĐT reveal click-area, modal HồSơ ẩn SĐT, trust bar redesign |
+| `phan-he-host.js` | v9.2 | +toggle TT, bulk action, time-guard Khách hủy, custom dropdown SVG, drop-up detection, _thStyle/_tdStyle nowrap, cd-finance-grid class, xemChiTietCaDau +THANH TOÁN col |
+| `phan-he-khach-choi.js` | v8.2 | huyDatSlot time-guard (ca đã bắt đầu), cancel button ẩn khi ca started |
 | `phan-he-quan-tri.js` | v9.0 | gopY: sort/filter/pagination + _rank + compare tường minh |
 | `phan-he-gop-y.js` | v2.0 | rate limit: 5/ngày + cooldown 5 phút |
-| `index.html` | v10.1 | +modal-ca-detail redesign (border-radius:16px, SVG icons, hover buttons); +cdd-scroll-outer wrapper; overflow-x:visible |
+| `index.html` | v10.3 | +modal DS Khách CSS responsive: anti-wrap, bulk-bar nowrap, cd-finance-grid mobile, dropdown drop-up, min-width 1100px mobile, colgroup col 9/10 min-width 150/120px |
 | `admin/index.html` | v9.0 | gopY tab: filter+pagination 1 hàng, sort STT, cột Người Dùng 320px |
 | `cms-seed.sql` | v2.1 | thêm gop_y_auth_select + gop_y_auth_delete policy cho authenticated role |
 | `giao-dien.css` | v7.1 | toast z-index: 1000→9999 (fix toast bị che modal) |
@@ -85,12 +85,14 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 - **huy_luc write on status change**: doiTrangThaiDiDanh khi đổi sang "Bùng kèo"/"Khách hủy" → payload thêm `huy_luc: new Date().toISOString()`
 - **boLoc.in trong docData**: thêm vào ket-noi-supabase.js để batch fetch `nguoi_dung` bằng `sdt_khach=in.(a,b,c)`
 - **thoi_gian_dat vs created_at**: field thực trong dat_slot là `thoi_gian_dat` (không phải `created_at`)
-- **xemChiTietCaDau redesign (phiên 11)**: modal border-radius:16px, SVG icons (Calendar/Clock/MapPin/Grid), financial cards 3-col với breakdown bảng 2 cột, badge bar cho trạng thái khách, section heading accent bar 4px, bảng cầu/khách có border-radius+hover row, "Buổi này bị lỗ" màu `#fdba74` (cam nhạt, dễ đọc trên nền tối)
+- **xemChiTietCaDau (phiên 11-12)**: modal border-radius:16px, SVG icons, financial cards class=cd-finance-grid (mobile stack dọc), +THANH TOÁN col, Tổng Thu chỉ tính da_thanh_toan=true, Tham gia (M/N), _thStyle/_tdStyle có white-space:nowrap
 - **dongModalCaDetail**: set cả `style.display='none'` lẫn `classList.add('hidden')` (trước chỉ classList)
-- **is_tam_khoa field**: Tạm Khóa ca không nhận slot mới nhưng vẫn hiển thị ngoài trang. Cần SQL: `ALTER TABLE ca_dau ADD COLUMN IF NOT EXISTS is_tam_khoa BOOLEAN DEFAULT FALSE`
+- **Custom dropdown DS Khách**: Thay native `<select>` bằng custom dropdown SVG. Menu dùng `position:absolute` + `.is-drop-up` class khi space-below < 0 (đo so với modal-guest-list-inner.bottom). `tr.tr-cdd-open { z-index:99 }`, `td.td-cdd { overflow:visible }`. `_closeAllGlCdd()` reset tất cả khi click ngoài / đóng modal.
+- **Time-guard Khách hủy**: `isMatchStarted = Date.now() >= new Date(ngay_danh+'T'+gio_bat_dau)`. Chặn ở 3 lớp: (1) dropdown option disabled+🔒, (2) `doiTrangThaiDiDanh` guard, (3) `huyDatSlot` backend guard. Guest cancel button ẩn khi ca started.
+- **Mobile DS Khách responsive**: `#modal-guest-list-table { min-width:1100px }` trên mobile, colgroup col 9 min-width:150px (Trạng Thái), col 10 min-width:120px (Đánh Giá), `#modal-guest-list-table td/th { white-space:nowrap; overflow:hidden; text-overflow:ellipsis }`, td.td-cdd vẫn overflow:visible.
+- **cd-finance-grid mobile**: class trên div 3 card → `@media 768px { grid-template-columns:1fr }` stack dọc.
 - **modal-ho-so-khach + modal-quick-dg**: Hai modal này THIẾU khỏi index.html → click Tên Khách và nút Đánh Giá đều fail. Đã thêm vào (phiên 10)
 - **toast z-index 9999**: toast `z-index:1000` bị che bởi modal `z-index:1200+`. Fix: tăng lên 9999
-- **ttCellHTML conditional**: "Chỉ Đã tham gia → checkbox thanh toán; Bùng kèo → input tiền phạt; Khách hủy/Chờ đánh → —"
 - **gopY RLS bug + sort + STT**: (giữ từ phiên 8)
 - **body display:block**: (giữ từ phiên 8)
 

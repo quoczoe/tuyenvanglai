@@ -306,6 +306,16 @@
         const span = document.getElementById(`sdtDisplay_${uid}`);
         if (span) { span.textContent = sdt; span.classList.remove("shb-sdt-masked"); }
         if (btn)  { btn.style.display = "none"; }
+        // Tự động copy vào clipboard + toast
+        if (navigator.clipboard && sdt) {
+            navigator.clipboard.writeText(sdt).then(() => {
+                window.hienToast("Đã sao chép SĐT ✅", "Đã hiển thị và sao chép số điện thoại thành công!", "success");
+            }).catch(() => {
+                window.hienToast("Đã hiển thị SĐT", sdt, "info");
+            });
+        } else {
+            window.hienToast("Đã hiển thị SĐT", sdt, "info");
+        }
     };
 
     // ── CLOUDFLARE TURNSTILE — Smart Session ─────────────────────────
@@ -1544,6 +1554,11 @@
                 if (s.is_frozen) return false;
                 // Chỉ hiện ca hôm nay trở đi
                 if (s.ngay_danh && s.ngay_danh < todayStr) return false;
+                // Ẩn ca đã qua giờ kết thúc — so sánh ngay_danh + gio_ket_thuc với now
+                if (s.ngay_danh && s.gio_ket_thuc) {
+                    const endDt = new Date(s.ngay_danh + "T" + s.gio_ket_thuc);
+                    if (now > endDt) return false;
+                }
 
                 // Lọc tỉnh thành
                 if (province && s.tinh_thanh !== province) return false;
@@ -1785,21 +1800,21 @@
                 <div class="slot-price-row" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
                     ${slot.gioi_tinh_can !== "Nữ"
                         ? `<div class="price-item price-male">
-                            <span class="price-label"><i class="fa-solid fa-mars" style="color:#93c5fd;"></i> Nam</span>
-                            <span class="price-value">${_fmtK(slot.gia_nam)}</span>
+                            <span class="price-label" style="display:flex;align-items:center;justify-content:center;white-space:nowrap;gap:4px;"><i class="fa-solid fa-mars" style="color:#93c5fd;flex-shrink:0;"></i> Nam</span>
+                            <span class="price-value" style="white-space:nowrap;">${_fmtK(slot.gia_nam)}</span>
                            </div>`
                         : `<div class="price-item" style="opacity:0.35;">
-                            <span class="price-label" style="color:#475569;"><i class="fa-solid fa-mars"></i> Nam</span>
-                            <span class="price-value" style="color:#475569;font-size:0.75rem;">Không tuyển</span>
+                            <span class="price-label" style="display:flex;align-items:center;justify-content:center;white-space:nowrap;gap:4px;color:#475569;"><i class="fa-solid fa-mars" style="flex-shrink:0;"></i> Nam</span>
+                            <span class="price-value" style="color:#475569;font-size:0.75rem;white-space:nowrap;">Không tuyển</span>
                            </div>`}
                     ${slot.gioi_tinh_can !== "Nam"
                         ? `<div class="price-item price-female">
-                            <span class="price-label"><i class="fa-solid fa-venus" style="color:#f9a8d4;"></i> Nữ</span>
-                            <span class="price-value">${_fmtK(slot.gia_nu)}</span>
+                            <span class="price-label" style="display:flex;align-items:center;justify-content:center;white-space:nowrap;gap:4px;"><i class="fa-solid fa-venus" style="color:#f9a8d4;flex-shrink:0;"></i> Nữ</span>
+                            <span class="price-value" style="white-space:nowrap;">${_fmtK(slot.gia_nu)}</span>
                            </div>`
                         : `<div class="price-item" style="opacity:0.35;">
-                            <span class="price-label" style="color:#475569;"><i class="fa-solid fa-venus"></i> Nữ</span>
-                            <span class="price-value" style="color:#475569;font-size:0.75rem;">Không tuyển</span>
+                            <span class="price-label" style="display:flex;align-items:center;justify-content:center;white-space:nowrap;gap:4px;color:#475569;"><i class="fa-solid fa-venus" style="flex-shrink:0;"></i> Nữ</span>
+                            <span class="price-value" style="color:#475569;font-size:0.75rem;white-space:nowrap;">Không tuyển</span>
                            </div>`}
                 </div>
             </div>
@@ -1812,10 +1827,10 @@
                 const _tenEsc = _ten.replace(/'/g, "\\'");
                 const _trust = hostInfo.trust ?? 100;
                 const _trustBadge = _trust >= 80
-                    ? `<span style="font-size:0.6rem;padding:1px 5px;border-radius:4px;background:rgba(0,255,136,0.12);border:1px solid rgba(0,255,136,0.35);color:#00ff88;font-weight:700;margin-left:4px;white-space:nowrap;">✅ UY TÍN TỐT</span>`
+                    ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:0.6rem;padding:2px 7px;border-radius:9999px;background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.3);color:#10b981;font-weight:700;margin-left:5px;white-space:nowrap;letter-spacing:0.3px;"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" style="flex-shrink:0"><path d="M6 1L7.5 4.5H11L8.5 6.5L9.5 10L6 8L2.5 10L3.5 6.5L1 4.5H4.5L6 1Z" fill="#10b981"/></svg> UY TÍN TỐT</span>`
                     : _trust >= 60
-                    ? `<span style="font-size:0.6rem;padding:1px 5px;border-radius:4px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.35);color:#fbbf24;font-weight:700;margin-left:4px;white-space:nowrap;">⚠️ CẢNH CÁO</span>`
-                    : `<span style="font-size:0.6rem;padding:1px 5px;border-radius:4px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);color:#f97316;font-weight:700;margin-left:4px;white-space:nowrap;">🔴 RỦI RO</span>`;
+                    ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:0.6rem;padding:2px 7px;border-radius:9999px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.35);color:#fbbf24;font-weight:700;margin-left:5px;white-space:nowrap;">⚠ CẢNH CÁO</span>`
+                    : `<span style="display:inline-flex;align-items:center;gap:3px;font-size:0.6rem;padding:2px 7px;border-radius:9999px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);color:#f97316;font-weight:700;margin-left:5px;white-space:nowrap;">● RỦI RO</span>`;
                 return `<div class="slot-host-banner" onclick="event.stopPropagation()">
                     <span class="shb-name-chip"
                           onclick="window.xemHoSoNguoiDang('${_sdtEsc}','${_tenEsc}','${slot.id}');event.stopPropagation()"
@@ -1947,13 +1962,29 @@
                         `Tài khoản dưới 7 ngày chỉ được đặt tối đa ${_cfg.newAccount.maxPerDay} slot/ngày.`, "warning");
                     return;
                 }
-                // Giới hạn tuần: "Chờ đánh" trong 7 ngày gần nhất
+                // Giới hạn tuần: "Chờ đánh" THỰC SỰ (ca chưa diễn ra xong, trong 7 ngày gần nhất)
+                // Cần join ca_dau để loại trừ ca đã kết thúc nhưng host chưa chốt (DB vẫn "Chờ đánh")
                 const _cutoff7 = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
-                const _soCho7Ngay = _slotsNew.filter(s =>
+                const _choDanhSlots = _slotsNew.filter(s =>
                     s.trang_thai_di_danh === "Chờ đánh" &&
                     s.thoi_gian_dat &&
                     s.thoi_gian_dat >= _cutoff7
-                ).length;
+                );
+                let _soCho7Ngay = 0;
+                if (_choDanhSlots.length > 0) {
+                    const _caDauIds = [...new Set(_choDanhSlots.map(s => s.id_ca_dau))];
+                    const _caDauArr = await window.dbEngine.doc("ca_dau", { in: { id: _caDauIds } }).catch(() => []);
+                    const _caDauMap = {};
+                    (_caDauArr || []).forEach(c => { _caDauMap[c.id] = c; });
+                    const _now = Date.now();
+                    _soCho7Ngay = _choDanhSlots.filter(s => {
+                        const ca = _caDauMap[s.id_ca_dau];
+                        if (!ca) return true; // không tìm thấy ca → đếm vào cho an toàn
+                        if (!ca.ngay_danh || !ca.gio_ket_thuc) return true;
+                        // Chỉ đếm nếu ca CHƯA kết thúc
+                        return _now < new Date(ca.ngay_danh + "T" + ca.gio_ket_thuc).getTime();
+                    }).length;
+                }
                 if (_soCho7Ngay >= _cfg.newAccount.maxChoNgay7) {
                     window.hienToast("Giới hạn tài khoản mới",
                         `Bạn đang có ${_soCho7Ngay} ca chờ đánh trong tuần — tối đa ${_cfg.newAccount.maxChoNgay7} ca. Hoàn thành các ca hiện tại trước.`, "warning");
