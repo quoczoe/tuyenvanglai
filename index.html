@@ -3534,11 +3534,23 @@ window.xoaBoLoc = xoaBoLoc;
 /* ── BULK ACTION BAR: nút không bị bẻ dòng ── */
 #gl-bulk-bar button { white-space: nowrap; flex-shrink: 0; }
 
+/* ── KHÓA CỨNG CỘT TRẠNG THÁI & ĐÁNH GIÁ ── */
+#modal-guest-list-table th:nth-child(9),
+#modal-guest-list-table td:nth-child(9) { min-width: 150px; }
+#modal-guest-list-table th:nth-child(10),
+#modal-guest-list-table td:nth-child(10) { min-width: 120px; }
+/* Cell Trạng Thái và Đánh Giá: flex căn giữa, không wrap */
+#modal-guest-list-table td:nth-child(9),
+#modal-guest-list-table td:nth-child(10) {
+    display: table-cell; /* giữ table-cell để colgroup vẫn hoạt động */
+    white-space: nowrap;
+}
+
 /* ── 3 CARD TÀI CHÍNH CHI TIẾT CA ĐẤU: responsive mobile ── */
 @media (max-width: 768px) {
     .cd-finance-grid { grid-template-columns: 1fr !important; }
-    /* Bảng DS Khách: giữ min-width, scroll ngang */
-    #modal-guest-list-table { min-width: 860px; }
+    /* Bảng DS Khách: đủ chỗ cho 10 cột, scroll ngang */
+    #modal-guest-list-table { min-width: 1100px !important; }
     /* Modal Chi Tiết Ca Đấu: cuộn ngang cho bảng bên trong */
     #modal-ca-detail-body .cd-table-scroll { min-width: 560px; }
 }
@@ -3607,8 +3619,8 @@ window.xoaBoLoc = xoaBoLoc;
                     <col style="width:13%">  <!-- Đặt Lúc -->
                     <col style="width:11%">  <!-- Hủy Lúc -->
                     <col style="width:11%">  <!-- Thanh Toán -->
-                    <col style="width:13%">  <!-- Trạng Thái -->
-                    <col style="width:10%">  <!-- Đánh Giá -->
+                    <col style="width:13%;min-width:150px;">  <!-- Trạng Thái -->
+                    <col style="width:10%;min-width:120px;">  <!-- Đánh Giá -->
                 </colgroup>
                 <thead>
                     <tr style="background:rgba(15,30,53,0.97);position:sticky;top:0;z-index:2;border-bottom:1px solid rgba(0,255,136,0.15);">
