@@ -1,4 +1,163 @@
-# TODO — Cập nhật: 2026-06-10 (phiên 12)
+# TODO — Cập nhật: 2026-06-10 (phiên 18)
+
+---
+
+## ✅ PHIÊN 18 — Bug giới hạn slot + escHTML/XSS + design tokens + transition cleanup
+
+### 🔴 Đã fix — BUG NGHIÊM TRỌNG: giới hạn đặt slot không reset
+- [x] **Nguyên nhân gốc**: nhánh `highTrust` (điểm ≥80) trong `datSlot` đếm slot "Chờ đánh" trong 30 ngày NHƯNG **không join ca_dau** → ca đã đá xong mà host quên chốt vẫn kẹt "Chờ đánh" → bộ đếm `soActiveSlots` không bao giờ reset → chặn khách cả tuần dù không còn ca chờ. (Nhánh `newAccount` đã join đúng, nhánh highTrust bị sót.)
+- [x] **Fix**: gom đọc `dat_slot` 1 lần → `_demSlotHomNay()` (đếm theo lịch VN) + `_demChoDanhThucSu()` (join ca_dau, CHỈ đếm ca chưa tới `gio_ket_thuc`, loại ca đã chốt/đã xóa). Dùng chung cho cả newAccount + highTrust. Đổi `if` rời rạc → `if/else if` (các mức loại trừ lẫn nhau).
+- [x] **Thông báo cụ thể** từng loại giới hạn (point 5): "đủ N slot hôm nay — reset sau 0h" vs "N ca chưa đá xong — chờ đá xong là tự được đặt tiếp". Không còn 1 câu chung chung.
+- [x] **Pattern liên quan** (`_taiThongKeKhach`): counter "đang chờ" cũng loại ca đã quá `gio_ket_thuc` (nhất quán).
+- [x] Cập nhật comment `SLOT_LIMIT_CONFIG` (maxChoNgay7/maxActiveSlots = "ca chưa đá xong cùng lúc", không theo mốc ngày cố định).
+
+### 🟢 Quét rộng pattern đếm/limit/cooldown — KHÔNG có bug khác
+- ✅ Host: KHÔNG có giới hạn đăng kèo/ngày (chỉ hint khuyến nghị 8 người, không chặn). Cooldown thanh toán = 3s anti-double-click (Map tạm, tự hết).
+- ✅ Góp ý (`phan-he-gop-y.js`): rate-limit 5/ngày + cooldown 5 phút dùng cửa sổ trượt 24h (`ts > dayAgo`) → reset đúng.
+- ✅ `dbEngine.doc/docThu` KHÔNG cache → mọi kiểm tra giới hạn đọc dữ liệu tươi. Cache 20s chỉ ở `_thucHienTimKiem` (riêng).
+- ✅ Tài khoản mới <7 ngày / badge: derive từ `created_at` → tự hết.
+
+### 🔴 Đã fix — XSS (độc lập, không đụng SQL)
+- [x] **`hienToast` (hieu-ung-giao-dien.js)**: dựng `innerHTML` với `${title}/${msg}` → XSS qua TOÀN BỘ toast (caller truyền ten_khach/ten_san/sdt). Đổi sang `textContent` (DOM/CSS giữ nguyên). Chặn 1 lớp XSS dùng chung toàn app.
+- [x] **`phan-he-quan-tri.js`** vá điểm sót `_escHtml`: `ca.ten_san` (Báo cáo), `_layTen` tên user + `nhan_xet` (bảng Đánh giá), nâng escape `< >` → `_escHtml` đủ 5 ký tự (card đánh giá).
+- [x] Cập nhật `docs/LO-TRINH-BAO-MAT.md` §0.1 (kiểm phân quyền admin) + §2.0 (XSS đã vá) + §2.2 (escHTML còn lại: khach-choi + host).
+
+### 🔴 Phân quyền Admin — đã GHI NHẬN (không tự siết RLS)
+- [x] Cổng đăng nhập admin: JWT Supabase Auth + SELECT verify `vai_tro=admin` (auth_uid không fake được) → hợp lý.
+- [ ] 🔴 NHƯNG thao tác admin (xóa user/đổi vai trò/CRUD key/xóa ca) **chỉ dựa RLS**; RLS đang `USING(true)`, `is_admin()` (security-auth-v4 Parts 2→8) CHƯA chạy → ai có anon key cũng gọi REST được. Ghi `docs/LO-TRINH-BAO-MAT.md` §0.1. **Chờ duyệt — KHÔNG tự chạy SQL.**
+
+### 🟡 Đại tu giao diện — design system tokens + empty-state
+- [x] Bổ sung **thang token** vào `giao-dien.css` (block "CSS Variables bổ sung"): `--space-1..12` (spacing 4/8pt), `--fs-xs..2xl` (font-size theo cấp), `--shadow-sm/md/lg` (đã có sẵn `--shadow-card/glow`, radius, transition, màu HSL, neon, status).
+- [x] Thêm empty-state CHUẨN `.tvl-empty` (icon + tiêu đề + lời nhắn + nút hành động) token-based — dùng chung cho danh sách rỗng.
+- 🟢 GHI CHÚ: design system + empty-state (`.ls-empty/.kh-empty`) + skeleton + 404 + toast + card/modal ĐÃ có sẵn và khá hoàn chỉnh (layer "REFACTOR THEME 2026"). KHÔNG viết lại mù HTML từng trang (không render được → rủi ro vỡ UI đang chạy + vi phạm "giữ cấu trúc class JS"). Cần QA thị giác thủ công cho phần tinh chỉnh còn lại.
+
+### 🟢 Dọn transition:all inline (đã xác nhận không gây shift)
+- [x] Đổi `transition: all <dur>` → danh sách prop tường minh (background-color/border-color/color/box-shadow/transform/opacity — KHÔNG có prop gây reflow) tại: **index.html (21)** + **admin/index.html (8)** + **404.html (3)** = 32 chỗ. Giữ nguyên duration.
+- [x] 404.html: DevTools-detect chỉ kiểm chiều ngang (bỏ chiều dọc — false-positive mobile), đồng bộ index.html.
+
+### 🟡 SQL đã soạn (CHỜ DUYỆT — chưa chạy)
+- [ ] `migration-cleanup-slot-ket-v1.sql` (MỚI) — DỌN slot kẹt "Chờ đánh" (ca đã kết thúc, chưa chốt). SECTION 1 chẩn đoán → SECTION 3 UPDATE (comment sẵn, phương án "Khách hủy") → SECTION 4 đối chiếu. **KHÔNG bắt buộc** (fix client đã neutralize bug); chỉ để dọn dữ liệu.
+
+### 🟡 Deploy
+- [x] Bump `?v=20260610e` cho file đã sửa: `giao-dien.css`, `hieu-ung-giao-dien.js`, `phan-he-khach-choi.js` (index.html) + `hieu-ung-giao-dien.js`, `phan-he-quan-tri.js` (admin/index.html). (404.html/index.html/admin/index.html là entry HTML — fetch tươi.)
+- [x] `node --check` 3 file JS sửa → PASS.
+
+---
+
+## ✅ PHIÊN 17 — Quét phan-he-host.js
+
+### 🔴 Đã fix
+- [x] **Doanh Thu rỗng cho host hệ SĐT**: `_taiDoanhThuHost` lọc `ma_key_host=currentHostKey` nhưng currentHostKey=SĐT còn ca mới có `ma_key_host=null`. Thêm helper `_docCaDauCuaToi()` (dual `sdt_nguoi_tao` + legacy key) — dùng cho doanh thu + hồ sơ khách. Bump `phan-he-host.js?v=20260610d`.
+
+### 🟡 Đã fix
+- [x] Hồ Sơ Khách thiếu lịch sử (cùng bug key) → dùng `_docCaDauCuaToi()`.
+- [x] Double-submit "Đăng kèo": guard `_dangCaBusy` đồng bộ ngay trước INSERT (btn.disabled cũ đặt sau await → muộn).
+- [x] "Tuần này" lỗi Chủ Nhật (`getDay()===0` ra Thứ Hai ngày mai) → công thức `_dow===0 ? -6 : 1-_dow`.
+- [x] Xóa kèo có người đặt: confirm cảnh báo "N khách đang giữ slot sẽ mất chỗ".
+- [x] B3 cache khách: `_tkInvalidateCache()` sau đăng/sửa/xóa/chốt/tạm khóa/mở lại ca.
+
+### 🟢 Đã xác minh / để lại
+- ✅ Công thức doanh thu đúng (Đã tham gia + da_thanh_toan + da_chot_ca; loại slot hủy).
+- ✅ Reads host hưởng timeout 15s; writes cố ý không timeout.
+- ✅ Level đăng kèo lấy từ TRINH_DO_LIST; slot≥1; ngày quá khứ chặn ở input.
+- 🟢 escHTML các điểm render host (DS Khách ten_khach, chi tiết ca ten_san/dia_chi, đánh giá nhan_xet) — gộp vào đợt XSS [docs/LO-TRINH-BAO-MAT.md](docs/LO-TRINH-BAO-MAT.md) §2.2 (chờ duyệt).
+- 🟢 Ca qua đêm (end<start) bị khách auto-hide sai — edge hiếm, chưa xử.
+
+---
+
+## ✅/🔵 PHIÊN 16 — Quét tầng dữ liệu (ket-noi-supabase.js + bo-may-du-lieu.js)
+
+### ✅ Đã fix
+- [x] **B1 — Timeout reads**: `docData` thêm AbortController (15s) → hết "skeleton quay mãi" khi mất mạng giữa chừng. Bump `ket-noi-supabase.js?v=20260610d` (index + admin).
+- [x] **B2 — Race filter**: sequence-token `_tkSeq`/`_mySeq` trong `_thucHienTimKiem` → bỏ response cũ về sau.
+- [x] **B3 — Double-submit `datSlot`**: guard `window._datSlotBusy` (try/finally). [Còn lại: `UNIQUE(sdt_khach,id_ca_dau)` ở DB — xem lộ trình]
+- [x] **B5/C1 — Cache + select an toàn**: cache nền 4 bảng TTL 20s (lọc client) + `nguoi_dung` chỉ lấy cột cần (fallback `select=*` nếu cột thiếu, không vỡ); invalidate cache sau khi đặt slot. Bump `phan-he-khach-choi.js?v=20260610d`.
+
+### 🔴 ĐỀ XUẤT — BẢO MẬT → đã soạn lộ trình: **[docs/LO-TRINH-BAO-MAT.md](docs/LO-TRINH-BAO-MAT.md)**
+- [ ] **RLS**: chạy `security-auth-v4.sql` + 2 RPC mới (`get_public_host_info`, `host_cham_diem`) + refactor 4–5 điểm client đọc/ghi `nguoi_dung` sang RPC (thứ tự an toàn trong lộ trình). KHÔNG tự chạy SQL — chờ duyệt.
+- [ ] **XSS**: thêm `escHTML()` + bọc các điểm render dữ liệu DB (ten_san/nhan_xet/bio...). Có thể làm độc lập trước RLS.
+
+### 🟢 GHI CHÚ
+- C2: `supabase-schema.sql` lỗi thời (thiếu cột diem_uy_tin, so_ca_thanh_cong, is_whitelisted, is_tam_khoa, is_frozen, da_thanh_toan...) — code chạy đúng DB thật; nên cập nhật file schema.
+- C3: taxonomy tầng dữ liệu chuẩn 12 mức; `migration-trinh-do-v1.sql` CHƯA CHẠY (DB còn giá trị cũ).
+- C4: `upsertData` có dùng (admin), `khoiTaoSandbox` là stub — không dead code.
+- A1: key client là anon (đúng), không lộ service_role.
+
+---
+
+## ✅ ĐÃ HOÀN THÀNH (phiên 15) — Fix layout shift + rà giao diện
+
+### 🔴 Layout shift
+- [x] **scrollbar-gutter: stable** cho `html` (index.html) → hết "khung nhảy" ngang khi thanh cuộn dọc xuất hiện/biến mất (mobile overlay scrollbar không bị ảnh hưởng)
+- [x] **Skeleton placeholder** (chống nhảy dọc khi tải): CSS `.tvl-skel`/`.tvl-skel-card`/`.tvl-skel-row`/`.tvl-skel-block` (giao-dien.css) + thay placeholder ban đầu (index.html) & loading-state JS cho: danh sách kèo (`_thucHienTimKiem`), lịch sử (`_taiLichSuDau`), doanh thu (host `_renderDoanhThu`). Tôn trọng `prefers-reduced-motion`.
+- [x] **Preload CSS font** (`rel=preload as=style`) → font tải sớm, giảm FOUT/nhảy chữ tiêu đề
+
+### 🟢 Dọn dẹp
+- [x] Đổi `transition: all` → prop cụ thể (background/border-color/color/box-shadow/transform/opacity) trong **giao-dien.css + components.css** (15 chỗ). Còn `transition:all` trong inline-style index.html/admin/404 — chưa đụng (ngoài phạm vi đã duyệt).
+
+### ✅ Đã xác minh / kiểm tra
+- `hieu-ung-giao-dien.js`, `.reveal`, mọi `@keyframes` (2 CSS) đều transform/opacity/paint-only → KHÔNG gây shift.
+- `xoaBoLoc` (phan-he-khach-choi.js:1442) reset ĐẦY ĐỦ (pills giới tính+trình độ, lịch, nhãn giá "Tất cả", tên sân, khung giờ). Không thiếu.
+
+### 🟡 Deploy
+- [x] Bump `?v=` admin/index.html (4 script `7.0` → mốc chung); index.html 4 file đổi nội dung → `20260610c` (giao-dien.css, components.css, phan-he-khach-choi, phan-he-host)
+
+---
+
+## ✅ ĐÃ HOÀN THÀNH (phiên 14) — Review & fix toàn diện index.html
+
+### 🔴 Lỗi chức năng
+- [x] Gỡ inline `xoaBoLoc` rút gọn (cuối index.html) ghi đè bản đầy đủ trong phan-he-khach-choi.js → nút "Xóa Bộ Lọc" nay reset đủ pills + lịch + nhãn giá
+- [x] Drawer mobile: thêm pill trình độ "TB" (PC có, mobile thiếu) + sửa `data-value="TB khá"` → `"TB Khá"` (sync mobile→PC dùng `.includes()` phân biệt hoa-thường nên trước đó bị bỏ qua)
+
+### 🟡 Tối ưu / Deploy
+- [x] Bump tất cả `?v=` cache-bust về mốc chung `20260610` (CSS + 7 file JS) — tránh user cũ chạy code cache cũ
+- [x] DevTools-detect: bỏ check chiều dọc (`outerHeight-innerHeight`), chỉ giữ chiều ngang → tránh xóa trắng app oan trên mobile
+
+### 🟢 Dọn dẹp
+- [x] Gỡ CSS trùng/rác: `.app-card` margin-bottom 2 lần; gộp `.kt-result-box` & `.kt-sug-card` (2 định nghĩa → 1, giữ nguyên computed); xóa `.tab-nav`/`.tab-nav-inner`/`.app-header-spacer` legacy
+- [x] Gỡ dead code: IIFE redirect host.html (thân `if` rỗng) + script block rỗng
+- [x] A11y: `aria-label` cho nút icon-only (phân trang ‹ ›, tải lại DS ca) + `aria-live` page-info; gắn `for`/`id` cho 8 label Hồ Sơ + 8 label Đăng Ca
+
+### ✅ Chuẩn hóa taxonomy trình độ (đã xử lý — code xong, SQL chờ chạy)
+- [x] **Nguồn duy nhất (SSOT)** `window.TRINH_DO_LIST` (12 mức IN HOA: NEWBIE, YẾU-, YẾU, YẾU+, TBY-, TBY, TBY+, TB-, TB, TB+, TB KHÁ, KHÁ) + `TRINH_DO_LABEL` (KHÁ→"KHÁ (BÁN CHUYÊN)") + `nhanTrinhDo()` + `chuanHoaTrinhDo()` trong `bo-may-du-lieu.js`
+- [x] **Render động** 6 chỗ từ SSOT (`_renderTrinhDoUI` chạy on DOMContentLoaded): Hồ sơ select, Filter select+pills PC+mobile, Host Nam+Nữ checkbox — xóa toàn bộ hardcode trong index.html
+- [x] Host đọc/reset checkbox theo container `#levelNamPills`/`#levelNuPills` (sửa luôn **bug có sẵn**: vòng lặp cũ thiếu `"tb"` → mức TB không bao giờ lưu)
+- [x] `STANDARD_LEVELS` lấy từ SSOT; hiển thị pill dùng `nhanTrinhDo()` (KHÁ → "KHÁ (BÁN CHUYÊN)")
+- [x] Filter so khớp **CHÍNH XÁC 1 mức** (bỏ substring), normalize trim+UPPER 2 vế
+- [x] Hồ sơ load/save normalize `chuanHoaTrinhDo`
+- [x] Bump `?v=20260610b` cho 4 file JS sửa (bo-may-du-lieu, phan-he-khach-choi, phan-he-host, phan-he-ung-dung)
+- [ ] 🔴 **CHẠY SQL**: `migration-trinh-do-v1.sql` (đã soạn, **chưa chạy**). Mapping đã duyệt: Hồ sơ Khá→KHÁ, Giỏi→KHÁ; Ca đấu Khá→TB KHÁ. BACKUP DB trước; chạy 1 lần ngay tại/trước deploy; đối chiếu SELECT trước/sau (Section 1 vs 4) + kiểm Section 5 giá trị lạ.
+
+---
+
+## ✅ ĐÃ HOÀN THÀNH (phiên 13) — /tim-keo UX + slot limit + trust score
+
+### Đồng bộ Tạm Khóa ca (phan-he-khach-choi.js + phan-he-host.js)
+- [x] Card `/tim-keo`: nút "NGƯNG NHẬN SLOT" xám disabled khi is_tam_khoa
+- [x] Modal chi tiết footer: thông báo "Tạm khóa — không nhận đăng ký mới"
+- [x] `datSlot()` guard client-side: block bypass khi is_tam_khoa
+
+### SLOT_LIMIT_CONFIG + Rule tài khoản mới (phan-he-khach-choi.js)
+- [x] `window.SLOT_LIMIT_CONFIG` config object (newAccount/lowTrust/highTrust)
+- [x] Fetch user 1 lần (created_at + diem_uy_tin) thay `_layDiemUyTin()` riêng
+- [x] Rule account <7 ngày: 2/ngày + 5 "Chờ đánh" trong 7 ngày gần nhất
+- [x] Các nhánh cũ skip khi `_isNewAccount = true`
+- [x] `window._truDiemUyTin` exposed lên window
+- [x] Bùng kèo → trừ 10đ (doiTrangThaiDiDanh, phan-he-host.js)
+
+### Fix đếm sai "Chờ đánh" (phan-he-khach-choi.js)
+- [x] Join ca_dau batch fetch (`boLoc.in`) để loại ca đã qua gio_ket_thuc
+- [x] soActiveSlots cutoff 30 ngày (highTrust branch)
+- [x] `_soCho7Ngay` chỉ đếm ca CHƯA kết thúc
+
+### /tim-keo UX polish (phan-he-khach-choi.js + giao-dien.css)
+- [x] Auto-hide ca quá gio_ket_thuc trong filter `_thucHienTimKiem`
+- [x] Lịch sử display-only: "Chờ đánh" → "Đã Tham Gia" khi ca đã kết thúc
+- [x] Giá Nam/Nữ: `display:flex;align-items:center;white-space:nowrap;gap:4px`
+- [x] Tên sân font-render cao cấp: Inter 700, line-height:1.4, letter-spacing:0.03em, color:#22d3ee, antialiased (giao-dien.css)
+- [x] SĐT reveal → auto copy clipboard + toast "Đã sao chép SĐT ✅"
+- [x] Trust badge "UY TÍN TỐT" → pill border-radius:9999px + SVG star + rgba(16,185,129)
 
 ---
 

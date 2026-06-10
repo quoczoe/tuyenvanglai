@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -194,7 +194,7 @@
             padding: 12px 24px; border-radius: var(--radius-md);
             background: linear-gradient(135deg, #00d97a, #00a855);
             border: none; color: #fff; font-size: 0.88rem; font-weight: 700;
-            cursor: pointer; transition: all 0.2s; font-family: inherit;
+            cursor: pointer; transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s; font-family: inherit;
             display: inline-flex; align-items: center; gap: 7px;
         }
         .ad-btn-primary:hover { transform: scale(1.02); filter: brightness(1.1); }
@@ -202,7 +202,7 @@
             padding: 11px 20px; border-radius: var(--radius-md);
             background: linear-gradient(135deg, #00d97a, #00a855);
             border: none; color: #fff;
-            font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: all 0.2s;
+            font-size: 0.9rem; font-weight: 700; cursor: pointer; transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
             font-family: inherit; display: inline-flex; align-items: center; gap: 7px;
         }
         .ad-btn-gold:hover { filter: brightness(1.1); transform: scale(1.02); }
@@ -210,7 +210,7 @@
             padding: 7px 14px; border-radius: var(--radius-sm);
             border: 1px solid var(--border); background: transparent;
             color: var(--text-muted); font-size: 0.82rem; font-weight: 600;
-            cursor: pointer; transition: all 0.2s; font-family: inherit;
+            cursor: pointer; transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s; font-family: inherit;
             display: inline-flex; align-items: center; gap: 6px;
         }
         .ad-btn-ghost:hover { border-color: var(--accent-green); color: var(--accent-green); }
@@ -218,7 +218,7 @@
             padding: 7px 14px; border-radius: var(--radius-sm);
             border: 1px solid rgba(239,68,68,0.4); background: rgba(239,68,68,0.06);
             color: #ef4444; font-size: 0.82rem; font-weight: 600;
-            cursor: pointer; transition: all 0.2s; font-family: inherit;
+            cursor: pointer; transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s; font-family: inherit;
             display: inline-flex; align-items: center; gap: 5px;
         }
         .ad-btn-danger:hover { background: rgba(239,68,68,0.14); }
@@ -226,7 +226,7 @@
             width: 32px; height: 32px; border-radius: var(--radius-sm);
             border: 1px solid var(--border); background: transparent;
             color: var(--text-muted); font-size: 0.82rem;
-            cursor: pointer; transition: all 0.18s; font-family: inherit;
+            cursor: pointer; transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s; font-family: inherit;
             display: inline-flex; align-items: center; justify-content: center;
         }
         .ad-btn-icon:hover { border-color: var(--accent-green); color: var(--accent-green); }
@@ -282,7 +282,7 @@
             border: 1px solid rgba(255,255,255,0.08);
             background: rgba(255,255,255,0.02);
             color: var(--text-muted); font-size: 0.82rem; font-weight: 600;
-            cursor: pointer; transition: all 0.2s; font-family: inherit;
+            cursor: pointer; transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s; font-family: inherit;
             display: flex; align-items: center; gap: 6px;
         }
         .ad-tab-btn:hover { background: rgba(255,255,255,0.06); color: var(--text-main); }
@@ -348,7 +348,7 @@
         .ad-pill {
             padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600;
             border: 1px solid var(--border); background: transparent; color: var(--text-muted);
-            cursor: pointer; transition: all 0.18s; font-family: inherit;
+            cursor: pointer; transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s; font-family: inherit;
             display: inline-flex; align-items: center; gap: 5px;
         }
         .ad-pill.active {
@@ -668,7 +668,7 @@
             font-size: 0.82rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s, opacity 0.2s;
             font-family: inherit;
             display: inline-flex;
             align-items: center;
@@ -1685,13 +1685,13 @@
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: Supabase JS SDK — Admin Auth sẽ không hoạt động')"></script>
 
 <!-- ══ SCRIPTS — onerror ghi log chẩn đoán nếu Cốc Cốc block script ══ -->
-<script src="/ket-noi-supabase.js?v=7.0"
+<script src="/ket-noi-supabase.js?v=20260610d"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: ket-noi-supabase.js — Cốc Cốc có thể đã block file này')"></script>
-<script src="/bo-may-du-lieu.js?v=7.0"
+<script src="/bo-may-du-lieu.js?v=20260610b"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: bo-may-du-lieu.js')"></script>
-<script src="/hieu-ung-giao-dien.js?v=7.0"
+<script src="/hieu-ung-giao-dien.js?v=20260610e"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: hieu-ung-giao-dien.js')"></script>
-<script src="/phan-he-quan-tri.js?v=7.0"
+<script src="/phan-he-quan-tri.js?v=20260610e"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: phan-he-quan-tri.js — auth panel sẽ hiện sau 8s'); setTimeout(function(){var ap=document.getElementById('adminAuthPanel');if(ap)ap.style.display='block';},500);"></script>
 
 <script>

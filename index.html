@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -14,12 +14,14 @@
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Preload CSS font ở ưu tiên cao → font tải sớm hơn, giảm FOUT/nhảy chữ tiêu đề khi load -->
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Figtree:wght@400;500;600;700;800;900&display=swap">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Figtree:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS hệ thống -->
-    <link rel="stylesheet" href="giao-dien.css?v=6.9">
-    <link rel="stylesheet" href="components.css?v=6.0">
+    <link rel="stylesheet" href="giao-dien.css?v=20260610e">
+    <link rel="stylesheet" href="components.css?v=20260610c">
 
     <style>
         /* ══════════════════════════════════════════════════
@@ -51,6 +53,9 @@
             background: var(--bg) !important;
             overflow-x: hidden !important; /* Chặn cuộn ngang ở mức html */
             height: auto !important;
+            /* Luôn chừa chỗ cho thanh cuộn dọc → tránh "khung nhảy" ngang khi
+               scrollbar xuất hiện/biến mất lúc chuyển tab dài↔ngắn / tải nội dung */
+            scrollbar-gutter: stable;
         }
         body {
             background: var(--bg) !important; color: var(--text);
@@ -130,7 +135,6 @@
             height: 0.72em; width: 0.62em;
             overflow: visible;
         }
-        .app-header-spacer { display: none; } /* Không dùng nữa — layout chuyển sang grid */
         .header-user-info {
             display: flex; align-items: center; gap: 9px; cursor: pointer;
         }
@@ -156,7 +160,6 @@
         .btn-header-login:hover { opacity: 0.88; transform: translateY(-1px); }
 
         /* ── APP NAV — 3 tabs nằm chính giữa header (gộp thành 1 hàng duy nhất) ── */
-        .tab-nav, .tab-nav-inner { display: none !important; } /* Tab bar cũ đã gộp vào header */
         .app-nav {
             display: flex; align-items: center; justify-content: center; gap: 4px;
         }
@@ -207,7 +210,7 @@
             background: transparent; border: none; border-radius: 8px;
             color: rgba(255,255,255,0.45); font-size: 0.78rem; font-weight: 600;
             cursor: pointer; font-family: inherit; white-space: nowrap;
-            transition: all 0.18s; position: relative;
+            transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s; position: relative;
         }
         .subtab-btn:hover:not(.active) { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.05); }
         .subtab-btn.active {
@@ -364,7 +367,6 @@
             border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 24px 20px;
-            margin-bottom: 20px;
             box-shadow: var(--shadow);
             margin-bottom: 16px;
         }
@@ -426,9 +428,12 @@
             background: rgba(255,85,0,0.09) !important;
             border-color: rgba(255,85,0,0.42) !important;
             color: var(--accent) !important;
-            font-size: 0.96rem !important;
+            font-size: clamp(0.74rem, 2vw, 0.94rem) !important; /* chống tràn dòng Tổng Chi Phí */
             font-weight: 700 !important;
             cursor: default;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .kt-result-box::placeholder { color: rgba(255,85,0,0.38) !important; }
 
@@ -438,8 +443,8 @@
             background: var(--bg-card2);
             border: 1.5px solid rgba(255,255,255,0.1);
             border-radius: var(--radius-sm);
-            padding: 16px 12px; cursor: pointer;
-            display: flex; flex-direction: column; gap: 4px;
+            padding: 18px 14px; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
             text-align: center;
             transition: border-color 0.18s, background 0.18s, transform 0.15s, box-shadow 0.18s;
         }
@@ -512,11 +517,11 @@
         .coc-switch-slider {
             position: absolute; inset: 0; background: rgba(255,255,255,0.1);
             border: 1px solid rgba(255,255,255,0.15); border-radius: 22px;
-            transition: all .2s;
+            transition: background-color .2s, border-color .2s, color .2s, box-shadow .2s, transform .2s, opacity .2s;
         }
         .coc-switch-slider::before {
             content: ""; position: absolute; width: 16px; height: 16px; border-radius: 50%;
-            background: #64748b; left: 2px; top: 2px; transition: all .2s;
+            background: #64748b; left: 2px; top: 2px; transition: background-color .2s, border-color .2s, color .2s, box-shadow .2s, transform .2s, opacity .2s;
         }
         .coc-switch input:checked + .coc-switch-slider { background: rgba(255,85,0,0.25); border-color: rgba(255,85,0,0.6); }
         .coc-switch input:checked + .coc-switch-slider::before { background: #FF5500; transform: translateX(18px); }
@@ -562,14 +567,6 @@
         /* ── Khi modal mở — hiện flex ── */
         #ktModalOverlay[style*="flex"] { display: flex !important; }
 
-        /* ── Tổng Chi Phí — chống tràn dòng ── */
-        .kt-result-box {
-            font-size: clamp(0.74rem, 2vw, 0.94rem) !important;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
         /* ── Modal scrollbar — không dùng màu xanh toàn cục ── */
         #ktModalPanel::-webkit-scrollbar { width: 5px; }
         #ktModalPanel::-webkit-scrollbar-track { background: transparent; }
@@ -608,7 +605,6 @@
         }
 
         /* ── Pricing card — center align + hover ── */
-        .kt-sug-card { padding: 18px 14px !important; gap: 6px !important; text-align: center !important; align-items: center !important; }
         .kt-sug-prices { width: 100%; }
         .kt-sug-price {
             display: flex; align-items: center; justify-content: center;
@@ -663,7 +659,7 @@
             background: rgba(255,255,255,0.04);
             color: rgba(255,255,255,0.55);
             font-size: 0.78rem; font-weight: 600; cursor: pointer;
-            transition: all 0.15s; user-select: none;
+            transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s; user-select: none;
         }
         .lvl-pill:hover { border-color: rgba(255,85,0,0.45); color: var(--accent); }
         .lvl-cb:checked + .lvl-pill {
@@ -675,7 +671,7 @@
         .lvl-custom { width: 100%; margin-top: 4px; font-size: 0.78rem; padding: 6px 10px; }
 
         /* Giới tính: giữ nền cam, icon dùng glow để hiển thị màu rõ trên nền cam */
-        .g-icon { transition: all 0.15s; font-size: 1.1em; font-weight: 800; }
+        .g-icon { transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s; font-size: 1.1em; font-weight: 800; }
         #genderMale:checked   + .lvl-pill .g-icon {
             color: #7dd3fc;
             text-shadow: 0 0 8px rgba(125,211,252,0.95), 0 0 2px #fff;
@@ -709,7 +705,7 @@
             border: 1px solid var(--border);
             color: var(--text-sub); font-size: 0.85rem; font-weight: 600;
             cursor: pointer; font-family: inherit;
-            transition: all 0.18s;
+            transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s;
         }
         .btn-secondary:hover { background: rgba(255,255,255,0.11); color: var(--text); border-color: var(--border-hover); }
 
@@ -718,7 +714,7 @@
             padding: 8px 16px; border-radius: var(--radius-sm);
             background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
             color: #ef4444; font-size: 0.82rem; font-weight: 600;
-            cursor: pointer; font-family: inherit; transition: all 0.18s;
+            cursor: pointer; font-family: inherit; transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s;
         }
         .btn-danger:hover { background: rgba(239,68,68,0.18); }
 
@@ -753,7 +749,7 @@
             padding: 7px 14px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.35);
             background: rgba(239,68,68,0.08); color: #f87171;
             font-size: 0.78rem; font-weight: 700; font-family: inherit;
-            cursor: pointer; transition: all 0.15s; white-space: nowrap;
+            cursor: pointer; transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s; white-space: nowrap;
             align-self: flex-start; flex-shrink: 0; margin-left: auto;
         }
         .btn-profile-logout:hover { background: rgba(239,68,68,0.18); border-color: rgba(239,68,68,0.6); color: #fca5a5; }
@@ -862,7 +858,7 @@
             padding: 9px 11px; border-radius: 100px;
             background: rgba(255,255,255,0.04); border: 1px solid var(--border);
             color: var(--text-muted); font-size: 0.78rem;
-            cursor: pointer; font-family: inherit; transition: all 0.18s;
+            cursor: pointer; font-family: inherit; transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s;
         }
         .btn-detail:hover { border-color: var(--border-hover); color: var(--text-sub); }
 
@@ -1135,7 +1131,7 @@
             border: 1px solid rgba(255,255,255,0.15);
             background: transparent; color: rgba(255,255,255,0.5);
             font-size: 0.74rem; font-weight: 600; cursor: pointer;
-            transition: all 0.15s; font-family: inherit;
+            transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s; font-family: inherit;
         }
         .tk-pill:hover { border-color: rgba(255,85,0,0.5); color: var(--accent); }
         .tk-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
@@ -1155,7 +1151,7 @@
             border: 1px solid rgba(255,85,0,0.3);
             border-radius: 100px;
             color: rgba(255,120,0,0.75); font-size: 0.82rem; font-weight: 600;
-            transition: all 0.18s;
+            transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s;
         }
         .tk-btn-secondary:hover {
             background: rgba(255,85,0,0.07);
@@ -1247,7 +1243,7 @@
         .tk-province-btn {
             padding:8px 6px; border-radius:8px; border:1px solid rgba(255,255,255,0.12);
             background:rgba(255,255,255,0.04); color:#94a3b8; font-size:0.78rem; font-weight:600;
-            cursor:pointer; font-family:inherit; text-align:center; transition:all 0.15s;
+            cursor:pointer; font-family:inherit; text-align:center; transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;
             white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
         }
         .tk-province-btn:hover { border-color:rgba(255,85,0,0.35); color:#e2e8f0; background:rgba(255,85,0,0.06); }
@@ -1424,7 +1420,7 @@
             font-size: 0.95rem; font-weight: 800; letter-spacing: 0.04em;
             border: none; cursor: pointer; font-family: inherit;
             box-shadow: 0 0 15px rgba(6,182,212,0.4);
-            transition: all 0.18s;
+            transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s;
         }
         .lp-btn-cta:hover { background: #22d3ee; transform: translateY(-2px); box-shadow: 0 0 24px rgba(6,182,212,0.6); }
         .lp-btn-sec {
@@ -1432,7 +1428,7 @@
             padding: 13px 22px; border-radius: 10px;
             background: transparent; border: 1px solid rgba(255,255,255,0.2);
             color: #fff; font-size: 0.88rem; font-weight: 600;
-            cursor: pointer; font-family: inherit; transition: all 0.18s;
+            cursor: pointer; font-family: inherit; transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s;
         }
         .lp-btn-sec:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.35); }
         .lp-proof {
@@ -1482,7 +1478,7 @@
         .lp-icard {
             background: var(--card); border: 1px solid var(--border);
             border-radius: 14px; padding: 20px 16px; text-align: center;
-            transition: all 0.22s;
+            transition: background-color 0.22s, border-color 0.22s, color 0.22s, box-shadow 0.22s, transform 0.22s, opacity 0.22s;
         }
         .lp-icard:hover { border-color: rgba(0,201,110,0.3); background: var(--card2); transform: translateY(-3px); }
         .lp-icard .em { font-size: 1.8rem; display: block; margin-bottom: 8px; }
@@ -1596,7 +1592,7 @@
             font-size: 0.95rem; font-weight: 800; letter-spacing: 0.04em;
             border: none; cursor: pointer; font-family: inherit;
             box-shadow: 0 0 15px rgba(6,182,212,0.4);
-            transition: all 0.18s; position: relative;
+            transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s; position: relative;
         }
         .lp-btn-btm:hover { background: #22d3ee; transform: translateY(-2px); box-shadow: 0 0 24px rgba(6,182,212,0.6); }
         /* Responsive cho Giới Thiệu tab */
@@ -1633,7 +1629,7 @@
             color:#00ff88; font-size:0.78rem; font-weight:600;
             padding:5px 12px; border-radius:8px; margin-top:4px;
             background:rgba(0,255,136,0.08); border:1px solid rgba(0,255,136,0.25);
-            text-decoration:none; transition:all 0.18s;
+            text-decoration:none; transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s;
         }
         .kmd-maps-btn:hover { background:rgba(0,255,136,0.14); border-color:rgba(0,255,136,0.45); }
         .kmd-pill {
@@ -1746,7 +1742,7 @@
             color: rgba(255,255,255,0.45);
             font-size: 0.88rem; font-weight: 600;
             cursor: pointer; font-family: inherit;
-            transition: all 0.18s;
+            transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s;
             display: flex; align-items: center; justify-content: center; gap: 6px;
         }
         .uho-tab-btn:hover { color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.04); }
@@ -1815,7 +1811,7 @@
             color: rgba(255,255,255,0.55);
             font-size: 0.8rem; font-weight: 600;
             cursor: pointer; font-family: inherit;
-            transition: all 0.15s; -webkit-user-select: none; user-select: none;
+            transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s; -webkit-user-select: none; user-select: none;
         }
         .uho-chip:hover { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.8); }
         .uho-chip.active {
@@ -2123,18 +2119,18 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Họ tên</label>
+                        <label class="form-label" for="profileName">Họ tên</label>
                         <input type="text" id="profileName" class="app-input" placeholder="Nguyễn Văn A">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Số điện thoại</label>
+                        <label class="form-label" for="profilePhone">Số điện thoại</label>
                         <input type="tel" id="profilePhone" class="app-input" readonly placeholder="0901234567">
                         <span class="form-hint">Dùng làm định danh — không thể thay đổi</span>
                     </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Giới tính</label>
+                        <label class="form-label" for="profileGender">Giới tính</label>
                         <select id="profileGender" class="app-select">
                             <option value="">— Chọn giới tính —</option>
                             <option value="male">Nam</option>
@@ -2142,36 +2138,28 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Trình độ chơi</label>
-                        <select id="profileTrindDo" class="app-select">
-                            <option value="">— Chọn trình độ —</option>
-                            <option value="Newbie">Newbie (Mới tập)</option>
-                            <option value="Yếu">Yếu</option>
-                            <option value="TB-">Trung bình yếu (TB-)</option>
-                            <option value="TB">Trung bình (TB)</option>
-                            <option value="TB+">Trung bình khá (TB+)</option>
-                            <option value="Khá">Khá</option>
-                            <option value="Giỏi">Giỏi</option>
-                        </select>
+                        <label class="form-label" for="profileTrindDo">Trình độ chơi</label>
+                        <!-- Options render động từ window.TRINH_DO_LIST (bo-may-du-lieu.js → _renderTrinhDoUI) -->
+                        <select id="profileTrindDo" class="app-select"></select>
                     </div>
                 </div>
                 <div class="form-row col-3">
                     <div class="form-group">
-                        <label class="form-label"><i class="fa-solid fa-comment" style="color:#00b5e2;"></i> Zalo</label>
+                        <label class="form-label" for="profileZalo"><i class="fa-solid fa-comment" style="color:#00b5e2;"></i> Zalo</label>
                         <input type="tel" id="profileZalo" class="app-input" placeholder="SĐT Zalo">
                     </div>
                     <div class="form-group">
-                        <label class="form-label"><i class="fa-brands fa-facebook" style="color:#1877f2;"></i> Facebook</label>
+                        <label class="form-label" for="profileFacebook"><i class="fa-brands fa-facebook" style="color:#1877f2;"></i> Facebook</label>
                         <input type="url" id="profileFacebook" class="app-input" placeholder="https://facebook.com/...">
                     </div>
                     <div class="form-group">
-                        <label class="form-label"><i class="fa-solid fa-envelope" style="color:#ea4335;"></i> Gmail</label>
+                        <label class="form-label" for="profileGmail"><i class="fa-solid fa-envelope" style="color:#ea4335;"></i> Gmail</label>
                         <input type="email" id="profileGmail" class="app-input" placeholder="example@gmail.com">
                     </div>
                 </div>
                 <div class="form-row col-1">
                     <div class="form-group">
-                        <label class="form-label">Giới thiệu bản thân</label>
+                        <label class="form-label" for="profileBio">Giới thiệu bản thân</label>
                         <textarea id="profileBio" class="app-textarea" placeholder="Thích đánh giao hữu, thích gặp người mới..."></textarea>
                     </div>
                 </div>
@@ -2274,25 +2262,9 @@
                     </div>
                     <div class="tk-filter-group">
                         <label class="tk-filter-label">Trình độ</label>
-                        <select id="filterLevel" style="display:none;" onchange="window.timKiemCaDau&&window.timKiemCaDau()">
-                            <option value="">Tất cả trình độ</option>
-                            <option value="Newbie">Newbie</option>
-                            <option value="Yếu">Yếu</option>
-                            <option value="TBY">TBY</option>
-                            <option value="TB-">TB-</option>
-                            <option value="TB">TB</option>
-                            <option value="TB+">TB+</option>
-                            <option value="TB Khá">TB Khá</option>
-                        </select>
-                        <div id="filterLevelPills" class="tk-filter-pills">
-                            <button class="tk-pill" data-value="Newbie" onclick="window._toggleLevelPill(this)">Newbie</button>
-                            <button class="tk-pill" data-value="Yếu" onclick="window._toggleLevelPill(this)">Yếu</button>
-                            <button class="tk-pill" data-value="TBY" onclick="window._toggleLevelPill(this)">TBY</button>
-                            <button class="tk-pill" data-value="TB-" onclick="window._toggleLevelPill(this)">TB-</button>
-                            <button class="tk-pill" data-value="TB" onclick="window._toggleLevelPill(this)">TB</button>
-                            <button class="tk-pill" data-value="TB+" onclick="window._toggleLevelPill(this)">TB+</button>
-                            <button class="tk-pill" data-value="TB Khá" onclick="window._toggleLevelPill(this)">TB Khá</button>
-                        </div>
+                        <!-- Options + pills render động từ window.TRINH_DO_LIST (_renderTrinhDoUI) -->
+                        <select id="filterLevel" style="display:none;" onchange="window.timKiemCaDau&&window.timKiemCaDau()"></select>
+                        <div id="filterLevelPills" class="tk-filter-pills"></div>
                     </div>
                     <div class="tk-filter-group">
                         <label class="tk-filter-label" style="display:flex;justify-content:space-between;align-items:center;">
@@ -2371,11 +2343,13 @@
             <main class="tk-main">
                 <div class="tk-result-count" id="countSearchResult">Đang tải kèo...</div>
                 <div id="slotsSearchResultContainer" class="keo-grid">
-                    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted);">
-                        <i class="fa-solid fa-spinner fa-spin"
-                           style="font-size:1.5rem;display:block;margin-bottom:12px;"></i>
-                        Đang tải danh sách kèo...
-                    </div>
+                    <!-- Skeleton giữ chỗ — JS thay bằng kết quả thật khi tải xong -->
+                    <div class="tvl-skel tvl-skel-card"></div>
+                    <div class="tvl-skel tvl-skel-card"></div>
+                    <div class="tvl-skel tvl-skel-card"></div>
+                    <div class="tvl-skel tvl-skel-card"></div>
+                    <div class="tvl-skel tvl-skel-card"></div>
+                    <div class="tvl-skel tvl-skel-card"></div>
                 </div>
             </main>
         </div>
@@ -2415,14 +2389,8 @@
             <!-- Trình độ — Multi-select Pills (đồng bộ PC) -->
             <div class="tk-filter-group">
                 <label class="tk-filter-label">Trình độ <span style="font-size:0.68rem;color:#64748b;">(chọn nhiều)</span></label>
-                <div id="filterLevelPillsMobile" class="tk-filter-pills">
-                    <button class="tk-pill" data-value="Newbie" onclick="window._toggleMobileLevelPill(this)">Newbie</button>
-                    <button class="tk-pill" data-value="Yếu"   onclick="window._toggleMobileLevelPill(this)">Yếu</button>
-                    <button class="tk-pill" data-value="TBY"    onclick="window._toggleMobileLevelPill(this)">TBY</button>
-                    <button class="tk-pill" data-value="TB-"    onclick="window._toggleMobileLevelPill(this)">TB-</button>
-                    <button class="tk-pill" data-value="TB+"    onclick="window._toggleMobileLevelPill(this)">TB+</button>
-                    <button class="tk-pill" data-value="TB khá" onclick="window._toggleMobileLevelPill(this)">TB Khá</button>
-                </div>
+                <!-- Pills render động từ window.TRINH_DO_LIST (_renderTrinhDoUI) -->
+                <div id="filterLevelPillsMobile" class="tk-filter-pills"></div>
             </div>
 
             <!-- Ngày đánh -->
@@ -2524,11 +2492,11 @@
                     <!-- Địa lý: Tỉnh/Thành phố + Quận/Huyện -->
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Tỉnh / Thành phố</label>
+                            <label class="form-label" for="hostProvince">Tỉnh / Thành phố</label>
                             <select id="hostProvince" class="app-select" onchange="window._capNhatHuyenBoLoc && window._capNhatHuyenBoLoc(this.value)"></select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Quận / Huyện</label>
+                            <label class="form-label" for="hostDistrict">Quận / Huyện</label>
                             <select id="hostDistrict" class="app-select">
                                 <option value="" disabled selected>-- Chọn Quận/Huyện --</option>
                             </select>
@@ -2537,12 +2505,12 @@
                     <!-- HÀNG 1: Tên sân | Số sân mở | Sân cụ thể -->
                     <div class="form-row col-san">
                         <div class="form-group">
-                            <label class="form-label">Tên sân</label>
+                            <label class="form-label" for="hostCourtName">Tên sân</label>
                             <input type="text" id="hostCourtName" class="app-input" placeholder="VD: Sân Thần Đồng, Sân Tân Bình...">
                             <span class="form-hint" style="color:#f97316;">Nên nhập đầy đủ tên sân giống Google Maps. VD: SÂN CẦU LÔNG ĐẠI PHÁT, BE BADMINTON</span>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Số sân mở</label>
+                            <label class="form-label" for="hostCourtQuantity">Số sân mở</label>
                             <select id="hostCourtQuantity" class="app-select"
                                 onchange="window._tinhThoiGian&&window._tinhThoiGian();window.validateSanCuThe&&window.validateSanCuThe(document.getElementById('hostCourtNumber'));window._autoFillSlot&&window._autoFillSlot()">
                                 <option value="1">1 sân</option><option value="2">2 sân</option>
@@ -2551,7 +2519,7 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Sân cụ thể</label>
+                            <label class="form-label" for="hostCourtNumber">Sân cụ thể</label>
                             <input type="text" id="hostCourtNumber" class="app-input" placeholder="Vd: 1, 2"
                                 oninput="window.validateSanCuThe && window.validateSanCuThe(this)">
                             <span class="form-hint" id="hintSanCuThe"></span>
@@ -2642,18 +2610,18 @@
                             </div>
                         </div>
                         <div class="form-group fg-slot">
-                            <label class="form-label">Số Slot Cần Tuyển</label>
+                            <label class="form-label" for="input-total-slots">Số Slot Cần Tuyển</label>
                             <input type="number" id="input-total-slots" class="app-input" min="1" max="200" placeholder="VD: 20"
                                    oninput="window._kiemTraMatDoNguoi&&window._kiemTraMatDoNguoi()">
                             <span id="hintSoSlot" style="display:none;font-size:0.72rem;color:#f97316;margin-top:4px;line-height:1.4;"></span>
                         </div>
                         <div class="form-group fg-price">
-                            <label class="form-label">Giá Thu Nam (K)</label>
+                            <label class="form-label" for="hostPublicPriceMale">Giá Thu Nam (K)</label>
                             <input type="text" id="hostPublicPriceMale" class="app-input" placeholder="VD: 80"
                                    oninput="window._formatInputTienTeK&&window._formatInputTienTeK(this);window._tinhGoiYGia&&window._tinhGoiYGia();">
                         </div>
                         <div class="form-group fg-price">
-                            <label class="form-label">Giá Thu Nữ (K)</label>
+                            <label class="form-label" for="hostPublicPriceFemale">Giá Thu Nữ (K)</label>
                             <input type="text" id="hostPublicPriceFemale" class="app-input" placeholder="VD: 60"
                                    oninput="window._formatInputTienTeK&&window._formatInputTienTeK(this);window._tinhGoiYGia&&window._tinhGoiYGia();">
                         </div>
@@ -2681,30 +2649,14 @@
                     <!-- Trình độ Nam — 100% rộng, ẩn/hiện theo giới tính -->
                     <div id="levelNamSection">
                         <div id="labelTrinhDoNam" class="form-label" style="margin-bottom:8px;">Trình độ Nam yêu cầu</div>
-                        <div class="lvl-pill-group" style="margin-bottom:14px;">
-                            <input type="checkbox" id="m_lvl_newbie" value="Newbie" class="lvl-cb"><label for="m_lvl_newbie" class="lvl-pill">Newbie</label>
-                            <input type="checkbox" id="m_lvl_yeu" value="Yếu" class="lvl-cb"><label for="m_lvl_yeu" class="lvl-pill">Yếu</label>
-                            <input type="checkbox" id="m_lvl_tby" value="TBY" class="lvl-cb"><label for="m_lvl_tby" class="lvl-pill">TBY</label>
-                            <input type="checkbox" id="m_lvl_tb_minus" value="TB-" class="lvl-cb"><label for="m_lvl_tb_minus" class="lvl-pill">TB-</label>
-                            <input type="checkbox" id="m_lvl_tb" value="TB" class="lvl-cb"><label for="m_lvl_tb" class="lvl-pill">TB</label>
-                            <input type="checkbox" id="m_lvl_tb_plus" value="TB+" class="lvl-cb"><label for="m_lvl_tb_plus" class="lvl-pill">TB+</label>
-                            <input type="checkbox" id="m_lvl_tbk" value="Khá" class="lvl-cb"><label for="m_lvl_tbk" class="lvl-pill">Khá</label>
-                            <input type="text" id="hostMaleCustomLevel" class="app-input lvl-custom" placeholder="Vd: chơi 1 năm đổ lên, chơi 6 tháng liên tục...">
-                        </div>
+                        <!-- Checkbox + ô nhập tự do render động từ window.TRINH_DO_LIST (_renderTrinhDoUI) -->
+                        <div id="levelNamPills" class="lvl-pill-group" style="margin-bottom:14px;"></div>
                     </div>
                     <!-- Trình độ Nữ — 100% rộng, ẩn/hiện theo giới tính -->
                     <div id="levelNuSection" style="display:none;">
                         <div class="form-label" style="margin-bottom:8px;">Trình độ Nữ yêu cầu</div>
-                        <div class="lvl-pill-group" style="margin-bottom:14px;">
-                            <input type="checkbox" id="f_lvl_newbie" value="Newbie" class="lvl-cb"><label for="f_lvl_newbie" class="lvl-pill">Newbie</label>
-                            <input type="checkbox" id="f_lvl_yeu" value="Yếu" class="lvl-cb"><label for="f_lvl_yeu" class="lvl-pill">Yếu</label>
-                            <input type="checkbox" id="f_lvl_tby" value="TBY" class="lvl-cb"><label for="f_lvl_tby" class="lvl-pill">TBY</label>
-                            <input type="checkbox" id="f_lvl_tb_minus" value="TB-" class="lvl-cb"><label for="f_lvl_tb_minus" class="lvl-pill">TB-</label>
-                            <input type="checkbox" id="f_lvl_tb" value="TB" class="lvl-cb"><label for="f_lvl_tb" class="lvl-pill">TB</label>
-                            <input type="checkbox" id="f_lvl_tb_plus" value="TB+" class="lvl-cb"><label for="f_lvl_tb_plus" class="lvl-pill">TB+</label>
-                            <input type="checkbox" id="f_lvl_tbk" value="Khá" class="lvl-cb"><label for="f_lvl_tbk" class="lvl-pill">Khá</label>
-                            <input type="text" id="hostFemaleCustomLevel" class="app-input lvl-custom" placeholder="Vd: chơi 1 năm đổ lên, chơi 6 tháng liên tục...">
-                        </div>
+                        <!-- Checkbox + ô nhập tự do render động từ window.TRINH_DO_LIST (_renderTrinhDoUI) -->
+                        <div id="levelNuPills" class="lvl-pill-group" style="margin-bottom:14px;"></div>
                     </div>
                     <!-- HÀNG 5: GIÁ ĐÃ BAO GỒM — label + pills trên cùng 1 dòng -->
                     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:4px;">
@@ -2755,14 +2707,14 @@
                             <option value="closed">Đã chốt</option>
                         </select>
                         <button onclick="window.loadLichSuCaDauHost && window.loadLichSuCaDauHost()"
-                            title="Tải lại danh sách"
+                            title="Tải lại danh sách" aria-label="Tải lại danh sách"
                             style="padding:7px 12px;background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);border-radius:8px;color:#00ff88;font-size:0.82rem;cursor:pointer;font-family:inherit;">
                             <i class="fa-solid fa-rotate-right"></i>
                         </button>
                         <div style="display:flex;align-items:center;gap:5px;margin-left:auto;flex-shrink:0;">
-                            <button id="cdd-prev" onclick="window._caDauChangePage(-1)">‹</button>
-                            <span id="cdd-page-info" style="font-size:0.78rem;color:#94a3b8;white-space:nowrap;min-width:44px;text-align:center;">1/1</span>
-                            <button id="cdd-next" onclick="window._caDauChangePage(1)">›</button>
+                            <button id="cdd-prev" onclick="window._caDauChangePage(-1)" aria-label="Trang trước">‹</button>
+                            <span id="cdd-page-info" style="font-size:0.78rem;color:#94a3b8;white-space:nowrap;min-width:44px;text-align:center;" aria-live="polite">1/1</span>
+                            <button id="cdd-next" onclick="window._caDauChangePage(1)" aria-label="Trang sau">›</button>
                         </div>
                     </div>
 
@@ -2808,11 +2760,9 @@
             <!-- Sub-tab 3D: Thống Kê Doanh Thu -->
             <div id="subtab-dang-quan-ly-doanh-thu" class="subtab-section">
                 <div id="tabDoanhThu">
-                    <!-- Được render bởi phan-he-host.js _renderDoanhThu() -->
-                    <div style="text-align:center;padding:40px;color:var(--text-muted);">
-                        <i class="fa-solid fa-chart-line" style="font-size:2rem;display:block;margin-bottom:12px;"></i>
-                        Đang tải thống kê...
-                    </div>
+                    <!-- Skeleton giữ chỗ — JS _renderDoanhThu() thay bằng số liệu thật -->
+                    <div class="tvl-skel tvl-skel-block" style="margin-bottom:14px;"></div>
+                    <div class="tvl-skel tvl-skel-block" style="height:220px;"></div>
                 </div>
             </div>
 
@@ -2891,9 +2841,10 @@
 
                 <!-- Timeline container -->
                 <div id="lichSuTimeline">
-                    <div class="ls-loading">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Đang tải lịch sử...
-                    </div>
+                    <!-- Skeleton giữ chỗ — JS thay bằng timeline thật khi tải xong -->
+                    <div class="tvl-skel tvl-skel-row"></div>
+                    <div class="tvl-skel tvl-skel-row"></div>
+                    <div class="tvl-skel tvl-skel-row"></div>
                 </div>
             </div>
 
@@ -3101,7 +3052,7 @@
                     style="position:absolute;right:16px;top:50%;transform:translateY(-50%);
                            background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
                            color:#94a3b8;font-size:0.9rem;cursor:pointer;padding:6px 8px;border-radius:8px;
-                           transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                           transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s, transform 0.15s, opacity 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.1)'"
                     onmouseout="this.style.background='rgba(255,255,255,0.05)'">
                 <i class="fa-solid fa-xmark"></i>
             </button>
@@ -3287,7 +3238,9 @@ document.addEventListener('keydown',e=>{
         e.preventDefault();return false;
     }
 });
-(function(){const t=160;setInterval(()=>{if(window.outerWidth-window.innerWidth>t||window.outerHeight-window.innerHeight>t){document.body.innerHTML='<h1 style="color:#FF5500;text-align:center;padding-top:200px;font-family:sans-serif">Vui lòng đóng DevTools</h1>';}},1000);})();
+// Chỉ phát hiện DevTools dock theo CHIỀU NGANG — bỏ check chiều dọc vì thanh địa chỉ/nav
+// trên mobile có thể vượt ngưỡng và xóa trắng app (app Mobile-First).
+(function(){const t=160;setInterval(()=>{if(window.outerWidth-window.innerWidth>t){document.body.innerHTML='<h1 style="color:#FF5500;text-align:center;padding-top:200px;font-family:sans-serif">Vui lòng đóng DevTools</h1>';}},1000);})();
 setInterval(()=>console.clear(),100);console.log=()=>{};
 </script>
 
@@ -3295,35 +3248,16 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 <!-- Supabase JS v2 SDK — BẮT BUỘC load trước ket-noi-supabase.js để guestRPC hoạt động -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="ket-noi-supabase.js?v=7.0"></script>
-<script src="bo-may-du-lieu.js?v=7.0"></script>
-<script src="hieu-ung-giao-dien.js?v=7.0"></script>
-<script src="phan-he-khach-choi.js?v=7.0"></script>
-<script src="phan-he-host.js?v=6.2"></script>
-<script src="phan-he-ung-dung.js?v=6.1"></script>
-<script src="phan-he-gop-y.js?v=6.1"></script>
+<script src="ket-noi-supabase.js?v=20260610d"></script>
+<script src="bo-may-du-lieu.js?v=20260610b"></script>
+<script src="hieu-ung-giao-dien.js?v=20260610e"></script>
+<script src="phan-he-khach-choi.js?v=20260610e"></script>
+<script src="phan-he-host.js?v=20260610d"></script>
+<script src="phan-he-ung-dung.js?v=20260610b"></script>
+<script src="phan-he-gop-y.js?v=20260610"></script>
 
-<script>
-// ── Xóa bộ lọc ──
-function xoaBoLoc() {
-    ["filterProvince","filterDistrict","filterGender","filterLevel","filterDate",
-     "filterMaxPrice","filterCourtName"].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = "";
-    });
-    if (window.timKiemCaDau) window.timKiemCaDau();
-}
-window.xoaBoLoc = xoaBoLoc;
-
-// ── Redirect /khach và /host sang đúng tab ──
-(function () {
-    const ref = document.referrer;
-    if (ref && ref.includes("host.html")) {
-        // Đến từ host.html cũ → chuyển sang tab Đăng & Quản Lý
-        // (khoiTaoUngDung sẽ xử lý qua URL param)
-    }
-})();
-</script>
+<!-- xoaBoLoc dùng bản đầy đủ trong phan-he-khach-choi.js (reset cả pills + lịch + nhãn giá).
+     Routing /khach, /host được xử lý qua URL param trong khoiTaoUngDung() — không cần redirect ở đây. -->
 
 <!-- ══ MODAL: HỒ SƠ TÍN DỤNG NGƯỜI ĐĂNG ══ -->
 <div id="modal-ho-so-nguoi-dang" class="hidden"
@@ -3748,7 +3682,7 @@ window.xoaBoLoc = xoaBoLoc;
         <!-- Footer -->
         <div style="padding:14px 24px;border-top:1px solid rgba(30,58,95,0.8);display:flex;justify-content:flex-end;flex-shrink:0;">
             <button onclick="window.dongModalCaDetail()"
-                style="padding:8px 24px;background:rgba(30,58,95,0.5);border:1px solid #2d4a6e;color:#94a3b8;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;transition:all .2s;"
+                style="padding:8px 24px;background:rgba(30,58,95,0.5);border:1px solid #2d4a6e;color:#94a3b8;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;transition: background-color .2s, border-color .2s, color .2s, box-shadow .2s, transform .2s, opacity .2s;"
                 onmouseover="this.style.background='rgba(30,58,95,0.9)';this.style.color='#e2e8f0'"
                 onmouseout="this.style.background='rgba(30,58,95,0.5)';this.style.color='#94a3b8'">Đóng</button>
         </div>

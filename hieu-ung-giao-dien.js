@@ -85,19 +85,33 @@
 
         const toast = document.createElement("div");
         toast.className = `toast toast-${type}`;
-        
+
         let icon = "fa-solid fa-circle-check";
         if (type === "danger") icon = "fa-solid fa-circle-exclamation";
         if (type === "warning") icon = "fa-solid fa-triangle-exclamation";
-        
-        toast.innerHTML = `
-            <div class="toast-icon"><i class="${icon}"></i></div>
-            <div class="toast-content">
-                <h4>${title}</h4>
-                <p>${msg}</p>
-            </div>
-        `;
-        
+
+        // Dựng DOM bằng textContent thay vì innerHTML → title/msg là VĂN BẢN THUẦN,
+        // không bao giờ bị diễn giải thành HTML. Chặn XSS khi caller truyền dữ liệu
+        // người dùng vào toast (tên khách, tên sân, SĐT...). Cấu trúc DOM giữ nguyên
+        // (.toast-icon > i, .toast-content > h4 + p) nên CSS không đổi.
+        const iconWrap = document.createElement("div");
+        iconWrap.className = "toast-icon";
+        const iEl = document.createElement("i");
+        iEl.className = icon; // icon do code quyết định, không phải dữ liệu người dùng
+        iconWrap.appendChild(iEl);
+
+        const content = document.createElement("div");
+        content.className = "toast-content";
+        const h4 = document.createElement("h4");
+        h4.textContent = title;
+        const p = document.createElement("p");
+        p.textContent = msg;
+        content.appendChild(h4);
+        content.appendChild(p);
+
+        toast.appendChild(iconWrap);
+        toast.appendChild(content);
+
         container.appendChild(toast);
         
         // Kích hoạt animation trượt xiên mượt mà

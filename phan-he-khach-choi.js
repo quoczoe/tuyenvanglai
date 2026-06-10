@@ -1464,23 +1464,28 @@
         window.timKiemCaDau && window.timKiemCaDau();
     };
 
+    // ── Cache nền + chống race cho tìm kiếm (B2 + C1) ──
+    let _tkCache = null;          // { allCaDau, allDatSlot, allKeys, allUsers }
+    let _tkCacheTs = 0;
+    const _TK_CACHE_TTL = 20000;  // 20s — đủ ngắn để ca mới vẫn xuất hiện kịp
+    let _tkSeq = 0;               // chỉ render kết quả của lần tìm MỚI NHẤT
+    window._tkInvalidateCache = function () { _tkCache = null; _tkCacheTs = 0; };
+
     async function _thucHienTimKiem() {
         const container = document.getElementById("slotsSearchResultContainer");
         const countEl   = document.getElementById("countSearchResult");
         if (!container) return;
 
-        container.innerHTML = `<div style="text-align:center;padding:30px;color:#64748b;">
-            <i class="fa-solid fa-spinner fa-spin" style="font-size:1.5rem;margin-bottom:8px;display:block;"></i>
-            Đang tìm kèo phù hợp...
-        </div>`;
+        const _mySeq = ++_tkSeq;  // B2: token tuần tự chống response cũ đè mới
 
         const province   = document.getElementById("filterProvince")?.value || "";
         const district   = document.getElementById("filterDistrict")?.value || "";
         const gender     = document.getElementById("filterGender")?.value || "";
         // Multi-select: đọc tất cả pills đang active thay vì hidden select đơn giá trị
+        // Khớp CHÍNH XÁC theo mức — normalize trim+UPPER cả 2 vế (chống lệch hoa-thường)
         const activeLevelPills = Array.from(
             document.querySelectorAll("#filterLevelPills .tk-pill.active")
-        ).map(p => (p.dataset.value || "").toLowerCase()).filter(v => v);
+        ).map(p => window.chuanHoaTrinhDo(p.dataset.value)).filter(v => v);
         const maxPrice   = Number(document.getElementById("filterMaxPrice")?.value) || 0;
         const courtName  = document.getElementById("filterCourtName")?.value?.trim().toLowerCase() || "";
         const filterDate = document.getElementById("filterDate")?.value || "";
@@ -1488,13 +1493,26 @@
         const timeTo     = document.getElementById("filterTimeTo")?.value || "";
 
         try {
-            // Tải song song: ca_dau, dat_slot, quan_ly_key, nguoi_dung
-            const [allCaDau, allDatSlot, allKeys, allUsers] = await Promise.all([
-                window.dbEngine.doc("ca_dau"),
-                window.dbEngine.doc("dat_slot").catch(() => []),
-                window.dbEngine.doc("quan_ly_key").catch(() => []),
-                window.dbEngine.doc("nguoi_dung").catch(() => [])
-            ]);
+            // C1: cache nền 4 bảng — tránh tải lại toàn bộ mỗi keystroke (lọc đều ở client).
+            // B5: nguoi_dung chỉ lấy cột cần (loại mat_khau_hash + PII thừa); fallback select=*
+            //     nếu cột nào chưa tồn tại để query không vỡ.
+            let allCaDau, allDatSlot, allKeys, allUsers;
+            if (_tkCache && (Date.now() - _tkCacheTs < _TK_CACHE_TTL)) {
+                ({ allCaDau, allDatSlot, allKeys, allUsers } = _tkCache);
+            } else {
+                container.innerHTML = Array.from({ length: 6 })
+                    .map(() => `<div class="tvl-skel tvl-skel-card"></div>`).join("");
+                [allCaDau, allDatSlot, allKeys, allUsers] = await Promise.all([
+                    window.dbEngine.doc("ca_dau"),
+                    window.dbEngine.doc("dat_slot").catch(() => []),
+                    window.dbEngine.doc("quan_ly_key").catch(() => []),
+                    window.dbEngine.doc("nguoi_dung", { select: "sdt_khach,ten_khach,diem_uy_tin,ma_key_host,so_sao_tb" })
+                        .catch(() => window.dbEngine.doc("nguoi_dung").catch(() => []))
+                ]);
+                if (_mySeq !== _tkSeq) return;  // đã có lần tìm mới hơn → bỏ kết quả cũ
+                _tkCache = { allCaDau, allDatSlot, allKeys, allUsers };
+                _tkCacheTs = Date.now();
+            }
             // Ưu tiên: quan_ly_key (SaaS key) → nguoi_dung (hệ thống mới dùng SĐT làm key)
             const hostMap = {};
             allKeys.forEach(k => {
@@ -1583,11 +1601,13 @@
                 // ── 2. Lọc trình độ — gắn chặt với giới tính đang lọc ──
                 if (activeLevelPills.length > 0) {
                     const td = s.yeu_cau_trinh_do || {};
-                    let levelsToCheck;
-                    if      (gender === "Nam")   levelsToCheck = (td.nam || []).map(l => l.toLowerCase());
-                    else if (gender === "Nữ")    levelsToCheck = (td.nu  || []).map(l => l.toLowerCase());
-                    else                          levelsToCheck = [...(td.nam || []), ...(td.nu || [])].map(l => l.toLowerCase());
-                    if (!activeLevelPills.some(lv => levelsToCheck.some(l => l.includes(lv)))) return false;
+                    let rawLevels;
+                    if      (gender === "Nam")   rawLevels = (td.nam || []);
+                    else if (gender === "Nữ")    rawLevels = (td.nu  || []);
+                    else                          rawLevels = [...(td.nam || []), ...(td.nu || [])];
+                    const levelsToCheck = rawLevels.map(l => window.chuanHoaTrinhDo(l));
+                    // Khớp CHÍNH XÁC 1 mức (không substring) — sau normalize trim+UPPER
+                    if (!activeLevelPills.some(lv => levelsToCheck.includes(lv))) return false;
                 }
 
                 // ── 3. Lọc giá tối đa — dùng đúng giá theo giới tính đang chọn ──
@@ -1638,6 +1658,7 @@
                 return dtA - dtB;
             });
 
+            if (_mySeq !== _tkSeq) return;  // B2: bỏ render nếu đã có lần tìm mới hơn
             if (countEl) countEl.textContent = results.length === 0
                 ? "Không tìm thấy kèo phù hợp"
                 : `${results.length} kèo phù hợp`;
@@ -1713,8 +1734,8 @@
         const fArr = Array.isArray(td.nu)  ? td.nu  : (td.nu  ? [td.nu]  : []);
         const _pills = arr => {
             if (!arr.length) return `<span style="color:#475569;font-size:0.67rem;">--</span>`;
-            const std = arr.filter(v => STANDARD_LEVELS.has(v)).map(v => `<span class="kh-level-pill">${v}</span>`).join("");
-            const free = arr.filter(v => !STANDARD_LEVELS.has(v)).join(", ");
+            const std = arr.filter(v => STANDARD_LEVELS.has(window.chuanHoaTrinhDo(v))).map(v => `<span class="kh-level-pill">${window.nhanTrinhDo(window.chuanHoaTrinhDo(v))}</span>`).join("");
+            const free = arr.filter(v => !STANDARD_LEVELS.has(window.chuanHoaTrinhDo(v))).join(", ");
             return std + (free ? `<em style="color:#64748b;font-size:0.65rem;margin-left:4px;">${free}</em>` : "");
         };
         const ICON_NAM = '<span style="color:#60a5fa;font-style:normal;flex-shrink:0;">&#9794;</span>';
@@ -1901,18 +1922,18 @@
     // Cấu hình giới hạn đặt slot — Admin có thể chỉnh các thông số này
     window.SLOT_LIMIT_CONFIG = {
         newAccount: {           // Tài khoản mới < 7 ngày
-            maxPerDay: 2,       // Tối đa 2 slot/ngày
-            maxChoNgay7: 5,     // Tối đa 5 "Chờ đánh" trong 7 ngày gần nhất
+            maxPerDay: 2,       // Tối đa 2 slot đặt trong ngày (lịch VN)
+            maxChoNgay7: 5,     // Tối đa 5 ca CHƯA đá xong cùng lúc (đếm lại từ ca_dau, không theo mốc ngày cố định)
         },
         lowTrust: {             // Điểm < 60 (Cảnh cáo)
-            maxPerDay: 1,
+            maxPerDay: 1,       // Tối đa 1 slot đặt trong ngày
         },
         normal: {               // Điểm 60-79
             // Không giới hạn slot/ngày
         },
         highTrust: {            // Điểm >= 80
-            maxPerDay: 3,
-            maxActiveSlots: 5,  // "Chờ đánh" trong 30 ngày gần nhất
+            maxPerDay: 3,       // Tối đa 3 slot đặt trong ngày
+            maxActiveSlots: 5,  // Tối đa 5 ca CHƯA đá xong cùng lúc (join ca_dau, loại ca đã kết thúc/đã chốt)
         },
     };
 
@@ -1920,6 +1941,9 @@
         if (!window.currentGuest) {
             window.hienToast("Cần đăng nhập", "Vui lòng đăng nhập để đăng bài hoặc đặt slot tham gia ca đấu!", "warning"); return;
         }
+        // B3: chặn double-submit — bỏ qua nếu đang có 1 lượt đặt slot chạy dở
+        if (window._datSlotBusy) return;
+        window._datSlotBusy = true;
 
         try {
             // Kiểm tra ca đấu còn mở không
@@ -1941,92 +1965,81 @@
             // Hằng số offset múi giờ Việt Nam (UTC+7) — dùng chung cho tất cả kiểm tra bên dưới
             const _VN_OFFSET = 7 * 3600 * 1000;
             const _todayVnStr = new Date(Date.now() + _VN_OFFSET).toISOString().slice(0, 10);
+            const _cfg = window.SLOT_LIMIT_CONFIG;
+
+            // ── Đọc TẤT CẢ slot của khách 1 lần → TÍNH LẠI bộ đếm từ dữ liệu thật ──
+            // Nguyên tắc: không dựa vào bộ đếm cộng dồn lưu sẵn; mọi giới hạn đều
+            // derive lại tại đúng thời điểm bấm đặt slot.
+            const _myAllSlots = await window.dbEngine.doc("dat_slot", { eq: { sdt_khach: window.currentGuest.sdt_khach } }).catch(() => []);
+
+            // Đếm slot ĐẶT TRONG HÔM NAY (theo lịch VN GMT+7); bỏ slot "Khách hủy".
+            // Reset tự nhiên mỗi ngày vì so sánh theo chuỗi ngày VN.
+            const _demSlotHomNay = () => (_myAllSlots || []).filter(s => {
+                if (!s.thoi_gian_dat || s.trang_thai_di_danh === "Khách hủy") return false;
+                const vnD = new Date(new Date(s.thoi_gian_dat).getTime() + _VN_OFFSET).toISOString().slice(0, 10);
+                return vnD === _todayVnStr;
+            }).length;
+
+            // Đếm ca ĐANG CHỜ ĐÁNH THỰC SỰ: slot "Chờ đánh" + ca CHƯA tới giờ kết thúc.
+            // BẮT BUỘC join ca_dau để loại ca đã đá xong / đã chốt / đã bị xóa mà DB
+            // vẫn kẹt "Chờ đánh" (host quên xác nhận) — nếu không bộ đếm sẽ KHÔNG BAO GIỜ
+            // reset và chặn khách vĩnh viễn. Đây là nguyên nhân gốc bug "đã qua cả tuần
+            // mà vẫn báo đạt giới hạn".
+            const _demChoDanhThucSu = async () => {
+                const _candidates = (_myAllSlots || []).filter(s =>
+                    s.trang_thai_di_danh === "Chờ đánh" && s.thoi_gian_dat
+                );
+                if (_candidates.length === 0) return 0;
+                const _caIds = [...new Set(_candidates.map(s => s.id_ca_dau))];
+                const _caArr = await window.dbEngine.doc("ca_dau", { in: { id: _caIds } }).catch(() => []);
+                const _caMap = {};
+                (_caArr || []).forEach(c => { _caMap[c.id] = c; });
+                const _now = Date.now();
+                return _candidates.filter(s => {
+                    const ca = _caMap[s.id_ca_dau];
+                    if (!ca) return false;            // ca đã bị xóa (CASCADE) → không còn ràng buộc
+                    if (ca.da_chot_ca) return false;  // ca đã chốt → không còn "đang chờ"
+                    if (!ca.ngay_danh || !ca.gio_ket_thuc) return true; // thiếu giờ → tính an toàn
+                    return _now < new Date(ca.ngay_danh + "T" + ca.gio_ket_thuc).getTime(); // chỉ đếm ca CHƯA kết thúc
+                }).length;
+            };
 
             // Kiểm tra tài khoản mới (< 7 ngày kể từ created_at)
-            const _cfg = window.SLOT_LIMIT_CONFIG;
             const _createdAt = _myUser?.created_at;
             const _isNewAccount = _createdAt
                 ? (Date.now() - new Date(_createdAt).getTime()) < 7 * 24 * 3600 * 1000
                 : false;
 
+            // Các nhánh dưới đây loại trừ lẫn nhau theo thứ tự: tài khoản mới → uy tín
+            // thấp (<60) → uy tín tốt (>=80). Mức 60-79 (normal) không giới hạn slot/ngày.
             if (_isNewAccount) {
-                const _slotsNew = await window.dbEngine.doc("dat_slot", { eq: { sdt_khach: window.currentGuest.sdt_khach } }).catch(() => []);
-                // Giới hạn ngày: đếm slot có trạng thái hoạt động (không phải "Khách hủy") đặt trong ngày hôm nay
-                const _soHomNayNew = _slotsNew.filter(s => {
-                    if (!s.thoi_gian_dat || s.trang_thai_di_danh === "Khách hủy") return false;
-                    const vnD = new Date(new Date(s.thoi_gian_dat).getTime() + _VN_OFFSET).toISOString().slice(0, 10);
-                    return vnD === _todayVnStr;
-                }).length;
-                if (_soHomNayNew >= _cfg.newAccount.maxPerDay) {
+                if (_demSlotHomNay() >= _cfg.newAccount.maxPerDay) {
                     window.hienToast("Giới hạn tài khoản mới",
-                        `Tài khoản dưới 7 ngày chỉ được đặt tối đa ${_cfg.newAccount.maxPerDay} slot/ngày.`, "warning");
+                        `Tài khoản dưới 7 ngày chỉ được đặt tối đa ${_cfg.newAccount.maxPerDay} slot/ngày. Bộ đếm reset sau 0h hôm sau.`, "warning");
                     return;
                 }
-                // Giới hạn tuần: "Chờ đánh" THỰC SỰ (ca chưa diễn ra xong, trong 7 ngày gần nhất)
-                // Cần join ca_dau để loại trừ ca đã kết thúc nhưng host chưa chốt (DB vẫn "Chờ đánh")
-                const _cutoff7 = new Date(Date.now() - 7 * 24 * 3600 * 1000).toISOString();
-                const _choDanhSlots = _slotsNew.filter(s =>
-                    s.trang_thai_di_danh === "Chờ đánh" &&
-                    s.thoi_gian_dat &&
-                    s.thoi_gian_dat >= _cutoff7
-                );
-                let _soCho7Ngay = 0;
-                if (_choDanhSlots.length > 0) {
-                    const _caDauIds = [...new Set(_choDanhSlots.map(s => s.id_ca_dau))];
-                    const _caDauArr = await window.dbEngine.doc("ca_dau", { in: { id: _caDauIds } }).catch(() => []);
-                    const _caDauMap = {};
-                    (_caDauArr || []).forEach(c => { _caDauMap[c.id] = c; });
-                    const _now = Date.now();
-                    _soCho7Ngay = _choDanhSlots.filter(s => {
-                        const ca = _caDauMap[s.id_ca_dau];
-                        if (!ca) return true; // không tìm thấy ca → đếm vào cho an toàn
-                        if (!ca.ngay_danh || !ca.gio_ket_thuc) return true;
-                        // Chỉ đếm nếu ca CHƯA kết thúc
-                        return _now < new Date(ca.ngay_danh + "T" + ca.gio_ket_thuc).getTime();
-                    }).length;
-                }
-                if (_soCho7Ngay >= _cfg.newAccount.maxChoNgay7) {
+                const _soCho = await _demChoDanhThucSu();
+                if (_soCho >= _cfg.newAccount.maxChoNgay7) {
                     window.hienToast("Giới hạn tài khoản mới",
-                        `Bạn đang có ${_soCho7Ngay} ca chờ đánh trong tuần — tối đa ${_cfg.newAccount.maxChoNgay7} ca. Hoàn thành các ca hiện tại trước.`, "warning");
+                        `Bạn đang có ${_soCho} ca chưa đá xong (tối đa ${_cfg.newAccount.maxChoNgay7} cho tài khoản mới). Chờ các ca này diễn ra xong là tự được đặt tiếp.`, "warning");
                     return;
                 }
-            }
-
-            if (!_isNewAccount && myDiem < 60) {
-                // Giới hạn 1 slot/ngày — so sánh theo giờ VN (UTC+7) để tránh lệch ngày
-                const slotsHom = await window.dbEngine.doc("dat_slot", { eq: { sdt_khach: window.currentGuest.sdt_khach } }).catch(() => []);
-                const soHomNay = slotsHom.filter(s => {
-                    if (!s.thoi_gian_dat || s.trang_thai_di_danh === "Khách hủy") return false;
-                    const vnDate = new Date(new Date(s.thoi_gian_dat).getTime() + _VN_OFFSET).toISOString().slice(0, 10);
-                    return vnDate === _todayVnStr;
-                }).length;
-                if (soHomNay >= _cfg.lowTrust.maxPerDay) {
-                    window.hienToast("Giới hạn 1 slot/ngày", `Uy tín ${myDiem}đ (mức Cảnh cáo) — chỉ được đặt tối đa 1 slot mỗi ngày.`, "warning");
+            } else if (myDiem < 60) {
+                if (_demSlotHomNay() >= _cfg.lowTrust.maxPerDay) {
+                    window.hienToast("Giới hạn theo uy tín",
+                        `Uy tín ${myDiem}đ (mức Cảnh cáo) — chỉ được đặt tối đa ${_cfg.lowTrust.maxPerDay} slot/ngày. Bộ đếm reset sau 0h hôm sau.`, "warning");
                     return;
                 }
-            }
-
-            if (!_isNewAccount && myDiem >= 80) {
-                // Giới hạn chống spam cho tài khoản uy tín tốt: tối đa 3 slot/ngày VN HOẶC 5 slot "Chờ đánh" trong 30 ngày gần nhất
-                const allMySlots = await window.dbEngine.doc("dat_slot", { eq: { sdt_khach: window.currentGuest.sdt_khach } }).catch(() => []);
-                const soHomNay = allMySlots.filter(s => {
-                    if (!s.thoi_gian_dat || s.trang_thai_di_danh === "Khách hủy") return false;
-                    const vnDate = new Date(new Date(s.thoi_gian_dat).getTime() + _VN_OFFSET).toISOString().slice(0, 10);
-                    return vnDate === _todayVnStr;
-                }).length;
-                // Chỉ đếm "Chờ đánh" trong 30 ngày gần nhất — tránh slot cũ chưa được host chốt chặn mãi mãi
-                const _cutoff30 = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
-                const soActiveSlots = allMySlots.filter(s =>
-                    s.trang_thai_di_danh === "Chờ đánh" &&
-                    s.thoi_gian_dat &&
-                    s.thoi_gian_dat >= _cutoff30
-                ).length;
-                if (soHomNay >= _cfg.highTrust.maxPerDay || soActiveSlots >= _cfg.highTrust.maxActiveSlots) {
-                    window.hienToast(
-                        "Giới hạn đặt slot",
-                        "Bạn đã đạt giới hạn đặt slot tối đa trong ngày để tránh spam. Vui lòng hoàn thành các ca đấu hiện tại!",
-                        "warning"
-                    );
+            } else if (myDiem >= 80) {
+                if (_demSlotHomNay() >= _cfg.highTrust.maxPerDay) {
+                    window.hienToast("Giới hạn theo ngày",
+                        `Bạn đã đặt đủ ${_cfg.highTrust.maxPerDay} slot hôm nay (mức chống spam). Bộ đếm reset sau 0h hôm sau.`, "warning");
+                    return;
+                }
+                const _soCho = await _demChoDanhThucSu();
+                if (_soCho >= _cfg.highTrust.maxActiveSlots) {
+                    window.hienToast("Giới hạn ca đang chờ",
+                        `Bạn đang có ${_soCho} ca chưa đá xong (tối đa ${_cfg.highTrust.maxActiveSlots}). Chờ các ca này diễn ra xong là tự được đặt tiếp.`, "warning");
                     return;
                 }
             }
@@ -2103,9 +2116,13 @@
             }
             // Cập nhật thống kê sidebar
             _taiThongKeKhach();
+            // Làm mới cache tìm kiếm để lần search sau phản ánh slot vừa đặt
+            window._tkInvalidateCache && window._tkInvalidateCache();
         } catch (e) {
             console.error("Lỗi đặt slot:", e);
             window.hienToast("Lỗi", "Không thể đặt slot. Thử lại sau.", "danger");
+        } finally {
+            window._datSlotBusy = false;
         }
     };
 
@@ -2140,8 +2157,13 @@
                 if (fromDate && caDau.ngay_danh && caDau.ngay_danh < fromDate) return;
                 if (toDate   && caDau.ngay_danh && caDau.ngay_danh > toDate)   return;
 
-                // Đang chờ đánh (chưa chốt ca)
-                if (!caDau.da_chot_ca && slot.trang_thai_di_danh === "Chờ đánh") soCho++;
+                // Đang chờ đánh (chưa chốt ca) — chỉ tính ca CHƯA tới giờ kết thúc,
+                // tránh đếm ca đã đá xong mà host quên chốt (nhất quán với giới hạn đặt slot)
+                if (!caDau.da_chot_ca && slot.trang_thai_di_danh === "Chờ đánh") {
+                    const _chuaKetThuc = (!caDau.ngay_danh || !caDau.gio_ket_thuc)
+                        || Date.now() < new Date(caDau.ngay_danh + "T" + caDau.gio_ket_thuc).getTime();
+                    if (_chuaKetThuc) soCho++;
+                }
 
                 // Đã bùng kèo
                 if (slot.trang_thai_di_danh === "Bùng kèo") soBung++;
@@ -2474,8 +2496,8 @@
             const gioiTinhHien = {"Nam":"NAM","Nữ":"NỮ","Cả hai":"NAM & NỮ"}[s.gioi_tinh_can] || (s.gioi_tinh_can||"--").toUpperCase();
             const _lvlPills = arr => {
                 if (!arr.length) return `<span style="color:#64748b;font-size:0.78rem;">--</span>`;
-                const std  = arr.filter(v => STANDARD_LEVELS.has(v)).map(v => `<span class="kmd-pill">${v}</span>`).join("");
-                const free = arr.filter(v => !STANDARD_LEVELS.has(v)).join(", ");
+                const std  = arr.filter(v => STANDARD_LEVELS.has(window.chuanHoaTrinhDo(v))).map(v => `<span class="kmd-pill">${window.nhanTrinhDo(window.chuanHoaTrinhDo(v))}</span>`).join("");
+                const free = arr.filter(v => !STANDARD_LEVELS.has(window.chuanHoaTrinhDo(v))).join(", ");
                 return std + (free ? `<em style="color:#64748b;font-size:0.75rem;margin-left:4px;">${free}</em>` : "");
             };
 
@@ -3280,8 +3302,9 @@
         return Math.round((n || 0) / 1000).toLocaleString("vi-VN") + "K";
     }
 
-    // Danh sách cấp độ chuẩn — bọc pill; ngoài danh sách → chữ nghiêng
-    const STANDARD_LEVELS = new Set(["Newbie", "Yếu", "TBY", "TB-", "TB+", "TB khá"]);
+    // Danh sách cấp độ chuẩn — lấy từ nguồn duy nhất window.TRINH_DO_LIST (đã IN HOA).
+    // Bọc pill nếu là mức chuẩn; ngoài danh sách (text tự do) → chữ nghiêng.
+    const STANDARD_LEVELS = new Set((window.TRINH_DO_LIST || []).map(v => window.chuanHoaTrinhDo(v)));
 
     /**
      * Chuẩn hóa chuỗi "sân số" nhập tự do thành dạng đẹp.
@@ -3552,7 +3575,7 @@
         const statsEl  = document.getElementById("lichSuStats");
         if (!timeline) return;
 
-        timeline.innerHTML = `<div class="ls-loading"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải lịch sử...</div>`;
+        timeline.innerHTML = `<div class="tvl-skel tvl-skel-row"></div><div class="tvl-skel tvl-skel-row"></div><div class="tvl-skel tvl-skel-row"></div>`;
         // Khi người dùng nhập date range thủ công → xóa active của nút Tuần/Tháng/Năm
         // (nhập tay = không còn khớp với shortcut nào cụ thể)
 

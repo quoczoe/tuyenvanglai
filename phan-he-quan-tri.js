@@ -2041,7 +2041,7 @@
                     ? "🏟️→👤 Khách đánh Host"
                     : "👤→🏟️ Host đánh Khách";
                 const noiDung = r.nhan_xet
-                    ? r.nhan_xet.replace(/</g, "&lt;").replace(/>/g, "&gt;")
+                    ? _escHtml(r.nhan_xet)
                     : "<em style='color:#6b7280'>Không có nhận xét</em>";
                 return `
                 <div class="dg-item">
@@ -2221,17 +2221,17 @@
                 </td>
                 <td>${badge}</td>
                 <td>
-                    <div style="font-weight:600;font-size:0.82rem;">${_layTen(sdtViet)}</div>
-                    <div style="font-size:0.7rem;color:#64748b;">${_rutGonSdt(sdtViet)}</div>
+                    <div style="font-weight:600;font-size:0.82rem;">${_escHtml(_layTen(sdtViet))}</div>
+                    <div style="font-size:0.7rem;color:#64748b;">${_escHtml(_rutGonSdt(sdtViet))}</div>
                 </td>
                 <td>
-                    <div style="font-weight:600;font-size:0.82rem;">${_layTen(sdtBiDG)}</div>
-                    <div style="font-size:0.7rem;color:#64748b;">${_rutGonSdt(sdtBiDG)}</div>
+                    <div style="font-weight:600;font-size:0.82rem;">${_escHtml(_layTen(sdtBiDG))}</div>
+                    <div style="font-size:0.7rem;color:#64748b;">${_escHtml(_rutGonSdt(sdtBiDG))}</div>
                 </td>
                 <td>${thongTinCa}</td>
                 <td style="white-space:nowrap;">${stars}</td>
                 <td style="font-size:0.78rem;max-width:220px;">${
-                    r.nhan_xet || "<em style='color:#64748b'>Không có nhận xét</em>"
+                    r.nhan_xet ? _escHtml(r.nhan_xet) : "<em style='color:#64748b'>Không có nhận xét</em>"
                 }</td>
                 <td style="font-size:0.72rem;color:#64748b;white-space:nowrap;">
                     ${r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : "--"}
@@ -2448,7 +2448,7 @@
                 const frozen = ca.is_frozen ? `<span style="color:#ef4444;font-size:0.7rem;"> 🔒Đóng băng</span>` : "";
                 return `<tr>
                     <td style="font-size:0.75rem;color:#94a3b8;">${ngay}</td>
-                    <td style="font-size:0.78rem;">${ca.ten_san || b.id_ca_dau?.slice(0,8) || "--"}${frozen}</td>
+                    <td style="font-size:0.78rem;">${_escHtml(ca.ten_san || b.id_ca_dau?.slice(0,8) || "--")}${frozen}</td>
                     <td style="font-size:0.78rem;">${b.sdt_nguoi_bao_cao || "--"}</td>
                     <td style="font-size:0.78rem;color:#fca5a5;">${b.sdt_bi_bao_cao || "--"}</td>
                     <td><span style="font-size:0.7rem;padding:2px 6px;background:rgba(251,191,36,0.1);border-radius:4px;">${loaiLabel[b.loai_bao_cao] || b.loai_bao_cao}</span></td>

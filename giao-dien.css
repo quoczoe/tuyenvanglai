@@ -2458,7 +2458,7 @@ body::before {
     cursor: pointer;
     font-size: 0.9rem;
     color: var(--text-muted, #9ca3af);
-    transition: all 0.2s;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
     user-select: none;
 }
 .gender-pill-group input[type="radio"] { display: none; }
@@ -3081,7 +3081,7 @@ body::before {
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.2s;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
     font-family: inherit;
 }
 .mv-ql-btn:hover {
@@ -3165,7 +3165,7 @@ body::before {
     font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
     font-family: inherit;
 }
 .mv-btn:hover { background: rgba(255,255,255,0.09); color: #e2e8f0; }
@@ -3681,7 +3681,7 @@ body::before {
     border: 1px solid rgba(255,255,255,0.1);
     background: rgba(255,255,255,0.04); color: #94a3b8;
     font-size: 0.72rem; font-family: inherit; cursor: pointer;
-    transition: all 0.15s; font-weight: 600;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, opacity 0.15s ease; font-weight: 600;
 }
 .ls-time-btn:hover {
     background: rgba(255,255,255,0.06);
@@ -3692,7 +3692,7 @@ body::before {
     border-color: rgba(255,122,0,0.4); color: #FF7A00; font-weight: 700;
 }
 /* kh-ls-filter-btn alias để locLichSuDau vẫn tìm được */
-.kh-ls-filter-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: #94a3b8; font-size: 0.72rem; font-family: inherit; cursor: pointer; transition: all 0.15s; font-weight: 600; }
+.kh-ls-filter-btn { padding: 5px 14px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); color: #94a3b8; font-size: 0.72rem; font-family: inherit; cursor: pointer; transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, opacity 0.15s ease; font-weight: 600; }
 .kh-ls-filter-btn.active, .kh-ls-filter-btn:hover { background: rgba(255,122,0,0.1); border-color: rgba(255,122,0,0.3); color: #FF7A00; }
 
 /* Cards */
@@ -3893,6 +3893,31 @@ body::before {
 .kh-empty { text-align: center; padding: 50px 20px; color: #64748b; }
 .kh-empty i { font-size: 2rem; display: block; margin-bottom: 12px; opacity: 0.4; }
 .kh-empty p { font-size: 0.88rem; margin: 0; }
+
+/* ── Empty-state CHUẨN (design-system) — icon + tiêu đề + lời nhắn + hành động ──
+   Dùng chung cho mọi danh sách rỗng: <div class="tvl-empty"><i class="fa-..."></i>
+   <h4>Tiêu đề</h4><p>Lời nhắn</p><button class="tvl-empty-act">...</button></div> */
+.tvl-empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+    padding: var(--space-12) var(--space-5);
+    color: #64748b;
+    gap: var(--space-2);
+}
+.tvl-empty > i { font-size: 2.4rem; opacity: 0.35; margin-bottom: var(--space-1); }
+.tvl-empty h4 { font-size: var(--fs-md); color: #94a3b8; margin: 0; font-weight: 700; }
+.tvl-empty p  { font-size: var(--fs-sm); margin: 0; max-width: 360px; line-height: 1.6; }
+.tvl-empty .tvl-empty-act {
+    margin-top: var(--space-3);
+    padding: var(--space-2) var(--space-5);
+    border-radius: 9999px;
+    border: 1px solid hsl(var(--neon-mint) / 0.4);
+    background: hsl(var(--neon-mint) / 0.12);
+    color: hsl(var(--neon-mint));
+    font-weight: 700; font-size: var(--fs-sm); cursor: pointer;
+    transition: background-color 0.18s, border-color 0.18s, color 0.18s, transform 0.18s;
+}
+.tvl-empty .tvl-empty-act:hover { background: hsl(var(--neon-mint) / 0.2); transform: translateY(-1px); }
 
 /* ═══════════════════════════════════════════════════════
    LỊCH SỬ — Sub-tab nav: compact segmented control
@@ -4160,6 +4185,31 @@ body::before {
     --shadow-glow:    0 0 24px rgba(0,255,136,0.12);
     --section-py:     clamp(48px, 8vw, 96px);
     --card-px:        clamp(20px, 4vw, 32px);
+
+    /* ── Thang SPACING dùng chung (nền 4px / 8pt) — căn lề & khoảng thở nhất quán ── */
+    --space-1:  4px;
+    --space-2:  8px;
+    --space-3:  12px;
+    --space-4:  16px;
+    --space-5:  20px;
+    --space-6:  24px;
+    --space-8:  32px;
+    --space-10: 40px;
+    --space-12: 48px;
+
+    /* ── Thang FONT-SIZE theo cấp — phân cấp thị giác (phụ chú → nội dung → tiêu đề) ── */
+    --fs-xs:   0.72rem;   /* phụ chú, nhãn nhỏ */
+    --fs-sm:   0.82rem;   /* meta, caption */
+    --fs-base: 0.92rem;   /* nội dung thân */
+    --fs-md:   1.05rem;   /* nội dung nổi */
+    --fs-lg:   1.25rem;   /* tiêu đề phụ */
+    --fs-xl:   1.6rem;    /* tiêu đề mục */
+    --fs-2xl:  2.1rem;    /* tiêu đề lớn */
+
+    /* ── Thang SHADOW theo cấp (bổ sung cho --shadow-card/--shadow-glow) ── */
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.25);
+    --shadow-md: 0 6px 20px rgba(0,0,0,0.32);
+    --shadow-lg: 0 16px 48px rgba(0,0,0,0.45);
 }
 
 /* ── 1B: Scroll Reveal System ── */
@@ -4175,6 +4225,31 @@ body::before {
 .reveal-delay-1 { transition-delay: 0.1s; }
 .reveal-delay-2 { transition-delay: 0.2s; }
 .reveal-delay-3 { transition-delay: 0.3s; }
+
+/* ── 1B2: Skeleton placeholder — giữ chỗ vùng động, chống layout shift khi tải ── */
+@keyframes tvlSkelShimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+.tvl-skel {
+    background: linear-gradient(90deg,
+        rgba(255,255,255,0.04) 25%,
+        rgba(255,255,255,0.09) 37%,
+        rgba(255,255,255,0.04) 63%);
+    background-size: 200% 100%;
+    animation: tvlSkelShimmer 1.4s ease-in-out infinite;
+    border-radius: 10px;
+}
+/* Thẻ kèo skeleton — khớp .keo-card để không nhảy khi data về */
+.tvl-skel-card {
+    height: 236px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+/* Dòng skeleton (lịch sử) + khối skeleton (doanh thu) */
+.tvl-skel-row   { height: 72px; margin-bottom: 12px; }
+.tvl-skel-block { height: 96px; }
+@media (prefers-reduced-motion: reduce) { .tvl-skel { animation: none; } }
 
 /* ── 1C: Chuẩn hóa card border & shadow toàn trang ── */
 .slot-card,
@@ -4195,7 +4270,7 @@ body::before {
     border-color: rgba(255,255,255,0.13) !important;
     box-shadow: 0 12px 40px rgba(0,0,0,0.45);
     transform: translateY(-2px);
-    transition: all 0.22s ease;
+    transition: background 0.22s ease, border-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease, opacity 0.22s ease;
 }
 
 /* ── 1D: User-select — cho phép copy text thông tin quan trọng ── */
@@ -4364,7 +4439,7 @@ body::before {
     padding: 8px 18px !important;
     font-size: 0.82rem !important;
     font-weight: 600 !important;
-    transition: all 0.18s ease;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
 }
 .ad-tab-btn.active {
     background: rgba(0,255,136,0.15) !important;

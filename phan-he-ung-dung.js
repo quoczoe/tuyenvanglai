@@ -304,7 +304,7 @@
         _setProfileField("profileName",     u.ten_khach || "");
         _setProfileField("profilePhone",    u.sdt_khach || "");
         _setProfileField("profileGender",   u.gioi_tinh || "");
-        _setProfileField("profileTrindDo",  u.trinh_do  || "");
+        _setProfileField("profileTrindDo",  window.chuanHoaTrinhDo ? window.chuanHoaTrinhDo(u.trinh_do) : (u.trinh_do || ""));
         _setProfileField("profileFacebook", u.facebook_link || "");
         _setProfileField("profileZalo",     u.sdt_zalo  || "");
         _setProfileField("profileGmail",    u.gmail     || "");
@@ -358,7 +358,7 @@
         const payload = {
             ten_khach:    document.getElementById("profileName")?.value?.trim()     || u.ten_khach,
             gioi_tinh:    document.getElementById("profileGender")?.value           || u.gioi_tinh,
-            trinh_do:     document.getElementById("profileTrindDo")?.value          || "",
+            trinh_do:     (window.chuanHoaTrinhDo ? window.chuanHoaTrinhDo(document.getElementById("profileTrindDo")?.value) : document.getElementById("profileTrindDo")?.value) || "",
             facebook_link:document.getElementById("profileFacebook")?.value?.trim() || null,
             sdt_zalo:     document.getElementById("profileZalo")?.value?.trim()     || null,
             gmail:        document.getElementById("profileGmail")?.value?.trim()    || null,

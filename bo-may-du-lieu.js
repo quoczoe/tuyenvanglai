@@ -129,6 +129,74 @@
     ];
 
     /* ═══════════════════════════════════════════════════════════════
+     * 2B. TAXONOMY TRÌNH ĐỘ CẦU LÔNG — NGUỒN DUY NHẤT (single source of truth)
+     * 12 mức từ THẤP → CAO. Mọi nơi (Hồ sơ / Host đăng ca / Filter / pills)
+     * render từ đây — KHÔNG hardcode lặp lại ở chỗ khác.
+     * Giá trị lưu trữ = IN HOA toàn bộ. Mức "KHÁ" có nhãn hiển thị riêng.
+     * ═══════════════════════════════════════════════════════════════ */
+    window.TRINH_DO_LIST = [
+        "NEWBIE", "YẾU-", "YẾU", "YẾU+",
+        "TBY-", "TBY", "TBY+",
+        "TB-", "TB", "TB+",
+        "TB KHÁ", "KHÁ"
+    ];
+    // Nhãn hiển thị khác giá trị lưu trữ (giá trị lưu vẫn là "KHÁ")
+    window.TRINH_DO_LABEL = { "KHÁ": "KHÁ (BÁN CHUYÊN)" };
+    // Nhãn hiển thị cho 1 giá trị (fallback = chính giá trị)
+    window.nhanTrinhDo = function (v) {
+        return (window.TRINH_DO_LABEL && window.TRINH_DO_LABEL[v]) || v;
+    };
+    // Chuẩn hóa chống lệch hoa-thường / khoảng trắng khi so sánh & lọc
+    window.chuanHoaTrinhDo = function (s) {
+        return (s == null ? "" : String(s)).trim().toUpperCase();
+    };
+
+    /* Render TOÀN BỘ UI trình độ từ TRINH_DO_LIST — chạy 1 lần khi DOM sẵn sàng.
+     * Container: Hồ sơ select, Filter select + pills (PC + mobile), Host Nam/Nữ. */
+    window._renderTrinhDoUI = function () {
+        const list = window.TRINH_DO_LIST || [];
+        const optHtml = (placeholder) =>
+            `<option value="">${placeholder}</option>` +
+            list.map(v => `<option value="${v}">${window.nhanTrinhDo(v)}</option>`).join("");
+
+        // 1) Hồ sơ — select trình độ chơi
+        const profSel = document.getElementById("profileTrindDo");
+        if (profSel) profSel.innerHTML = optHtml("— Chọn trình độ —");
+
+        // 2) Filter — select ẩn (đồng bộ legacy)
+        const fSel = document.getElementById("filterLevel");
+        if (fSel) fSel.innerHTML = optHtml("Tất cả trình độ");
+
+        // 3) Filter — pills PC
+        const fp = document.getElementById("filterLevelPills");
+        if (fp) fp.innerHTML = list.map(v =>
+            `<button class="tk-pill" data-value="${v}" onclick="window._toggleLevelPill(this)">${window.nhanTrinhDo(v)}</button>`).join("");
+
+        // 4) Filter — pills mobile (drawer)
+        const fpm = document.getElementById("filterLevelPillsMobile");
+        if (fpm) fpm.innerHTML = list.map(v =>
+            `<button class="tk-pill" data-value="${v}" onclick="window._toggleMobileLevelPill(this)">${window.nhanTrinhDo(v)}</button>`).join("");
+
+        // 5) Host — checkbox Nam + Nữ (giữ ô nhập tự do ở cuối)
+        const customPh = "Vd: chơi 1 năm đổ lên, chơi 6 tháng liên tục...";
+        const buildHostPills = (prefix, customId) =>
+            list.map((v, i) =>
+                `<input type="checkbox" id="${prefix}${i}" value="${v}" class="lvl-cb"><label for="${prefix}${i}" class="lvl-pill">${window.nhanTrinhDo(v)}</label>`
+            ).join("") +
+            `<input type="text" id="${customId}" class="app-input lvl-custom" placeholder="${customPh}">`;
+        const namGroup = document.getElementById("levelNamPills");
+        if (namGroup) namGroup.innerHTML = buildHostPills("m_lvl_", "hostMaleCustomLevel");
+        const nuGroup = document.getElementById("levelNuPills");
+        if (nuGroup) nuGroup.innerHTML = buildHostPills("f_lvl_", "hostFemaleCustomLevel");
+    };
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", window._renderTrinhDoUI);
+    } else {
+        window._renderTrinhDoUI();
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
      * 3. HÀM TIỆN ÍCH — THÔNG BÁO LỖI MẠNG TRỰC QUAN
      * Gọi khi Supabase không kết nối được
      * ═══════════════════════════════════════════════════════════════ */

@@ -55,6 +55,11 @@
          * @returns {Promise<Array>} Danh sách kết quả trả về từ database
          */
         async docData(tenBang, boLoc = {}) {
+            // Timeout chống treo vô hạn: mất mạng giữa chừng (treo, không lỗi) sẽ khiến
+            // await không bao giờ resolve → skeleton/loading quay mãi. Mặc định 15s;
+            // caller có thể truyền boLoc.timeoutMs để tùy chỉnh (không lọt vào URL).
+            const _ctrl  = new AbortController();
+            const _timer = setTimeout(() => _ctrl.abort(), (boLoc && boLoc.timeoutMs) || 15000);
             try {
                 let url = `${SUPABASE_URL}/rest/v1/${tenBang}`;
                 const thamSoUrl = [];
@@ -100,7 +105,8 @@
                 // Gửi yêu cầu GET tới Supabase
                 const response = await fetch(url, {
                     method: "GET",
-                    headers: LAY_HEADERS_CHUAN()
+                    headers: LAY_HEADERS_CHUAN(),
+                    signal: _ctrl.signal
                 });
 
                 if (!response.ok) {
@@ -111,8 +117,15 @@
                 const data = await response.json();
                 return data;
             } catch (error) {
+                if (error && error.name === "AbortError") {
+                    const e2 = new Error(`Hết thời gian chờ khi đọc bảng ${tenBang}`);
+                    console.error("⏱️ [Timeout Đọc Data]:", e2.message);
+                    throw e2;
+                }
                 console.error("❌ [Lỗi Đọc Data]:", error);
                 throw error;
+            } finally {
+                clearTimeout(_timer);
             }
         },
 

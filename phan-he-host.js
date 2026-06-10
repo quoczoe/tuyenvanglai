@@ -1220,19 +1220,16 @@
         const gioiTinhMap = { male: "Nam", female: "Nữ", both: "Cả hai" };
         const gioi_tinh_can = gioiTinhMap[genderRaw] || "Cả hai";
 
-        // Trình độ (JSONB)
+        // Trình độ (JSONB) — đọc động từ container (đồng bộ window.TRINH_DO_LIST),
+        // gồm tất cả mức đang tick + ô nhập tự do. Không hardcode danh sách mức.
         const mLevels = [], fLevels = [];
         if (genderRaw === "male" || genderRaw === "both") {
-            ["newbie","yeu","tby","tb_minus","tb_plus","tbk"].forEach(lv => {
-                const cb = document.getElementById(`m_lvl_${lv}`); if (cb?.checked) mLevels.push(cb.value);
-            });
+            document.querySelectorAll("#levelNamPills .lvl-cb:checked").forEach(cb => mLevels.push(cb.value));
             const cu = document.getElementById("hostMaleCustomLevel")?.value?.trim();
             if (cu) mLevels.push(cu);
         }
         if (genderRaw === "female" || genderRaw === "both") {
-            ["newbie","yeu","tby","tb_minus","tb_plus","tbk"].forEach(lv => {
-                const cb = document.getElementById(`f_lvl_${lv}`); if (cb?.checked) fLevels.push(cb.value);
-            });
+            document.querySelectorAll("#levelNuPills .lvl-cb:checked").forEach(cb => fLevels.push(cb.value));
             const cu = document.getElementById("hostFemaleCustomLevel")?.value?.trim();
             if (cu) fLevels.push(cu);
         }
@@ -1308,6 +1305,10 @@
         // Thêm sdt_nguoi_tao nếu migration đã chạy (cột tồn tại)
         if (_myUser?.sdt_khach) payload.sdt_nguoi_tao = _myUser.sdt_khach;
 
+        // A3: chặn double-submit — kiểm tra ĐỒNG BỘ ngay trước INSERT (mọi early-return phía trên
+        // đều xảy ra trước điểm này nên không lo kẹt cờ; finally luôn nhả cờ).
+        if (window._dangCaBusy) return;
+        window._dangCaBusy = true;
         const btn = document.getElementById("btnDangCa");
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang đăng...'; }
 
@@ -1347,11 +1348,13 @@
                 }
                 _resetFormDangCa();
                 await _taiLichSuCaDau();
+                window._tkInvalidateCache && window._tkInvalidateCache();  // B3: làm mới cache Tìm Kèo
             }
         } catch (e) {
             console.error("Lỗi đăng ca đấu:", e);
             window.hienToast("Lỗi lưu dữ liệu", "Không thể lưu ca đấu. Vui lòng thử lại.", "danger");
         } finally {
+            window._dangCaBusy = false;
             if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-circle-check"></i> XÁC NHẬN ĐĂNG TUYỂN'; }
         }
     };
@@ -1388,10 +1391,9 @@
         if (window._capNhatTrinhDoSection) window._capNhatTrinhDoSection("male");
         if (window.chuyenTrangThaiLienKetGioiTinh) window.chuyenTrangThaiLienKetGioiTinh();
 
-        // Reset toàn bộ checkbox trình độ Nam + Nữ
-        ["m_lvl_newbie","m_lvl_yeu","m_lvl_tby","m_lvl_tb_minus","m_lvl_tb","m_lvl_tb_plus","m_lvl_tbk",
-         "f_lvl_newbie","f_lvl_yeu","f_lvl_tby","f_lvl_tb_minus","f_lvl_tb","f_lvl_tb_plus","f_lvl_tbk"
-        ].forEach(id => { const el = document.getElementById(id); if (el) el.checked = false; });
+        // Reset toàn bộ checkbox trình độ Nam + Nữ (đọc động từ container)
+        document.querySelectorAll("#levelNamPills .lvl-cb, #levelNuPills .lvl-cb")
+            .forEach(el => { el.checked = false; });
 
         ["inc_san","inc_cau","inc_nuoc","inc_xe"].forEach(id => {
             const el = document.getElementById(id);
@@ -1948,6 +1950,7 @@
             window.hienToast("Đã lưu ✅", "Thông tin ca đấu đã được cập nhật.", "success");
             window._dongModalSuaCa();
             await _taiLichSuCaDau();
+            window._tkInvalidateCache && window._tkInvalidateCache();
         } catch (e) {
             console.error("Lỗi lưu sửa ca:", e);
             window.hienToast("Lỗi lưu", "Không thể cập nhật. Thử lại.", "danger");
@@ -1963,6 +1966,7 @@
             await window.dbEngine.ghi("ca_dau", { da_chot_ca: true }, { id });
             window.hienToast("Đã chốt ca! 🔒", "Ca đấu đã được khóa vĩnh viễn. Bạn có thể đánh giá khách.", "success");
             await _taiLichSuCaDau();
+            window._tkInvalidateCache && window._tkInvalidateCache();
         } catch (e) {
             console.error("Lỗi chốt ca:", e);
             window.hienToast("Lỗi", "Không thể chốt ca. Thử lại.", "danger");
@@ -2106,7 +2110,12 @@
      * 13. XÓA CA ĐẤU
      * ═══════════════════════════════════════════════════ */
     window.xoaCaDau = async function (id) {
-        if (!await window.xacNhanModal("Bạn có chắc muốn xóa ca đấu này?\nHành động này không thể hoàn tác.", '🗑️')) return;
+        // A2: cảnh báo nếu ca đang có khách giữ slot (xóa sẽ cascade hủy chỗ của họ)
+        const _booked = (_caDauSlotMap[id] || []).filter(s => s.trang_thai_di_danh !== "Khách hủy").length;
+        const _canhBao = _booked > 0
+            ? `\n\n⚠️ Ca này có ${_booked} khách đang giữ slot — xóa sẽ HỦY chỗ của họ.`
+            : "";
+        if (!await window.xacNhanModal("Bạn có chắc muốn xóa ca đấu này?\nHành động này không thể hoàn tác." + _canhBao, '🗑️')) return;
         try {
             await window.dbEngine.xoa("ca_dau", { id });
 
@@ -2121,6 +2130,7 @@
             _caDauRawData = _caDauRawData.filter(s => s.id !== id);
             delete _caDauSlotMap[id];
             _caDauApply();
+            window._tkInvalidateCache && window._tkInvalidateCache();
             window.hienToast("Đã xóa ✅", "Ca đấu đã bị xóa khỏi hệ thống.", "info");
         } catch (e) {
             console.error("Lỗi xóa ca:", e);
@@ -2143,6 +2153,7 @@
             const slot = _caDauRawData.find(s => s.id === id);
             if (slot) slot.is_tam_khoa = true;
             _caDauApply();
+            window._tkInvalidateCache && window._tkInvalidateCache();
             window.hienToast("Đã tạm khóa 🔒", "Ca đấu không nhận thêm đăng ký mới.", "info");
         } catch (e) {
             console.error("Lỗi tạm khóa:", e);
@@ -2156,6 +2167,7 @@
             const slot = _caDauRawData.find(s => s.id === id);
             if (slot) slot.is_tam_khoa = false;
             _caDauApply();
+            window._tkInvalidateCache && window._tkInvalidateCache();
             window.hienToast("Đã mở lại ✅", "Ca đấu đang nhận đăng ký bình thường.", "success");
         } catch (e) {
             console.error("Lỗi mở lại ca:", e);
@@ -3486,6 +3498,24 @@
         if (panel) panel.style.display = "block";
     };
 
+    // Lấy toàn bộ ca_dau của host hiện tại — hỗ trợ CẢ hệ SĐT (sdt_nguoi_tao) lẫn SaaS key
+    // (ma_key_host). Trước đây nhiều chỗ chỉ lọc ma_key_host=currentHostKey, nhưng
+    // currentHostKey = SĐT ở hệ mới nên không khớp ca (ma_key_host=null) → trả rỗng.
+    async function _docCaDauCuaToi(extraBoLoc = {}) {
+        const _myUser  = window.currentUser || window.currentGuest;
+        const _myPhone = _myUser?.sdt_khach;
+        const _myKey   = _myUser?.ma_key_host || window.currentHostKey;
+        const _isKey   = typeof _myKey === "string" && _myKey.startsWith("TVL-");
+        const [byPhone, byKey] = await Promise.all([
+            _myPhone ? window.dbEngine.doc("ca_dau", Object.assign({ eq: { sdt_nguoi_tao: _myPhone } }, extraBoLoc)) : Promise.resolve([]),
+            _isKey   ? window.dbEngine.doc("ca_dau", Object.assign({ eq: { ma_key_host: _myKey } }, extraBoLoc))   : Promise.resolve([])
+        ]);
+        const seen = new Set();
+        return [...(byPhone || []), ...(byKey || [])].filter(c => {
+            if (seen.has(c.id)) return false; seen.add(c.id); return true;
+        });
+    }
+
     async function _taiDoanhThuHost(tuNgay, denNgay) {
         const panel = document.getElementById("tabDoanhThu");
         if (!panel) return;
@@ -3497,15 +3527,13 @@
             return;
         }
 
-        panel.innerHTML = `<div style="text-align:center;padding:32px;color:#64748b;">
-            <i class="fa-solid fa-spinner fa-spin fa-2x"></i><br><br>Đang tải dữ liệu doanh thu...</div>`;
+        // Skeleton giữ chỗ — chống layout shift khi số liệu doanh thu về
+        panel.innerHTML = `<div class="tvl-skel tvl-skel-block" style="margin-bottom:14px;"></div>`
+            + `<div class="tvl-skel tvl-skel-block" style="height:220px;"></div>`;
 
         try {
             const [danhSachCa, allDatSlot] = await Promise.all([
-                window.dbEngine.doc("ca_dau", {
-                    eq: { ma_key_host: window.currentHostKey },
-                    order: "ngay_danh.desc"
-                }),
+                _docCaDauCuaToi({ order: "ngay_danh.desc" }),
                 window.dbEngine.doc("dat_slot").catch(() => [])
             ]);
 
@@ -3547,7 +3575,8 @@
                 const filter = filterEl.value;
                 const now = new Date();
                 if (filter === "week") {
-                    const mon = new Date(now); mon.setDate(now.getDate() - now.getDay() + 1);
+                    const _dow = now.getDay(); // 0=CN → lùi 6 ngày về Thứ Hai; còn lại 1-_dow
+                    const mon = new Date(now); mon.setDate(now.getDate() + (_dow === 0 ? -6 : 1 - _dow));
                     const monStr = mon.toLocaleDateString("sv-SE");
                     caDauHienThi = danhSachCa.filter(c => c.ngay_danh >= monStr);
                 } else if (filter === "month") {
@@ -3984,7 +4013,7 @@
             // Fetch song song: tất cả slot của sdt + ca của host hiện tại + reviews về sdt này + reviews do sdt gửi
             const [allSlots, myCaDau, reviews, guestSentReviews] = await Promise.all([
                 window.dbEngine.doc("dat_slot", { eq: { sdt_khach: sdt } }).catch(() => []),
-                window.dbEngine.doc("ca_dau",   { eq: { ma_key_host: window.currentHostKey } }).catch(() => []),
+                _docCaDauCuaToi().catch(() => []),
                 window.dbEngine.doc("danh_gia_tin_dung", {
                     eq: { sdt_nguoi_bi_danh_gia: sdt, loai_danh_gia: "HostToGuest" }
                 }).catch(() => []),

@@ -135,7 +135,7 @@
             text-decoration: none;
             font-weight: 700;
             box-shadow: 0 0 24px rgba(0,255,136,0.35);
-            transition: all 0.22s ease;
+            transition: transform 0.22s ease, box-shadow 0.22s ease;
         }
         .btn-home:hover {
             transform: translateY(-2px) scale(1.04);
@@ -154,7 +154,7 @@
             border-radius: 50px;
             cursor: pointer;
             text-decoration: none;
-            transition: all 0.2s;
+            transition: color 0.2s, border-color 0.2s;
         }
         .btn-back:hover { color: #f0f0f0; border-color: rgba(255,255,255,0.25); }
 
@@ -187,7 +187,7 @@
             font-weight: 600;
             text-decoration: none;
             background: rgba(0,255,136,0.04);
-            transition: all 0.18s;
+            transition: color 0.18s, border-color 0.18s;
         }
         .quick-link:hover { color: #00ff88; border-color: rgba(0,255,136,0.4); }
 
@@ -266,7 +266,8 @@ document.addEventListener('keydown',e=>{
 (function(){
   const t=160;
   setInterval(()=>{
-    if(window.outerWidth-window.innerWidth>t||window.outerHeight-window.innerHeight>t){
+    // Chỉ kiểm chiều ngang — chiều dọc false-positive trên mobile (thanh địa chỉ/bàn phím)
+    if(window.outerWidth-window.innerWidth>t){
       document.body.innerHTML='<h1 style="color:#00c96e;text-align:center;padding-top:200px;font-family:sans-serif">Vui lòng đóng DevTools</h1>';
     }
   },1000);

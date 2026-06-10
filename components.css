@@ -22,7 +22,7 @@
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
-    transition: all 0.18s ease;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
     white-space: nowrap;
     text-decoration: none;
 }
@@ -125,7 +125,7 @@
     font-size: 0.83rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
     user-select: none;
     font-family: inherit;
 }
@@ -171,7 +171,7 @@
     font-size: 0.78rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.18s ease;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
     user-select: none;
     font-family: inherit;
 }
@@ -272,7 +272,7 @@
     color: #ef4444;
     cursor: pointer;
     font-size: 0.8rem;
-    transition: all 0.18s;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
     flex-shrink: 0;
     align-self: flex-end;
 }
@@ -328,7 +328,7 @@
     padding: 14px 12px;
     background: rgba(255,255,255,0.02);
     cursor: pointer;
-    transition: all 0.22s ease;
+    transition: background 0.22s ease, border-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease, opacity 0.22s ease;
     position: relative;
     overflow: hidden;
     text-align: center;
@@ -737,7 +737,7 @@
     background: rgba(255,255,255,0.04);
     border: 1px solid rgba(255,255,255,0.22);
     color: #94a3b8; cursor: pointer; font-size: 0.85rem;
-    transition: all 0.15s; min-height: 38px;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, opacity 0.15s ease; min-height: 38px;
     font-family: inherit;
     box-shadow: 0 0 6px rgba(255,255,255,0.25);
 }
@@ -913,7 +913,7 @@
     font-weight: 600;
     font-family: inherit;
     cursor: pointer;
-    transition: all 0.18s;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
     white-space: nowrap;
 }
 .btn-time-filter:hover { border-color: rgba(255,255,255,0.2); color: #e2e8f0; }
@@ -975,7 +975,7 @@
     background: rgba(255,255,255,0.03);
     border: 1px solid rgba(255,255,255,0.06);
     cursor: pointer;
-    transition: all 0.18s;
+    transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease, transform 0.18s ease, opacity 0.18s ease;
     font-size: 0.83rem;
     color: #e2e8f0;
 }
