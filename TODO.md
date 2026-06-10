@@ -1,4 +1,43 @@
-# TODO — Cập nhật: 2026-06-10 (phiên 18)
+# TODO — Cập nhật: 2026-06-10 (phiên 18 + QA Playwright)
+
+---
+
+## ✅ PHIÊN 18C — Săn lỗi tự động (Playwright, listener console+network)
+
+- [x] Walker v2 cứng rắn: timeout 20s/bước + tổng 10 phút + write fire-and-forget + log tiến độ ngay (v1 treo 4h vì await write không timeout + chỉ in cuối). Đi khách→host→admin @390 & @1440 trong 94s.
+- [x] **KHÁCH: 0 lỗi** (login, tìm kèo + filter + từ khóa không kết quả, chi tiết ca, đặt slot, hủy slot, lịch sử, hồ sơ lưu, góp ý gửi) — console+network sạch cả 2 khổ.
+- [x] **HOST: 0 lỗi** (đăng kèo input sai giá âm/ngày quá khứ → bị chặn client KHÔNG ra network, sửa ca, doanh thu, DS ca, DS khách) — sạch cả 2 khổ.
+- [x] Dọn dead code `_hostTs/_hostToken/_tsSession` (phan-he-host.js).
+- [ ] ⛔ **ADMIN: login 400** với cả `0961446000` (không phải email) lẫn `mynameisanhquocpro@gmail.com`+pass `0961446000` (sai mật khẩu). Supabase Auth từ chối — KHÔNG phải lỗi app (app bắt lỗi, không crash). Cần **email + mật khẩu Supabase Auth admin thật** để QA tab Báo cáo/Đánh giá. (admin dùng signInWithPassword(email), tài khoản guest SĐT không có Auth identity.)
+- [x] Không phát sinh fix client (sweep sạch) → không cần bump thêm; host.js (dead code) vẫn ở `?v=20260610f`.
+
+---
+
+## ✅ PHIÊN 18B — QA giao diện bằng Playwright (chụp + soi + fix + so sánh)
+
+### 🛠️ Hạ tầng test
+- [x] Harness `.devtest/` (server tĩnh localhost:5599 + Playwright 1.60 chromium): login `0961446000`, chụp mọi tab @390 & @1440, bắt console error. (`.vercelignore` loại `.devtest/`+`screenshots/` khỏi deploy.)
+- [x] PNG cũ dọn vào `screenshots/` (giữ logo.png/favicon.png assets ở gốc). Repo không phải git → bỏ qua .gitignore.
+- [x] **Tắt Turnstile khi `location.hostname==='localhost'`** (cờ `window._tvlIsLocalhost`): bỏ render widget + KHÔNG nạp api.js CF + bypass `_xacMinhTurnstile`. Domain thật GIỮ NGUYÊN. Console localhost nay sạch 100%.
+
+### 🔴 Đã fix — BUG GIAO DIỆN: LỊCH SỬ (ưu tiên 1, "lệch rõ nhất")
+- [x] **Nguyên nhân**: `.ls-card` LEGACY trong `<style>` inline index.html (`display:flex;gap:14px`) ghi đè `.ls-card` thật ở giao-dien.css (do thứ tự nguồn) → `.ls-card-inner` chỉ rộng 319px thay vì full-width → chevron ▼ + giá "65.000đ" canh phải SAI (trôi theo độ dài tên sân), nội dung dồn trái 30%.
+- [x] **Fix**: gỡ block `.ls-card`/`.ls-dot` legacy (dead, không dùng trong JS). Đo lại Playwright: `.ls-card` block, inner 1392px, chevron x=1379 (mép phải). Before/after: `screenshots/{before,after}-lichsu-*`.
+
+### 🔴 Đã fix — Console error production
+- [x] `_thucHienTimKiem` select `nguoi_dung` xin cột `ma_key_host,so_sao_tb` KHÔNG tồn tại → 400 mỗi lần tìm + 1 round-trip fallback `select=*` (lộ PII). Đổi select còn `sdt_khach,ten_khach,diem_uy_tin` (ranking đã null-guard). Console sạch.
+
+### 🟡 Đã fix — polish
+- [x] Bảng Doanh Thu host (mobile rộng 860px): thêm class `.tvl-xscroll` (bóng mép gợi ý cuộn ngang, background-attachment local). Bảng vốn đã cuộn đúng (overflow-x:auto, không tràn trang) — bổ sung "gợi ý cuộn" theo yêu cầu.
+
+### ✅ Soi đạt chuẩn — KHÔNG cần sửa
+- Hồ Sơ (form grid 2 cột, trust bar), Đăng Ca (2 section, pills 12 mức), Filter drawer mobile, Góp Ý modal (VietQR), DS Ca (cuộn ngang OK), Tìm Kèo, Đánh giá (empty state "—" hợp lệ). Tất cả @390 & @1440 căn chỉnh tốt.
+
+### ⛔ BỊ CHẶN
+- [ ] Tab admin (Báo cáo, Đánh giá): thiếu credentials admin test (đề bài để `[điền]`). Cần bạn cấp SĐT+mật khẩu admin test để chụp/soi 2 tab này.
+
+### 🟡 Deploy
+- [x] Bump `?v=20260610f` cho file đổi: index→ giao-dien.css, hieu-ung, khach-choi, host; admin→ hieu-ung, quan-tri. Các file không đổi giữ version cũ.
 
 ---
 

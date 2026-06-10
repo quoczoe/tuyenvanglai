@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS hệ thống -->
-    <link rel="stylesheet" href="giao-dien.css?v=20260610e">
+    <link rel="stylesheet" href="giao-dien.css?v=20260610f">
     <link rel="stylesheet" href="components.css?v=20260610c">
 
     <style>
@@ -903,19 +903,8 @@
         .app-table td .text-white { color: var(--text); font-weight: 600; }
 
         /* ── LỊCH SỬ ── */
-        .ls-card {
-            background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: var(--radius-sm); padding: 14px 16px;
-            margin-bottom: 10px; display: flex; gap: 14px;
-            align-items: flex-start;
-        }
-        .ls-dot {
-            width: 10px; height: 10px; border-radius: 50%;
-            background: var(--lava-grad); flex-shrink: 0; margin-top: 5px;
-        }
-        .ls-dot.orange { background: var(--accent-2); }
-        .ls-dot.gray   { background: var(--text-muted); }
-        .ls-dot.red    { background: #ef4444; }
+        /* .ls-card / .ls-dot LEGACY đã gỡ — định nghĩa thật ở giao-dien.css (.ls-card-inner/.ls-card-main/.ls-card-right).
+           Bản inline cũ (display:flex) ghi đè giao-dien.css do thứ tự nguồn → chevron + giá không canh phải được. */
 
         /* ── ĐÁNH GIÁ ── */
         .review-card {
@@ -1865,6 +1854,10 @@
         window._tvlTsQueue   = [];   // Hàng đợi render khi API chưa load xong
         window._tvlTsWidgets = {};   // containerId → widgetId
 
+        // Cờ localhost: tắt Turnstile khi dev/test cho console sạch.
+        // Domain thật KHÔNG bị ảnh hưởng (chỉ short-circuit khi hostname là localhost/127.0.0.1).
+        window._tvlIsLocalhost = (location.hostname === 'localhost' || location.hostname === '127.0.0.1');
+
         // Cloudflare gọi hàm này sau khi API load xong (onload)
         window._tvlTurnstileInit = function () {
             window._tvlTsReady = true;
@@ -1875,6 +1868,7 @@
         // Render widget vào container — nếu đã có iframe thì reset, nếu chưa thì render mới
         // Sitekey cứng để đảm bảo render đúng widget dù data-sitekey HTML có bị cache hay không
         window._tvlRenderTs = function (containerId) {
+            if (window._tvlIsLocalhost) return;   // localhost: không render widget (tránh lỗi domain CF)
             var doIt = function () {
                 var el = document.getElementById(containerId);
                 if (!el) return;
@@ -1893,8 +1887,15 @@
             if (window.turnstile) { doIt(); } else { window._tvlTsQueue.push(doIt); }
         };
     </script>
-    <!-- Script CDN chuẩn Cloudflare — async defer để auto-render + kích hoạt analytics -->
-    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=_tvlTurnstileInit" async defer></script>
+    <!-- Script CDN chuẩn Cloudflare — chỉ load trên domain thật; localhost bỏ qua cho console sạch -->
+    <script>
+        if (!window._tvlIsLocalhost) {
+            var _cfTs = document.createElement('script');
+            _cfTs.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=_tvlTurnstileInit';
+            _cfTs.async = true; _cfTs.defer = true;
+            document.head.appendChild(_cfTs);
+        }
+    </script>
 </head>
 <body>
 
@@ -3250,9 +3251,9 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="ket-noi-supabase.js?v=20260610d"></script>
 <script src="bo-may-du-lieu.js?v=20260610b"></script>
-<script src="hieu-ung-giao-dien.js?v=20260610e"></script>
-<script src="phan-he-khach-choi.js?v=20260610e"></script>
-<script src="phan-he-host.js?v=20260610d"></script>
+<script src="hieu-ung-giao-dien.js?v=20260610f"></script>
+<script src="phan-he-khach-choi.js?v=20260610f"></script>
+<script src="phan-he-host.js?v=20260610f"></script>
 <script src="phan-he-ung-dung.js?v=20260610b"></script>
 <script src="phan-he-gop-y.js?v=20260610"></script>
 

@@ -3919,6 +3919,20 @@ body::before {
 }
 .tvl-empty .tvl-empty-act:hover { background: hsl(var(--neon-mint) / 0.2); transform: translateY(-1px); }
 
+/* ── Gợi ý CUỘN NGANG cho bảng rộng (mobile) — bóng mờ 2 mép báo còn nội dung bên ngoài.
+   Dùng background-attachment local/scroll: bóng tự ẩn khi cuộn tới đầu/cuối. Không cần JS,
+   chỉ paint (không reflow). Áp cho div bọc bảng có overflow-x:auto. */
+.tvl-xscroll {
+    background:
+        linear-gradient(to right, #0e0e12 30%, rgba(14,14,18,0)) left center,
+        linear-gradient(to left,  #0e0e12 30%, rgba(14,14,18,0)) right center,
+        radial-gradient(farthest-side at 0 50%, rgba(0,0,0,0.5), rgba(0,0,0,0)) left center,
+        radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,0.5), rgba(0,0,0,0)) right center;
+    background-repeat: no-repeat;
+    background-size: 34px 100%, 34px 100%, 14px 100%, 14px 100%;
+    background-attachment: local, local, scroll, scroll;
+}
+
 /* ═══════════════════════════════════════════════════════
    LỊCH SỬ — Sub-tab nav: compact segmented control
    ═══════════════════════════════════════════════════════ */

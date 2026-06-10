@@ -1190,11 +1190,8 @@
             }
         }
 
-        // Turnstile check cho đăng bài
-        const _hostTs = document.getElementById("cfTurnstileHostWrap");
-        const _hostToken = document.querySelector("#cfTurnstileHost [name='cf-turnstile-response'], #cfTurnstileHostWrap [name='cf-turnstile-response']")?.value;
-        const _tsSession = (() => { try { const s = JSON.parse(localStorage.getItem("tvl_cf_verified")||"{}"); return s.exp && Date.now() < s.exp; } catch { return false; } })();
-
+        // (Đã gỡ dead code Turnstile của đăng bài: _hostTs/_hostToken/_tsSession khai báo nhưng
+        //  không bao giờ được dùng để chặn — đăng kèo không gate Turnstile.)
         const tinh_thanh  = document.getElementById("hostProvince")?.value;
         const quan_huyen  = document.getElementById("hostDistrict")?.value;
         const ten_san     = _chuanHoaTenSan(document.getElementById("hostCourtName")?.value || "");
@@ -3684,7 +3681,7 @@
             <i class="fa-solid fa-inbox fa-2x" style="margin-bottom:12px;opacity:0.4;"></i><br>
             Chưa có ca nào được chốt trong khoảng thời gian này.
         </div>` : `
-        <div style="width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;">
+        <div class="tvl-xscroll" style="width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;">
         <table class="hs-table" style="min-width:860px;">
             <thead><tr>
                 <th>Ngày</th>

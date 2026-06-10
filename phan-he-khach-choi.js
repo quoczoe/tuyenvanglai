@@ -335,6 +335,7 @@
 
     // Trả về true nếu pass (session hợp lệ hoặc token mới), false nếu chưa xác minh
     function _xacMinhTurnstile() {
+        if (window._tvlIsLocalhost) return true;   // localhost: bỏ qua Turnstile khi dev/test (domain thật giữ nguyên)
         if (_kiemTraTurnstileSession()) return true;
         const token = document.querySelector("[name='cf-turnstile-response']")?.value;
         if (token) { _luuTurnstileSession(); return true; }
@@ -1506,8 +1507,12 @@
                     window.dbEngine.doc("ca_dau"),
                     window.dbEngine.doc("dat_slot").catch(() => []),
                     window.dbEngine.doc("quan_ly_key").catch(() => []),
-                    window.dbEngine.doc("nguoi_dung", { select: "sdt_khach,ten_khach,diem_uy_tin,ma_key_host,so_sao_tb" })
-                        .catch(() => window.dbEngine.doc("nguoi_dung").catch(() => []))
+                    // Chỉ lấy cột công khai CHẮC CHẮN tồn tại (loại mat_khau_hash + PII).
+                    // so_sao_tb/ma_key_host KHÔNG có trong schema nguoi_dung thật → bỏ để tránh
+                    // lỗi 400 mỗi lần tìm + 1 round-trip fallback select=*. Ranking đã null-guard
+                    // (?? 0) nên không ảnh hưởng kết quả.
+                    window.dbEngine.doc("nguoi_dung", { select: "sdt_khach,ten_khach,diem_uy_tin" })
+                        .catch(() => [])
                 ]);
                 if (_mySeq !== _tkSeq) return;  // đã có lần tìm mới hơn → bỏ kết quả cũ
                 _tkCache = { allCaDau, allDatSlot, allKeys, allUsers };
