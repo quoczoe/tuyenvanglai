@@ -254,6 +254,9 @@
         const lichSuSection = document.getElementById("lichSuDauSection");
         if (lichSuSection) lichSuSection.classList.add("lich-su-hidden");
         document.body.style.overflow = "";
+
+        // 🔔 Bật chuông thông báo (poll 30s) ngay khi vào dashboard
+        window.khoiDongThongBao && window.khoiDongThongBao();
     }
 
     /**
@@ -356,6 +359,14 @@
             await window.dbEngine.ghi("nguoi_dung", { diem_uy_tin: newScore }, { sdt_khach: sdt });
             if (newScore < (window.DIEM_UY_TIN?.NGUONG?.khoa ?? 40) && u.is_active !== false) {
                 await window.dbEngine.ghi("nguoi_dung", { is_active: false }, { sdt_khach: sdt });
+                // 🔔 S1: báo người vừa bị khóa do điểm uy tín thấp (chỉ khi CHẠM mốc khóa)
+                const _mocKhoa = window.DIEM_UY_TIN?.NGUONG?.khoa ?? 40;
+                window.guiThongBao?.({
+                    nguoiNhan: sdt, loai: "S1",
+                    tieuDe: "Tài khoản bị khóa",
+                    noiDung: `Điểm uy tín còn ${newScore} (dưới ${_mocKhoa}). Tài khoản đã bị khóa — liên hệ Admin để mở khóa.`,
+                    linkData: { tab: "khoa" }
+                });
             }
         } catch (e) { console.error("_truDiemUyTin:", e); }
     }
@@ -407,13 +418,34 @@
                 window.hienToast?.("🔒 Tài khoản bị khóa tạm thời",
                     `Bùng kèo lần thứ ${lanThu} trong ${C.cuaSoNgay} ngày. Tài khoản đã bị khóa, không thể đặt slot. Liên hệ Admin để được mở khóa.`,
                     "danger");
+                // 🔔 H3b: ghi nhận cho host (người thao tác); G3 + S1: báo khách bị bùng + bị khóa
+                window.guiThongBao?.({
+                    nguoiNhan: window.currentGuest?.sdt_khach, loai: "H3b",
+                    tieuDe: "Đã ghi nhận khách bùng kèo",
+                    noiDung: `${u?.ten_khach || sdt} bùng kèo lần ${lanThu} — tài khoản khách đã bị khóa.`,
+                    linkData: { tab: "guestList" }
+                });
+                window.guiThongBao?.({
+                    nguoiNhan: sdt, loai: "G3",
+                    tieuDe: "Bạn bị báo Bùng kèo",
+                    noiDung: `Bạn bị báo bùng kèo lần ${lanThu} trong ${C.cuaSoNgay} ngày.`,
+                    linkData: { tab: "lichSu" }
+                });
+                window.guiThongBao?.({
+                    nguoiNhan: sdt, loai: "S1",
+                    tieuDe: "Tài khoản bị khóa",
+                    noiDung: "Tài khoản của bạn đã bị khóa do bùng kèo nhiều lần. Liên hệ Admin để mở khóa.",
+                    linkData: { tab: "khoa" }
+                });
                 return { lanThu, diemTru: 0, khoa: true };
             }
             const diemTru  = lanThu === 1 ? C.lan1 : C.lan2; // số âm
             const newScore = Math.max(SAN, cur + diemTru);
             await window.dbEngine.ghi("nguoi_dung", { diem_uy_tin: newScore }, { sdt_khach: sdt }).catch(() => {});
+            let _biKhoa = false;
             if (newScore < NGUONG_KHOA && u && u.is_active !== false) {
                 await window.dbEngine.ghi("nguoi_dung", { is_active: false }, { sdt_khach: sdt }).catch(() => {});
+                _biKhoa = true;
             }
             if (lanThu === 2) {
                 window.hienToast?.("⚠️ Cảnh báo: bùng kèo lần 2",
@@ -424,6 +456,25 @@
                     `Khách bùng kèo (lần ${lanThu} trong ${C.cuaSoNgay} ngày) — còn ${newScore} điểm.`,
                     "warning");
             }
+            // 🔔 H3b: ghi nhận cho host (người thao tác); G3: báo khách bị phạt; S1 nếu chạm mốc khóa
+            window.guiThongBao?.({
+                nguoiNhan: window.currentGuest?.sdt_khach, loai: "H3b",
+                tieuDe: "Đã ghi nhận khách bùng kèo",
+                noiDung: `${u?.ten_khach || sdt} bùng kèo (lần ${lanThu}) — trừ ${Math.abs(diemTru)} điểm.`,
+                linkData: { tab: "guestList" }
+            });
+            window.guiThongBao?.({
+                nguoiNhan: sdt, loai: "G3",
+                tieuDe: "Bạn bị báo Bùng kèo",
+                noiDung: `Bạn bị báo bùng kèo (lần ${lanThu}) — trừ ${Math.abs(diemTru)} điểm, còn ${newScore} điểm uy tín.`,
+                linkData: { tab: "lichSu" }
+            });
+            if (_biKhoa) window.guiThongBao?.({
+                nguoiNhan: sdt, loai: "S1",
+                tieuDe: "Tài khoản bị khóa",
+                noiDung: `Điểm uy tín còn ${newScore} (dưới ${NGUONG_KHOA}). Tài khoản đã bị khóa — liên hệ Admin.`,
+                linkData: { tab: "khoa" }
+            });
             return { lanThu, diemTru, khoa: false };
         } catch (e) {
             console.error("xuLyBungKeo:", e);
@@ -973,6 +1024,7 @@
 
     window.dangXuatKhach = function () {
         _dungKiemTraSession(); // dừng poll định kỳ trước khi xóa session
+        window.dungThongBao && window.dungThongBao(); // tắt chuông + poll thông báo
         localStorage.removeItem("tvl_guest");
         window.currentGuest = null;
         // Xóa toàn bộ nội dung lịch sử cũ để không hiện lại sau đăng xuất
@@ -2194,6 +2246,18 @@
             }
             window.hienToast("Đặt slot thành công! 🎉", `Mã của bạn: ${maSlot}. Liên hệ host qua Zalo để xác nhận.`, "success");
 
+            // 🔔 H1: báo cho host có khách đặt slot mới (gộp nhiều khách cùng ca trong 60s)
+            if (caDau?.sdt_nguoi_tao) {
+                window.guiThongBao?.({
+                    nguoiNhan: caDau.sdt_nguoi_tao,
+                    loai: "H1",
+                    tieuDe: "Khách đặt slot mới",
+                    noiDung: `${g?.ten_khach || "Một khách"} vừa đặt ca "${caDau.ten_san || "—"}".`,
+                    linkData: { caId: caDauId, tenSan: caDau.ten_san || "", tab: "guestList", gop_key: "H1:" + caDauId },
+                    gopGiay: 60
+                });
+            }
+
             // Cập nhật nút ngay lập tức — không reload toàn bộ danh sách
             const cardEl = document.querySelector(`[data-ca-id="${caDauId}"]`);
             if (cardEl) {
@@ -2971,6 +3035,19 @@
             }
 
             window.hienToast("Đã huỷ đăng ký", "Bạn đã huỷ tham gia ca này thành công.", "info");
+
+            // 🔔 H2: báo cho host có khách hủy slot (gộp nhiều khách cùng ca trong 60s)
+            if (caDau?.sdt_nguoi_tao) {
+                window.guiThongBao?.({
+                    nguoiNhan: caDau.sdt_nguoi_tao,
+                    loai: "H2",
+                    tieuDe: "Khách hủy slot",
+                    noiDung: `${window.currentGuest?.ten_khach || "Một khách"} vừa hủy ca "${caDau.ten_san || "—"}".`,
+                    linkData: { caId: idCaDau, tenSan: caDau.ten_san || "", tab: "guestList", gop_key: "H2:" + idCaDau },
+                    gopGiay: 60
+                });
+            }
+
             // Reload các section liên quan
             await Promise.all([_taiThongKeKhach(), _taiLichSuDau()]);
             window.timKiemCaDau();

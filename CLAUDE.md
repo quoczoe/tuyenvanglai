@@ -39,6 +39,7 @@ dat_slot     — id UUID PK, id_ca_dau FK ON DELETE CASCADE, ma_slot (SLOT-XXXXX
 danh_gia_tin_dung — NO UPDATE sau INSERT
 cau_hinh_he_thong — id TEXT PK (popup_chinh, qr_donate, telegram_*, ...)
 gop_y_he_thong    — góp ý người dùng
+thong_bao         — id UUID PK, nguoi_nhan TEXT (SĐT), loai, tieu_de, noi_dung, link_data JSONB, da_doc, created_at. RLS khóa anon — chỉ qua RPC SECURITY DEFINER (ghi/lay/dem/danh_dau token-verified)
 khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 ```
 
@@ -65,13 +66,22 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 // user-select: none toàn trang; input/textarea được select
 ```
 
-## CURRENT STATE (cập nhật: 2026-06-11 PHIÊN E — cọc DS Khách + thiết kế thông báo + chuẩn hóa bảng)
+## CURRENT STATE (cập nhật: 2026-06-11 PHIÊN THÔNG BÁO v1 — hệ thống thông báo polling 30s)
 
-> Cache-bust `?v=` HIỆN TẠI (index.html): giao-dien.css=`20260611f`, components.css=`20260611f`, ket-noi-supabase.js=`20260610d`, bo-may-du-lieu.js=`20260611c`, hieu-ung-giao-dien.js=`20260611b`, phan-he-khach-choi.js=`20260611f`, phan-he-host.js=`20260611f`, phan-he-ung-dung.js=`20260610b`, phan-he-gop-y.js=`20260610`. admin/index.html: ket-noi=`20260610d`, bo-may=`20260611c`, hieu-ung=`20260611b`, quan-tri=`20260611b`.
+> Cache-bust `?v=` HIỆN TẠI (index.html): giao-dien.css=`20260611g`, components.css=`20260611f`, ket-noi-supabase.js=`20260610d`, bo-may-du-lieu.js=`20260611c`, hieu-ung-giao-dien.js=`20260611b`, phan-he-khach-choi.js=`20260611g`, phan-he-host.js=`20260611g`, **phan-he-thong-bao.js=`20260611g` (MỚI)**, phan-he-ung-dung.js=`20260610b`, phan-he-gop-y.js=`20260610`. admin/index.html: ket-noi=`20260610d`, bo-may=`20260611c`, hieu-ung=`20260611b`, quan-tri=`20260611b`.
+
+### PHIÊN THÔNG BÁO v1 — HỆ THỐNG THÔNG BÁO (polling 30s, 7 sự kiện) ✅ LIVE
+- **SQL `migration-thong-bao-v1.sql` ĐÃ CHẠY**: bảng `thong_bao` (id, `nguoi_nhan TEXT`=SĐT, loai, tieu_de, noi_dung, `link_data jsonb`, da_doc, created_at) + 2 index + RLS **khóa anon trực tiếp**. 5 RPC SECURITY DEFINER tự verify token với `guest_sessions` (KHÔNG phụ thuộc `verify_guest_token`; verify đọc KHÔNG check is_active → user khóa vẫn đọc S1): `ghi_thong_bao`(trusted insert, bắt token người gửi, gộp chống spam), `lay_thong_bao`(delta+lọc 30 ngày), `dem_thong_bao_chua_doc`, `danh_dau_da_doc`, `danh_dau_tat_ca_da_doc`.
+- **Định danh = SĐT (TEXT)** vì khách+host đăng nhập bằng SĐT + UUID session-token (`guest_sessions`), KHÔNG có `auth.uid()` (chỉ Admin có). → `nguoi_nhan` lưu SĐT.
+- **`phan-he-thong-bao.js` (MỚI)**: tự khởi tạo `_sbClient`; poll 30s khi tab visible (ẩn→ngưng); badge số chưa đọc; drawer phải (chuông trong header `#tbChuong`); click thông báo→điều hướng (`chuyenTab` tim-keo/lich-su · `openGuestListModal` cho host) + đánh dấu đọc; "Tất cả đã đọc"; escHTML mọi nội dung. **`window.guiThongBao({nguoiNhan,loai,tieuDe,noiDung,linkData,gopGiay})`** = helper phát (best-effort, fire-and-forget, token+SĐT actor lấy tự động từ `currentGuest`). Lifecycle: `khoiDongThongBao()` (trong `_hienThiDashboardKhach`), `dungThongBao()` (trong `dangXuatKhach`).
+- **7 điểm phát** (`window.guiThongBao`): G1 (xacNhanThamGia + doiTrangThaiDiDanh "Đã tham gia"→khách), G2 (xoaCaDau→tất cả khách đã đặt, "tìm kèo khác"), G3 (doiTrangThaiDiDanh "Khách hủy" + xuLyBungKeo→khách), H1 (datSlot→host, gộp `gop_key=H1:caId`/60s), H2 (huyDatSlot→host, gộp 60s), H3b (xuLyBungKeo→host), S1 (xuLyBungKeo lần 3/điểm<40 + _truDiemUyTin khi CHẠM mốc khóa→người bị khóa). **Chống spam**: gộp H1/H2 cùng ca trong 60s (1 dòng, update nội dung).
+- **Bảo mật**: anon KHÔNG đọc/ghi bảng `thong_bao` trực tiếp qua REST (verify live: GET trả `[]`). Caveat v1: `ghi_thong_bao` cấp anon → user đã đăng nhập CÓ THỂ giả thông báo (cùng mức rủi ro app hiện tại); siết triệt để = dời điểm phát vào action-RPC (v2/lộ trình bảo mật).
+- **Verify** `.devtest/verify-thongbao.js` = **13/13 PASS**, console/network SẠCH: H1 end-to-end qua datSlot thật; badge/drawer/mark-read UI; 7 loại round-trip + render icon; gộp 60s→1 dòng; RLS chặn anon; mark-all→unread=0.
+- **Admin broadcast = v2** (KHÔNG build phiên này). CHƯA build: G4/G5/G6/H4/H5/S2/S3/S4 (nhắc 2h, chấm điểm, điểm đổi, ca đầy, broadcast...).
 
 ### PHIÊN E — CỌC DS KHÁCH + THIẾT KẾ THÔNG BÁO + CHUẨN HÓA BẢNG
 - **Cọc DS Khách (localStorage, KHÔNG SQL)**: cột "Cọc" cuối DS Khách (chỉ ca `yeu_cau_coc`) badge "Chưa cọc"→"✓ Đã cọc"; persist `localStorage tvl_coc_status` per-slot; tóm tắt X/Y ở DS Khách + Chi Tiết ca; khách: nhắc tĩnh `.ls-coc-reminder` trong Lịch Sử. Helper `_daCoc/_toggleCoc/_syncCocColumn` (host). Cột thêm ở CUỐI → không đụng `cells[7]/[9]`. Verify 10/10. *(Giới hạn: mark host ở LS host, khách không đọc được → nhắc tĩnh; muốn đồng bộ cần field DB.)*
-- **Thiết kế THÔNG BÁO**: `docs/THIET-KE-THONG-BAO.md` (CHƯA code, chờ duyệt) — khuyến nghị polling 30s + bảng `thong_bao` + drawer chuông; v1 = 6 sự kiện ưu tiên Cao + 1 SQL.
+- **Thiết kế THÔNG BÁO**: `docs/THIET-KE-THONG-BAO.md` → **ĐÃ BUILD ở PHIÊN THÔNG BÁO v1** (xem mục đầu CURRENT STATE): polling 30s + bảng `thong_bao` + drawer chuông; 7 sự kiện G1/G2/G3/H1/H2/H3b/S1.
 - **Chuẩn bảng `.hs-table`** (components.css): header nền+`600`+hoa, border dọc, zebra, hover, helper `.ta-r/.ta-c/.ta-l` (tiền=phải, số/ngày/trạng thái/thao tác=giữa, văn bản=trái), `.dt-hide-sm`. Áp Doanh Thu (tiền→PHẢI, mobile ẩn Tổng Chi+In). Admin `.ad-table`/host `.app-table`/guest-list ĐÃ chuẩn sẵn. Bump `?v=20260611f`.
 
 ### PHIÊN D — UI DOANH THU + THU CỌC TRƯỚC
@@ -111,8 +121,9 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 | `ket-noi-supabase.js` | v7.2 | +AbortController **timeout 15s** cho `docData` (reads); writes cố ý không timeout |
 | `bo-may-du-lieu.js` | v3.1 | **SSOT TRINH_DO_LIST (12 mức)** + `TRINH_DO_LABEL`/`nhanTrinhDo`/`chuanHoaTrinhDo` + `_renderTrinhDoUI()` (render động level UI on DOMContentLoaded) |
 | `phan-he-ung-dung.js` | v3.2 | profile load/save normalize `chuanHoaTrinhDo` |
-| `phan-he-host.js` | v9.6 | **`_docCaDauCuaToi()` (dual sdt_nguoi_tao+key) → fix Doanh Thu/Hồ sơ khách rỗng**; guard `_dangCaBusy`; Sunday-week fix; xóa-ca cảnh báo bookings; `_tkInvalidateCache` sau mọi mutation; level đọc từ `#levelNamPills/#levelNuPills` |
-| `phan-he-khach-choi.js` | v9.4 | filter level **khớp CHÍNH XÁC** + normalize; **cache nền 20s + seq-token (B2) + `_datSlotBusy` (B3)**; skeleton loading; STANDARD_LEVELS từ SSOT |
+| `phan-he-host.js` | v9.7 | + **điểm phát thông báo** G1/G2/G3/H3b qua `window.guiThongBao` (xacNhanThamGia, doiTrangThaiDiDanh, xoaCaDau→capture `_bookedGuests` trước xóa, xuLyBungKeo). Trước: `_docCaDauCuaToi()` dual key; guard `_dangCaBusy`; Sunday-week fix |
+| `phan-he-khach-choi.js` | v9.5 | + **điểm phát thông báo** H1 (datSlot, gộp 60s), H2 (huyDatSlot, gộp 60s), G3/H3b/S1 (xuLyBungKeo), S1 (_truDiemUyTin chạm mốc khóa); hook `khoiDongThongBao`/`dungThongBao`. Trước: filter level khớp CHÍNH XÁC; cache nền 20s + seq-token + `_datSlotBusy` |
+| `phan-he-thong-bao.js` | v1.0 (MỚI) | Hệ thống thông báo polling 30s. Tự `_sbClient`; chuông+badge+drawer; `guiThongBao()` helper phát; 5 RPC token-verified; escHTML; điều hướng click |
 | `phan-he-quan-tri.js` | v9.0 | gopY: sort/filter/pagination |
 | `phan-he-gop-y.js` | v2.0 | rate limit: 5/ngày + cooldown 5 phút |
 | `index.html` | v11.0 | scrollbar-gutter:stable; skeleton placeholders; preload CSS font; level containers render động; a11y (for/id + aria-label); gỡ xoaBoLoc inline ghi đè |

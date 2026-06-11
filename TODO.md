@@ -1,4 +1,44 @@
-# TODO — Cập nhật: 2026-06-11 (PHIÊN E — trạng thái cọc DS Khách + thiết kế thông báo + chuẩn hóa bảng)
+# TODO — Cập nhật: 2026-06-11 (PHIÊN THÔNG BÁO v1 — B0 điều tra + B1 soạn SQL)
+
+---
+
+## 🔔 PHIÊN BUILD HỆ THỐNG THÔNG BÁO v1 (polling 30s · 7 sự kiện G1/G2/G3/H1/H2/H3b/S1 · KHÔNG admin broadcast)
+
+### ✅ BƯỚC 0 — KIỂM TRA ĐỊNH DANH (xong)
+- [x] Đọc `security-auth-v4.sql` + `supabase-schema.sql` + code login/host thực tế.
+- [x] **Kết luận: định danh người dùng = SĐT (TEXT)**, KHÔNG dùng UUID. Khách & Host đăng nhập qua `guestRPC.login` → `phan_he_guest_login` RPC trả UUID **session token** lưu `guest_sessions` (token↔sdt_khach). Cả 2 vai trò KHÔNG có Supabase Auth `auth.uid()` (chỉ Admin có). Mọi bảng định danh bằng SĐT (`dat_slot.sdt_khach`, `ca_dau.sdt_nguoi_tao`, `danh_gia_tin_dung.sdt_*`). → cột `nguoi_nhan TEXT` (SĐT). Lý do chi tiết ghi trong header `migration-thong-bao-v1.sql` + báo cáo.
+- [x] **`guest_sessions` xác nhận đã deploy + sống** (login chỉ có 1 đường = RPC; không có fallback REST tạo session) → RPC token-verified khả thi NGAY.
+
+### ✅ BƯỚC 1 — SOẠN SQL (xong — đã DUYỆT + CHẠY trên Supabase)
+- [x] `migration-thong-bao-v1.sql` (MỚI): bảng `thong_bao` + 2 index + RLS khóa anon + 5 RPC SECURITY DEFINER (`ghi_thong_bao`/`lay_thong_bao`/`dem_thong_bao_chua_doc`/`danh_dau_da_doc`/`danh_dau_tat_ca_da_doc`) tự verify token với `guest_sessions` + verify SELECT cuối file.
+- [x] Bảo mật theo yêu cầu: RLS bật, KHÔNG policy anon trực tiếp → đọc/ghi/đánh dấu CHỈ qua RPC (không dựa filter client). INSERT chỉ qua `ghi_thong_bao` (trusted function), bắt token người gửi.
+- [x] 🟢 Chủ app đã DUYỆT + chạy SQL thành công trên Supabase Dashboard.
+
+### ✅ BƯỚC 2 — BUILD (xong)
+- [x] `phan-he-thong-bao.js` MỚI: tự khởi tạo `_sbClient`; poll 30s (visibilitychange — ẩn tab thì ngưng); badge `dem_thong_bao_chua_doc`; drawer phải `lay_thong_bao` (lọc 30 ngày); click→điều hướng (`chuyenTab`/`openGuestListModal`) + đánh dấu đọc; "Tất cả đã đọc"; escHTML mọi nội dung. Expose `window.guiThongBao()` (best-effort, fire-and-forget).
+- [x] `index.html`: nút chuông 🔔 + badge trong header + overlay/drawer markup; nạp `<script phan-he-thong-bao.js?v=20260611g>`; bump CSS giao-dien + JS khach-choi/host → `?v=20260611g`.
+- [x] 7 điểm phát qua `window.guiThongBao`: **G1** (xacNhanThamGia + doiTrangThaiDiDanh "Đã tham gia"), **G2** (xoaCaDau→tất cả khách đã đặt), **G3** (doiTrangThaiDiDanh "Khách hủy" + xuLyBungKeo), **H1** (datSlot, gộp 60s), **H2** (huyDatSlot, gộp 60s), **H3b** (xuLyBungKeo→host), **S1** (xuLyBungKeo lần 3/điểm<40 + _truDiemUyTin khi chạm mốc khóa). Chống spam: gộp H1/H2 cùng `gop_key` trong 60s (`gopGiay:60`).
+- [x] Hook lifecycle: `khoiDongThongBao()` trong `_hienThiDashboardKhach`, `dungThongBao()` trong `dangXuatKhach`.
+- [x] CSS drawer (giao-dien.css, palette hex tự chứa): `.tb-chuong/.tb-badge/.tb-overlay/.tb-drawer/.tb-item/...` + responsive mobile full-width.
+- [x] `node --check` 3 file JS = OK.
+
+### ✅ BƯỚC 3 — VERIFY Playwright (`.devtest/verify-thongbao.js`) — **13/13 PASS**, console/network SẠCH
+- [x] H1 end-to-end qua `datSlot` THẬT (khách K1 đặt → host nhận "Khách đặt slot mới"); badge hiện; drawer mở + render; click→đánh dấu đọc→badge giảm 1; cả 6 loại còn lại round-trip + render đủ icon; **gộp 2 H1 cùng ca/60s → 1 dòng**; **anon đọc REST thong_bao trực tiếp → [] (RLS khóa)**; đánh dấu tất cả → unread=0 + badge ẩn.
+
+### ✅ BƯỚC 4 — DỌN + BUMP (xong)
+- [x] Bump `?v=20260611g`: giao-dien.css, phan-he-khach-choi.js, phan-he-host.js, phan-he-thong-bao.js (mới). Cập nhật TODO.md + CLAUDE.md.
+- [x] Bảng 7 sự kiện pass/fail: tất cả PASS (xem BƯỚC 3). Không bug tồn đọng.
+
+### Bảng 7 sự kiện (verify)
+| # | Sự kiện | Phát từ | Người nhận | Verify |
+|---|---|---|---|---|
+| G1 | Host xác nhận "Đã tham gia" | xacNhanThamGia / doiTrangThaiDiDanh | khách | ✅ |
+| G2 | Host hủy ca | xoaCaDau | tất cả khách đã đặt | ✅ |
+| G3 | Bùng kèo / Khách hủy | doiTrangThaiDiDanh / xuLyBungKeo | khách | ✅ |
+| H1 | Khách đặt slot (gộp 60s) | datSlot | host | ✅ (end-to-end thật) |
+| H2 | Khách hủy slot (gộp 60s) | huyDatSlot | host | ✅ |
+| H3b | Khách bùng | xuLyBungKeo | host | ✅ |
+| S1 | Tài khoản bị khóa | xuLyBungKeo / _truDiemUyTin | người bị khóa | ✅ |
 
 ---
 

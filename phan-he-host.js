@@ -2114,7 +2114,10 @@
     window.xoaCaDau = async function (id) {
         // A2: cảnh báo nếu ca đang có khách giữ slot (xóa sẽ cascade hủy chỗ của họ)
         const _ca     = _caDauRawData.find(s => s.id === id) || {};
-        const _booked = (_caDauSlotMap[id] || []).filter(s => s.trang_thai_di_danh !== "Khách hủy").length;
+        const _bookedSlots = (_caDauSlotMap[id] || []).filter(s => s.trang_thai_di_danh !== "Khách hủy");
+        const _booked = _bookedSlots.length;
+        // Danh sách SĐT khách đang giữ slot — chụp TRƯỚC khi xóa (G2: báo họ ca bị hủy)
+        const _bookedGuests = [...new Set(_bookedSlots.map(s => s.sdt_khach).filter(Boolean))];
 
         // HOST hủy ca ĐÃ CÓ NGƯỜI ĐẶT → phạt host theo thang giờ HOST_HUY (SSOT DIEM_UY_TIN)
         let _diemPhatHost = 0;
@@ -2151,6 +2154,15 @@
                         "Hủy ca đã có người đặt — bạn bị phạt uy tín theo thang giờ.", "warning");
                 }
             }
+
+            // 🔔 G2: báo cho TẤT CẢ khách đã đặt ca này (ca bị host hủy → gợi ý tìm kèo khác)
+            _bookedGuests.forEach(_sdt => window.guiThongBao?.({
+                nguoiNhan: _sdt,
+                loai: "G2",
+                tieuDe: "Host đã hủy ca bạn đặt",
+                noiDung: `Ca "${_ca.ten_san || "—"}" đã bị host hủy. Tìm kèo khác nhé!`,
+                linkData: { tab: "timKeo" }
+            }));
 
             // Cập nhật local state ngay — không cần tải lại toàn bộ
             _caDauRawData = _caDauRawData.filter(s => s.id !== id);
@@ -2988,6 +3000,13 @@
                         const newCa    = (u.so_ca_thanh_cong ?? 0) + 1;
                         window.dbEngine.ghi("nguoi_dung", { diem_uy_tin: newScore, so_ca_thanh_cong: newCa }, { sdt_khach: sdt }).catch(() => {});
                     }
+                    // 🔔 G1: báo khách được host xác nhận đã tham gia
+                    window.guiThongBao?.({
+                        nguoiNhan: sdt, loai: "G1",
+                        tieuDe: "Host xác nhận bạn đã tham gia",
+                        noiDung: `Bạn được xác nhận "Đã tham gia". +${window.DIEM_UY_TIN?.THAM_GIA_OK ?? 2} điểm uy tín.`,
+                        linkData: { tab: "lichSu" }
+                    });
                 }
             }
             // Reload modal #modal-guest-list và bảng ca đấu (background — không await để UI không bị freeze)
@@ -3060,6 +3079,23 @@
                     if (_sdtOk && typeof window._congDiemThamGia === "function") {
                         window._congDiemThamGia(_sdtOk).catch(() => {});
                     }
+                    // 🔔 G1: báo khách được host xác nhận đã tham gia
+                    if (_sdtOk) window.guiThongBao?.({
+                        nguoiNhan: _sdtOk, loai: "G1",
+                        tieuDe: "Host xác nhận bạn đã tham gia",
+                        noiDung: `Bạn được xác nhận "Đã tham gia". +${window.DIEM_UY_TIN?.THAM_GIA_OK ?? 2} điểm uy tín.`,
+                        linkData: { tab: "lichSu" }
+                    });
+                }
+                // 🔔 G3: host đánh dấu "Khách hủy" cho khách (chỉ khi CHUYỂN sang)
+                if (newState === "Khách hủy" && prevVal !== "Khách hủy") {
+                    const _sdtKh = selectEl.dataset.sdt;
+                    if (_sdtKh) window.guiThongBao?.({
+                        nguoiNhan: _sdtKh, loai: "G3",
+                        tieuDe: "Host đánh dấu bạn Khách hủy",
+                        noiDung: `Slot của bạn ở ca này đã bị đánh dấu "Khách hủy".`,
+                        linkData: { tab: "lichSu" }
+                    });
                 }
             }
 
