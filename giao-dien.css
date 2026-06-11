@@ -2888,6 +2888,26 @@ body::before {
     box-shadow: 0 0 10px rgba(34,197,94,0.1);
 }
 
+/* Bug 3B: badge "ĐÃ HỦY" — khách đã tự hủy slot ca này (không đặt lại được) */
+.btn-da-huy {
+    background: rgba(239,68,68,0.10);
+    border: 1.5px solid rgba(239,68,68,0.45);
+    color: #f87171;
+    cursor: not-allowed;
+    padding: 9px 10px;
+    border-radius: 9px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: inherit;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    white-space: nowrap;
+    pointer-events: none;
+    text-transform: uppercase;
+}
+
 /* ── 2D: Card kèo PC — cùng chiều cao, action row dính đáy ── */
 @media (min-width: 901px) {
     #slotsSearchResultContainer { align-items: stretch; }
@@ -4699,15 +4719,30 @@ body::before {
     display: none;                /* JS bật khi đã đăng nhập */
     align-items: center; justify-content: center;
     width: 40px; height: 40px;
-    background: rgba(0, 255, 136, 0.06);
-    border: 1px solid rgba(0, 255, 136, 0.18);
+    background: rgba(0, 255, 136, 0.12);
+    border: 1.5px solid rgba(0, 255, 136, 0.45);
     border-radius: 10px;
-    color: #cbd5e1; font-size: 1.05rem; cursor: pointer;
-    transition: background 0.18s, border-color 0.18s, color 0.18s, transform 0.1s;
+    color: #00ff88;               /* accent — nổi bật, không bị chìm trên nền tối */
+    font-size: 1.1rem; cursor: pointer;
+    box-shadow: 0 0 10px rgba(0, 255, 136, 0.12);
+    transition: background 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.1s;
     flex-shrink: 0;
 }
-.tb-chuong:hover { background: rgba(0, 255, 136, 0.12); border-color: rgba(0, 255, 136, 0.4); color: #00ff88; }
+.tb-chuong:hover {
+    background: rgba(0, 255, 136, 0.22);
+    border-color: rgba(0, 255, 136, 0.75);
+    color: #00ff88;
+    box-shadow: 0 0 16px rgba(0, 255, 136, 0.3);
+}
 .tb-chuong:active { transform: scale(0.94); }
+/* Light mode: accent xanh đậm hơn để đủ tương phản trên nền sáng */
+[data-theme="light"] .tb-chuong {
+    background: rgba(0, 150, 90, 0.12);
+    border-color: rgba(0, 150, 90, 0.5);
+    color: #00965a;
+    box-shadow: none;
+}
+[data-theme="light"] .tb-chuong:hover { background: rgba(0, 150, 90, 0.2); border-color: rgba(0, 150, 90, 0.8); color: #00794a; }
 
 .tb-badge {
     position: absolute; top: -5px; right: -5px;

@@ -52,6 +52,7 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 
 ### BẢNG UY TÍN — SSOT `window.DIEM_UY_TIN` (bo-may-du-lieu.js §0B)
 > MỌI nơi tính điểm đọc từ đây — KHÔNG hardcode con số phạt. Điểm sàn 0, trần 100.
+> **ÁP ĐIỂM KHI HOST ĐỔI TRẠNG THÁI = STATE-BASED DELTA** qua `window.apDiemTheoTrangThai(sdt,oldState,newState,slotId,ctx)` (phan-he-khach-choi.js): `diem += deltaMới−deltaCũ` (undo cũ+áp mới, KHÔNG cộng dồn dù đổi qua lại). doiTrangThaiDiDanh/xacNhanThamGia/baoCaoGhost(qua xuLyBungKeo wrapper) đều route qua đây. oldState đọc DB thật. Chi tiết: xem PHIÊN REDESIGN trong CURRENT STATE.
 - **Tham gia OK** (host xác nhận "Đã tham gia"): **+2**, cap 100. Cộng ở `xacNhanThamGia` (checkbox) + `doiTrangThaiDiDanh` (dropdown, chỉ khi CHUYỂN sang — tránh cộng lặp).
 - **Khách hủy** (thang giờ tới giờ đánh, GMT+7): `>4h: 0 · 2–4h: −2 · 30p–2h: −4 · <30p: −6`. Ranh giới 4h/2h thuộc bracket thấp hơn (240→−2, 120→−2, 30→−4). Free-pass tháng miễn 1 lần. Modal xác nhận BÁO TRƯỚC mức phạt.
 - **Host hủy ca đã có người đặt**: `>4h: 0 · 2–4h: −3 · 30p–2h: −6 · <30p: −8` (`xoaCaDau`, phạt HOST).
@@ -66,9 +67,23 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 // user-select: none toàn trang; input/textarea được select
 ```
 
-## CURRENT STATE (cập nhật: 2026-06-11 PHIÊN THÔNG BÁO v1 — hệ thống thông báo polling 30s)
+## CURRENT STATE (cập nhật: 2026-06-11 PHIÊN REDESIGN ĐIỂM UY TÍN — state-based delta)
 
-> Cache-bust `?v=` HIỆN TẠI (index.html): giao-dien.css=`20260611g`, components.css=`20260611f`, ket-noi-supabase.js=`20260610d`, bo-may-du-lieu.js=`20260611c`, hieu-ung-giao-dien.js=`20260611b`, phan-he-khach-choi.js=`20260611g`, phan-he-host.js=`20260611g`, **phan-he-thong-bao.js=`20260611g` (MỚI)**, phan-he-ung-dung.js=`20260610b`, phan-he-gop-y.js=`20260610`. admin/index.html: ket-noi=`20260610d`, bo-may=`20260611c`, hieu-ung=`20260611b`, quan-tri=`20260611b`.
+> Cache-bust `?v=` HIỆN TẠI (index.html): giao-dien.css=`20260611h`, components.css=`20260611f`, ket-noi-supabase.js=`20260610d`, bo-may-du-lieu.js=`20260611c`, hieu-ung-giao-dien.js=`20260611b`, phan-he-khach-choi.js=`20260611i`, phan-he-host.js=`20260611i`, phan-he-thong-bao.js=`20260611g`, phan-he-ung-dung.js=`20260610b`, phan-he-gop-y.js=`20260610`. admin/index.html: ket-noi=`20260610d`, bo-may=`20260611c`, hieu-ung=`20260611b`, quan-tri=`20260611b`.
+
+### PHIÊN REDESIGN ĐIỂM UY TÍN — STATE-BASED DELTA (thay event-based) ✅
+- **Vấn đề gốc**: hệ cũ cộng/trừ điểm theo SỰ KIỆN (mỗi lần gọi hàm = 1 lần đổi điểm) → đổi trạng thái qua lại tích lũy sai.
+- **`window.apDiemTheoTrangThai(sdt, oldState, newState, slotId, ctx)` (phan-he-khach-choi.js)** = NGUỒN DUY NHẤT xử lý điểm khi host đổi trạng thái. Nguyên tắc: `diem_uy_tin += (deltaMới − deltaCũ)` → tự undo trạng thái cũ + áp mới, KHÔNG cộng dồn. **Bảng delta**: Chờ đánh=0 · Đã tham gia=+2 · Bùng kèo=−10(lần1)/−20(lần2)/0+khóa(lần≥3) · Khách hủy=thang giờ (chỉ khi truyền `ctx.phut`; host-set dropdown=0). Đếm lần bùng = số slot KHÁC đang "Bùng kèo" (rolling 30 ngày)+1. `so_ca_thanh_cong`: +1 vào Tham gia / −1 rời (net, clamp≥0). Khóa 1 CHIỀU (admin mở). Toast điểm + thông báo G1/G3/H3b/S1 đều phát tại đây.
+- **`oldState` đọc từ DB THẬT** trong `doiTrangThaiDiDanh` (server-authoritative, không tin DOM/dataset). `xacNhanThamGia` (checkbox) cũng gọi apDiem (cả 2 chiều). `xuLyBungKeo` giờ là **wrapper** (đọc oldState + ghi "Bùng kèo" nếu ghiStatus + gọi apDiem) → giữ `baoCaoGhost` hoạt động.
+- **Verify** `.devtest/verify-statebased.js` = **4/4 PASS**, console/network sạch: T1 Chờ→Tham→Bùng→Tham→Bùng(80)→70; T2 Bùng→Tham×5(80)→70; T3 bùng 3 slot khác nhau(100)→70+KHÓA; T4 bùng→tham→bùng cùng slot(80)→70 KHÔNG khóa.
+- **SQL `da_dem_bung`**: KHÔNG cần cho 4 test. Soạn `migration-bung-flag-v1.sql` (🟡 tùy chọn, chờ duyệt) CHỈ cho edge hiếm: bùng A→đổi A đi→bùng B thì B nên là lần 2 (đếm bền vững "đã bùng là đã bùng"). Hiện đếm theo trạng thái "Bùng kèo" hiện tại.
+- **Giới hạn clamp**: nếu điểm sát trần 100, toggle qua trạng thái +2 có thể bị kẹp mất ≤2đ (vd start 100 thay vì 80). Không ảnh hưởng test (start 80). Bump `?v=20260611i` (khach-choi, host).
+
+### PHIÊN FIX 3 BUG KHẨN + UI CHUÔNG (sau PHIÊN THÔNG BÁO v1) ✅
+- **Bug 1 — Trừ điểm CỘNG DỒN khi đổi trạng thái qua lại (NGHIÊM TRỌNG)**: gốc = `doiTrangThaiDiDanh` đọc `dataset.prev` nhưng dropdown custom (`_triggerGlCdd`) truyền proxy chỉ có `data-current` → `prevVal` luôn = giá trị mới → nhánh "Bùng kèo" gọi `xuLyBungKeo` mỗi lần, không chặn. **Fix (KHÔNG SQL — đã chốt)**: gate theo TRẠNG THÁI CŨ. (1) `xuLyBungKeo` nhận `opts.ttCu`; nếu null đọc DB (cho baoCaoGhost path ghiStatus=true); **chỉ trừ điểm khi trạng thái cũ = "Chờ đánh"** (cũ≠Chờ đánh → return sớm, không đếm/trừ). (2) `doiTrangThaiDiDanh` lấy `_ttCu = dataset.current`, truyền vào xuLyBungKeo; **+2 chỉ khi `_ttCu==="Chờ đánh"`**. (3) `xacNhanThamGia` (checkbox legacy) đọc trạng thái cũ trước khi ghi, +2 chỉ khi cũ="Chờ đánh". `bulkDoiTrangThai`/`autoUpdateChoDao` chỉ ghi status (không điểm) → an toàn. Verify: Bùng↔Tham gia 5 lần → điểm đổi đúng 1 lần (100→90); +2 đúng 1 lần (80→82). *(Residual edge hiếm: Tham gia→Chờ đánh→Tham gia có thể +2 lại — cần cột `da_xu_ly_diem` mới bulletproof; chủ app chọn KHÔNG thêm SQL.)*
+- **Bug 2 — UI chuông chìm + mobile**: `.tb-chuong` đổi `color:#cbd5e1`→**`#00ff88` (accent)** + bg/border đậm hơn + glow + hover mạnh; thêm biến thể `[data-theme="light"]` (xanh đậm #00965a). Mobile @390: chuông HIỆN trong viewport (cạnh login + hamburger) — verify + screenshot `bell-390.png`/`bell-1440.png`.
+- **Bug 3A — Host sửa được slot khách đã tự hủy**: `_renderCustomDropdown` cố ý cho đổi cả "Khách hủy". **Fix**: nếu `trangThai==="Khách hủy"` → render BADGE KHÓA tĩnh (không dropdown) + tooltip "Khách đã tự hủy slot này"; thêm guard trong `_triggerGlCdd` chặn đổi từ "Khách hủy".
+- **Bug 3B — Lệch trạng thái card khách**: `daDatSet` loại "Khách hủy" → card hiện nút "ĐẶT SLOT" nhưng `datSlot` chặn re-book → lệch. **Fix (chủ app chốt: KHÔNG cho đặt lại)**: thêm `daHuySet` (ca khách đã tự hủy) → card + modal chi tiết hiện badge **"ĐÃ HỦY"** (`.btn-da-huy`, disabled, đỏ) thay nút Đặt. Verify Playwright **6/6 PASS**, console/network sạch. Bump `?v=20260611h` (giao-dien.css, khach-choi, host).
 
 ### PHIÊN THÔNG BÁO v1 — HỆ THỐNG THÔNG BÁO (polling 30s, 7 sự kiện) ✅ LIVE
 - **SQL `migration-thong-bao-v1.sql` ĐÃ CHẠY**: bảng `thong_bao` (id, `nguoi_nhan TEXT`=SĐT, loai, tieu_de, noi_dung, `link_data jsonb`, da_doc, created_at) + 2 index + RLS **khóa anon trực tiếp**. 5 RPC SECURITY DEFINER tự verify token với `guest_sessions` (KHÔNG phụ thuộc `verify_guest_token`; verify đọc KHÔNG check is_active → user khóa vẫn đọc S1): `ghi_thong_bao`(trusted insert, bắt token người gửi, gộp chống spam), `lay_thong_bao`(delta+lọc 30 ngày), `dem_thong_bao_chua_doc`, `danh_dau_da_doc`, `danh_dau_tat_ca_da_doc`.
@@ -121,8 +136,8 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 | `ket-noi-supabase.js` | v7.2 | +AbortController **timeout 15s** cho `docData` (reads); writes cố ý không timeout |
 | `bo-may-du-lieu.js` | v3.1 | **SSOT TRINH_DO_LIST (12 mức)** + `TRINH_DO_LABEL`/`nhanTrinhDo`/`chuanHoaTrinhDo` + `_renderTrinhDoUI()` (render động level UI on DOMContentLoaded) |
 | `phan-he-ung-dung.js` | v3.2 | profile load/save normalize `chuanHoaTrinhDo` |
-| `phan-he-host.js` | v9.7 | + **điểm phát thông báo** G1/G2/G3/H3b qua `window.guiThongBao` (xacNhanThamGia, doiTrangThaiDiDanh, xoaCaDau→capture `_bookedGuests` trước xóa, xuLyBungKeo). Trước: `_docCaDauCuaToi()` dual key; guard `_dangCaBusy`; Sunday-week fix |
-| `phan-he-khach-choi.js` | v9.5 | + **điểm phát thông báo** H1 (datSlot, gộp 60s), H2 (huyDatSlot, gộp 60s), G3/H3b/S1 (xuLyBungKeo), S1 (_truDiemUyTin chạm mốc khóa); hook `khoiDongThongBao`/`dungThongBao`. Trước: filter level khớp CHÍNH XÁC; cache nền 20s + seq-token + `_datSlotBusy` |
+| `phan-he-host.js` | v9.9 | + **STATE-BASED**: doiTrangThaiDiDanh đọc oldState từ DB thật → gọi `apDiemTheoTrangThai`; xacNhanThamGia gọi apDiem (cả 2 chiều); bỏ logic +2/xuLyBungKeo cũ. Trước: Bug3A dropdown khóa Khách hủy |
+| `phan-he-khach-choi.js` | v9.7 | + **STATE-BASED**: `apDiemTheoTrangThai` (delta net, đếm bùng, khóa, toast+TB); `xuLyBungKeo`→wrapper. Trước: Bug3B `daHuySet` badge "ĐÃ HỦY" |
 | `phan-he-thong-bao.js` | v1.0 (MỚI) | Hệ thống thông báo polling 30s. Tự `_sbClient`; chuông+badge+drawer; `guiThongBao()` helper phát; 5 RPC token-verified; escHTML; điều hướng click |
 | `phan-he-quan-tri.js` | v9.0 | gopY: sort/filter/pagination |
 | `phan-he-gop-y.js` | v2.0 | rate limit: 5/ngày + cooldown 5 phút |

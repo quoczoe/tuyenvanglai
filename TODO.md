@@ -1,4 +1,46 @@
-# TODO — Cập nhật: 2026-06-11 (PHIÊN THÔNG BÁO v1 — B0 điều tra + B1 soạn SQL)
+# TODO — Cập nhật: 2026-06-11 (PHIÊN REDESIGN ĐIỂM UY TÍN — STATE-BASED DELTA)
+
+---
+
+## 🔄 PHIÊN REDESIGN ĐIỂM UY TÍN: EVENT-BASED → STATE-BASED DELTA — ✅ 4/4 PASS
+
+### ✅ Hàm trung tâm `apDiemTheoTrangThai(sdt, oldState, newState, slotId, ctx)` (phan-he-khach-choi.js)
+- [x] Nguyên tắc: `diem += (deltaMới − deltaCũ)` → undo trạng thái cũ + áp mới, KHÔNG cộng dồn dù đổi qua lại.
+- [x] Bảng delta: Chờ đánh=0 · Đã tham gia=+2 · Bùng kèo=−10/−20/0+khóa(lần≥3) · Khách hủy=thang giờ (ctx.phut; host-set=0). Đếm lần bùng = số slot KHÁC "Bùng kèo" (30 ngày)+1. `so_ca_thanh_cong` net (+1 vào/−1 rời Tham gia). Khóa 1 chiều. Toast điểm + TB G1/G3/H3b/S1 tập trung tại đây.
+- [x] `xuLyBungKeo` → wrapper (đọc oldState + ghi Bùng nếu ghiStatus + gọi apDiem) → `baoCaoGhost` giữ nguyên.
+
+### ✅ Thay thế điểm gọi (oldState đọc DB THẬT, không tin DOM)
+- [x] `doiTrangThaiDiDanh`: đọc oldState từ DB → ghi status mới → `apDiemTheoTrangThai`; bỏ toàn bộ logic +2/xuLyBungKeo/notif cũ.
+- [x] `xacNhanThamGia`: gọi apDiem cả 2 chiều (tick/bỏ tick); bỏ +2 cũ.
+
+### ✅ Verify `.devtest/verify-statebased.js` — 4/4 PASS, console/network sạch
+- [x] T1 Chờ→Tham→Bùng→Tham→Bùng (80)→**70**; T2 Bùng→Tham×5 (80)→**70**; T3 bùng 3 slot khác nhau (100)→**70 + KHÓA**; T4 bùng→tham→bùng cùng slot (80)→**70 KHÔNG khóa**.
+
+### 🟡 SQL tùy chọn + giới hạn
+- [ ] `migration-bung-flag-v1.sql` (`da_dem_bung BOOL`) — KHÔNG cần cho 4 test; chỉ cho edge "bùng A→đổi đi→bùng B = lần 2". CHỜ DUYỆT.
+- [x] Giới hạn clamp: điểm sát trần 100 toggle qua +2 có thể kẹp ≤2đ (không ảnh hưởng test start 80). Bump `?v=20260611i` (khach-choi, host).
+
+---
+
+## 🐞 PHIÊN FIX 3 BUG KHẨN + UI THÔNG BÁO MOBILE — ✅ 6/6 PASS
+
+### ✅ Bug 1 — Trừ điểm CỘNG DỒN khi đổi trạng thái qua lại (NGHIÊM TRỌNG)
+- [x] Gốc: `doiTrangThaiDiDanh` đọc `dataset.prev` (không tồn tại trên proxy dropdown) → `prevVal`=giá trị mới → "Bùng kèo" trừ mỗi lần.
+- [x] Fix KHÔNG SQL (chủ app chốt): gate theo trạng thái CŨ. `xuLyBungKeo` nhận `opts.ttCu` (null→đọc DB), **chỉ phạt khi cũ="Chờ đánh"**; `doiTrangThaiDiDanh` truyền `_ttCu=dataset.current`, +2/G3 chỉ khi cũ="Chờ đánh"; `xacNhanThamGia` đọc cũ trước khi ghi.
+- [x] Verify: Bùng↔Tham gia 5 lần → điểm đổi đúng 1 lần (100→90); +2 đúng 1 lần (80→82).
+
+### ✅ Bug 2 — UI icon chuông tối/chìm + mobile
+- [x] `.tb-chuong` accent `#00ff88` + bg/border đậm + glow + hover mạnh + biến thể light mode.
+- [x] Mobile @390: chuông HIỆN trong viewport (cạnh login+hamburger). Screenshot `bell-390.png`/`bell-1440.png`.
+
+### ✅ Bug 3A — Host sửa được slot khách đã tự hủy
+- [x] `_renderCustomDropdown`: slot "Khách hủy" → badge KHÓA tĩnh (không dropdown) + tooltip "Khách đã tự hủy slot này"; guard `_triggerGlCdd` chặn đổi từ "Khách hủy".
+
+### ✅ Bug 3B — Lệch trạng thái card khách (đã hủy)
+- [x] Chủ app chốt **KHÔNG cho đặt lại**. Thêm `daHuySet` → card + modal chi tiết hiện badge **"ĐÃ HỦY"** (`.btn-da-huy` đỏ, disabled) thay nút Đặt.
+
+### ✅ Dọn + bump
+- [x] Bump `?v=20260611h`: giao-dien.css, phan-he-khach-choi.js, phan-he-host.js. Verify `.devtest/verify-bugfix3.js` 6/6 PASS, console/network sạch. `node --check` OK.
 
 ---
 

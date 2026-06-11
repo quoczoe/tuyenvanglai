@@ -2529,6 +2529,21 @@
             // Custom dropdown trạng thái — thay <select> native, hỗ trợ cả Khách hủy đổi ngược
             // isMatchStarted được đóng gói từ scope ngoài (tính ở đầu openGuestListModal)
             function _renderCustomDropdown(guestId, caId, trangThai, sdt, ten, daTT, tienBung) {
+                // Bug 3A: slot KHÁCH ĐÃ TỰ HỦY → KHÓA, host không được chỉnh trạng thái nữa.
+                // Render badge tĩnh (không phải dropdown) + tooltip giải thích.
+                if (trangThai === "Khách hủy") {
+                    return `<div title="Khách đã tự hủy slot này — host không thể đổi trạng thái"
+                        style="display:inline-flex;align-items:center;gap:6px;min-width:130px;padding:5px 8px;
+                               background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.20);border-radius:8px;
+                               color:#f87171;font-size:0.76rem;font-family:inherit;white-space:nowrap;
+                               cursor:not-allowed;user-select:none;opacity:0.9;justify-content:space-between;">
+                        <span style="display:flex;align-items:center;gap:6px;">
+                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#f87171" stroke-width="1.3"/><path d="M4.5 4.5l4 4M8.5 4.5l-4 4" stroke="#f87171" stroke-width="1.3" stroke-linecap="round"/></svg>
+                            Khách hủy
+                        </span>
+                        <span style="font-size:0.7rem;line-height:1;">🔒</span>
+                    </div>`;
+                }
                 // "Khách hủy" bị disable khi ca đã bắt đầu
                 const _khachHuyDisabled = isMatchStarted;
                 const _opts = [
@@ -2804,6 +2819,11 @@
         _closeAllGlCdd();
         // Không làm gì nếu chọn lại trạng thái hiện tại
         if (btn.dataset.current === newState) return;
+        // Bug 3A: slot khách đã tự hủy → KHÓA, không cho host đổi trạng thái
+        if (btn.dataset.current === "Khách hủy") {
+            window.hienToast?.("Không được phép", "Khách đã tự hủy slot này — không thể đổi trạng thái.", "warning");
+            return;
+        }
         // Tạo proxy object giống select element để doiTrangThaiDiDanh dùng được
         const proxy = {
             dataset: { ...btn.dataset },
@@ -2982,32 +3002,19 @@
         const trangThai = isChecked ? "Đã tham gia" : "Chờ đánh";
         checkbox.disabled = true;                                        // ngăn click trùng trong lúc gọi API
 
+        // Đọc trạng thái CŨ trước khi ghi — chỉ +2 khi CHUYỂN từ "Chờ đánh" (chống cộng lặp khi tick/bỏ tick qua lại)
+        let _ttCu = null;
+        try { const _s0 = await window.dbEngine.docThu("dat_slot", { eq: { id: guestId } }); _ttCu = (_s0 || [])[0]?.trang_thai_di_danh; } catch (_) {}
+
         try {
             await window.dbEngine.ghi("dat_slot", { trang_thai_di_danh: trangThai }, { id: guestId });
             window.hienToast("Đã cập nhật trạng thái", trangThai, "success");
 
-            // Cộng điểm uy tín +2 khi xác nhận "Đã tham gia"
-            if (isChecked) {
-                const slotList = await window.dbEngine.docThu("dat_slot", { eq: { id: guestId } }).catch(() => []);
-                const sdt = (slotList || [])[0]?.sdt_khach;
-                if (sdt) {
-                    const users = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: sdt } }).catch(() => []);
-                    const u = (users || [])[0];
-                    if (u && !u.is_whitelisted) {
-                        const _tran  = window.DIEM_UY_TIN?.TRAN ?? 100;
-                        const _thuong = window.DIEM_UY_TIN?.THAM_GIA_OK ?? 2;
-                        const newScore = Math.min(_tran, (u.diem_uy_tin ?? 100) + _thuong);
-                        const newCa    = (u.so_ca_thanh_cong ?? 0) + 1;
-                        window.dbEngine.ghi("nguoi_dung", { diem_uy_tin: newScore, so_ca_thanh_cong: newCa }, { sdt_khach: sdt }).catch(() => {});
-                    }
-                    // 🔔 G1: báo khách được host xác nhận đã tham gia
-                    window.guiThongBao?.({
-                        nguoiNhan: sdt, loai: "G1",
-                        tieuDe: "Host xác nhận bạn đã tham gia",
-                        noiDung: `Bạn được xác nhận "Đã tham gia". +${window.DIEM_UY_TIN?.THAM_GIA_OK ?? 2} điểm uy tín.`,
-                        linkData: { tab: "lichSu" }
-                    });
-                }
+            // STATE-BASED DELTA: 1 hàm xử lý điểm (undo trạng thái cũ + áp mới + khóa + thông báo).
+            // Gọi cho CẢ 2 chiều (tick→"Đã tham gia", bỏ tick→"Chờ đánh") — apDiem tự undo, không cộng dồn.
+            if (_ttCu != null && typeof window.apDiemTheoTrangThai === "function") {
+                const _sdt = ((await window.dbEngine.docThu("dat_slot", { eq: { id: guestId } }).catch(() => []))[0] || {}).sdt_khach;
+                if (_sdt) window.apDiemTheoTrangThai(_sdt, _ttCu, trangThai, guestId, {}).catch(() => {});
             }
             // Reload modal #modal-guest-list và bảng ca đấu (background — không await để UI không bị freeze)
             const modal = document.getElementById("modal-guest-list");
@@ -3041,6 +3048,9 @@
         const guestId  = selectEl.dataset.guestId;
         const newState = selectEl.value;
         const prevVal  = selectEl.dataset.prev || selectEl.value;
+        // Trạng thái CŨ THẬT: proxy từ _triggerGlCdd mang data-current = trạng thái lúc render/đổi
+        // trước (cập nhật mỗi lần đổi). Dùng để chống TRỪ/CỘNG điểm lặp khi đổi qua lại.
+        const _ttCu = selectEl.dataset.current || prevVal;
         selectEl.disabled = true;
 
         try {
@@ -3053,51 +3063,24 @@
                     return;
                 }
             }
-            // Ghi thêm huy_luc = now() khi đổi sang trạng thái hủy/bùng (cần cột huy_luc — migration-dat-slot-v2.sql)
+            // Đọc trạng thái CŨ THẬT từ DB (server-authoritative) TRƯỚC khi ghi — không tin
+            // DOM/dataset (tránh lệch UI↔DB). _ttCu (dataset.current) chỉ dùng làm fallback.
+            let _ttCuDB = _ttCu;
+            try { const _s0 = await window.dbEngine.docThu("dat_slot", { eq: { id: guestId } }); if (_s0 && _s0[0]) _ttCuDB = _s0[0].trang_thai_di_danh; } catch (_) {}
+
+            // Ghi trạng thái mới (+ huy_luc khi hủy/bùng — cần cột huy_luc, migration-dat-slot-v2.sql)
             const payload = { trang_thai_di_danh: newState };
-            if (newState === "Bùng kèo" || newState === "Khách hủy") {
-                payload.huy_luc = new Date().toISOString();
-            }
+            if (newState === "Bùng kèo" || newState === "Khách hủy") payload.huy_luc = new Date().toISOString();
             await window.dbEngine.ghi("dat_slot", payload, { id: guestId });
             selectEl.dataset.prev = newState;
 
-            // Bùng kèo → đi qua HÀM XỬ LÝ BÙNG DUY NHẤT (đếm lần 30 ngày, trừ điểm/khóa,
-            // toast tại 1 chỗ). ghiStatus=false vì payload ở trên đã ghi status + huy_luc.
-            if (newState === "Bùng kèo") {
-                const _sdtBung = selectEl.dataset.sdt;
-                if (_sdtBung && typeof window.xuLyBungKeo === "function") {
-                    window.xuLyBungKeo(_sdtBung, guestId, { ghiStatus: false }).catch(() => {});
-                } else {
-                    window.hienToast("Đã cập nhật ✅", newState, "success");
-                }
-            } else {
-                window.hienToast("Đã cập nhật ✅", newState, "success");
-                // Thưởng +THAM_GIA_OK uy tín khi host xác nhận "Đã tham gia" — CHỈ khi CHUYỂN sang
-                // trạng thái này (prevVal khác) để tránh cộng lặp khi chọn lại cùng giá trị.
-                if (newState === "Đã tham gia" && prevVal !== "Đã tham gia") {
-                    const _sdtOk = selectEl.dataset.sdt;
-                    if (_sdtOk && typeof window._congDiemThamGia === "function") {
-                        window._congDiemThamGia(_sdtOk).catch(() => {});
-                    }
-                    // 🔔 G1: báo khách được host xác nhận đã tham gia
-                    if (_sdtOk) window.guiThongBao?.({
-                        nguoiNhan: _sdtOk, loai: "G1",
-                        tieuDe: "Host xác nhận bạn đã tham gia",
-                        noiDung: `Bạn được xác nhận "Đã tham gia". +${window.DIEM_UY_TIN?.THAM_GIA_OK ?? 2} điểm uy tín.`,
-                        linkData: { tab: "lichSu" }
-                    });
-                }
-                // 🔔 G3: host đánh dấu "Khách hủy" cho khách (chỉ khi CHUYỂN sang)
-                if (newState === "Khách hủy" && prevVal !== "Khách hủy") {
-                    const _sdtKh = selectEl.dataset.sdt;
-                    if (_sdtKh) window.guiThongBao?.({
-                        nguoiNhan: _sdtKh, loai: "G3",
-                        tieuDe: "Host đánh dấu bạn Khách hủy",
-                        noiDung: `Slot của bạn ở ca này đã bị đánh dấu "Khách hủy".`,
-                        linkData: { tab: "lichSu" }
-                    });
-                }
+            // STATE-BASED DELTA: 1 hàm DUY NHẤT xử lý điểm (undo trạng thái cũ + áp mới),
+            // đếm lần bùng, khóa TK, toast điểm + thông báo G1/G3/H3b/S1. KHÔNG cộng dồn.
+            const _sdtKh = selectEl.dataset.sdt;
+            if (_sdtKh && typeof window.apDiemTheoTrangThai === "function") {
+                window.apDiemTheoTrangThai(_sdtKh, _ttCuDB, newState, guestId, {}).catch(() => {});
             }
+            window.hienToast("Đã cập nhật ✅", newState, "success");
 
             // Cập nhật DOM trực tiếp — KHÔNG reload lại modal (tránh đảo thứ tự + mất UX)
             const tr = selectEl.closest("tr");

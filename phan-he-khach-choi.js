@@ -381,101 +381,128 @@
      *                  false → caller đã ghi (chỉ đếm + phạt + toast)
      * Trả về { lanThu, diemTru, khoa }.
      * ──────────────────────────────────────────────────────────────── */
-    window.xuLyBungKeo = async function (sdt, datSlotId, opts) {
-        opts = opts || {};
-        const C = (window.DIEM_UY_TIN && window.DIEM_UY_TIN.BUNG)
-            || { cuaSoNgay: 30, lan1: -10, lan2: -20, khoaTuLan: 3 };
-        const NGUONG_KHOA = window.DIEM_UY_TIN?.NGUONG?.khoa ?? 40;
-        const SAN = window.DIEM_UY_TIN?.SAN ?? 0;
-        try {
-            const nowIso = new Date().toISOString();
-            // 1) Ghi trạng thái bùng (nếu caller chưa tự ghi)
-            if (opts.ghiStatus && datSlotId) {
-                await window.dbEngine.ghi("dat_slot",
-                    { trang_thai_di_danh: "Bùng kèo", huy_luc: nowIso }, { id: datSlotId });
-            }
-            // 2) Đếm số lần bùng trong CỬA SỔ LĂN cuaSoNgay ngày của tài khoản
-            const cutoff = Date.now() - C.cuaSoNgay * 24 * 3600 * 1000;
-            const all = await window.dbEngine.docThu("dat_slot",
-                { eq: { sdt_khach: sdt, trang_thai_di_danh: "Bùng kèo" } }).catch(() => []);
-            const lanThu = (all || []).filter(r => {
-                const t = r.huy_luc ? new Date(r.huy_luc).getTime() : null;
-                return t == null ? true : t >= cutoff; // record cũ thiếu huy_luc → vẫn tính (an toàn)
-            }).length || 1;
+    /* ── ĐIỂM UY TÍN — STATE-BASED DELTA (nguồn DUY NHẤT cho host đổi trạng thái) ──
+     * Mỗi trạng thái slot có 1 "delta" (đóng góp điểm). Khi đổi trạng thái:
+     *   diem_uy_tin += (deltaMới − deltaCũ)  → tự UNDO trạng thái cũ + ÁP mới,
+     *   KHÔNG cộng dồn dù đổi qua lại bao nhiêu lần. Điểm cuối luôn = đúng đóng
+     *   góp của trạng thái HIỆN TẠI (vd Chờ→Tham gia→Bùng→Tham gia→Bùng = −10).
+     * Bảng delta: Chờ đánh=0 · Đã tham gia=+2 · Bùng kèo=−10/−20/khóa(lần≥3) ·
+     *             Khách hủy=thang giờ (chỉ khi truyền ctx.phut; host-set dropdown=0).
+     * Đếm lần bùng = số slot KHÁC đang "Bùng kèo" (rolling 30 ngày) + 1.
+     *   → KHÔNG SQL, đủ cho mọi test yêu cầu. (Bulletproof cross-toggle ĐA slot
+     *      cần cột `da_dem_bung` — xem migration-bung-flag-v1.sql, CHỜ DUYỆT.)
+     * oldState BẮT BUỘC đọc từ DB thật (caller truyền vào) — KHÔNG tin DOM/dataset.
+     * ──────────────────────────────────────────────────────────────────────── */
+    window.apDiemTheoTrangThai = async function (sdt, oldState, newState, slotId, ctx) {
+        ctx = ctx || {};
+        if (!sdt || oldState === newState) return { net: 0, khoa: false, boQua: true };
+        const D    = window.DIEM_UY_TIN || {};
+        const BUNG = D.BUNG || { cuaSoNgay: 30, lan1: -10, lan2: -20, khoaTuLan: 3 };
+        const THAM = D.THAM_GIA_OK ?? 2;
+        const SAN  = D.SAN ?? 0, TRAN = D.TRAN ?? 100;
+        const NGUONG = D.NGUONG?.khoa ?? 40;
 
-            // 3) Đọc user — whitelist thì chỉ ghi nhận, không phạt
+        try {
             const users = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: sdt } }).catch(() => []);
             const u = (users || [])[0];
-            if (u && u.is_whitelisted) {
-                window.hienToast?.("Đã ghi nhận bùng kèo", "Tài khoản whitelist — không trừ điểm.", "info");
-                return { lanThu, diemTru: 0, khoa: false };
-            }
-            const cur = u?.diem_uy_tin ?? 100;
+            if (!u) return { net: 0, khoa: false };
+            const whitelist = !!u.is_whitelisted;
 
-            // 4) Áp dụng theo số lần — quá tam ba bận
-            if (lanThu >= C.khoaTuLan) {
-                await window.dbEngine.ghi("nguoi_dung", { is_active: false }, { sdt_khach: sdt }).catch(() => {});
-                window.hienToast?.("🔒 Tài khoản bị khóa tạm thời",
-                    `Bùng kèo lần thứ ${lanThu} trong ${C.cuaSoNgay} ngày. Tài khoản đã bị khóa, không thể đặt slot. Liên hệ Admin để được mở khóa.`,
-                    "danger");
-                // 🔔 H3b: ghi nhận cho host (người thao tác); G3 + S1: báo khách bị bùng + bị khóa
-                window.guiThongBao?.({
-                    nguoiNhan: window.currentGuest?.sdt_khach, loai: "H3b",
-                    tieuDe: "Đã ghi nhận khách bùng kèo",
-                    noiDung: `${u?.ten_khach || sdt} bùng kèo lần ${lanThu} — tài khoản khách đã bị khóa.`,
-                    linkData: { tab: "guestList" }
-                });
-                window.guiThongBao?.({
-                    nguoiNhan: sdt, loai: "G3",
-                    tieuDe: "Bạn bị báo Bùng kèo",
-                    noiDung: `Bạn bị báo bùng kèo lần ${lanThu} trong ${C.cuaSoNgay} ngày.`,
-                    linkData: { tab: "lichSu" }
-                });
-                window.guiThongBao?.({
-                    nguoiNhan: sdt, loai: "S1",
-                    tieuDe: "Tài khoản bị khóa",
-                    noiDung: "Tài khoản của bạn đã bị khóa do bùng kèo nhiều lần. Liên hệ Admin để mở khóa.",
-                    linkData: { tab: "khoa" }
-                });
-                return { lanThu, diemTru: 0, khoa: true };
+            // Lần bùng của slot này = số slot BÙNG KHÁC (≠ slotId) trong cửa sổ + 1
+            const cutoff = Date.now() - (BUNG.cuaSoNgay || 30) * 24 * 3600 * 1000;
+            const allBung = await window.dbEngine.docThu("dat_slot",
+                { eq: { sdt_khach: sdt, trang_thai_di_danh: "Bùng kèo" } }).catch(() => []);
+            const bungOther = (allBung || []).filter(r => {
+                if (slotId && r.id === slotId) return false;
+                const t = r.huy_luc ? new Date(r.huy_luc).getTime() : null;
+                return t == null ? true : t >= cutoff;
+            }).length;
+            const lanBung = bungOther + 1;
+
+            const _delta = (st) => {
+                if (st === "Đã tham gia") return THAM;
+                if (st === "Bùng kèo")    return (lanBung >= BUNG.khoaTuLan) ? 0 : (lanBung === 1 ? BUNG.lan1 : BUNG.lan2);
+                if (st === "Khách hủy")   return (D.KHACH_HUY && ctx.phut != null) ? (window.tinhDiemPhatTheoGio(D.KHACH_HUY, ctx.phut) || 0) : 0;
+                return 0; // Chờ đánh
+            };
+            const oldDelta = _delta(oldState);
+            const newDelta = _delta(newState);
+            const net = newDelta - oldDelta;
+
+            const curScore = u.diem_uy_tin ?? 100;
+            let newScore = curScore, khoa = false, daKhoaMoi = false;
+
+            if (!whitelist) {
+                newScore = Math.max(SAN, Math.min(TRAN, curScore + net));
+                // so_ca_thanh_cong: +1 khi VÀO "Đã tham gia", −1 khi RỜI (đếm net, clamp ≥0)
+                let soCa = u.so_ca_thanh_cong ?? 0;
+                if (newState === "Đã tham gia" && oldState !== "Đã tham gia") soCa += 1;
+                else if (oldState === "Đã tham gia" && newState !== "Đã tham gia") soCa = Math.max(0, soCa - 1);
+                await window.dbEngine.ghi("nguoi_dung", { diem_uy_tin: newScore, so_ca_thanh_cong: soCa }, { sdt_khach: sdt }).catch(() => {});
+                // Khóa 1 CHIỀU (admin mở khóa): bùng đủ lần khóa HOẶC điểm tụt dưới ngưỡng
+                khoa = (newState === "Bùng kèo" && lanBung >= BUNG.khoaTuLan) || (newScore < NGUONG);
+                if (khoa && u.is_active !== false) {
+                    await window.dbEngine.ghi("nguoi_dung", { is_active: false }, { sdt_khach: sdt }).catch(() => {});
+                    daKhoaMoi = true;
+                }
             }
-            const diemTru  = lanThu === 1 ? C.lan1 : C.lan2; // số âm
-            const newScore = Math.max(SAN, cur + diemTru);
-            await window.dbEngine.ghi("nguoi_dung", { diem_uy_tin: newScore }, { sdt_khach: sdt }).catch(() => {});
-            let _biKhoa = false;
-            if (newScore < NGUONG_KHOA && u && u.is_active !== false) {
-                await window.dbEngine.ghi("nguoi_dung", { is_active: false }, { sdt_khach: sdt }).catch(() => {});
-                _biKhoa = true;
+
+            // ── Toast (host) ──
+            if (daKhoaMoi) {
+                window.hienToast?.("🔒 Tài khoản khách bị khóa",
+                    newState === "Bùng kèo" ? `Bùng kèo lần ${lanBung} — tài khoản khách đã bị khóa. Liên hệ Admin để mở khóa.`
+                                            : `Điểm uy tín còn ${newScore} (<${NGUONG}) — tài khoản khách đã bị khóa.`, "danger");
+            } else if (whitelist && (newState === "Bùng kèo" || newState === "Khách hủy")) {
+                window.hienToast?.("Đã ghi nhận", "Tài khoản whitelist — không trừ điểm.", "info");
+            } else if (net < 0) {
+                window.hienToast?.(`Trừ ${Math.abs(net)} điểm uy tín`, `${newState} (lần ${lanBung}) — còn ${newScore} điểm.`, "warning");
+            } else if (net > 0) {
+                window.hienToast?.(`Cộng ${net} điểm uy tín`, `${newState} — còn ${newScore} điểm.`, "success");
             }
-            if (lanThu === 2) {
-                window.hienToast?.("⚠️ Cảnh báo: bùng kèo lần 2",
-                    `Đây là lần bùng kèo thứ 2 trong ${C.cuaSoNgay} ngày. Trừ ${Math.abs(diemTru)} điểm (còn ${newScore}). Lần thứ 3 tài khoản sẽ bị khóa.`,
-                    "warning");
-            } else {
-                window.hienToast?.(`Trừ ${Math.abs(diemTru)} điểm uy tín`,
-                    `Khách bùng kèo (lần ${lanThu} trong ${C.cuaSoNgay} ngày) — còn ${newScore} điểm.`,
-                    "warning");
+
+            // ── Thông báo (guest/host) theo CHIỀU chuyển trạng thái ──
+            if (newState === "Đã tham gia" && oldState !== "Đã tham gia") {
+                window.guiThongBao?.({ nguoiNhan: sdt, loai: "G1", tieuDe: "Host xác nhận bạn đã tham gia",
+                    noiDung: `Bạn được xác nhận "Đã tham gia". +${THAM} điểm uy tín.`, linkData: { tab: "lichSu" } });
             }
-            // 🔔 H3b: ghi nhận cho host (người thao tác); G3: báo khách bị phạt; S1 nếu chạm mốc khóa
-            window.guiThongBao?.({
-                nguoiNhan: window.currentGuest?.sdt_khach, loai: "H3b",
-                tieuDe: "Đã ghi nhận khách bùng kèo",
-                noiDung: `${u?.ten_khach || sdt} bùng kèo (lần ${lanThu}) — trừ ${Math.abs(diemTru)} điểm.`,
-                linkData: { tab: "guestList" }
-            });
-            window.guiThongBao?.({
-                nguoiNhan: sdt, loai: "G3",
-                tieuDe: "Bạn bị báo Bùng kèo",
-                noiDung: `Bạn bị báo bùng kèo (lần ${lanThu}) — trừ ${Math.abs(diemTru)} điểm, còn ${newScore} điểm uy tín.`,
-                linkData: { tab: "lichSu" }
-            });
-            if (_biKhoa) window.guiThongBao?.({
-                nguoiNhan: sdt, loai: "S1",
-                tieuDe: "Tài khoản bị khóa",
-                noiDung: `Điểm uy tín còn ${newScore} (dưới ${NGUONG_KHOA}). Tài khoản đã bị khóa — liên hệ Admin.`,
-                linkData: { tab: "khoa" }
-            });
-            return { lanThu, diemTru, khoa: false };
+            if (newState === "Bùng kèo" && oldState !== "Bùng kèo") {
+                window.guiThongBao?.({ nguoiNhan: sdt, loai: "G3", tieuDe: "Bạn bị báo Bùng kèo",
+                    noiDung: whitelist ? "Bạn bị báo bùng kèo (whitelist — không trừ điểm)." : `Bạn bị báo bùng kèo (lần ${lanBung}).`, linkData: { tab: "lichSu" } });
+                window.guiThongBao?.({ nguoiNhan: window.currentGuest?.sdt_khach, loai: "H3b", tieuDe: "Đã ghi nhận khách bùng kèo",
+                    noiDung: `${u.ten_khach || sdt} bùng kèo (lần ${lanBung}).`, linkData: { tab: "guestList" } });
+            }
+            if (newState === "Khách hủy" && oldState !== "Khách hủy") {
+                window.guiThongBao?.({ nguoiNhan: sdt, loai: "G3", tieuDe: "Host đánh dấu bạn Khách hủy",
+                    noiDung: `Slot của bạn ở ca này đã bị đánh dấu "Khách hủy".`, linkData: { tab: "lichSu" } });
+            }
+            if (daKhoaMoi) {
+                window.guiThongBao?.({ nguoiNhan: sdt, loai: "S1", tieuDe: "Tài khoản bị khóa",
+                    noiDung: `Tài khoản của bạn đã bị khóa${newState === "Bùng kèo" ? " do bùng kèo" : ""}. Liên hệ Admin để mở khóa.`, linkData: { tab: "khoa" } });
+            }
+
+            return { net, newScore, khoa, lanBung, whitelist };
+        } catch (e) {
+            console.error("apDiemTheoTrangThai:", e);
+            return { net: 0, khoa: false };
+        }
+    };
+
+    /* xuLyBungKeo — GIỮ API CŨ: wrapper state-based cho baoCaoGhost + tương thích.
+     * oldState đọc từ DB (hoặc opts.ttCu); ghi "Bùng kèo" nếu ghiStatus; rồi áp delta. */
+    window.xuLyBungKeo = async function (sdt, datSlotId, opts) {
+        opts = opts || {};
+        try {
+            let oldState = opts.ttCu;
+            if (oldState == null && datSlotId) {
+                const _s0 = await window.dbEngine.docThu("dat_slot", { eq: { id: datSlotId } }).catch(() => []);
+                oldState = (_s0 || [])[0]?.trang_thai_di_danh;
+            }
+            if (opts.ghiStatus && datSlotId) {
+                await window.dbEngine.ghi("dat_slot",
+                    { trang_thai_di_danh: "Bùng kèo", huy_luc: new Date().toISOString() }, { id: datSlotId }).catch(() => {});
+            }
+            const r = await window.apDiemTheoTrangThai(sdt, oldState, "Bùng kèo", datSlotId, {});
+            return { lanThu: r.lanBung || 0, diemTru: r.net || 0, khoa: !!r.khoa };
         } catch (e) {
             console.error("xuLyBungKeo:", e);
             return { lanThu: 0, diemTru: 0, khoa: false };
@@ -1661,14 +1688,16 @@
                 }
             });
 
-            // Set các ca_dau mà user hiện tại đã đặt slot (không bị hủy)
+            // Set các ca_dau mà user hiện tại đã đặt slot (còn hiệu lực) / đã TỰ HỦY.
+            // Bug 3B: tách "đã hủy" để card hiện badge "ĐÃ HỦY" (khách KHÔNG được đặt lại).
             const daDatSet = new Set();
+            const daHuySet = new Set();
             if (window.currentGuest) {
                 const myPhone = window.currentGuest.sdt_khach;
                 allDatSlot.forEach(s => {
-                    if (s.sdt_khach === myPhone && s.trang_thai_di_danh !== "Khách hủy") {
-                        daDatSet.add(s.id_ca_dau);
-                    }
+                    if (s.sdt_khach !== myPhone) return;
+                    if (s.trang_thai_di_danh === "Khách hủy") daHuySet.add(s.id_ca_dau);
+                    else daDatSet.add(s.id_ca_dau);
                 });
             }
 
@@ -1812,7 +1841,7 @@
                 const soKhach = (datSlotMap[slot.id] || []).length;
                 // Ưu tiên: ma_key_host (SaaS key cũ) → sdt_nguoi_tao (hệ thống mới)
                 const hostInfo = hostMap[slot.ma_key_host] || hostMap[slot.sdt_nguoi_tao] || null;
-                const card = _taoCaCard(slot, soKhach, daDatSet, hostInfo);
+                const card = _taoCaCard(slot, soKhach, daDatSet, hostInfo, daHuySet);
                 container.appendChild(card);
             });
         } catch (e) {
@@ -1823,7 +1852,7 @@
         }
     }
 
-    function _taoCaCard(slot, soKhach = 0, daDatSet = new Set(), hostInfo = null) {
+    function _taoCaCard(slot, soKhach = 0, daDatSet = new Set(), hostInfo = null, daHuySet = new Set()) {
         const card = document.createElement("div");
         card.className = "slot-card";
         card.dataset.caId = slot.id; // Để query nút sau khi đặt slot thành công
@@ -2032,9 +2061,13 @@
                             ? `<button class="btn-da-dat" disabled onclick="event.stopPropagation()">
                                 <i class="fa-solid fa-circle-check"></i> ĐÃ ĐẶT
                                </button>`
-                            : `<button class="btn-dat-slot" onclick="window.datSlot('${slot.id}');event.stopPropagation()">
-                                <i class="fa-solid fa-ticket"></i> ĐẶT SLOT
-                               </button>`)
+                            : (daHuySet.has(slot.id)
+                                ? `<button class="btn-da-huy" disabled title="Bạn đã tự hủy slot ca này — không thể đặt lại" onclick="event.stopPropagation()">
+                                    <i class="fa-solid fa-circle-xmark"></i> ĐÃ HỦY
+                                   </button>`
+                                : `<button class="btn-dat-slot" onclick="window.datSlot('${slot.id}');event.stopPropagation()">
+                                    <i class="fa-solid fa-ticket"></i> ĐẶT SLOT
+                                   </button>`))
                         : `<button class="btn-dat-slot btn-dat-slot-disabled"
                             onclick="event.stopPropagation();if(window.innerWidth < 768) window.openLoginSheet(); else window.hienToast('Cần đăng nhập','Đăng nhập hoặc đăng ký bên sidebar trái.','warning')">
                             <i class="fa-solid fa-lock"></i> ĐẶT SLOT
@@ -2800,6 +2833,8 @@
                 if (!window.currentGuest) return `<div style="text-align:center;padding:4px 0;"><p style="font-size:0.82rem;color:#64748b;margin-bottom:10px;">Đăng nhập để đặt slot tham gia ca này.</p><button class="btn-dat-slot" style="width:100%;" onclick="event.stopPropagation();window.chuyenTab('ca-nhan');window.dongModalChiTietKeo();if(window.innerWidth<768){setTimeout(()=>window.openLoginSheet?.(),300);}"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập / Đăng ký</button></div>`;
                 const alreadyBooked = datSlotList.some(sl => sl.sdt_khach === window.currentGuest.sdt_khach && sl.trang_thai_di_danh !== "Khách hủy");
                 const mySlotHere = datSlotList.find(sl => sl.sdt_khach === window.currentGuest.sdt_khach && sl.trang_thai_di_danh === "Đã tham gia");
+                // Bug 3B: khách đã TỰ HỦY ca này (và không còn slot hiệu lực) → hiện "ĐÃ HỦY", không cho đặt lại
+                const myCancelled = !alreadyBooked && datSlotList.some(sl => sl.sdt_khach === window.currentGuest.sdt_khach && sl.trang_thai_di_danh === "Khách hủy");
                 const canReport = s.da_chot_ca && !!mySlotHere;
                 const reportBtn = canReport
                     ? `<button style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.4);color:#fca5a5;padding:8px 14px;border-radius:9px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;width:100%;"
@@ -2808,7 +2843,9 @@
                        </button>` : "";
                 return (alreadyBooked
                     ? `<button class="btn-da-dat" style="width:100%;" disabled><i class="fa-solid fa-circle-check"></i> ĐÃ ĐẶT SLOT</button>`
-                    : `<button class="btn-dat-slot" style="width:100%;" onclick="window.datSlot('${s.id}');window.dongModalChiTietKeo()"><i class="fa-solid fa-bullseye"></i> ĐẶT SLOT THAM GIA</button>`)
+                    : (myCancelled
+                        ? `<button class="btn-da-huy" style="width:100%;" disabled title="Bạn đã tự hủy slot ca này — không thể đặt lại"><i class="fa-solid fa-circle-xmark"></i> ĐÃ HỦY</button>`
+                        : `<button class="btn-dat-slot" style="width:100%;" onclick="window.datSlot('${s.id}');window.dongModalChiTietKeo()"><i class="fa-solid fa-bullseye"></i> ĐẶT SLOT THAM GIA</button>`))
                     + reportBtn;
             })()}
             </div>
