@@ -20,8 +20,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS hệ thống -->
-    <link rel="stylesheet" href="giao-dien.css?v=20260610f">
-    <link rel="stylesheet" href="components.css?v=20260610c">
+    <link rel="stylesheet" href="giao-dien.css?v=20260611f">
+    <link rel="stylesheet" href="components.css?v=20260611f">
 
     <style>
         /* ══════════════════════════════════════════════════
@@ -3250,10 +3250,10 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <!-- Supabase JS v2 SDK — BẮT BUỘC load trước ket-noi-supabase.js để guestRPC hoạt động -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="ket-noi-supabase.js?v=20260610d"></script>
-<script src="bo-may-du-lieu.js?v=20260610b"></script>
-<script src="hieu-ung-giao-dien.js?v=20260610f"></script>
-<script src="phan-he-khach-choi.js?v=20260610f"></script>
-<script src="phan-he-host.js?v=20260610f"></script>
+<script src="bo-may-du-lieu.js?v=20260611c"></script>
+<script src="hieu-ung-giao-dien.js?v=20260611b"></script>
+<script src="phan-he-khach-choi.js?v=20260611f"></script>
+<script src="phan-he-host.js?v=20260611f"></script>
 <script src="phan-he-ung-dung.js?v=20260610b"></script>
 <script src="phan-he-gop-y.js?v=20260610"></script>
 
@@ -3347,7 +3347,7 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
                 <i class="fa-solid fa-plus"></i> Thêm Loại Cầu
             </button>
             <div style="margin-top:8px;font-size:0.8rem;color:var(--text-muted);">
-                Tổng tiền cầu: <strong id="hostTotalCauCost" style="color:var(--accent);">0đ</strong>
+                Tổng tiền cầu: <strong id="hostTotalCauCost" style="color:var(--accent);">0K</strong>
             </div>
 
             <!-- Số người + Chênh lệch -->
@@ -3437,20 +3437,14 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 /* Khóa cứng layout bảng — chống layout shift khi đổi trạng thái */
 #modal-guest-list-table { table-layout: fixed !important; }
 /* Custom dropdown menu — mặc định mở xuống dưới */
+/* Menu dropdown DS Khách: position:fixed — toạ độ do JS (_toggleGlCdd) tính theo
+   nút, neo theo viewport để KHÔNG bị #modal-guest-list-scroll (overflow auto) cắt
+   khi bảng ít hàng. Tự lật lên + kẹp trong màn hình. */
 .gl-cdd-menu {
-    position: absolute;
-    top: calc(100% + 4px); bottom: auto;
-    left: 0; z-index: 999 !important;
+    position: fixed; z-index: 9999 !important;
     animation: glFadeIn .12s ease;
 }
-/* Drop-up: mở ngược lên khi không đủ chỗ phía dưới */
-.gl-cdd-menu.is-drop-up {
-    top: auto !important;
-    bottom: calc(100% + 6px) !important;
-    animation: glFadeUp .12s ease;
-}
 @keyframes glFadeIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
-@keyframes glFadeUp { from { opacity:0; transform:translateY(4px);  } to { opacity:1; transform:translateY(0); } }
 /* Row đang mở dropdown: nổi lên trên tất cả các hàng khác */
 #modal-guest-list-table tr.tr-cdd-open { position: relative !important; z-index: 99 !important; }
 /* td chứa dropdown — không clip, là containing block cho menu */
@@ -3500,6 +3494,8 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
             <button onclick="window._dongGuestListModal()"
                 style="background:rgba(100,116,139,0.2);border:1px solid rgba(100,116,139,0.4);color:#94a3b8;font-size:1rem;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">✕</button>
         </div>
+        <!-- Tóm tắt cọc X/Y — chỉ hiện khi ca có yeu_cau_coc (JS bật/tắt) -->
+        <div id="gl-coc-summary" style="display:none;align-items:center;gap:4px;padding:8px 18px;font-size:0.8rem;color:#fbbf24;background:rgba(245,158,11,0.06);border-bottom:1px solid rgba(245,158,11,0.18);flex-shrink:0;"></div>
         <div id="modal-guest-list-loading" style="display:none;text-align:center;padding:30px;color:#64748b;">
             <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
         </div>

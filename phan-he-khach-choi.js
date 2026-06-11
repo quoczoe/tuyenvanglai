@@ -354,23 +354,100 @@
             const current = u.diem_uy_tin ?? 100;
             const newScore = Math.max(0, current - diemTru);
             await window.dbEngine.ghi("nguoi_dung", { diem_uy_tin: newScore }, { sdt_khach: sdt });
-            if (newScore < 40 && u.is_active !== false) {
+            if (newScore < (window.DIEM_UY_TIN?.NGUONG?.khoa ?? 40) && u.is_active !== false) {
                 await window.dbEngine.ghi("nguoi_dung", { is_active: false }, { sdt_khach: sdt });
             }
         } catch (e) { console.error("_truDiemUyTin:", e); }
     }
 
-    // Cộng điểm uy tín + so_ca_thanh_cong (cap 100)
+    /* ── BÙNG KÈO — HÀM XỬ LÝ DUY NHẤT ──────────────────────────────
+     * Cả nút "Báo cáo Ghost" lẫn dropdown "Bùng kèo" (đều ở host) ĐỀU gọi
+     * qua đây → đếm số lần bùng trong 30 ngày lăn, trừ điểm/khóa tài khoản,
+     * bắn thông báo tại ĐÚNG MỘT chỗ. "Quá tam ba bận": lần 3 → khóa.
+     *   sdt        : SĐT khách bùng
+     *   datSlotId  : slot bị đánh dấu bùng
+     *   opts.ghiStatus=true → hàm tự ghi dat_slot {Bùng kèo + huy_luc};
+     *                  false → caller đã ghi (chỉ đếm + phạt + toast)
+     * Trả về { lanThu, diemTru, khoa }.
+     * ──────────────────────────────────────────────────────────────── */
+    window.xuLyBungKeo = async function (sdt, datSlotId, opts) {
+        opts = opts || {};
+        const C = (window.DIEM_UY_TIN && window.DIEM_UY_TIN.BUNG)
+            || { cuaSoNgay: 30, lan1: -10, lan2: -20, khoaTuLan: 3 };
+        const NGUONG_KHOA = window.DIEM_UY_TIN?.NGUONG?.khoa ?? 40;
+        const SAN = window.DIEM_UY_TIN?.SAN ?? 0;
+        try {
+            const nowIso = new Date().toISOString();
+            // 1) Ghi trạng thái bùng (nếu caller chưa tự ghi)
+            if (opts.ghiStatus && datSlotId) {
+                await window.dbEngine.ghi("dat_slot",
+                    { trang_thai_di_danh: "Bùng kèo", huy_luc: nowIso }, { id: datSlotId });
+            }
+            // 2) Đếm số lần bùng trong CỬA SỔ LĂN cuaSoNgay ngày của tài khoản
+            const cutoff = Date.now() - C.cuaSoNgay * 24 * 3600 * 1000;
+            const all = await window.dbEngine.docThu("dat_slot",
+                { eq: { sdt_khach: sdt, trang_thai_di_danh: "Bùng kèo" } }).catch(() => []);
+            const lanThu = (all || []).filter(r => {
+                const t = r.huy_luc ? new Date(r.huy_luc).getTime() : null;
+                return t == null ? true : t >= cutoff; // record cũ thiếu huy_luc → vẫn tính (an toàn)
+            }).length || 1;
+
+            // 3) Đọc user — whitelist thì chỉ ghi nhận, không phạt
+            const users = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: sdt } }).catch(() => []);
+            const u = (users || [])[0];
+            if (u && u.is_whitelisted) {
+                window.hienToast?.("Đã ghi nhận bùng kèo", "Tài khoản whitelist — không trừ điểm.", "info");
+                return { lanThu, diemTru: 0, khoa: false };
+            }
+            const cur = u?.diem_uy_tin ?? 100;
+
+            // 4) Áp dụng theo số lần — quá tam ba bận
+            if (lanThu >= C.khoaTuLan) {
+                await window.dbEngine.ghi("nguoi_dung", { is_active: false }, { sdt_khach: sdt }).catch(() => {});
+                window.hienToast?.("🔒 Tài khoản bị khóa tạm thời",
+                    `Bùng kèo lần thứ ${lanThu} trong ${C.cuaSoNgay} ngày. Tài khoản đã bị khóa, không thể đặt slot. Liên hệ Admin để được mở khóa.`,
+                    "danger");
+                return { lanThu, diemTru: 0, khoa: true };
+            }
+            const diemTru  = lanThu === 1 ? C.lan1 : C.lan2; // số âm
+            const newScore = Math.max(SAN, cur + diemTru);
+            await window.dbEngine.ghi("nguoi_dung", { diem_uy_tin: newScore }, { sdt_khach: sdt }).catch(() => {});
+            if (newScore < NGUONG_KHOA && u && u.is_active !== false) {
+                await window.dbEngine.ghi("nguoi_dung", { is_active: false }, { sdt_khach: sdt }).catch(() => {});
+            }
+            if (lanThu === 2) {
+                window.hienToast?.("⚠️ Cảnh báo: bùng kèo lần 2",
+                    `Đây là lần bùng kèo thứ 2 trong ${C.cuaSoNgay} ngày. Trừ ${Math.abs(diemTru)} điểm (còn ${newScore}). Lần thứ 3 tài khoản sẽ bị khóa.`,
+                    "warning");
+            } else {
+                window.hienToast?.(`Trừ ${Math.abs(diemTru)} điểm uy tín`,
+                    `Khách bùng kèo (lần ${lanThu} trong ${C.cuaSoNgay} ngày) — còn ${newScore} điểm.`,
+                    "warning");
+            }
+            return { lanThu, diemTru, khoa: false };
+        } catch (e) {
+            console.error("xuLyBungKeo:", e);
+            return { lanThu: 0, diemTru: 0, khoa: false };
+        }
+    };
+
+    // Cộng điểm uy tín + so_ca_thanh_cong (cap TRAN — SSOT DIEM_UY_TIN)
     async function _congDiemUyTin(sdt, diemCong) {
         try {
             const users = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: sdt } });
             const u = (users || [])[0];
             if (!u || u.is_whitelisted) return;
-            const newScore = Math.min(100, (u.diem_uy_tin ?? 100) + diemCong);
+            const _tran    = window.DIEM_UY_TIN?.TRAN ?? 100;
+            const newScore = Math.min(_tran, (u.diem_uy_tin ?? 100) + diemCong);
             const newCa    = (u.so_ca_thanh_cong ?? 0) + 1;
             await window.dbEngine.ghi("nguoi_dung", { diem_uy_tin: newScore, so_ca_thanh_cong: newCa }, { sdt_khach: sdt });
         } catch (e) { console.error("_congDiemUyTin:", e); }
     }
+
+    // Thưởng "Đã tham gia" (+THAM_GIA_OK) — expose để phan-he-host.js gọi từ dropdown đổi trạng thái
+    window._congDiemThamGia = function (sdt) {
+        return _congDiemUyTin(sdt, window.DIEM_UY_TIN?.THAM_GIA_OK ?? 2);
+    };
 
     // Đọc điểm uy tín của currentGuest từ DB (luôn fresh)
     async function _layDiemUyTin() {
@@ -1176,7 +1253,7 @@
         const val = Number(document.getElementById("filterMaxPrice")?.value) || 0;
         const lbl = document.getElementById("filterMaxPriceLabel");
         if (!lbl) return;
-        lbl.textContent = val > 0 ? `≤ ${val.toLocaleString("vi-VN")}đ` : "Tất cả";
+        lbl.textContent = val > 0 ? `≤ ${window.formatTienK ? window.formatTienK(val) : val.toLocaleString("vi-VN") + "K"}` : "Tất cả";
     };
 
     /* ═══════════════════════════════════════════════════
@@ -1413,7 +1490,7 @@
         const val = Number(document.getElementById("filterMaxPriceMobile")?.value) || 0;
         const lbl = document.getElementById("filterMaxPriceLabelMobile");
         if (!lbl) return;
-        lbl.textContent = val > 0 ? `≤ ${val.toLocaleString("vi-VN")}đ` : "Tất cả";
+        lbl.textContent = val > 0 ? `≤ ${window.formatTienK ? window.formatTienK(val) : val.toLocaleString("vi-VN") + "K"}` : "Tất cả";
     };
 
     // Xử lý click pill filter (single select — backward compat)
@@ -1791,6 +1868,7 @@
             </div>
 
             ${slot.scam_warning ? `<div class="scam-banner"><i class="fa-solid fa-triangle-exclamation"></i>⚠️ CẢNH BÁO: Host chưa được xác minh. Tuyệt đối KHÔNG chuyển khoản cọc trước dưới mọi hình thức để tránh rủi ro lừa đảo!</div>` : ""}
+            ${slot.yeu_cau_coc ? `<div class="coc-banner"><i class="fa-solid fa-hand-holding-dollar"></i>Ca này YÊU CẦU CỌC TRƯỚC — liên hệ host để chuyển cọc giữ chỗ (thỏa thuận ngoài app).</div>` : ""}
             <div class="slot-card-body">
                 <!-- Tên sân + quận — hyperlink mở Google Maps tab mới -->
                 <div class="slot-court-info" itemscope itemtype="https://schema.org/SportsActivityLocation">
@@ -1928,7 +2006,7 @@
     window.SLOT_LIMIT_CONFIG = {
         newAccount: {           // Tài khoản mới < 7 ngày
             maxPerDay: 2,       // Tối đa 2 slot đặt trong ngày (lịch VN)
-            maxChoNgay7: 5,     // Tối đa 5 ca CHƯA đá xong cùng lúc (đếm lại từ ca_dau, không theo mốc ngày cố định)
+            maxChoNgay7: 5,     // Tối đa 5 ca CHƯA đánh xong cùng lúc (đếm lại từ ca_dau, không theo mốc ngày cố định)
         },
         lowTrust: {             // Điểm < 60 (Cảnh cáo)
             maxPerDay: 1,       // Tối đa 1 slot đặt trong ngày
@@ -1938,7 +2016,7 @@
         },
         highTrust: {            // Điểm >= 80
             maxPerDay: 3,       // Tối đa 3 slot đặt trong ngày
-            maxActiveSlots: 5,  // Tối đa 5 ca CHƯA đá xong cùng lúc (join ca_dau, loại ca đã kết thúc/đã chốt)
+            maxActiveSlots: 5,  // Tối đa 5 ca CHƯA đánh xong cùng lúc (join ca_dau, loại ca đã kết thúc/đã chốt)
         },
     };
 
@@ -1957,6 +2035,15 @@
             if (!caDau) { window.hienToast("Không tìm thấy", "Ca đấu không còn tồn tại.", "danger"); return; }
             if (caDau.da_chot_ca) { window.hienToast("Đã đóng", "Ca đấu này đã được chốt, không nhận thêm người.", "warning"); return; }
             if (caDau.is_tam_khoa) { window.hienToast("Tạm khóa", "Ca đấu này đang tạm khóa, không nhận thêm đăng ký.", "warning"); return; }
+
+            // Ca yêu cầu cọc trước → XÁC NHẬN (không chặn cứng): nhắc khách liên hệ host
+            // chuyển cọc giữ chỗ (thỏa thuận NGOÀI app — app không thu/giữ tiền). Hủy = không đặt.
+            if (caDau.yeu_cau_coc) {
+                const _dongYCoc = await window.xacNhanModal(
+                    "💰 Ca này YÊU CẦU CỌC TRƯỚC.\n\nHost yêu cầu chuyển cọc để giữ chỗ (thỏa thuận & chuyển NGOÀI app — app KHÔNG thu hay giữ tiền hộ).\n\nBạn đã liên hệ host để sắp xếp cọc và muốn tiếp tục đặt slot?",
+                    '💰');
+                if (!_dongYCoc) return;
+            }
 
             // Fetch user để lấy trust score + created_at (1 lần duy nhất)
             const _myUserArr = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: window.currentGuest.sdt_khach } }).catch(() => []);
@@ -1986,7 +2073,7 @@
             }).length;
 
             // Đếm ca ĐANG CHỜ ĐÁNH THỰC SỰ: slot "Chờ đánh" + ca CHƯA tới giờ kết thúc.
-            // BẮT BUỘC join ca_dau để loại ca đã đá xong / đã chốt / đã bị xóa mà DB
+            // BẮT BUỘC join ca_dau để loại ca đã đánh xong / đã chốt / đã bị xóa mà DB
             // vẫn kẹt "Chờ đánh" (host quên xác nhận) — nếu không bộ đếm sẽ KHÔNG BAO GIỜ
             // reset và chặn khách vĩnh viễn. Đây là nguyên nhân gốc bug "đã qua cả tuần
             // mà vẫn báo đạt giới hạn".
@@ -2026,7 +2113,7 @@
                 const _soCho = await _demChoDanhThucSu();
                 if (_soCho >= _cfg.newAccount.maxChoNgay7) {
                     window.hienToast("Giới hạn tài khoản mới",
-                        `Bạn đang có ${_soCho} ca chưa đá xong (tối đa ${_cfg.newAccount.maxChoNgay7} cho tài khoản mới). Chờ các ca này diễn ra xong là tự được đặt tiếp.`, "warning");
+                        `Bạn đang có ${_soCho} ca chưa đánh xong (tối đa ${_cfg.newAccount.maxChoNgay7} cho tài khoản mới). Chờ các ca này diễn ra xong là tự được đặt tiếp.`, "warning");
                     return;
                 }
             } else if (myDiem < 60) {
@@ -2044,7 +2131,7 @@
                 const _soCho = await _demChoDanhThucSu();
                 if (_soCho >= _cfg.highTrust.maxActiveSlots) {
                     window.hienToast("Giới hạn ca đang chờ",
-                        `Bạn đang có ${_soCho} ca chưa đá xong (tối đa ${_cfg.highTrust.maxActiveSlots}). Chờ các ca này diễn ra xong là tự được đặt tiếp.`, "warning");
+                        `Bạn đang có ${_soCho} ca chưa đánh xong (tối đa ${_cfg.highTrust.maxActiveSlots}). Chờ các ca này diễn ra xong là tự được đặt tiếp.`, "warning");
                     return;
                 }
             }
@@ -2163,7 +2250,7 @@
                 if (toDate   && caDau.ngay_danh && caDau.ngay_danh > toDate)   return;
 
                 // Đang chờ đánh (chưa chốt ca) — chỉ tính ca CHƯA tới giờ kết thúc,
-                // tránh đếm ca đã đá xong mà host quên chốt (nhất quán với giới hạn đặt slot)
+                // tránh đếm ca đã đánh xong mà host quên chốt (nhất quán với giới hạn đặt slot)
                 if (!caDau.da_chot_ca && slot.trang_thai_di_danh === "Chờ đánh") {
                     const _chuaKetThuc = (!caDau.ngay_danh || !caDau.gio_ket_thuc)
                         || Date.now() < new Date(caDau.ngay_danh + "T" + caDau.gio_ket_thuc).getTime();
@@ -2534,6 +2621,7 @@
 
             body.innerHTML = `
             ${s.scam_warning ? `<div class="scam-banner"><i class="fa-solid fa-triangle-exclamation"></i>⚠️ CẢNH BÁO: Host chưa được xác minh. Tuyệt đối KHÔNG chuyển khoản cọc trước dưới mọi hình thức để tránh rủi ro lừa đảo!</div>` : ""}
+            ${s.yeu_cau_coc ? `<div class="coc-banner"><i class="fa-solid fa-hand-holding-dollar"></i>Ca này YÊU CẦU CỌC TRƯỚC — liên hệ host để chuyển cọc giữ chỗ trước giờ đánh (thỏa thuận & chuyển NGOÀI app).</div>` : ""}
             <div class="kmd-cols">
                 <!-- CỘT TRÁI: Địa Điểm & Thời Gian — thứ tự: KHU VỰC → NGÀY → GIỜ → SÂN → ĐỊA CHỈ -->
                 <section class="kmd-col">
@@ -2783,9 +2871,13 @@
      * Điều kiện: ca chưa chốt (da_chot_ca = false)
      * ═══════════════════════════════════════════════════ */
     window.huyDatSlot = async function (datSlotId, idCaDau) {
-        if (!await window.xacNhanModal("Xác nhận huỷ tham gia ca này?\nThao tác không thể hoàn tác. Bạn sẽ không thể đặt lại slot này.", '❌')) return;
+        // Chống bấm nhanh nhiều lần: mỗi click gọi lại hàm; modal xác nhận auto/tay đều
+        // serial hóa nhưng KHÔNG đủ — nếu bấm 5 lần trước khi modal đóng, 5 luồng cùng
+        // áp _truDiemUyTin → trừ điểm NHIỀU LẦN. Cờ giữ tới khi xác nhận/hủy xong (finally).
+        if (window._huyDatSlotBusy) return;
+        window._huyDatSlotBusy = true;
         try {
-            // Kiểm tra ca đấu có bị chốt chưa
+            // Lấy ca đấu TRƯỚC khi xác nhận để: (a) kiểm tra điều kiện, (b) BÁO TRƯỚC mức phạt
             const caDauList = await window.dbEngine.doc("ca_dau", { eq: { id: idCaDau } });
             const caDau = caDauList[0];
             if (caDau?.da_chot_ca) {
@@ -2801,42 +2893,44 @@
                 }
             }
 
-            // Tính điểm trừ dựa trên thời gian còn lại trước giờ đánh
-            const mySdt = window.currentGuest?.sdt_khach;
-            if (mySdt && caDau?.ngay_danh && caDau?.gio_bat_dau) {
+            // ── Tính mức phạt theo THANG GIỜ (SSOT DIEM_UY_TIN.KHACH_HUY) ──
+            const mySdt      = window.currentGuest?.sdt_khach;
+            const phutConLai = window.phutConLaiToiGioDanh?.(caDau?.ngay_danh, caDau?.gio_bat_dau);
+            const thangHuy   = window.DIEM_UY_TIN?.KHACH_HUY;
+            let diemPhat = 0; // số ÂM (0 = miễn phạt)
+            if (thangHuy && phutConLai != null) diemPhat = window.tinhDiemPhatTheoGio(thangHuy, phutConLai);
+
+            // Xác nhận — BÁO TRƯỚC mức phạt cho khách
+            let xacNhanMsg = "Xác nhận huỷ tham gia ca này?\nThao tác không thể hoàn tác. Bạn sẽ không thể đặt lại slot này.";
+            if (diemPhat < 0) {
+                const tg = window.moTaThoiGianConLai?.(phutConLai) || "";
+                xacNhanMsg = `Hủy lúc này${tg ? ` (còn ${tg} tới giờ đánh)` : ""} sẽ bị TRỪ ${Math.abs(diemPhat)} điểm uy tín.\nTiếp tục?`;
+            }
+            if (!await window.xacNhanModal(xacNhanMsg, '❌')) return;
+
+            // ── Áp dụng trừ điểm (free pass tháng miễn phạt nếu còn) ──
+            if (mySdt && diemPhat < 0) {
                 const users = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: mySdt } });
                 const u = (users || [])[0];
                 if (u && !u.is_whitelisted) {
-                    const startDt = new Date(`${caDau.ngay_danh}T${caDau.gio_bat_dau}`);
-                    const diffH   = (startDt - Date.now()) / (1000 * 60 * 60);
-                    const thangNow = new Date().getMonth() + 1;
+                    const thangNow   = new Date().getMonth() + 1;
                     const resetThang = u.free_pass_reset_thang ?? thangNow;
-                    let freePass = u.free_pass_thang ?? 0;
+                    let freePass     = u.free_pass_thang ?? 0;
+                    if (resetThang !== thangNow) freePass = 1; // reset sang tháng mới
 
-                    // Reset free pass sang tháng mới
-                    if (resetThang !== thangNow) freePass = 1;
-
-                    if (diffH < 2) {
-                        if (freePass > 0) {
-                            // Dùng free pass — không trừ điểm
-                            await window.dbEngine.ghi("nguoi_dung", {
-                                free_pass_thang: 0,
-                                free_pass_reset_thang: thangNow
-                            }, { sdt_khach: mySdt });
-                            window.hienToast("Free pass đã dùng", "Lần huỷ sát giờ này được miễn phạt (free pass tháng).", "info");
-                        } else {
-                            await window._truDiemUyTin(mySdt, 7);
-                            window.hienToast("Trừ 7 điểm uy tín", "Huỷ sát giờ đánh (< 2 tiếng) bị phạt.", "warning");
-                        }
-                    } else if (diffH < 4) {
-                        if (freePass > 0) {
-                            await window.dbEngine.ghi("nguoi_dung", { free_pass_thang: 0, free_pass_reset_thang: thangNow }, { sdt_khach: mySdt });
-                        } else {
-                            await window._truDiemUyTin(mySdt, 3);
-                            window.hienToast("Trừ 3 điểm uy tín", "Huỷ trong vòng 2-4 tiếng trước giờ đánh.", "warning");
-                        }
+                    if (freePass > 0) {
+                        await window.dbEngine.ghi("nguoi_dung",
+                            { free_pass_thang: 0, free_pass_reset_thang: thangNow }, { sdt_khach: mySdt });
+                        window.hienToast("Free pass đã dùng", "Lần huỷ này được miễn phạt (free pass tháng).", "info");
+                    } else {
+                        await window._truDiemUyTin(mySdt, Math.abs(diemPhat));
+                        const conLai = Math.max(window.DIEM_UY_TIN?.SAN ?? 0, (u.diem_uy_tin ?? 100) + diemPhat);
+                        const mocKe  = window.DIEM_UY_TIN?.NGUONG?.khoa ?? 40;
+                        window.hienToast(`Trừ ${Math.abs(diemPhat)} điểm uy tín`,
+                            `Huỷ ${window.moTaThoiGianConLai?.(phutConLai) || ""} trước giờ đánh — còn ${conLai} điểm` +
+                            (conLai < mocKe ? " (dưới ngưỡng — đã khóa đặt slot)." : `. Dưới ${mocKe} sẽ bị khóa đặt.`),
+                            "warning");
                     }
-                    // diffH >= 4 → không trừ điểm
                 }
             }
 
@@ -2869,8 +2963,9 @@
 
             if (!huyOk) {
                 // Fallback: direct REST PATCH (khi không có token hoặc RPC chưa deploy)
+                // Ghi huy_luc để tính khoảng cách hủy + thống kê (cần cột huy_luc — migration-dat-slot-v2.sql)
                 await window.khoDuLieuVinhVien.ghiData("dat_slot",
-                    { trang_thai_di_danh: "Khách hủy" },
+                    { trang_thai_di_danh: "Khách hủy", huy_luc: new Date().toISOString() },
                     { id: datSlotId }
                 );
             }
@@ -2882,6 +2977,8 @@
         } catch (e) {
             console.error("Lỗi huỷ slot:", e);
             window.hienToast("Lỗi", "Không thể huỷ đăng ký. Thử lại sau.", "danger");
+        } finally {
+            window._huyDatSlotBusy = false;
         }
     };
 
@@ -3298,13 +3395,12 @@
     /* ═══════════════════════════════════════════════════
      * 9. TIỆN ÍCH
      * ═══════════════════════════════════════════════════ */
+    // Mọi hiển thị tiền route về window.formatTienK (đơn vị K dùng chung toàn hệ thống).
     function _formatVND(n) {
-        return Number(n || 0).toLocaleString("vi-VN") + "đ";
+        return window.formatTienK ? window.formatTienK(n) : (Number(n || 0).toLocaleString("vi-VN") + "K");
     }
-
-    // Định dạng giá ngắn gọn: 65000 → "65K"
     function _fmtK(n) {
-        return Math.round((n || 0) / 1000).toLocaleString("vi-VN") + "K";
+        return window.formatTienK ? window.formatTienK(n) : (Math.round((n || 0) / 1000).toLocaleString("vi-VN") + "K");
     }
 
     // Danh sách cấp độ chuẩn — lấy từ nguồn duy nhất window.TRINH_DO_LIST (đã IN HOA).
@@ -3781,6 +3877,12 @@
                     ? _diacChiGoc + (ca.quan_huyen ? " · " + ca.quan_huyen : "") + (ca.tinh_thanh ? " · " + ca.tinh_thanh : "")
                     : [ca.quan_huyen, ca.tinh_thanh].filter(Boolean).join(" · ")
                       || '<span class="ls-no-addr">KHÔNG CÓ ĐỊA CHỈ CỤ THỂ</span>';
+
+                // Nhắc cọc — ca yeu_cau_coc + slot còn "Chờ đánh" (sắp diễn ra). Mark "đã cọc" của
+                // host nằm ở localStorage host (khách không đọc được) → đây là nhắc TĨNH.
+                const cocReminder = (ca.yeu_cau_coc && slot.trang_thai_di_danh === "Chờ đánh")
+                    ? `<div class="ls-coc-reminder"><i class="fa-solid fa-hand-holding-dollar"></i> Ca này yêu cầu <strong>CỌC trước</strong> — liên hệ host để chuyển cọc &amp; xác nhận giữ chỗ.</div>`
+                    : "";
                 return `
                 <article class="ls-card" id="${itemId}" data-tt="${slot.trang_thai_di_danh}" itemscope itemtype="https://schema.org/Event">
                     <div class="ls-card-inner" onclick="window._toggleLsItem('${itemId}')">
@@ -3827,6 +3929,7 @@
                                         ${slot.ma_slot ? `<button class="ls-copy-btn" aria-label="Sao chép mã slot" onclick="event.stopPropagation();window._copyMaSlot('${slot.ma_slot}')"><i class="fa-regular fa-copy" aria-hidden="true"></i> Copy</button>` : ""}
                                     </div>
                                 </div>
+                                ${cocReminder}
                                 ${priceStr ? `<div class="ls-price-zone">${priceStr}</div>` : ""}
                                 ${actionBtns}
                             </div>

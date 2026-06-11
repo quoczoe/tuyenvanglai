@@ -439,7 +439,7 @@
     function _renderCaDauAdmin(list) {
         const tbody = document.getElementById("adminCaDauBody");
         if (!tbody) return;
-        const _vnd = n => (n||0).toLocaleString("vi-VN") + "đ";
+        const _vnd = n => (window.formatTienK ? window.formatTienK(n) : (n||0).toLocaleString("vi-VN") + "K");
 
         if (!list.length) {
             tbody.innerHTML = `<tr><td colspan="12" style="text-align:center;padding:32px;color:#64748b;">
@@ -2387,7 +2387,7 @@
      * 9. TIỆN ÍCH
      * ═══════════════════════════════════════════════════ */
     function _fVND(n) {
-        return Number(n || 0).toLocaleString("vi-VN") + "đ";
+        return window.formatTienK ? window.formatTienK(n) : (Number(n || 0).toLocaleString("vi-VN") + "K");
     }
 
     // Khởi chạy khi admin.html load xong

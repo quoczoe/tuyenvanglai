@@ -1958,8 +1958,11 @@
      * 12. CHỐT CA ĐẤU (KHÔNG ĐẢO NGƯỢC)
      * ═══════════════════════════════════════════════════ */
     window.chotCaDau = async function (id) {
-        if (!await window.xacNhanModal("CHỐT CA — KHÔNG THỂ ĐẢO NGƯỢC!\n\nSau khi chốt, bạn KHÔNG thể sửa hay xóa ca này. Dữ liệu lưu vĩnh viễn.\n\nBạn chắc chắn muốn chốt ca này?", '🔒')) return;
+        // Chống bấm nhanh nhiều lần: không khóa thì 5 click → 5 PATCH + 5 render + toast lặp.
+        if (window._chotCaBusy) return;
+        window._chotCaBusy = true;
         try {
+            if (!await window.xacNhanModal("CHỐT CA — KHÔNG THỂ ĐẢO NGƯỢC!\n\nSau khi chốt, bạn KHÔNG thể sửa hay xóa ca này. Dữ liệu lưu vĩnh viễn.\n\nBạn chắc chắn muốn chốt ca này?", '🔒')) return;
             await window.dbEngine.ghi("ca_dau", { da_chot_ca: true }, { id });
             window.hienToast("Đã chốt ca! 🔒", "Ca đấu đã được khóa vĩnh viễn. Bạn có thể đánh giá khách.", "success");
             await _taiLichSuCaDau();
@@ -1967,6 +1970,8 @@
         } catch (e) {
             console.error("Lỗi chốt ca:", e);
             window.hienToast("Lỗi", "Không thể chốt ca. Thử lại.", "danger");
+        } finally {
+            window._chotCaBusy = false;
         }
     };
 
@@ -1987,7 +1992,7 @@
         const ca = caList[0];
         if (!ca) return;
 
-        const _fmt = n => (n || 0).toLocaleString("vi-VN") + "đ";
+        const _fmt = n => (window.formatTienK ? window.formatTienK(n) : (n || 0).toLocaleString("vi-VN") + "K");
         const cauList = Array.isArray(ca.loai_cau_su_dung) ? ca.loai_cau_su_dung : [];
         const cauRows = cauList.map((c, i) => `
             <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.05);">
@@ -2053,7 +2058,7 @@
             });
             const total = tienSan + tongCau + tienNuoc;
             const el = document.getElementById("xnc-tong-chi");
-            if (el) el.textContent = total.toLocaleString("vi-VN") + "đ";
+            if (el) el.textContent = window.formatTienK ? window.formatTienK(total) : total.toLocaleString("vi-VN") + "K";
         };
     };
 
@@ -2108,10 +2113,24 @@
      * ═══════════════════════════════════════════════════ */
     window.xoaCaDau = async function (id) {
         // A2: cảnh báo nếu ca đang có khách giữ slot (xóa sẽ cascade hủy chỗ của họ)
+        const _ca     = _caDauRawData.find(s => s.id === id) || {};
         const _booked = (_caDauSlotMap[id] || []).filter(s => s.trang_thai_di_danh !== "Khách hủy").length;
-        const _canhBao = _booked > 0
-            ? `\n\n⚠️ Ca này có ${_booked} khách đang giữ slot — xóa sẽ HỦY chỗ của họ.`
-            : "";
+
+        // HOST hủy ca ĐÃ CÓ NGƯỜI ĐẶT → phạt host theo thang giờ HOST_HUY (SSOT DIEM_UY_TIN)
+        let _diemPhatHost = 0;
+        const _phutHost = window.phutConLaiToiGioDanh?.(_ca.ngay_danh, _ca.gio_bat_dau);
+        if (_booked > 0) {
+            const _thang = window.DIEM_UY_TIN?.HOST_HUY;
+            if (_thang && _phutHost != null) _diemPhatHost = window.tinhDiemPhatTheoGio(_thang, _phutHost);
+        }
+        let _canhBao = "";
+        if (_booked > 0) {
+            _canhBao = `\n\n⚠️ Ca này có ${_booked} khách đang giữ slot — xóa sẽ HỦY chỗ của họ.`;
+            if (_diemPhatHost < 0) {
+                const _tg = window.moTaThoiGianConLai?.(_phutHost) || "";
+                _canhBao += `\nBạn sẽ bị TRỪ ${Math.abs(_diemPhatHost)} điểm uy tín (hủy${_tg ? ` còn ${_tg}` : ""} trước giờ đánh).`;
+            }
+        }
         if (!await window.xacNhanModal("Bạn có chắc muốn xóa ca đấu này?\nHành động này không thể hoàn tác." + _canhBao, '🗑️')) return;
         try {
             await window.dbEngine.xoa("ca_dau", { id });
@@ -2121,6 +2140,16 @@
             if (check && check.length > 0) {
                 window.hienToast("Không thể xóa", "Ca đấu vẫn còn trên hệ thống. Có thể do quyền truy cập. Liên hệ Admin nếu cần xóa gấp.", "danger");
                 return;
+            }
+
+            // Phạt host sau khi xóa thành công (chỉ khi ca đã có người đặt)
+            if (_diemPhatHost < 0) {
+                const _hostSdt = _myUser?.sdt_khach || _myPhone;
+                if (_hostSdt && typeof window._truDiemUyTin === "function") {
+                    window._truDiemUyTin(_hostSdt, Math.abs(_diemPhatHost)).catch(() => {});
+                    window.hienToast(`Trừ ${Math.abs(_diemPhatHost)} điểm uy tín`,
+                        "Hủy ca đã có người đặt — bạn bị phạt uy tín theo thang giờ.", "warning");
+                }
             }
 
             // Cập nhật local state ngay — không cần tải lại toàn bộ
@@ -2250,23 +2279,23 @@
 
     // Ghost report: Host báo khách ghost sau ca kết thúc → trừ 15 điểm
     window.baoCaoGhost = async function (datSlotId, sdtKhach) {
-        if (!confirm(`Xác nhận báo cáo ${sdtKhach} là GHOST (không đến, không hủy)?\nHành động sẽ trừ 15 điểm uy tín của tài khoản này.`)) return;
+        // Chống bấm nhanh nhiều lần: không khóa thì 5 click → xuLyBungKeo chạy 5 lần →
+        // trừ điểm bùng NHIỀU LẦN trên cùng 1 slot. Cờ giữ tới khi xong (finally).
+        if (window._ghostBusy) return;
+        window._ghostBusy = true;
         try {
-            await window.dbEngine.ghi("dat_slot", { trang_thai_di_danh: "Bùng kèo" }, { id: datSlotId });
-            const users = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: sdtKhach } });
-            const u = (users || [])[0];
-            if (u && !u.is_whitelisted) {
-                const newScore = Math.max(0, (u.diem_uy_tin ?? 100) - 15);
-                await window.dbEngine.ghi("nguoi_dung", { diem_uy_tin: newScore }, { sdt_khach: sdtKhach });
-                if (newScore < 40 && u.is_active !== false) {
-                    await window.dbEngine.ghi("nguoi_dung", { is_active: false }, { sdt_khach: sdtKhach });
-                }
-            }
-            window.hienToast("Đã báo cáo Ghost ✅", `Trừ 15 điểm uy tín của ${sdtKhach}.`, "success");
+            if (!await window.xacNhanModal(
+                `Xác nhận báo cáo ${sdtKhach} là GHOST (không đến, không hủy)?\nMức phạt theo số lần bùng kèo trong 30 ngày (lần 3 → khóa tài khoản).`,
+                '👻')) return;
+            // ĐI QUA HÀM XỬ LÝ BÙNG DUY NHẤT — đếm lần 30 ngày, trừ điểm/khóa, toast tại 1 chỗ.
+            // ghiStatus=true: hàm tự ghi dat_slot "Bùng kèo" + huy_luc.
+            await window.xuLyBungKeo(sdtKhach, datSlotId, { ghiStatus: true });
             const overlay = document.getElementById("modalDanhSachKhachOverlay");
             if (overlay?.dataset.slotId) window.moModalDanhSachKhach(overlay.dataset.slotId);
         } catch (e) {
             window.hienToast("Lỗi", "Không thể gửi báo cáo ghost.", "danger");
+        } finally {
+            window._ghostBusy = false;
         }
     };
 
@@ -2274,6 +2303,75 @@
         const overlay = document.getElementById("modalDanhSachKhachOverlay");
         if (overlay) overlay.style.display = "none";
     };
+
+    /* ═══════════════════════════════════════════════════════════════
+     * TRẠNG THÁI CỌC (per-slot) — lưu localStorage, KHÔNG đụng DB/SQL.
+     * Cọc là thỏa thuận NGOÀI app; host tự đánh dấu "đã nhận cọc" cho từng
+     * khách. Nhớ qua reload trên CÙNG trình duyệt host. (Khách KHÔNG đọc được
+     * mark này → phía khách chỉ hiện nhắc tĩnh trong Lịch Sử.)
+     * ═══════════════════════════════════════════════════════════════ */
+    const _COC_LS_KEY = "tvl_coc_status";
+    function _layCocMap() { try { return JSON.parse(localStorage.getItem(_COC_LS_KEY) || "{}") || {}; } catch { return {}; } }
+    function _luuCocMap(m) { try { localStorage.setItem(_COC_LS_KEY, JSON.stringify(m)); } catch (_) {} }
+    window._daCoc = function (slotId) { return !!_layCocMap()[slotId]; };
+
+    // Badge cọc 1 ô. active=false (Khách hủy/Bùng) → "—" (không cần cọc).
+    function _cocBadgeHTML(slotId, active) {
+        if (!active) return `<span style="color:#475569;font-size:0.72rem;">—</span>`;
+        const da = window._daCoc(slotId);
+        const onCss  = "background:rgba(0,255,136,0.10);color:#00ff88;border:1px solid rgba(0,255,136,0.28);";
+        const offCss = "background:rgba(245,158,11,0.10);color:#fbbf24;border:1px solid rgba(245,158,11,0.32);";
+        return `<button class="gl-coc-badge" data-slot-id="${slotId}" data-coc="${da ? "1" : "0"}"
+            onclick="event.stopPropagation();window._toggleCoc(this)"
+            title="${da ? "Đã nhận cọc — bấm để bỏ" : "Chưa nhận cọc — bấm khi đã nhận"}"
+            style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;${da ? onCss : offCss}">${da ? "✓ Đã cọc" : "Chưa cọc"}</button>`;
+    }
+
+    // Toggle cọc 1 khách → lưu LS + cập nhật badge tại chỗ + tóm tắt X/Y.
+    window._toggleCoc = function (btn) {
+        const slotId = btn && btn.dataset && btn.dataset.slotId; if (!slotId) return;
+        const m = _layCocMap();
+        const now = !m[slotId];
+        if (now) m[slotId] = true; else delete m[slotId];
+        _luuCocMap(m);
+        btn.dataset.coc = now ? "1" : "0";
+        btn.title = now ? "Đã nhận cọc — bấm để bỏ" : "Chưa nhận cọc — bấm khi đã nhận";
+        btn.innerHTML = now ? "✓ Đã cọc" : "Chưa cọc";
+        btn.style.background = now ? "rgba(0,255,136,0.10)" : "rgba(245,158,11,0.10)";
+        btn.style.color      = now ? "#00ff88" : "#fbbf24";
+        btn.style.border     = now ? "1px solid rgba(0,255,136,0.28)" : "1px solid rgba(245,158,11,0.32)";
+        _capNhatCocSummary();
+    };
+
+    // Tóm tắt "X/Y khách đã xác nhận cọc" trong DS Khách (đọc badge đang render).
+    function _capNhatCocSummary() {
+        const badges = [...document.querySelectorAll("#modal-guest-list-body .gl-coc-badge")];
+        const y = badges.length;
+        const x = badges.filter(b => b.dataset.coc === "1").length;
+        const sum = document.getElementById("gl-coc-summary");
+        if (sum && sum.style.display !== "none") {
+            sum.innerHTML = `<i class="fa-solid fa-hand-holding-dollar"></i>&nbsp;Cọc: <strong style="color:${x >= y && y > 0 ? "#00ff88" : "#fbbf24"};">${x}/${y}</strong>&nbsp;khách đã xác nhận`;
+        }
+    }
+    window._capNhatCocSummary = _capNhatCocSummary;
+
+    // Thêm/bỏ CỘT "Cọc" (cuối bảng — sau Đánh Giá) tùy ca có yeu_cau_coc.
+    // Đặt cuối để KHÔNG đụng index cells[7]/cells[9] mà doiTrangThaiDiDanh dựa vào.
+    function _syncCocColumn(show) {
+        const table = document.getElementById("modal-guest-list-table");
+        if (!table) return;
+        const colgroup = table.querySelector("colgroup");
+        const headRow  = table.querySelector("thead tr");
+        let col = document.getElementById("gl-col-coc");
+        let th  = document.getElementById("gl-th-coc");
+        if (show) {
+            if (!col && colgroup) { col = document.createElement("col"); col.id = "gl-col-coc"; col.style.cssText = "width:10%;min-width:96px;"; colgroup.appendChild(col); }
+            if (!th && headRow)  { th = document.createElement("th"); th.id = "gl-th-coc"; th.textContent = "Cọc"; th.style.cssText = "padding:9px 8px;text-align:center;font-size:0.72rem;color:#fbbf24;white-space:nowrap;"; headRow.appendChild(th); }
+        } else {
+            if (col) col.remove();
+            if (th) th.remove();
+        }
+    }
 
     /**
      * H-JS3: openGuestListModal(matchId, matchTitle)
@@ -2333,6 +2431,7 @@
                 }).catch(() => [])
             ]);
             const daChotCa   = !!(caDauList[0]?.da_chot_ca);
+            const yeuCauCoc  = !!(caDauList[0]?.yeu_cau_coc); // ca yêu cầu cọc → hiện cột Cọc
             // Kiểm tra ca đã bắt đầu chưa — dùng để disable "Khách hủy" option
             const _caInfo = caDauList[0];
             const isMatchStarted = (() => {
@@ -2448,7 +2547,7 @@
                         <span style="display:flex;align-items:center;gap:6px;">${cur.icon}${cur.label}</span>
                         <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 3.5l3 3 3-3" stroke="${cur.color}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                     </button>
-                    <div class="gl-cdd-menu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:9999;
+                    <div class="gl-cdd-menu" style="display:none;z-index:9999;
                          background:#0f1e35;border:1px solid #1e3a5f;border-radius:9px;
                          box-shadow:0 8px 24px rgba(0,0,0,0.6);min-width:140px;overflow:hidden;">
                         ${_opts.map(o => o.disabled
@@ -2589,11 +2688,20 @@
                     ${td(`<span style="color:${tgHuyClr};font-size:0.73rem;white-space:nowrap;">${tgHuy}</span>`, "text-align:center;")}
                     ${td(ttCellHTML, "text-align:center;")}
                     ${tdDd(selectHTML)}
-                    ${tdLast(ratingCellHTML, "text-align:center;")}
+                    ${yeuCauCoc ? td(ratingCellHTML, "text-align:center;") : tdLast(ratingCellHTML, "text-align:center;")}
+                    ${yeuCauCoc ? tdLast(_cocBadgeHTML(g.id, !isHuy), "text-align:center;") : ""}
                 </tr>`;
             }).join("");
 
             if (tbody) tbody.innerHTML = rowsHTML;
+
+            // Đồng bộ cột Cọc (thêm/bỏ header) + tóm tắt X/Y theo ca có yeu_cau_coc
+            _syncCocColumn(yeuCauCoc);
+            const _cocSum = document.getElementById("gl-coc-summary");
+            if (_cocSum) {
+                if (yeuCauCoc) { _cocSum.style.display = "flex"; _capNhatCocSummary(); }
+                else _cocSum.style.display = "none";
+            }
 
         } catch (err) {
             if (loading) loading.style.display = "none";
@@ -2626,6 +2734,9 @@
     document.addEventListener("click", function (e) {
         if (!e.target.closest(".gl-cdd")) _closeAllGlCdd();
     }, true);
+    // Menu fixed không cuộn theo container → đóng khi cuộn/resize để tránh lệch vị trí
+    document.addEventListener("scroll", function () { _closeAllGlCdd(); }, true);
+    window.addEventListener("resize", function () { _closeAllGlCdd(); });
 
     window._toggleGlCdd = function (uid) {
         const wrap = document.getElementById(uid);
@@ -2637,24 +2748,37 @@
         _closeAllGlCdd();
         if (isOpen) return; // Toggle: đang mở thì đóng
 
-        // Hiện menu ở trạng thái drop-down trước để đo chiều cao thực
+        // ── POSITION:FIXED + toạ độ tính theo nút → THOÁT khỏi mọi container
+        // overflow (modal-guest-list-scroll có overflow-y:auto + overflow-x:auto
+        // trên mobile sẽ CẮT menu absolute khi bảng ít hàng). Fixed neo theo
+        // viewport nên không bị cắt; tự lật lên + kẹp trong màn hình.
+        const btn = wrap.querySelector("button[data-guest-id]") || wrap;
         menu.classList.remove("is-drop-up");
+        menu.style.position = "fixed";
+        menu.style.visibility = "hidden";
+        menu.style.top = "0px";
+        menu.style.left = "0px";
         menu.style.display = "block";
 
-        // So sánh bottom của menu với bottom của modal inner container
-        const menuRect      = menu.getBoundingClientRect();
-        const modalInner    = document.getElementById("modal-guest-list-inner");
-        const containerBtm  = modalInner
-            ? modalInner.getBoundingClientRect().bottom
-            : window.innerHeight;
-        const spaceBelow    = containerBtm - menuRect.bottom;
+        const mRect = menu.getBoundingClientRect();
+        const bRect = btn.getBoundingClientRect();
+        const vw = window.innerWidth, vh = window.innerHeight, GAP = 4, PAD = 8;
 
-        // Nếu menu tràn ra ngoài đáy container → lật lên trên
-        if (spaceBelow < 0) {
-            menu.classList.add("is-drop-up");
+        // Ngang: canh trái nút, kẹp để không tràn 2 mép
+        let left = bRect.left;
+        if (left + mRect.width > vw - PAD) left = vw - mRect.width - PAD;
+        if (left < PAD) left = PAD;
+
+        // Dọc: mở xuống; thiếu chỗ dưới → lật lên; lật lên cũng tràn → ghim trong viewport
+        let top = bRect.bottom + GAP;
+        if (top + mRect.height > vh - PAD) {
+            const up = bRect.top - mRect.height - GAP;
+            top = up >= PAD ? up : Math.max(PAD, vh - mRect.height - PAD);
         }
+        menu.style.left = Math.round(left) + "px";
+        menu.style.top = Math.round(top) + "px";
+        menu.style.visibility = "visible";
 
-        // Đẩy <tr> lên z-index cao để menu không bị che bởi các hàng phía dưới
         const tr = wrap.closest("tr");
         if (tr) tr.classList.add("tr-cdd-open");
     };
@@ -2858,7 +2982,9 @@
                     const users = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: sdt } }).catch(() => []);
                     const u = (users || [])[0];
                     if (u && !u.is_whitelisted) {
-                        const newScore = Math.min(100, (u.diem_uy_tin ?? 100) + 2);
+                        const _tran  = window.DIEM_UY_TIN?.TRAN ?? 100;
+                        const _thuong = window.DIEM_UY_TIN?.THAM_GIA_OK ?? 2;
+                        const newScore = Math.min(_tran, (u.diem_uy_tin ?? 100) + _thuong);
                         const newCa    = (u.so_ca_thanh_cong ?? 0) + 1;
                         window.dbEngine.ghi("nguoi_dung", { diem_uy_tin: newScore, so_ca_thanh_cong: newCa }, { sdt_khach: sdt }).catch(() => {});
                     }
@@ -2888,6 +3014,11 @@
      * (xacNhanThamGia giữ nguyên cho backward compat với moModalDanhSachKhach cũ)
      * ──────────────────────────────────────────────────────────────── */
     window.doiTrangThaiDiDanh = async function (selectEl) {
+        // Guard double-submit: dropdown custom truyền PROXY nên selectEl.disabled không
+        // chặn được click nhanh trên nút thật → dùng cờ window. Quan trọng: tránh trừ điểm
+        // "Bùng kèo" (−10) NHIỀU LẦN khi bấm liên tục.
+        if (window._doiTTBusy) return;
+        window._doiTTBusy = true;
         const guestId  = selectEl.dataset.guestId;
         const newState = selectEl.value;
         const prevVal  = selectEl.dataset.prev || selectEl.value;
@@ -2911,17 +3042,25 @@
             await window.dbEngine.ghi("dat_slot", payload, { id: guestId });
             selectEl.dataset.prev = newState;
 
-            // Trừ điểm uy tín khi Host chọn "Bùng kèo" (10 điểm)
+            // Bùng kèo → đi qua HÀM XỬ LÝ BÙNG DUY NHẤT (đếm lần 30 ngày, trừ điểm/khóa,
+            // toast tại 1 chỗ). ghiStatus=false vì payload ở trên đã ghi status + huy_luc.
             if (newState === "Bùng kèo") {
                 const _sdtBung = selectEl.dataset.sdt;
-                if (_sdtBung && typeof window._truDiemUyTin === "function") {
-                    window._truDiemUyTin(_sdtBung, 10).catch(() => {});
-                    window.hienToast("Trừ 10 điểm uy tín", `Khách bùng kèo — tài khoản bị phạt.`, "warning");
+                if (_sdtBung && typeof window.xuLyBungKeo === "function") {
+                    window.xuLyBungKeo(_sdtBung, guestId, { ghiStatus: false }).catch(() => {});
                 } else {
                     window.hienToast("Đã cập nhật ✅", newState, "success");
                 }
             } else {
                 window.hienToast("Đã cập nhật ✅", newState, "success");
+                // Thưởng +THAM_GIA_OK uy tín khi host xác nhận "Đã tham gia" — CHỈ khi CHUYỂN sang
+                // trạng thái này (prevVal khác) để tránh cộng lặp khi chọn lại cùng giá trị.
+                if (newState === "Đã tham gia" && prevVal !== "Đã tham gia") {
+                    const _sdtOk = selectEl.dataset.sdt;
+                    if (_sdtOk && typeof window._congDiemThamGia === "function") {
+                        window._congDiemThamGia(_sdtOk).catch(() => {});
+                    }
+                }
             }
 
             // Cập nhật DOM trực tiếp — KHÔNG reload lại modal (tránh đảo thứ tự + mất UX)
@@ -2992,6 +3131,7 @@
             // KHÔNG show toast ở đây — dbEngine.ghi đã gọi hienLoiMang() rồi (tránh double toast)
         } finally {
             selectEl.disabled = false;
+            window._doiTTBusy = false;
         }
     };
 
@@ -3009,7 +3149,7 @@
             await window.dbEngine.ghi("dat_slot", { tien_thu_bung: amount }, { id: slotId });
             window.hienToast(
                 "Đã lưu tiền bùng",
-                amount > 0 ? `Thu được ${amount.toLocaleString("vi-VN")}đ` : "Không thu được tiền",
+                amount > 0 ? `Thu được ${window.formatTienK ? window.formatTienK(amount) : amount.toLocaleString("vi-VN") + "K"}` : "Không thu được tiền",
                 "success"
             );
         } catch (e) {
@@ -3358,14 +3498,12 @@
     /* ═══════════════════════════════════════════════════
      * 17. TIỆN ÍCH HIỂN THỊ
      * ═══════════════════════════════════════════════════ */
+    // Mọi hiển thị tiền route về window.formatTienK (đơn vị K dùng chung toàn hệ thống).
     function _formatVND(n) {
-        return Number(n || 0).toLocaleString("vi-VN") + "đ";
+        return window.formatTienK ? window.formatTienK(n) : (Number(n || 0).toLocaleString("vi-VN") + "K");
     }
-
-    // Hiển thị tiền theo đơn vị K (dùng trong modal kế toán)
     function _formatK(n) {
-        const k = Math.round((n || 0) / 1000);
-        return (k >= 1000 ? k.toLocaleString("vi-VN") : String(k)) + "K";
+        return window.formatTienK ? window.formatTienK(n) : (Math.round((n || 0) / 1000).toLocaleString("vi-VN") + "K");
     }
     window._formatK = _formatK;
 
@@ -3684,13 +3822,13 @@
         <div class="tvl-xscroll" style="width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;">
         <table class="hs-table" style="min-width:860px;">
             <thead><tr>
-                <th>Ngày</th>
-                <th>Tên Sân</th>
-                <th style="text-align:center;">Khách</th>
-                <th>Tổng Chi</th>
-                <th>Tổng Thu</th>
-                <th>Lời / Lỗ</th>
-                <th>Thao Tác</th>
+                <th class="ta-c">Ngày</th>
+                <th class="ta-l">Tên Sân</th>
+                <th class="ta-c">Khách</th>
+                <th class="ta-r dt-hide-sm">Tổng Chi</th>
+                <th class="ta-r">Tổng Thu</th>
+                <th class="ta-r">Lời / Lỗ</th>
+                <th class="ta-c">Thao Tác</th>
             </tr></thead>
             <tbody>
                 ${caChoTted.map((c, i) => {
@@ -3700,40 +3838,40 @@
                     const chiSan      = _formatVND(c.chi_phi_san_co_dinh || 0);
                     const chiCau      = _formatVND(c.tong_chi_phi_cau    || 0);
                     const chiNuoc     = _formatVND(c.chi_phi_nuoc_khac   || 0);
-                    return `<tr style="${i % 2 === 0 ? "" : "background:rgba(255,255,255,0.02)"}">
-                    <td style="white-space:nowrap;">
+                    return `<tr>
+                    <td class="ta-c" style="white-space:nowrap;">
                         <div style="font-weight:600;font-size:0.85rem;">${_formatDate(c.ngay_danh)}</div>
                         <div style="font-size:0.72rem;color:#94a3b8;">${c.gio_bat_dau||""} – ${c.gio_ket_thuc||""}</div>
                     </td>
-                    <td>
+                    <td class="ta-l">
                         <div style="font-weight:600;font-size:0.82rem;">${c.ten_san || "--"}</div>
                         <div style="font-size:0.7rem;color:#64748b;">${c.quan_huyen||""}, ${c.tinh_thanh||""}</div>
                     </td>
-                    <td style="text-align:center;">
+                    <td class="ta-c">
                         <span style="font-size:1.1rem;font-weight:700;color:#60a5fa;">${c.soKhach}</span>
                         <span style="font-size:0.72rem;color:#64748b;"> người</span>
                     </td>
-                    <td style="white-space:nowrap;">
+                    <td class="ta-r dt-hide-sm" style="white-space:nowrap;">
                         <div style="font-size:0.85rem;font-weight:700;color:#e2e8f0;">${_formatVND(c.tongChi || 0)}</div>
                         <div style="font-size:0.68rem;color:#64748b;margin-top:3px;line-height:1.65;">
                             🏟 Sân: ${chiSan}<br>🏸 Cầu: ${chiCau}<br>💧 Khác: ${chiNuoc}
                         </div>
                     </td>
-                    <td>
+                    <td class="ta-r">
                         <span style="font-size:0.9rem;font-weight:700;color:#f59e0b;">${_formatVND(c.tongThu || 0)}</span>
                     </td>
-                    <td>
+                    <td class="ta-r">
                         <span style="font-size:1rem;font-weight:700;color:${loiLoColor};">${loiLoPrefix}${loiLoAbs}</span>
                     </td>
-                    <td>
-                        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <td class="ta-c">
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
                             <button class="btn-mini btn-mini-cyan" onclick="window.xemChiTietCaDau('${c.id}')" title="Xem chi tiết ca đấu">
                                 <i class="fa-solid fa-eye"></i> Chi tiết
                             </button>
                             <button class="btn-mini btn-mini-gold" onclick="window.xuatCSVCaDau('${c.id}')" title="Xuất CSV">
                                 <i class="fa-solid fa-file-csv"></i> CSV
                             </button>
-                            <button class="btn-mini" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid #334155;"
+                            <button class="btn-mini dt-print-btn" style="background:rgba(148,163,184,0.15);color:#94a3b8;border:1px solid #334155;"
                                 onclick="window.inCaDau('${c.id}')" title="In danh sách">
                                 <i class="fa-solid fa-print"></i> In
                             </button>
@@ -3791,6 +3929,14 @@
             const slotsBung   = slots.filter(s => s.trang_thai_di_danh === "Bùng kèo");
             const slotsHuy    = slots.filter(s => s.trang_thai_di_danh === "Khách hủy");
             const slotsCho    = slots.filter(s => !["Đã tham gia","Bùng kèo","Khách hủy"].includes(s.trang_thai_di_danh));
+
+            // Cọc (chỉ ca yeu_cau_coc): X/Y khách đã xác nhận (mark localStorage trong DS Khách)
+            const _cocActiveSlots = slots.filter(s => !["Khách hủy","Bùng kèo"].includes(s.trang_thai_di_danh));
+            const _cocActive = _cocActiveSlots.length;
+            const _cocDa     = _cocActiveSlots.filter(s => window._daCoc && window._daCoc(s.id)).length;
+            const _cocChiTietHTML = ca.yeu_cau_coc
+                ? `<div class="coc-banner" style="margin-bottom:14px;"><i class="fa-solid fa-hand-holding-dollar"></i>Ca YÊU CẦU CỌC — đã xác nhận <strong>&nbsp;${_cocDa}/${_cocActive}&nbsp;</strong> khách (đánh dấu trong DS Khách).</div>`
+                : "";
 
             // Tính toán tài chính — chỉ cộng tiền khi Đã tham gia VÀ da_thanh_toan=true
             const slotsDaTra   = slotsDiDanh.filter(s => !!s.da_thanh_toan);
@@ -3976,6 +4122,7 @@
                         <span style="font-size:0.82rem;font-weight:700;color:#e2e8f0;">Danh sách khách</span>
                         <span style="font-size:0.72rem;color:#64748b;">${slots.length} người</span>
                     </div>
+                    ${_cocChiTietHTML}
                     ${guestHTML}
                 </div>`;
 

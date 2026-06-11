@@ -83,6 +83,14 @@
             return;
         }
 
+        // ── DEDUPE chống xếp chồng: cùng (type+title+msg) trong 2s chỉ hiện 1 toast.
+        // Bấm nhanh 5 lần 1 nút → không bị 5 toast giống nhau chồng lên nhau.
+        const _key = type + "|" + (title || "") + "|" + (msg || "");
+        const _now = Date.now();
+        window._toastDedup = window._toastDedup || {};
+        if (window._toastDedup[_key] && _now - window._toastDedup[_key] < 2000) return;
+        window._toastDedup[_key] = _now;
+
         const toast = document.createElement("div");
         toast.className = `toast toast-${type}`;
 

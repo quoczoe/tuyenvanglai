@@ -4576,6 +4576,33 @@ body::before {
 }
 .scam-banner i { color:#ef4444;font-size:1rem;flex-shrink:0;margin-top:1px; }
 
+/* ── Banner "Yêu cầu cọc trước" (ca.yeu_cau_coc) — thông báo, KHÔNG chặn đặt ── */
+.coc-banner {
+    background:rgba(245,158,11,0.12);
+    border:1.5px solid rgba(245,158,11,0.55);
+    border-radius:10px;
+    padding:10px 14px;
+    font-size:0.78rem;
+    font-weight:700;
+    color:#fbbf24;
+    line-height:1.45;
+    margin-bottom:10px;
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+}
+.coc-banner i { color:#f59e0b;font-size:1rem;flex-shrink:0;margin-top:1px; }
+
+/* Nhắc cọc nhỏ trong Lịch Sử khách (ls-card body) */
+.ls-coc-reminder {
+    display:flex; align-items:flex-start; gap:7px;
+    background:rgba(245,158,11,0.10);
+    border:1px solid rgba(245,158,11,0.30);
+    border-radius:9px; padding:8px 11px; margin-top:8px;
+    font-size:0.76rem; font-weight:600; color:#fbbf24; line-height:1.4;
+}
+.ls-coc-reminder i { color:#f59e0b; margin-top:1px; flex-shrink:0; }
+
 /* ── Phone mask chip ── */
 .shb-reveal-btn {
     background:none;border:none;cursor:pointer;

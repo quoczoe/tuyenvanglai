@@ -899,6 +899,47 @@
     .stats-grid-4 { grid-template-columns: 1fr 1fr; }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   CHUẨN BẢNG HOST (.hs-table — Doanh Thu, Chi Tiết ca)
+   - full-width (min-width inline giữ cuộn ngang mobile trong .tvl-xscroll)
+   - header: nền đậm hơn body 1 bậc + font-weight 600 + chữ hoa nhẹ
+   - border dọc ngăn cách cột (subtle) + border ngang hàng
+   - zebra: hàng chẵn nền nhạt hơn 1 bậc (KHÔNG hardcode inline nữa)
+   - hover row: highlight nhẹ
+   - Căn chỉnh theo NGỮ NGHĨA cột qua helper: .ta-r (tiền=phải) · .ta-c
+     (số đếm/trạng thái/thao tác/ngày=giữa) · .ta-l (văn bản=trái)
+   ═══════════════════════════════════════════════════════════════════════ */
+.hs-table { width: 100%; border-collapse: collapse; }
+.hs-table thead th {
+    padding: 10px 12px;
+    font-size: 0.73rem; font-weight: 600; color: #cbd5e1;
+    text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap;
+    background: rgba(0,255,136,0.05);
+    border-bottom: 1px solid rgba(0,255,136,0.18);
+    border-right: 1px solid rgba(30,58,95,0.55);
+}
+.hs-table thead th:last-child { border-right: none; }
+.hs-table tbody td {
+    padding: 9px 12px; font-size: 0.85rem; vertical-align: middle;
+    border-bottom: 1px solid rgba(30,58,95,0.45);
+    border-right: 1px solid rgba(30,58,95,0.32);
+}
+.hs-table tbody td:last-child { border-right: none; }
+.hs-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.022); }
+.hs-table tbody tr:hover { background: rgba(0,255,136,0.05); }
+/* Helper căn chỉnh ngữ nghĩa — áp cho CẢ th lẫn td cùng cột */
+.hs-table .ta-r { text-align: right; }
+.hs-table .ta-c { text-align: center; }
+.hs-table .ta-l { text-align: left; }
+
+/* Gợi ý cuộn ngang: bóng mép phải khi còn nội dung (áp cho wrapper .tvl-xscroll) */
+
+/* Ẩn cột ít quan trọng + nút In trên mobile (≤767px) — desktop giữ nguyên */
+@media (max-width: 767px) {
+    .dt-print-btn { display: none !important; }
+    .hs-table .dt-hide-sm { display: none !important; }
+}
+
 
 /* ===================================================================
    11. TIME FILTER BUTTONS — Nút lọc nhanh thời gian

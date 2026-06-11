@@ -15,6 +15,102 @@
 (function () {
 
     /* ═══════════════════════════════════════════════════════════════
+     * 0. ĐỊNH DẠNG TIỀN — ĐƠN VỊ "K" DÙNG CHUNG TOÀN HỆ THỐNG
+     * Quy tắc: 75.000đ → "75K" · 1.250.000đ → "1.250K" · số lẻ <1000đ
+     *          làm tròn tới 0,1K (vd 75.500đ → "75,5K"). vi-VN: "." ngăn nghìn, "," thập phân.
+     * Mọi nơi render giá trị tiền PHẢI dùng hàm này (các _formatVND/_fmtK cũ đã route về đây).
+     * ═══════════════════════════════════════════════════════════════ */
+    window.formatTienK = function (n) {
+        const v = Math.round(Number(n) || 0);            // số tiền (đ)
+        const k = Math.round((v / 1000) * 10) / 10;       // quy ra K, làm tròn 0,1K
+        return k.toLocaleString("vi-VN", { maximumFractionDigits: 1 }) + "K";
+    };
+
+    /* ═══════════════════════════════════════════════════════════════
+     * 0B. BẢNG THƯỞNG/PHẠT UY TÍN — SSOT DUY NHẤT
+     * Mọi nơi tính điểm uy tín PHẢI đọc từ window.DIEM_UY_TIN — KHÔNG hardcode
+     * con số phạt rải rác. Chỉnh mốc/mức tại ĐÚNG MỘT chỗ này.
+     *
+     * Thang giờ khai báo dạng mảng mốc {phut, diem} XẾP GIẢM dần theo `phut`:
+     *   - phần tử ĐẦU (phut lớn nhất) = ngưỡng MIỄN phạt, áp dụng khi
+     *     phutConLai > phut (so sánh NGHIÊM ngặt > → đúng mốc vẫn bị phạt).
+     *   - các phần tử sau: áp dụng khi phutConLai >= phut.
+     * Dùng window.tinhDiemPhatTheoGio(thang, phutConLai) để tra cứu.
+     * ═══════════════════════════════════════════════════════════════ */
+    window.DIEM_UY_TIN = {
+        SAN: 0,            // điểm sàn (không tụt dưới)
+        TRAN: 100,         // điểm trần (không vượt)
+
+        THAM_GIA_OK: 2,    // host xác nhận khách "Đã tham gia" → +2 (cap 100)
+
+        // KHÁCH hủy slot — phạt theo khoảng cách (phút) tới giờ đánh
+        //   > 4h: 0 · 2h–4h: -2 · 30p–2h: -4 · < 30p: -6
+        KHACH_HUY: [
+            { phut: 240, diem: 0 },   // > 4h  → miễn phạt
+            { phut: 120, diem: -2 },  // 2h–4h
+            { phut: 30,  diem: -4 },  // 30p–2h
+            { phut: 0,   diem: -6 }   // < 30p
+        ],
+
+        // HOST hủy ca ĐÃ CÓ NGƯỜI ĐẶT — thang tương tự, nặng hơn
+        //   > 4h: 0 · 2h–4h: -3 · 30p–2h: -6 · < 30p: -8
+        HOST_HUY: [
+            { phut: 240, diem: 0 },
+            { phut: 120, diem: -3 },
+            { phut: 30,  diem: -6 },
+            { phut: 0,   diem: -8 }
+        ],
+
+        // BÙNG KÈO (không đến không báo) — "quá tam ba bận", đếm số lần
+        // trong CỬA SỔ LĂN `cuaSoNgay` ngày gần nhất.
+        BUNG: {
+            cuaSoNgay: 30,     // cửa sổ lăn 30 ngày
+            lan1: -10,         // lần 1 trong cửa sổ
+            lan2: -20,         // lần 2 trong cửa sổ (kèm cảnh báo)
+            khoaTuLan: 3       // từ lần 3 → khóa tài khoản tạm thời (is_active=false)
+        },
+
+        // Mốc ngưỡng quyền lợi (giữ nguyên logic cũ)
+        NGUONG: {
+            khoa: 40,          // < 40 → khóa đặt slot
+            siet: 60,          // 40–59 → siết 1 slot/ngày
+            uyTin: 80          // ≥ 80 → quyền lợi highTrust
+        }
+    };
+
+    /* Tra điểm phạt theo thang giờ. `phutConLai` = số phút còn lại tới giờ đánh
+     * (âm = đã qua giờ → coi như mốc thấp nhất). Trả về số ÂM hoặc 0. */
+    window.tinhDiemPhatTheoGio = function (thang, phutConLai) {
+        if (!Array.isArray(thang) || !thang.length) return 0;
+        for (let i = 0; i < thang.length; i++) {
+            const t = thang[i];
+            if (i === 0) { if (phutConLai > t.phut) return t.diem; }   // ngưỡng miễn: strict >
+            else if (phutConLai >= t.phut) return t.diem;
+        }
+        return thang[thang.length - 1].diem; // dưới mốc thấp nhất → mức nặng nhất
+    };
+
+    /* Số phút còn lại từ BÂY GIỜ tới giờ đánh (GMT+7 — trình duyệt VN chạy giờ local).
+     * ngayDanh "YYYY-MM-DD", gioBatDau "HH:MM[:SS]". Thiếu dữ liệu → null. */
+    window.phutConLaiToiGioDanh = function (ngayDanh, gioBatDau) {
+        if (!ngayDanh || !gioBatDau) return null;
+        const start = new Date(ngayDanh + "T" + gioBatDau);
+        if (isNaN(start.getTime())) return null;
+        return Math.round((start.getTime() - Date.now()) / 60000);
+    };
+
+    /* Mô tả thời gian còn lại cho UI xác nhận: "1h25p", "45p", "đã quá giờ". */
+    window.moTaThoiGianConLai = function (phut) {
+        if (phut == null) return "";
+        if (phut < 0) return "đã quá giờ đánh";
+        const h = Math.floor(phut / 60);
+        const m = phut % 60;
+        if (h > 0 && m > 0) return `${h}h${m}p`;
+        if (h > 0) return `${h}h`;
+        return `${m}p`;
+    };
+
+    /* ═══════════════════════════════════════════════════════════════
      * 1. DỮ LIỆU TĨnh ĐỊA LÝ — 63 TỈNH THÀNH VIỆT NAM
      * Dùng cho dropdown Tỉnh/Thành + Quận/Huyện trên form
      * ═══════════════════════════════════════════════════════════════ */

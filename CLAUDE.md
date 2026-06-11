@@ -49,15 +49,61 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 - Đánh giá: 3 điều kiện AND (chốt ca + đã đăng ký + Đã tham gia)
 - `danh_gia_tin_dung`: NO UPDATE sau INSERT
 
+### BẢNG UY TÍN — SSOT `window.DIEM_UY_TIN` (bo-may-du-lieu.js §0B)
+> MỌI nơi tính điểm đọc từ đây — KHÔNG hardcode con số phạt. Điểm sàn 0, trần 100.
+- **Tham gia OK** (host xác nhận "Đã tham gia"): **+2**, cap 100. Cộng ở `xacNhanThamGia` (checkbox) + `doiTrangThaiDiDanh` (dropdown, chỉ khi CHUYỂN sang — tránh cộng lặp).
+- **Khách hủy** (thang giờ tới giờ đánh, GMT+7): `>4h: 0 · 2–4h: −2 · 30p–2h: −4 · <30p: −6`. Ranh giới 4h/2h thuộc bracket thấp hơn (240→−2, 120→−2, 30→−4). Free-pass tháng miễn 1 lần. Modal xác nhận BÁO TRƯỚC mức phạt.
+- **Host hủy ca đã có người đặt**: `>4h: 0 · 2–4h: −3 · 30p–2h: −6 · <30p: −8` (`xoaCaDau`, phạt HOST).
+- **Bùng kèo** (đếm rolling 30 ngày qua `huy_luc`): lần 1 = **−10**, lần 2 = **−20** + cảnh báo "lần 3 sẽ khóa", lần 3+ = **KHÓA tài khoản** (`is_active=false`). CẢ "Báo cáo Ghost" lẫn dropdown "Bùng kèo" → CÙNG hàm `window.xuLyBungKeo(sdt, datSlotId, {ghiStatus})`.
+- Khóa tài khoản dùng cột `is_active` (sẵn có) — login chặn (khach-choi:91/636/1006), admin mở khóa bằng nút sẵn có `_khoaMoTV`. KHÔNG cần SQL mới.
+- Thang giờ khai báo dạng mảng `[{phut,diem}]` xếp GIẢM dần; phần tử đầu = ngưỡng miễn (so sánh strict `>`). Tra cứu: `window.tinhDiemPhatTheoGio(thang, phutConLai)`. Helper: `phutConLaiToiGioDanh()`, `moTaThoiGianConLai()`. Test: `node .devtest/trust-test.js` (32 assertion PASS).
+- **Wording**: app CẦU LÔNG — dùng "đánh" KHÔNG dùng "đá". Giá trị DB `trang_thai_di_danh` ("Chờ đánh"/"Đã tham gia"/"Bùng kèo"/"Khách hủy") GIỮ NGUYÊN (không đổi value). Chỉ đổi nhãn/thông báo hiển thị.
+
 ## SECURITY CHECKLIST (mỗi file HTML)
 ```javascript
 // Disable chuột phải, F12, Ctrl+U, DevTools detect, console.clear
 // user-select: none toàn trang; input/textarea được select
 ```
 
-## CURRENT STATE (cập nhật: 2026-06-10 phiên 17)
+## CURRENT STATE (cập nhật: 2026-06-11 PHIÊN E — cọc DS Khách + thiết kế thông báo + chuẩn hóa bảng)
 
-> Cache-bust `?v=`: tất cả file dùng mốc ngày `20260610`; file đổi nhiều lần trong ngày dùng hậu tố `b/c/d`. HIỆN TẠI (index.html): giao-dien.css=`20260610c`, components.css=`20260610c`, ket-noi-supabase.js=`20260610d`, bo-may-du-lieu.js=`20260610b`, hieu-ung-giao-dien.js=`20260610`, phan-he-khach-choi.js=`20260610d`, phan-he-host.js=`20260610d`, phan-he-ung-dung.js=`20260610b`, phan-he-gop-y.js=`20260610`. admin/index.html: ket-noi=`20260610d`, bo-may=`20260610b`, hieu-ung=`20260610`, quan-tri=`20260610`.
+> Cache-bust `?v=` HIỆN TẠI (index.html): giao-dien.css=`20260611f`, components.css=`20260611f`, ket-noi-supabase.js=`20260610d`, bo-may-du-lieu.js=`20260611c`, hieu-ung-giao-dien.js=`20260611b`, phan-he-khach-choi.js=`20260611f`, phan-he-host.js=`20260611f`, phan-he-ung-dung.js=`20260610b`, phan-he-gop-y.js=`20260610`. admin/index.html: ket-noi=`20260610d`, bo-may=`20260611c`, hieu-ung=`20260611b`, quan-tri=`20260611b`.
+
+### PHIÊN E — CỌC DS KHÁCH + THIẾT KẾ THÔNG BÁO + CHUẨN HÓA BẢNG
+- **Cọc DS Khách (localStorage, KHÔNG SQL)**: cột "Cọc" cuối DS Khách (chỉ ca `yeu_cau_coc`) badge "Chưa cọc"→"✓ Đã cọc"; persist `localStorage tvl_coc_status` per-slot; tóm tắt X/Y ở DS Khách + Chi Tiết ca; khách: nhắc tĩnh `.ls-coc-reminder` trong Lịch Sử. Helper `_daCoc/_toggleCoc/_syncCocColumn` (host). Cột thêm ở CUỐI → không đụng `cells[7]/[9]`. Verify 10/10. *(Giới hạn: mark host ở LS host, khách không đọc được → nhắc tĩnh; muốn đồng bộ cần field DB.)*
+- **Thiết kế THÔNG BÁO**: `docs/THIET-KE-THONG-BAO.md` (CHƯA code, chờ duyệt) — khuyến nghị polling 30s + bảng `thong_bao` + drawer chuông; v1 = 6 sự kiện ưu tiên Cao + 1 SQL.
+- **Chuẩn bảng `.hs-table`** (components.css): header nền+`600`+hoa, border dọc, zebra, hover, helper `.ta-r/.ta-c/.ta-l` (tiền=phải, số/ngày/trạng thái/thao tác=giữa, văn bản=trái), `.dt-hide-sm`. Áp Doanh Thu (tiền→PHẢI, mobile ẩn Tổng Chi+In). Admin `.ad-table`/host `.app-table`/guest-list ĐÃ chuẩn sẵn. Bump `?v=20260611f`.
+
+### PHIÊN D — UI DOANH THU + THU CỌC TRƯỚC
+- **Doanh Thu full-width**: `.hs-table` thiếu `width` (chỉ inline `min-width:860px`) → bảng căn trái ~860px, trống nửa phải desktop. Fix `.hs-table{width:100%}` (components.css). Nút In ẩn mobile qua `.dt-print-btn` + `@media(max-width:767px)`. Metric `.stats-grid-4` vốn đã full-width (không sửa).
+- **Thu Cọc Trước (option: thông báo + xác nhận)**: trước đây `yeu_cau_coc` lưu DB nhưng khách KHÔNG đọc (chỉ host-side mock). Nay khách đọc `ca.yeu_cau_coc` → badge `.coc-banner` (amber) trên card Tìm Kèo + modal chi tiết; `datSlot` thêm `xacNhanModal` nhắc liên hệ host chuyển cọc (HỦY=không đặt). KHÔNG chặn cứng/KHÔNG thu tiền (cọc ngoài app). Verify `.devtest/verify-coc.js` 9/9. Bump `?v=20260611e` (khach-choi+host+css).
+
+### PHIÊN C — SUITE PLAYWRIGHT SỐNG (DB thật, dữ liệu QATEST) — 81/81 PASS
+- **Fix 3 bug rapid-click** (bấm nhanh 5× trừ điểm/toast nhiều lần): guard `_huyDatSlotBusy` (`huyDatSlot`), `_ghostBusy` (`baoCaoGhost`), `_chotCaBusy` (`chotCaDau`) — cùng pattern `_datSlotBusy`/`_doiTTBusy`/`_dangCaBusy`. Bump `?v=20260611d` (khach-choi+host).
+- **🔴 PHÁT HIỆN: anon KHÔNG DELETE được (RLS thiếu policy DELETE → trả 204 nhưng xóa 0 dòng)**, xác nhận live. Hệ quả: (1) **Host KHÔNG xóa được ca của mình** (`xoaCaDau`→"Không thể xóa — liên hệ Admin"); (2) **Phạt "Host hủy ca"** nằm SAU verify-deleted → DELETE luôn fail → phạt host KHÔNG BAO GIỜ áp dụng live (thang HOST_HUY đúng nhưng path bị chặn). Cần SQL/RPC token (chờ duyệt — `docs/LO-TRINH-BAO-MAT.md`). Workaround host: "Tạm khóa" (PATCH OK).
+- **Dọn QATEST**: anon không DELETE → NEUTRALIZE bằng PATCH (ca `da_chot_ca+is_tam_khoa+ngày quá khứ` ẩn Tìm Kèo; slot "Khách hủy"; user `is_active=false`) → 0 còn HIỆN. Xóa VẬT LÝ cần `cleanup-qatest.sql` (MỚI, chờ duyệt). Harness `.devtest/qa-lib.js` + 6 sweep (`nhom0..4` + `nhom-cleanup`).
+
+### PHIÊN 19 — CHUẨN HÓA UY TÍN (SSOT `DIEM_UY_TIN`) + WORDING
+- **A. Bảng uy tín 1 nguồn**: `window.DIEM_UY_TIN` + `tinhDiemPhatTheoGio/phutConLaiToiGioDanh/moTaThoiGianConLai` (bo-may §0B). Xóa số phạt hardcode cũ (host −15/−10 → đi qua const). Chi tiết bảng ở §BUSINESS RULES.
+- **Bùng kèo hợp nhất** `window.xuLyBungKeo()` (khach-choi): đếm rolling-30d theo `huy_luc`, lần 1/2/3 = −10/−20/KHÓA. `baoCaoGhost` + `doiTrangThaiDiDanh` đều route qua đây. `xacNhanModal` thay `confirm()` cũ.
+- **Khách hủy** (`huyDatSlot`): thang `KHACH_HUY` (0/−2/−4/−6), modal báo trước mức phạt + thời gian còn lại, ghi `huy_luc` ở fallback REST. **Host hủy ca** (`xoaCaDau`): thang `HOST_HUY` (0/−3/−6/−8) phạt host + cảnh báo trong modal xóa.
+- **Khóa tài khoản** = `is_active=false` (login chặn sẵn; admin `_khoaMoTV` mở khóa) → KHÔNG cần SQL/cột mới.
+- **B. Wording**: 6× `"đá xong"→"đánh xong"` trong khach-choi (2 toast + 4 comment). Còn lại ("ngày/giờ/Chờ đánh", "đánh giá") đã đúng. Giá trị DB GIỮ NGUYÊN.
+- **Verify**: `node .devtest/trust-test.js` = 32/32 PASS (ranh giới 240/120/30 + hằng số); `node --check` 3 file = OK.
+- **⏳ CHƯA LÀM (chuyển phiên mới)**: suite Playwright SỐNG (QATEST: dựng dữ liệu, vòng đời ca, doanh thu, test sống từng luật uy tín, rapid-click live, săn lỗi) — cần context riêng, harness `.devtest/` đã sẵn.
+
+### PHIÊN 18 (A–E) — QUYẾT ĐỊNH KỸ THUẬT MỚI
+- **Slot-limit fix (18A)**: nhánh highTrust `datSlot` join ca_dau (`_demChoDanhThucSu`) → đếm "ca chưa đá xong" thật, bộ đếm reset đúng (trước kẹt "Chờ đánh" vĩnh viễn). SQL dọn tùy chọn: `migration-cleanup-slot-ket-v1.sql` (CHƯA chạy).
+- **XSS (18A)**: `hienToast` đổi `innerHTML`→`textContent` (chặn XSS toast toàn app); `phan-he-quan-tri.js` vá `_escHtml` các điểm sót (ten_san/nhan_xet/_layTen). Còn lại escHTML khach-choi+host trong `docs/LO-TRINH-BAO-MAT.md §2.2`.
+- **Phân quyền admin (18A)**: cổng login JWT OK, nhưng THAO TÁC admin chỉ chặn bằng UI — RLS `is_admin()` (security-auth-v4 Parts 2-8) CHƯA chạy → ai có anon key cũng gọi REST được. Ghi `LO-TRINH-BAO-MAT.md §0.1`.
+- **Design tokens (18B)**: thêm `--space-*`, `--fs-*`, `--shadow-sm/md/lg` + `.tvl-empty` + `.tvl-xscroll` (giao-dien.css).
+- **LỊCH SỬ fix (18B)**: gỡ `.ls-card` LEGACY (display:flex) trong inline `<style>` index.html ghi đè giao-dien.css → chevron+giá canh phải đúng.
+- **Turnstile localhost bypass (18B)**: `window._tvlIsLocalhost` → skip render + KHÔNG load CF api.js + bypass `_xacMinhTurnstile`. Domain thật GIỮ NGUYÊN.
+- **nguoi_dung select fix (18B)**: bỏ cột `ma_key_host,so_sao_tb` (không tồn tại) khỏi `_thucHienTimKiem` → hết 400 mỗi lần tìm.
+- **Dropdown DS Khách fix (18D)**: `.gl-cdd-menu` → `position:fixed` + toạ độ JS từ nút (`_toggleGlCdd`) → thoát overflow `#modal-guest-list-scroll`; tự lật + kẹp viewport + đóng khi scroll. Admin `.ca-action-menu` đã fixed sẵn.
+- **Money→K (18E)**: `window.formatTienK()` (bo-may) — 75.000đ→`75K`, 1.250.000đ→`1.250K`. MỌI render tiền route qua đây (_formatVND/_fmtK/_vnd... đều delegate). Trust "đ" + input label "(đ)" giữ nguyên.
+- **Anti-spam (18E)**: toast dedupe (cùng type+title+msg trong 2s→1) + guard `_doiTTBusy` cho `doiTrangThaiDiDanh` (chống double trừ điểm bùng).
+- **Harness test**: `.devtest/` (server.js + Playwright scripts) + `screenshots/` (đã `.vercelignore`). Creds admin CHỈ truyền qua ENV, không ghi file.
 
 ### Trạng thái file
 | File | Version | Ghi chú |
