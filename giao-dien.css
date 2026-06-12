@@ -2941,7 +2941,16 @@ body::before {
 }
 .kh-level-more:hover { background: rgba(0,255,136,0.22) !important; }
 
-/* ── 2D: Card kèo (tablet+PC) — CÙNG CHIỀU CAO, action row dính đáy ── */
+/* Cọc banner trong card — 1 DÒNG cố định (+ placeholder giữ chỗ khi không cọc) */
+.coc-banner--1l { align-items: center; }
+.coc-banner--1l .coc-1l-txt {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
+}
+.coc-banner--empty { visibility: hidden; }   /* giữ chỗ đúng 1 dòng, ẩn hình */
+
+/* ── 2D: Card kèo (tablet+PC) — CÙNG CHIỀU CAO + phân vùng cố định ──
+   Mọi vùng giữ height tự nhiên; HOST (hoặc spacer) hút khoảng trống dư
+   → host + footer DÍNH ĐÁY card, khoảng trắng gom về 1 chỗ (trên host) đều nhau. */
 @media (min-width: 601px) {
     #slotsSearchResultContainer { align-items: stretch; }
     .slot-card {
@@ -2954,9 +2963,10 @@ body::before {
         flex-direction: column;
         height: 100%;
     }
-    .slot-card-body { flex: 1; }
+    .slot-card-body { flex: 0 0 auto; }                  /* KHÔNG co giãn (tránh gap ở giữa) */
+    .slot-host-banner, .slot-host-spacer { margin-top: auto; }  /* hút slack → đẩy host+footer xuống đáy */
+    .slot-host-spacer { min-height: 0; }
     .slot-card-footer {
-        margin-top: auto;
         padding-top: 10px;
         border-top: 1px solid rgba(255,255,255,0.06);
     }

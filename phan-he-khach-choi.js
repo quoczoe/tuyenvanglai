@@ -1936,11 +1936,14 @@
                 return;
             }
 
+            // Chỉ giữ chỗ hàng "cọc" khi CÓ ÍT NHẤT 1 ca yêu cầu cọc trong kết quả
+            // → card không cọc thêm placeholder để THẲNG HÀNG; nếu không ca nào cọc → không phí chỗ.
+            const anyCoc = results.some(s => s.yeu_cau_coc);
             results.forEach(slot => {
                 const soKhach = (datSlotMap[slot.id] || []).length;
                 // Ưu tiên: ma_key_host (SaaS key cũ) → sdt_nguoi_tao (hệ thống mới)
                 const hostInfo = hostMap[slot.ma_key_host] || hostMap[slot.sdt_nguoi_tao] || null;
-                const card = _taoCaCard(slot, soKhach, daDatSet, hostInfo, daHuySet, daTuChoiSet);
+                const card = _taoCaCard(slot, soKhach, daDatSet, hostInfo, daHuySet, daTuChoiSet, anyCoc);
                 container.appendChild(card);
             });
         } catch (e) {
@@ -1951,7 +1954,7 @@
         }
     }
 
-    function _taoCaCard(slot, soKhach = 0, daDatSet = new Set(), hostInfo = null, daHuySet = new Set(), daTuChoiSet = new Set()) {
+    function _taoCaCard(slot, soKhach = 0, daDatSet = new Set(), hostInfo = null, daHuySet = new Set(), daTuChoiSet = new Set(), anyCoc = false) {
         const card = document.createElement("div");
         card.className = "slot-card";
         card.dataset.caId = slot.id; // Để query nút sau khi đặt slot thành công
@@ -2056,7 +2059,11 @@
             </div>
 
             ${slot.scam_warning ? `<div class="scam-banner"><i class="fa-solid fa-triangle-exclamation"></i>⚠️ CẢNH BÁO: Host chưa được xác minh. Tuyệt đối KHÔNG chuyển khoản cọc trước dưới mọi hình thức để tránh rủi ro lừa đảo!</div>` : ""}
-            ${slot.yeu_cau_coc ? `<div class="coc-banner"><i class="fa-solid fa-hand-holding-dollar"></i>Ca này YÊU CẦU CỌC TRƯỚC — liên hệ host để chuyển cọc giữ chỗ (thỏa thuận ngoài app).</div>` : ""}
+            ${slot.yeu_cau_coc
+                ? `<div class="coc-banner coc-banner--1l" title="Ca này yêu cầu cọc trước — liên hệ host để chuyển cọc giữ chỗ (thỏa thuận ngoài app).">
+                       <i class="fa-solid fa-hand-holding-dollar"></i><span class="coc-1l-txt">Ca này YÊU CẦU CỌC TRƯỚC — liên hệ host giữ chỗ</span>
+                   </div>`
+                : (anyCoc ? `<div class="coc-banner coc-banner--1l coc-banner--empty" aria-hidden="true">&nbsp;</div>` : "")}
             <div class="slot-card-body">
                 <!-- Tên sân + quận — hyperlink mở Google Maps tab mới -->
                 <div class="slot-court-info" itemscope itemtype="https://schema.org/SportsActivityLocation">
@@ -2138,7 +2145,7 @@
                         ${_sdtChipHtml(_sdt, _sdtEsc, slot.id)}
                     </span>` : ""}
                 </div>`;
-            })() : ""}
+            })() : `<div class="slot-host-spacer" aria-hidden="true"></div>`}
 
             <!-- Footer: Share(15%) | XEM CHI TIẾT(40%) | ĐẶT SLOT(45%) -->
             <div class="slot-card-footer">
