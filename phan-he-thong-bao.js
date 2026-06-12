@@ -81,6 +81,7 @@
         H3b: { mau: "#ff4444" }, // Cao  — khách bùng kèo (ghi cho host)
         S1:  { mau: "#ff4444" }, // Cao  — tài khoản bị khóa
         G4:  { mau: "#ff8800" }, // TB   — host từ chối slot của khách (Nhóm 3)
+        G6:  { mau: "#ff8800" }, // TB   — host đổi giờ ca đấu
         _:   { mau: "#94a3b8" }  // mặc định — trung tính
     };
 

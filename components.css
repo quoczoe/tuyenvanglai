@@ -917,20 +917,20 @@
     background: rgba(0,255,136,0.05);
     border-bottom: 1px solid rgba(0,255,136,0.18);
     border-right: 1px solid rgba(30,58,95,0.55);
+    text-align: center;            /* căn giữa tiêu đề (đồng bộ toàn hệ thống) */
 }
 .hs-table thead th:last-child { border-right: none; }
 .hs-table tbody td {
     padding: 9px 12px; font-size: 0.85rem; vertical-align: middle;
     border-bottom: 1px solid rgba(30,58,95,0.45);
     border-right: 1px solid rgba(30,58,95,0.32);
+    text-align: center;            /* căn giữa MỌI ô dữ liệu (kể cả tiền) */
 }
 .hs-table tbody td:last-child { border-right: none; }
 .hs-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.022); }
 .hs-table tbody tr:hover { background: rgba(0,255,136,0.05); }
-/* Helper căn chỉnh ngữ nghĩa — áp cho CẢ th lẫn td cùng cột */
-.hs-table .ta-r { text-align: right; }
-.hs-table .ta-c { text-align: center; }
-.hs-table .ta-l { text-align: left; }
+/* Đồng bộ căn GIỮA toàn bảng — gồm cả ô tiền (.ta-r) theo yêu cầu */
+.hs-table .ta-r, .hs-table .ta-c, .hs-table .ta-l { text-align: center; }
 
 /* Gợi ý cuộn ngang: bóng mép phải khi còn nội dung (áp cho wrapper .tvl-xscroll) */
 

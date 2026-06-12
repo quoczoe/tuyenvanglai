@@ -1829,67 +1829,94 @@
             if (!slot) { window.hienToast("Không tìm thấy", "Ca đấu không còn tồn tại.", "danger"); window._dongModalSuaCa(); return; }
             if (slot.da_chot_ca) { window.hienToast("Đã chốt", "Không thể sửa ca đã chốt.", "danger"); window._dongModalSuaCa(); return; }
 
-            const fld = (id, val, label, type="text", extra="") =>
-                `<div style="margin-bottom:12px;">
-                    <label style="display:block;font-size:0.73rem;color:#94a3b8;margin-bottom:4px;">${label}</label>
-                    <input id="msc_${id}" type="${type}" value="${val ?? ""}" ${extra}
-                        style="width:100%;padding:9px 12px;background:rgba(30,58,95,0.7);border:1px solid #2d4a6e;border-radius:8px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;font-family:inherit;outline:none;">
-                </div>`;
+            const _esc = s => { const d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; };
+            // K-field (DB lưu đồng → hiện K = /1000; lưu lại ×1000)
+            const fldK = (id, valDong, label, ph) =>
+                `<div class="msc-field"><label class="msc-field-label">${label}</label>
+                    <input id="msc_${id}" type="number" class="msc-input" value="${Math.round((Number(valDong)||0)/1000)}" min="0" step="1" placeholder="${ph}"></div>`;
+            const fldNum = (id, val, label, extra="") =>
+                `<div class="msc-field"><label class="msc-field-label">${label}</label>
+                    <input id="msc_${id}" type="number" class="msc-input" value="${Number(val)||0}" min="0" ${extra}></div>`;
 
-            const fldNum = (id, val, label) =>
-                `<div style="margin-bottom:12px;">
-                    <label style="display:block;font-size:0.73rem;color:#94a3b8;margin-bottom:4px;">${label}</label>
-                    <input id="msc_${id}" type="number" value="${Number(val)||0}" min="0"
-                        style="width:100%;padding:9px 12px;background:rgba(30,58,95,0.7);border:1px solid #2d4a6e;border-radius:8px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;font-family:inherit;outline:none;">
-                </div>`;
+            // Tách trình độ: cấp chuẩn (giữ) vs ghi chú free-text (sửa được) — lưu trong yeu_cau_trinh_do JSONB
+            const _STD = new Set(window.TRINH_DO_LIST || []);
+            const _isStd = v => _STD.has(window.chuanHoaTrinhDo ? window.chuanHoaTrinhDo(String(v)) : v);
+            const _splitTd = arr => {
+                const a = Array.isArray(arr) ? arr : (arr ? [arr] : []);
+                return { levels: a.filter(_isStd), note: a.filter(v => !_isStd(v)).join(", ") };
+            };
+            const _td   = slot.yeu_cau_trinh_do || {};
+            const tdNam = _splitTd(_td.nam);
+            const tdNu  = _splitTd(_td.nu);
+            const _gioBd = (slot.gio_bat_dau || "").slice(0, 5);
+            const _gioKt = (slot.gio_ket_thuc || "").slice(0, 5);
 
-            // Danh sách loại cầu
+            // Đếm slot đang giữ chỗ (cảnh báo đổi giờ)
+            let _soDat = 0;
+            try {
+                const _ds = await window.dbEngine.docThu("dat_slot", { eq: { id_ca_dau: id } }).catch(() => []);
+                _soDat = (_ds || []).filter(s => s.trang_thai_di_danh !== "Khách hủy" && s.trang_thai_di_danh !== "Host từ chối").length;
+            } catch (_) {}
+            // Lưu gốc trên modal để _luuSuaCa so sánh + merge
+            modal.dataset.gioBdGoc = _gioBd;
+            modal.dataset.gioKtGoc = _gioKt;
+            modal.dataset.soDat    = String(_soDat);
+            modal._tdLevels = { nam: tdNam.levels, nu: tdNu.levels };
+
+            // Danh sách loại cầu (Giá/ống đổi sang K)
             const cauList = Array.isArray(slot.loai_cau_su_dung) ? slot.loai_cau_su_dung : [];
             const cauRows = cauList.map((c, i) =>
-                `<div style="display:grid;grid-template-columns:1fr 80px 80px;gap:8px;align-items:center;margin-bottom:8px;">
-                    <span style="font-size:0.8rem;color:#e2e8f0;">${c.ten || "Cầu " + (i+1)}</span>
-                    <div>
-                        <label style="font-size:0.68rem;color:#64748b;">Số lượng</label>
-                        <input type="number" id="msc_cau_sl_${i}" value="${c.so_luong||0}" min="0"
-                            style="width:100%;padding:5px 8px;background:rgba(30,58,95,0.7);border:1px solid #2d4a6e;border-radius:6px;color:#e2e8f0;font-size:0.82rem;box-sizing:border-box;font-family:inherit;">
-                    </div>
-                    <div>
-                        <label style="font-size:0.68rem;color:#64748b;">Giá/ống (đ)</label>
-                        <input type="number" id="msc_cau_gia_${i}" value="${c.gia_ong||0}" min="0" step="1000"
-                            style="width:100%;padding:5px 8px;background:rgba(30,58,95,0.7);border:1px solid #2d4a6e;border-radius:6px;color:#e2e8f0;font-size:0.82rem;box-sizing:border-box;font-family:inherit;">
-                    </div>
+                `<div style="display:grid;grid-template-columns:1fr 78px 92px;gap:8px;align-items:end;margin-bottom:8px;">
+                    <span style="font-size:0.8rem;color:#e2e8f0;align-self:center;">${_esc(c.ten || "Cầu " + (i+1))}</span>
+                    <div><label style="font-size:0.68rem;color:#64748b;">Số lượng</label>
+                        <input type="number" id="msc_cau_sl_${i}" value="${c.so_luong||0}" min="0" class="msc-input" style="padding:5px 8px;font-size:0.82rem;"></div>
+                    <div><label style="font-size:0.68rem;color:#64748b;">Giá/ống (K đồng)</label>
+                        <input type="number" id="msc_cau_gia_${i}" value="${Math.round((c.gia_ong||0)/1000)}" min="0" step="1" placeholder="vd: 30" class="msc-input" style="padding:5px 8px;font-size:0.82rem;"></div>
                 </div>`
             ).join("");
 
             body.innerHTML = `
                 <div style="font-size:0.8rem;color:#fbbf24;padding:8px 12px;background:rgba(251,191,36,0.07);border:1px solid rgba(251,191,36,0.2);border-radius:8px;margin-bottom:14px;">
-                    <i class="fa-solid fa-pen"></i> Chỉnh sửa ca: <strong>${slot.ten_san||""}</strong> — ${_formatDate(slot.ngay_danh)}
+                    <i class="fa-solid fa-pen"></i> Chỉnh sửa ca: <strong>${_esc(slot.ten_san||"")}</strong> — ${_formatDate(slot.ngay_danh)}
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-                    ${fld("gia_nam", Math.round((slot.gia_nam||0)/1000), "Giá Nam (K đồng)", "number", 'min="0" step="1"')}
-                    ${fld("gia_nu",  Math.round((slot.gia_nu ||0)/1000), "Giá Nữ (K đồng)",  "number", 'min="0" step="1"')}
+
+                <div class="msc-section-title"><i class="fa-solid fa-coins"></i> Giá &amp; Slot</div>
+                <div class="msc-row2">
+                    ${fldK("gia_nam", slot.gia_nam, "Giá Nam (K đồng)", "vd: 70")}
+                    ${fldK("gia_nu",  slot.gia_nu,  "Giá Nữ (K đồng)",  "vd: 60")}
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px;">
-                    ${fldNum("so_nguoi_nam", slot.so_nguoi_nam, "Số người Nam (dự kiến)")}
-                    ${fldNum("so_nguoi_nu",  slot.so_nguoi_nu,  "Số người Nữ (dự kiến)")}
+                <div class="msc-row2">
+                    ${fldNum("so_nguoi_nam", slot.so_nguoi_nam, "Số người Nam (dự kiến)", 'oninput="window._mscTinhTongSlot()"')}
+                    ${fldNum("so_nguoi_nu",  slot.so_nguoi_nu,  "Số người Nữ (dự kiến)",  'oninput="window._mscTinhTongSlot()"')}
                 </div>
-                ${fldNum("tong_slot_can", slot.tong_slot_can, "Tổng số slot cần tuyển")}
+                <div class="msc-field">
+                    <label class="msc-field-label">Tổng số slot cần tuyển</label>
+                    <input id="msc_tong_slot_can" type="number" class="msc-input" value="${(Number(slot.so_nguoi_nam)||0)+(Number(slot.so_nguoi_nu)||0) || Number(slot.tong_slot_can)||0}" readonly>
+                    <div class="msc-hint">= Số Nam + Số Nữ (tự tính)</div>
+                </div>
                 ${fldNum("so_san_mo", slot.so_san_mo||1, "Số sân mở (khu vực sân)")}
-                <div style="margin-bottom:14px;">
-                    <label style="display:block;font-size:0.73rem;color:#94a3b8;margin-bottom:6px;">Chi phí thuê sân thực tế (đ)</label>
-                    <input id="msc_gia_thue_san_1h" type="number" value="${Number(slot.gia_thue_san_1h||0)}" min="0" step="1000"
-                        style="width:100%;padding:9px 12px;background:rgba(30,58,95,0.7);border:1px solid #2d4a6e;border-radius:8px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;font-family:inherit;">
+                ${fldK("gia_thue_san_1h", slot.gia_thue_san_1h, "Chi phí thuê sân (K đồng)", "vd: 110")}
+                ${fldK("chi_phi_nuoc_khac", slot.chi_phi_nuoc_khac, "Chi phí khác (K đồng)", "vd: 30")}
+
+                <div class="msc-section-title"><i class="fa-solid fa-clock"></i> Thời gian</div>
+                ${_soDat > 0 ? `<div class="msc-warn"><i class="fa-solid fa-triangle-exclamation" style="margin-top:1px;"></i><span>Ca đã có <strong>${_soDat} người</strong> đặt — đổi giờ sẽ <strong>thông báo cho tất cả khách</strong>.</span></div>` : ""}
+                <div class="msc-row2">
+                    <div class="msc-field"><label class="msc-field-label">Giờ bắt đầu</label>
+                        <input id="msc_gio_bat_dau" type="time" class="msc-input" value="${_gioBd}"></div>
+                    <div class="msc-field"><label class="msc-field-label">Giờ kết thúc</label>
+                        <input id="msc_gio_ket_thuc" type="time" class="msc-input" value="${_gioKt}"></div>
                 </div>
-                <div style="margin-bottom:14px;">
-                    <label style="display:block;font-size:0.73rem;color:#94a3b8;margin-bottom:6px;">Chi phí nước / phát sinh khác (đ)</label>
-                    <input id="msc_chi_phi_nuoc_khac" type="number" value="${Number(slot.chi_phi_nuoc_khac||0)}" min="0" step="1000"
-                        style="width:100%;padding:9px 12px;background:rgba(30,58,95,0.7);border:1px solid #2d4a6e;border-radius:8px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;font-family:inherit;">
-                </div>
+                <div class="msc-hint" style="margin-top:-6px;">Giờ kết thúc &lt; bắt đầu = ca qua đêm (tự +1 ngày).</div>
+
                 ${cauList.length ? `
-                <div style="margin-bottom:6px;">
-                    <label style="display:block;font-size:0.73rem;color:#94a3b8;margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;">Loại cầu sử dụng</label>
-                    <div id="msc-cau-list" data-count="${cauList.length}">${cauRows}</div>
-                </div>` : ""}`;
+                <div class="msc-section-title"><i class="fa-solid fa-feather-pointed"></i> Cầu sử dụng</div>
+                <div id="msc-cau-list" data-count="${cauList.length}">${cauRows}</div>` : ""}
+
+                <div class="msc-section-title"><i class="fa-solid fa-clipboard-list"></i> Thông tin thêm</div>
+                <div class="msc-field"><label class="msc-field-label">Ghi chú trình độ — Nam</label>
+                    <textarea id="msc_ghi_chu_nam" class="msc-textarea" maxlength="100" placeholder="Ghi chú thêm về yêu cầu trình độ (tùy chọn)">${_esc(tdNam.note)}</textarea></div>
+                <div class="msc-field"><label class="msc-field-label">Ghi chú trình độ — Nữ</label>
+                    <textarea id="msc_ghi_chu_nu" class="msc-textarea" maxlength="100" placeholder="Ghi chú thêm về yêu cầu trình độ (tùy chọn)">${_esc(tdNu.note)}</textarea></div>`;
 
         } catch (e) {
             console.error("Lỗi load modal sửa:", e);
@@ -1922,7 +1949,7 @@
             } catch {}
             for (let i = 0; i < cauCount; i++) {
                 const sl  = num(`msc_cau_sl_${i}`);
-                const gia = num(`msc_cau_gia_${i}`);
+                const gia = num(`msc_cau_gia_${i}`, 1000); // input K → đồng
                 const orig = originalCau[i] || {};
                 cauListUp.push({
                     ...orig,
@@ -1935,15 +1962,43 @@
         }
         const tong_chi_phi_cau = cauListUp.reduce((s, c) => s + (c.thanh_tien || 0), 0);
 
+        // ── Giờ + so_gio_choi (xử ca qua đêm) ──
+        const _gbd = g("msc_gio_bat_dau");   // "HH:MM"
+        const _gkt = g("msc_gio_ket_thuc");
+        if (!_gbd || !_gkt) { window.hienToast("Thiếu giờ", "Nhập đủ giờ bắt đầu và kết thúc.", "danger"); return; }
+        const _toMin = t => { const [h, m] = t.split(":").map(Number); return (h || 0) * 60 + (m || 0); };
+        const _bdM = _toMin(_gbd), _ktM = _toMin(_gkt);
+        if (_bdM === _ktM) { window.hienToast("Giờ không hợp lệ", "Giờ kết thúc phải KHÁC giờ bắt đầu.", "danger"); return; }
+        let _durMin = _ktM - _bdM; if (_durMin <= 0) _durMin += 1440; // qua đêm → +1 ngày
+        const so_gio_choi = Math.round((_durMin / 60) * 100) / 100;
+
+        // ── Slot tự tính + chi phí sân (recompute) + ghi chú trình độ (merge JSONB) ──
+        const so_nguoi_nam = num("msc_so_nguoi_nam");
+        const so_nguoi_nu  = num("msc_so_nguoi_nu");
+        const so_san_mo    = num("msc_so_san_mo") || 1;
+        const gia_thue_san_1h = num("msc_gia_thue_san_1h", 1000);
+        const chi_phi_san_co_dinh = Math.round(gia_thue_san_1h * so_gio_choi * so_san_mo);
+        const _lv = modal._tdLevels || { nam: [], nu: [] };
+        const _noteNam = (g("msc_ghi_chu_nam") || "").trim().slice(0, 100);
+        const _noteNu  = (g("msc_ghi_chu_nu")  || "").trim().slice(0, 100);
+        const yeu_cau_trinh_do = {
+            nam: [...(_lv.nam || []), ...(_noteNam ? [_noteNam] : [])],
+            nu:  [...(_lv.nu  || []), ...(_noteNu  ? [_noteNu]  : [])],
+        };
+
         const payload = {
             gia_nam:            num("msc_gia_nam", 1000),
             gia_nu:             num("msc_gia_nu",  1000),
-            so_nguoi_nam:       num("msc_so_nguoi_nam"),
-            so_nguoi_nu:        num("msc_so_nguoi_nu"),
-            tong_slot_can:      num("msc_tong_slot_can"),
-            so_san_mo:          num("msc_so_san_mo") || 1,
-            gia_thue_san_1h:    num("msc_gia_thue_san_1h"),
-            chi_phi_nuoc_khac:  num("msc_chi_phi_nuoc_khac"),
+            so_nguoi_nam, so_nguoi_nu,
+            tong_slot_can:      so_nguoi_nam + so_nguoi_nu,   // tự tính = Nam + Nữ
+            so_san_mo,
+            gia_thue_san_1h,                                  // input K → đồng
+            chi_phi_nuoc_khac:  num("msc_chi_phi_nuoc_khac", 1000),
+            chi_phi_san_co_dinh,
+            gio_bat_dau:        _gbd + ":00",
+            gio_ket_thuc:       _gkt + ":00",
+            so_gio_choi,
+            yeu_cau_trinh_do,
         };
         if (cauListUp.length > 0) {
             payload.loai_cau_su_dung  = cauListUp;
@@ -1953,6 +2008,23 @@
         try {
             await window.dbEngine.ghi("ca_dau", payload, { id });
             window.hienToast("Đã lưu ✅", "Thông tin ca đấu đã được cập nhật.", "success");
+
+            // Đổi giờ + có người đặt → thông báo cho tất cả khách đang giữ chỗ (best-effort)
+            const _gioChanged = (_gbd !== (modal.dataset.gioBdGoc || "")) || (_gkt !== (modal.dataset.gioKtGoc || ""));
+            if (_gioChanged && (Number(modal.dataset.soDat) || 0) > 0) {
+                try {
+                    const _ca = ((await window.dbEngine.docThu("ca_dau", { eq: { id } }).catch(() => [])) || [])[0] || {};
+                    const _slots = await window.dbEngine.docThu("dat_slot", { eq: { id_ca_dau: id } }).catch(() => []);
+                    (_slots || []).filter(s => s.trang_thai_di_danh !== "Khách hủy" && s.trang_thai_di_danh !== "Host từ chối")
+                        .forEach(s => window.guiThongBao?.({
+                            nguoiNhan: s.sdt_khach, loai: "G6",
+                            tieuDe: "Host đổi giờ ca đấu",
+                            noiDung: `Ca "${_ca.ten_san || ""}" đã đổi giờ thành ${_gbd}–${_gkt}. Vui lòng kiểm tra lại.`,
+                            linkData: { tab: "lichSu" }
+                        }));
+                } catch (_) {}
+            }
+
             window._dongModalSuaCa();
             await _taiLichSuCaDau();
             window._tkInvalidateCache && window._tkInvalidateCache();
@@ -1960,6 +2032,14 @@
             console.error("Lỗi lưu sửa ca:", e);
             window.hienToast("Lỗi lưu", "Không thể cập nhật. Thử lại.", "danger");
         }
+    };
+
+    // PHẦN 2: ô Tổng slot = Số Nam + Số Nữ (tự tính, readonly)
+    window._mscTinhTongSlot = function () {
+        const nam = Number(document.getElementById("msc_so_nguoi_nam")?.value) || 0;
+        const nu  = Number(document.getElementById("msc_so_nguoi_nu")?.value) || 0;
+        const tot = document.getElementById("msc_tong_slot_can");
+        if (tot) tot.value = nam + nu;
     };
 
     /* ═══════════════════════════════════════════════════
@@ -2021,16 +2101,16 @@
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
                 <div>
-                    <label style="font-size:0.7rem;color:#94a3b8;display:block;margin-bottom:4px;">Tiền thuê sân thực tế (đ)</label>
+                    <label style="font-size:0.7rem;color:#94a3b8;display:block;margin-bottom:4px;">Tiền thuê sân thực tế (K đồng)</label>
                     <input type="number" id="xnc_tien_san" class="xnc-input"
-                        value="${ca.chi_phi_san_co_dinh || 0}" min="0"
+                        value="${Math.round((ca.chi_phi_san_co_dinh || 0) / 1000)}" min="0" step="1" placeholder="vd: 240"
                         style="width:100%;background:rgba(30,58,95,0.8);border:1px solid #2d4a6e;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;"
                         oninput="_recalcXacNhan()">
                 </div>
                 <div>
-                    <label style="font-size:0.7rem;color:#94a3b8;display:block;margin-bottom:4px;">Nước / phát sinh khác (đ)</label>
+                    <label style="font-size:0.7rem;color:#94a3b8;display:block;margin-bottom:4px;">Nước / phát sinh khác (K đồng)</label>
                     <input type="number" id="xnc_tien_nuoc" class="xnc-input"
-                        value="${ca.chi_phi_nuoc_khac || 0}" min="0"
+                        value="${Math.round((ca.chi_phi_nuoc_khac || 0) / 1000)}" min="0" step="1" placeholder="vd: 30"
                         style="width:100%;background:rgba(30,58,95,0.8);border:1px solid #2d4a6e;border-radius:8px;padding:8px 12px;color:#e2e8f0;font-size:0.85rem;box-sizing:border-box;"
                         oninput="_recalcXacNhan()">
                 </div>
@@ -2054,8 +2134,9 @@
 
         // Recalc ngay sau khi render
         window._recalcXacNhan = function () {
-            const tienSan  = Number(document.getElementById("xnc_tien_san")?.value)  || 0;
-            const tienNuoc = Number(document.getElementById("xnc_tien_nuoc")?.value) || 0;
+            // Input đơn vị K → ×1000 ra đồng để cộng với tiền cầu (gia_qua lưu đồng)
+            const tienSan  = (Number(document.getElementById("xnc_tien_san")?.value)  || 0) * 1000;
+            const tienNuoc = (Number(document.getElementById("xnc_tien_nuoc")?.value) || 0) * 1000;
             // Tính tiền cầu từ các input số lượng
             let tongCau = 0;
             const cauListLocal = JSON.parse(overlay.dataset.cauList || "[]");
@@ -2079,8 +2160,9 @@
 
         if (!await window.xacNhanModal("Xác nhận chốt ca? Sau khi chốt KHÔNG THỂ sửa nữa.", '🔒')) return;
 
-        const tienSan  = Number(document.getElementById("xnc_tien_san")?.value)  || 0;
-        const tienNuoc = Number(document.getElementById("xnc_tien_nuoc")?.value) || 0;
+        // Input đơn vị K → ×1000 ra đồng để lưu DB (DB lưu đồng)
+        const tienSan  = (Number(document.getElementById("xnc_tien_san")?.value)  || 0) * 1000;
+        const tienNuoc = (Number(document.getElementById("xnc_tien_nuoc")?.value) || 0) * 1000;
 
         // Cập nhật số lượng cầu thực tế
         const cauListLocal = JSON.parse(overlay.dataset.cauList || "[]");
@@ -2765,9 +2847,9 @@
                     ${td(`<button onclick="window.xemHoSoKhach('${sdtKhachEsc}','${tenKhachEsc}','${matchId}')"
                                   onmouseover="this.style.textDecoration='underline'"
                                   onmouseout="this.style.textDecoration='none'"
-                                  style="background:none;border:none;color:#e2e8f0;font-weight:600;cursor:pointer;padding:0;font-family:inherit;font-size:0.81rem;text-decoration:none;text-align:left;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:block;">
+                                  style="background:none;border:none;color:#e2e8f0;font-weight:600;cursor:pointer;padding:0;font-family:inherit;font-size:0.81rem;text-decoration:none;text-align:center;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;">
                             ${g.ten_khach || "—"}
-                        </button>`, "text-align:left;")}
+                        </button>`, "text-align:center;")}
                     ${td(`<span style="color:#94a3b8;font-family:monospace;font-size:0.76rem;white-space:nowrap;">${g.sdt_khach || "—"}</span>`, "text-align:center;")}
                     ${td(`<span style="color:${genderClr};font-weight:600;font-size:0.8rem;">${gioiTinh}</span>`, "text-align:center;")}
                     ${td(trinhDoHtml, "text-align:center;")}
