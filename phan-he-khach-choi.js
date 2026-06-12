@@ -1936,14 +1936,11 @@
                 return;
             }
 
-            // Chỉ giữ chỗ hàng "cọc" khi CÓ ÍT NHẤT 1 ca yêu cầu cọc trong kết quả
-            // → card không cọc thêm placeholder để THẲNG HÀNG; nếu không ca nào cọc → không phí chỗ.
-            const anyCoc = results.some(s => s.yeu_cau_coc);
             results.forEach(slot => {
                 const soKhach = (datSlotMap[slot.id] || []).length;
                 // Ưu tiên: ma_key_host (SaaS key cũ) → sdt_nguoi_tao (hệ thống mới)
                 const hostInfo = hostMap[slot.ma_key_host] || hostMap[slot.sdt_nguoi_tao] || null;
-                const card = _taoCaCard(slot, soKhach, daDatSet, hostInfo, daHuySet, daTuChoiSet, anyCoc);
+                const card = _taoCaCard(slot, soKhach, daDatSet, hostInfo, daHuySet, daTuChoiSet);
                 container.appendChild(card);
             });
         } catch (e) {
@@ -1954,7 +1951,7 @@
         }
     }
 
-    function _taoCaCard(slot, soKhach = 0, daDatSet = new Set(), hostInfo = null, daHuySet = new Set(), daTuChoiSet = new Set(), anyCoc = false) {
+    function _taoCaCard(slot, soKhach = 0, daDatSet = new Set(), hostInfo = null, daHuySet = new Set(), daTuChoiSet = new Set()) {
         const card = document.createElement("div");
         card.className = "slot-card";
         card.dataset.caId = slot.id; // Để query nút sau khi đặt slot thành công
@@ -2063,7 +2060,9 @@
                 ? `<div class="coc-banner coc-banner--1l" title="Ca này yêu cầu cọc trước — liên hệ host để chuyển cọc giữ chỗ (thỏa thuận ngoài app).">
                        <i class="fa-solid fa-hand-holding-dollar"></i><span class="coc-1l-txt">Ca này YÊU CẦU CỌC TRƯỚC — liên hệ host giữ chỗ</span>
                    </div>`
-                : (anyCoc ? `<div class="coc-banner coc-banner--1l coc-banner--empty" aria-hidden="true">&nbsp;</div>` : "")}
+                : `<div class="coc-banner coc-banner--1l coc-banner--free" title="Ca này không yêu cầu cọc trước">
+                       <i class="fa-solid fa-circle-check"></i><span class="coc-1l-txt">Không yêu cầu cọc trước</span>
+                   </div>`}
             <div class="slot-card-body">
                 <!-- Tên sân + quận — hyperlink mở Google Maps tab mới -->
                 <div class="slot-court-info" itemscope itemtype="https://schema.org/SportsActivityLocation">

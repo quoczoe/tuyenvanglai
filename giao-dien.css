@@ -2941,12 +2941,20 @@ body::before {
 }
 .kh-level-more:hover { background: rgba(0,255,136,0.22) !important; }
 
-/* Cọc banner trong card — 1 DÒNG cố định (+ placeholder giữ chỗ khi không cọc) */
+/* Cọc banner trong card — 1 DÒNG cố định (ca cọc = vàng; ca không cọc = dòng "không cọc") */
 .coc-banner--1l { align-items: center; }
 .coc-banner--1l .coc-1l-txt {
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;
 }
-.coc-banner--empty { visibility: hidden; }   /* giữ chỗ đúng 1 dòng, ẩn hình */
+/* Ca KHÔNG cọc — cùng box (height cân bằng) nhưng nhẹ nhàng: xanh nhạt mờ + checkmark */
+.coc-banner--free {
+    background: rgba(74, 222, 128, 0.06);
+    border-color: rgba(74, 222, 128, 0.22);
+    color: #4ade80;
+    opacity: 0.7;
+    font-weight: 600;
+    font-size: var(--fs-xs, 0.72rem);
+}
 
 /* ── 2D: Card kèo (tablet+PC) — CÙNG CHIỀU CAO + phân vùng cố định ──
    Mọi vùng giữ height tự nhiên; HOST (hoặc spacer) hút khoảng trống dư
