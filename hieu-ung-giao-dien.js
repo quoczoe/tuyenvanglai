@@ -161,7 +161,9 @@
 
     // 6. Custom Confirm Modal — dùng chung cho mọi trang (thay confirm() browser)
     // Cần có #confirmModalOverlay trong DOM của trang. Fallback về window.confirm nếu không có.
-    window.xacNhanModal = function(msg, icon) {
+    // opts (tuỳ chọn): { ok, cancel } để đổi nhãn nút. Mặc định "Xác nhận"/"Huỷ".
+    // Nhãn được KHÔI PHỤC mặc định khi đóng → backward compatible cho mọi caller cũ.
+    window.xacNhanModal = function(msg, icon, opts) {
         return new Promise(function(resolve) {
             var overlay   = document.getElementById('confirmModalOverlay');
             var msgEl     = document.getElementById('confirmModalMsg');
@@ -171,9 +173,14 @@
             if (!overlay) { resolve(window.confirm(msg)); return; }
             if (msgEl)  msgEl.textContent  = msg  || 'Bạn có chắc chắn không?';
             if (iconEl) iconEl.textContent = icon || '⚠️';
+            var _okMacDinh = 'Xác nhận', _cancelMacDinh = 'Huỷ';
+            if (okBtn)     okBtn.textContent     = (opts && opts.ok)     ? opts.ok     : _okMacDinh;
+            if (cancelBtn) cancelBtn.textContent = (opts && opts.cancel) ? opts.cancel : _cancelMacDinh;
             overlay.classList.add('show');
             function cleanup(result) {
                 overlay.classList.remove('show');
+                if (okBtn)     okBtn.textContent     = _okMacDinh;   // khôi phục nhãn mặc định
+                if (cancelBtn) cancelBtn.textContent = _cancelMacDinh;
                 okBtn.removeEventListener('click', onOk);
                 cancelBtn.removeEventListener('click', onCancel);
                 resolve(result);

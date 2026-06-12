@@ -110,6 +110,29 @@
         return `${m}p`;
     };
 
+    /* PHA của ca theo giờ (GMT+7) — SSOT cho khóa trạng thái Nhóm 3.
+     *   "truoc" : chưa tới giờ bắt đầu  → host chỉ "Từ chối khách"
+     *   "trong" : đang trong giờ        → host chọn "Đã tham gia"/"Bùng kèo"
+     *   "sau"   : đã qua giờ kết thúc    → host chốt trạng thái cuối
+     * ca: { ngay_danh, gio_bat_dau, gio_ket_thuc }. Thiếu dữ liệu → null (caller
+     * coi như KHÔNG khóa = giữ hành vi cũ). Xử ca qua đêm (end<=start → +1 ngày). */
+    window.phaCaDau = function (ca) {
+        if (!ca || !ca.ngay_danh || !ca.gio_bat_dau) return null;
+        const start = new Date(ca.ngay_danh + "T" + ca.gio_bat_dau);
+        if (isNaN(start.getTime())) return null;
+        const now = Date.now();
+        if (now < start.getTime()) return "truoc";
+        if (ca.gio_ket_thuc) {
+            let end = new Date(ca.ngay_danh + "T" + ca.gio_ket_thuc);
+            if (!isNaN(end.getTime())) {
+                if (end.getTime() <= start.getTime()) end = new Date(end.getTime() + 24 * 3600 * 1000); // ca qua đêm
+                return now <= end.getTime() ? "trong" : "sau";
+            }
+        }
+        // Không có giờ kết thúc → coi như đang trong giờ (cho phép chốt)
+        return "trong";
+    };
+
     /* ═══════════════════════════════════════════════════════════════
      * 1. DỮ LIỆU TĨnh ĐỊA LÝ — 63 TỈNH THÀNH VIỆT NAM
      * Dùng cho dropdown Tỉnh/Thành + Quận/Huyện trên form

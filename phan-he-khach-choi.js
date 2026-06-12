@@ -173,8 +173,46 @@
         if (!el || !window.currentGuest?.sdt_khach) return;
         const score = await _layDiemUyTin();
         _renderTrustBar(el, score);
+        // Nhóm 3: tự tải lịch sử điểm khi hiện Hồ Sơ
+        window.taiLichSuDiemUyTin?.();
     }
     window._hienTrustScoreBar = _hienTrustScoreBar; // expose để phan-he-ung-dung.js gọi sau F5
+
+    /* ── Nhóm 3: LỊCH SỬ ĐIỂM UY TÍN (tab trong Hồ Sơ — đọc của CHÍNH mình) ── */
+    function _escLsut(s) { const d = document.createElement("div"); d.textContent = (s == null) ? "" : String(s); return d.innerHTML; }
+    function _renderLsutRow(it) {
+        const delta = Number(it.delta) || 0;
+        const up = delta > 0;
+        const dStr = (up ? "+" : "") + delta;
+        const dt = it.created_at ? new Date(it.created_at) : null;
+        const tg = dt && !isNaN(dt.getTime())
+            ? dt.toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
+        const san = it.ten_san ? ` · <span class="lsut-san">${_escLsut(it.ten_san)}</span>` : "";
+        const after = it.diem_sau != null ? `${it.diem_sau}đ` : "";
+        return `<div class="lsut-row">
+            <span class="lsut-delta ${up ? "up" : "down"}">${_escLsut(dStr)}</span>
+            <div class="lsut-main">
+                <div class="lsut-reason">${_escLsut(it.ly_do)}</div>
+                <div class="lsut-meta">${_escLsut(tg)}${san}</div>
+            </div>
+            <span class="lsut-after">${_escLsut(after)}</span>
+        </div>`;
+    }
+    window.taiLichSuDiemUyTin = async function () {
+        const body = document.getElementById("lichSuDiemBody");
+        if (!body) return;
+        if (!window.currentGuest?.sdt_khach || typeof window.layLichSuUyTin !== "function") {
+            body.innerHTML = `<div class="lsut-empty">Chưa có lịch sử điểm nào.</div>`;
+            return;
+        }
+        body.innerHTML = `<div class="lsut-empty">Đang tải…</div>`;
+        const rows = await window.layLichSuUyTin(50);
+        if (!rows || !rows.length) {
+            body.innerHTML = `<div class="lsut-empty">Chưa có lịch sử điểm nào.<br><span style="font-size:0.76rem;">(Lịch sử ghi từ khi tính năng được bật.)</span></div>`;
+            return;
+        }
+        body.innerHTML = `<div class="lsut-list">${rows.map(_renderLsutRow).join("")}</div>`;
+    };
 
     function _renderTrustBar(el, score) {
         const level  = _trustLevel(score);
@@ -439,6 +477,26 @@
                 if (newState === "Đã tham gia" && oldState !== "Đã tham gia") soCa += 1;
                 else if (oldState === "Đã tham gia" && newState !== "Đã tham gia") soCa = Math.max(0, soCa - 1);
                 await window.dbEngine.ghi("nguoi_dung", { diem_uy_tin: newScore, so_ca_thanh_cong: soCa }, { sdt_khach: sdt }).catch(() => {});
+
+                // ── 2C: GHI LỊCH SỬ ĐIỂM (best-effort) — chỉ khi điểm THỰC SỰ đổi.
+                //   ca_id/ten_san: ưu tiên ctx; thiếu → tra từ slotId (1 lần, không chặn).
+                if (net !== 0 && typeof window.ghiLichSuUyTin === "function") {
+                    let _caId = ctx.caId, _tenSan = ctx.tenSan;
+                    if (!_caId && slotId) {
+                        const _s = ((await window.dbEngine.docThu("dat_slot", { eq: { id: slotId } }).catch(() => [])) || [])[0];
+                        if (_s) {
+                            _caId = _s.id_ca_dau;
+                            const _c = ((await window.dbEngine.docThu("ca_dau", { eq: { id: _caId } }).catch(() => [])) || [])[0];
+                            _tenSan = _c ? _c.ten_san : null;
+                        }
+                    }
+                    const _lyDo = newState === "Đã tham gia" ? "Tham gia ca đấu"
+                                : newState === "Bùng kèo"    ? `Bùng kèo (lần ${lanBung})`
+                                : newState === "Khách hủy"   ? `Khách hủy${ctx.phut != null ? " (còn " + (window.moTaThoiGianConLai(ctx.phut) || "") + ")" : ""}`
+                                : `Đổi trạng thái → ${newState}`;
+                    window.ghiLichSuUyTin({ sdt, delta: net, lyDo: _lyDo, caId: _caId || null, tenSan: _tenSan || null, diemTruoc: curScore, diemSau: newScore });
+                }
+
                 // Khóa 1 CHIỀU (admin mở khóa): bùng đủ lần khóa HOẶC điểm tụt dưới ngưỡng
                 khoa = (newState === "Bùng kèo" && lanBung >= BUNG.khoaTuLan) || (newScore < NGUONG);
                 if (khoa && u.is_active !== false) {
@@ -1692,19 +1750,21 @@
             // Bug 3B: tách "đã hủy" để card hiện badge "ĐÃ HỦY" (khách KHÔNG được đặt lại).
             const daDatSet = new Set();
             const daHuySet = new Set();
+            const daTuChoiSet = new Set(); // Nhóm 3: host đã TỪ CHỐI slot của khách ở ca này
             if (window.currentGuest) {
                 const myPhone = window.currentGuest.sdt_khach;
                 allDatSlot.forEach(s => {
                     if (s.sdt_khach !== myPhone) return;
                     if (s.trang_thai_di_danh === "Khách hủy") daHuySet.add(s.id_ca_dau);
+                    else if (s.trang_thai_di_danh === "Host từ chối") daTuChoiSet.add(s.id_ca_dau);
                     else daDatSet.add(s.id_ca_dau);
                 });
             }
 
-            // Nhóm dat_slot theo id_ca_dau để đếm (loại trừ "Khách hủy")
+            // Nhóm dat_slot theo id_ca_dau để đếm (loại "Khách hủy" + "Host từ chối" = slot đã giải phóng)
             const datSlotMap = {};
             allDatSlot.forEach(s => {
-                if (s.trang_thai_di_danh === "Khách hủy") return; // không đếm slot đã hủy
+                if (s.trang_thai_di_danh === "Khách hủy" || s.trang_thai_di_danh === "Host từ chối") return; // slot đã giải phóng — không đếm
                 if (!datSlotMap[s.id_ca_dau]) datSlotMap[s.id_ca_dau] = [];
                 datSlotMap[s.id_ca_dau].push(s);
             });
@@ -1841,7 +1901,7 @@
                 const soKhach = (datSlotMap[slot.id] || []).length;
                 // Ưu tiên: ma_key_host (SaaS key cũ) → sdt_nguoi_tao (hệ thống mới)
                 const hostInfo = hostMap[slot.ma_key_host] || hostMap[slot.sdt_nguoi_tao] || null;
-                const card = _taoCaCard(slot, soKhach, daDatSet, hostInfo, daHuySet);
+                const card = _taoCaCard(slot, soKhach, daDatSet, hostInfo, daHuySet, daTuChoiSet);
                 container.appendChild(card);
             });
         } catch (e) {
@@ -1852,7 +1912,7 @@
         }
     }
 
-    function _taoCaCard(slot, soKhach = 0, daDatSet = new Set(), hostInfo = null, daHuySet = new Set()) {
+    function _taoCaCard(slot, soKhach = 0, daDatSet = new Set(), hostInfo = null, daHuySet = new Set(), daTuChoiSet = new Set()) {
         const card = document.createElement("div");
         card.className = "slot-card";
         card.dataset.caId = slot.id; // Để query nút sau khi đặt slot thành công
@@ -2065,9 +2125,13 @@
                                 ? `<button class="btn-da-huy" disabled title="Bạn đã tự hủy slot ca này — không thể đặt lại" onclick="event.stopPropagation()">
                                     <i class="fa-solid fa-circle-xmark"></i> ĐÃ HỦY
                                    </button>`
-                                : `<button class="btn-dat-slot" onclick="window.datSlot('${slot.id}');event.stopPropagation()">
-                                    <i class="fa-solid fa-ticket"></i> ĐẶT SLOT
-                                   </button>`))
+                                : (daTuChoiSet.has(slot.id)
+                                    ? `<button class="btn-da-huy" disabled title="Host đã từ chối slot của bạn ở ca này — vui lòng đặt ca khác" onclick="event.stopPropagation()">
+                                        <i class="fa-solid fa-user-xmark"></i> BỊ TỪ CHỐI
+                                       </button>`
+                                    : `<button class="btn-dat-slot" onclick="window.datSlot('${slot.id}');event.stopPropagation()">
+                                        <i class="fa-solid fa-ticket"></i> ĐẶT SLOT
+                                       </button>`)))
                         : `<button class="btn-dat-slot btn-dat-slot-disabled"
                             onclick="event.stopPropagation();if(window.innerWidth < 768) window.openLoginSheet(); else window.hienToast('Cần đăng nhập','Đăng nhập hoặc đăng ký bên sidebar trái.','warning')">
                             <i class="fa-solid fa-lock"></i> ĐẶT SLOT
@@ -2229,6 +2293,8 @@
                 const existing = existingSlots[0];
                 if (existing.trang_thai_di_danh === "Khách hủy") {
                     window.hienToast("Đã hủy trước đó", "Bạn đã hủy slot này rồi và không thể đặt lại.", "warning");
+                } else if (existing.trang_thai_di_danh === "Host từ chối") {
+                    window.hienToast("Host đã từ chối", "Host đã từ chối slot của bạn ở ca này — vui lòng đặt ca khác.", "warning");
                 } else {
                     window.hienToast("Đã đăng ký rồi", `Bạn đã có mã slot: ${existing.ma_slot}`, "info");
                 }

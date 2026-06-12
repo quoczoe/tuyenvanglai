@@ -67,9 +67,36 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 // user-select: none toàn trang; input/textarea được select
 ```
 
-## CURRENT STATE (cập nhật: 2026-06-11 PHIÊN REDESIGN ĐIỂM UY TÍN — state-based delta)
+## CURRENT STATE (cập nhật: 2026-06-12 PHIÊN BUILD NHÓM 3 — HOÀN TẤT P0+P1+P2+P3 ✅)
 
-> Cache-bust `?v=` HIỆN TẠI (index.html): giao-dien.css=`20260611h`, components.css=`20260611f`, ket-noi-supabase.js=`20260610d`, bo-may-du-lieu.js=`20260611c`, hieu-ung-giao-dien.js=`20260611b`, phan-he-khach-choi.js=`20260611i`, phan-he-host.js=`20260611i`, phan-he-thong-bao.js=`20260611g`, phan-he-ung-dung.js=`20260610b`, phan-he-gop-y.js=`20260610`. admin/index.html: ket-noi=`20260610d`, bo-may=`20260611c`, hieu-ung=`20260611b`, quan-tri=`20260611b`.
+> Cache-bust `?v=` HIỆN TẠI (index.html): giao-dien.css=`20260612c`, components.css=`20260611f`, ket-noi-supabase.js=`20260610d`, bo-may-du-lieu.js=`20260612c`, hieu-ung-giao-dien.js=`20260612a`, phan-he-khach-choi.js=`20260612c`, phan-he-host.js=`20260612c`, phan-he-thong-bao.js=`20260612c`, phan-he-ung-dung.js=`20260610b`, phan-he-gop-y.js=`20260610`. admin/index.html: ket-noi=`20260610d`, bo-may=`20260612c`, hieu-ung=`20260612a`, quan-tri=`20260612c`.
+
+### PHIÊN BUILD NHÓM 3 — KHÓA TRẠNG THÁI THEO GIỜ + TỪ CHỐI KHÁCH + LỊCH SỬ ĐIỂM ✅ LIVE
+> SQL ĐÃ CHẠY: `migration-tu-choi-v1.sql` (verify, 0 schema change) + `migration-lich-su-uy-tin-v1.sql` (bảng `lich_su_uy_tin` + 3 RPC: `ghi_lich_su_uy_tin` no-token / `lay_lich_su_uy_tin` token / `get_lich_su_uy_tin_admin` authenticated). Token GHI = no-token v1 (chủ app chấp nhận; siết v2). **Verify `.devtest/verify-nhom3.js` = 13/13 PASS, console/network sạch.**
+- **PHA ca = SSOT `window.phaCaDau(ca)`** (bo-may §0B): truoc/trong/sau (GMT+7, xử ca qua đêm; thiếu giờ → null=không khóa). Trạng thái value mới **"Host từ chối"** (TEXT tự do, KHÔNG SQL).
+- **2A Khóa theo giờ**: `openGuestListModal` tính pha → lưu `modal._caInfo`/`dataset.pha` + banner `#gl-phase-banner` (truoc=xanh nhắc chỉ Từ chối / sau-chưa-chốt=vàng nhắc chốt). `_renderCustomDropdown(...,pha)`: pha "truoc" disable "Đã tham gia"/"Bùng kèo"/"Khách hủy". Guard 2 lớp `_triggerGlCdd` + `doiTrangThaiDiDanh` (đọc `_caInfo`, chặn nếu "truoc"). Timer `_glPhaseTimer` 60s tự refresh modal KHI pha đổi (không phá thao tác).
+- **2B "Từ chối khách"** (`window.tuChoiKhach(slotId,caId,sdt,ten)`, host.js): chỉ pha "truoc" + "Chờ đánh" → nút cam `.gl-tu-choi-btn`. Set "Host từ chối"+huy_luc → giải phóng slot (loại khỏi đếm + `daTuChoiSet` badge "BỊ TỪ CHỐI" phía khách, chặn re-book) → TB **G4** (cam/TB) cho khách → phạt host (`_phatDiemHostTuChoi`) nếu <2h theo thang HOST_HUY + ghi lịch sử host. Guard `_tuChoiBusy`.
+- **2C Lịch sử điểm**: `window.ghiLichSuUyTin({sdt,delta,lyDo,caId,tenSan,diemTruoc,diemSau})` + `window.layLichSuUyTin(n)` (phan-he-thong-bao.js). Hook trong `apDiemTheoTrangThai` (chỉ net≠0, ly_do tự suy, tra ca_id/ten_san từ slotId nếu thiếu) + `_phatDiemHostTuChoi`.
+- **2D UI**: Hồ Sơ khách — card "Lịch Sử Điểm Uy Tín" (`#lichSuDiemBody`, `taiLichSuDiemUyTin` auto-load + nút Tải lại, timeline `.lsut-*` escHTML). Admin — section "📜 Lịch Sử Điểm Uy Tín" trong modal quản lý user (`_xemLichSuDiemAdmin` → RPC `get_lich_su_uy_tin_admin` qua `_sbClient` authenticated, render inline-style vì admin KHÔNG nạp giao-dien.css).
+- **PHẦN 0 (trước đó cùng phiên)**: drawer thông báo BỎ emoji → left-border accent theo mức độ (Cao đỏ/TB cam/Thấp xanh) + chấm `.tb-cat-dot` + chấm xanh chưa đọc + read opacity 0.72.
+
+### PHIÊN BUILD NHÓM 3 — PHẦN 0 (icon thông báo) ✅ + PHẦN 1 (SQL chờ duyệt)
+- **P0 — Drawer thông báo BỎ emoji/icon → LEFT-BORDER ACCENT theo mức độ** (verify `.devtest/verify-p0icon.js` = 7/7 PASS, console/network sạch): `_META` (phan-he-thong-bao.js) chỉ còn `{mau}`; `_render` bỏ `.tb-item-icon`, set `border-left-color` inline + chấm `.tb-cat-dot` 8px cùng màu. Màu: **Cao đỏ #ff4444** (G2/G3/H3b/S1) · **TB cam #ff8800** (H2) · **Thấp xanh #00ff88** (G1/H1). Chưa đọc: `.tb-dot` xanh góc trái + nền nhạt + opacity 1; đã đọc: opacity 0.72. Empty/loading bỏ emoji. CSS `.tb-item` (giao-dien.css). Bump `giao-dien.css`+`phan-he-thong-bao.js`=`20260612b`.
+- **P1 — 2 file SQL ĐÃ SOẠN, 🔴 CHỜ DUYỆT (chưa chạy)**:
+  - `migration-tu-choi-v1.sql` — 3A KHÔNG cần thay schema (trang_thai_di_danh TEXT tự do → status mới "Host từ chối"; gio_bat_dau/gio_ket_thuc/huy_luc có sẵn). Chứa RPC `get_slot_time()` TUỲ CHỌN + VERIFY chốt giả định.
+  - `migration-lich-su-uy-tin-v1.sql` — bảng `lich_su_uy_tin`(id,sdt,delta,ly_do,ca_id,ten_san,diem_truoc,diem_sau,created_at) + index (sdt,created_at DESC) + RLS khóa anon + RPC `ghi_lich_su_uy_tin`(trusted no-token), `lay_lich_su_uy_tin`(token-verified), `get_lich_su_uy_tin_admin`(authenticated/admin) + VERIFY.
+- **P2+P3 (khóa trạng thái theo phase giờ + "Từ chối khách" + hook lịch sử điểm + UI tab Lịch sử + admin view + Playwright) = CHƯA BUILD** — chờ SQL được duyệt + chạy.
+
+### PHIÊN FIX THEO ƯU TIÊN — NHÓM 1+2 ✅ (verify `.devtest/verify-prio1.js` = 15/15 PASS, console/network sạch)
+- **1A — "undefined" sau đổi trạng thái**: gốc = `.then()` của `_triggerGlCdd` (host) dùng mảng `_opts` THIẾU field `label` → `cur.label`=undefined → badge ghi "undefined", phải F5. Fix: ghi `${cur.icon}${cur.val}` (nhãn luôn = val). Badge cập nhật NGAY, không F5.
+- **1B — Visual cue element bấm được** (giao-dien.css): `.gl-cdd>button[data-guest-id]` + `.gl-coc-badge` → hover glow accent (`box-shadow`+`filter:brightness`), `:active scale(0.97)`, ripple `::after` radial (tắt qua `prefers-reduced-motion`). Dùng box-shadow/filter/transform (KHÔNG bị inline-style ghi đè, không `!important`). Thêm hint `.coc-hint ✏️` cạnh badge "Chưa cọc" (ẩn khi "✓ Đã cọc") qua helper `_cocNhanHTML(da)` (host).
+- **1C — UI Thông báo** (phan-he-thong-bao.js `_META`): G2 `🗑️`→`❌`, H3b `🚫`→`👻`. CSS `.tb-item` chuyển card→list: divider 1px `rgba(30,58,95,.55)` giữa item + padding 15/16 thở + dải nhấn trái `border-left 3px` cho unread; `.tb-drawer-body` padding 0. Screenshot `tb-drawer-1440.png`/`tb-drawer-390.png`; chuông @390 trong viewport OK.
+- **2A — Xác nhận 1 lần trước `doiTrangThaiDiDanh`**: `window.xacNhanModal(msg,icon,opts)` mở rộng nhãn nút tuỳ chỉnh (`opts.ok`/`opts.cancel`), KHÔI PHỤC mặc định "Xác nhận"/"Huỷ" khi đóng → backward compat mọi caller cũ. `_triggerGlCdd` (giờ `async`): hỏi xác nhận khi đổi sang "Đã tham gia" (nút "Xác nhận — không sửa lại được"/"Hủy bỏ", nội dung theo trạng thái đích) / "Bùng kèo" (cảnh báo trừ điểm); "Chờ đánh" + "Khách hủy" KHÔNG hỏi. Hủy → giữ nguyên dropdown.
+
+### PHIÊN THIẾT KẾ NHÓM 3 — 📋 CHỜ DUYỆT (KHÔNG CODE) → `docs/THIET-KE-NHOM3.md`
+- **3A** Khóa trạng thái theo 3 pha giờ ca (trước/trong/sau) + "Từ chối khách" (nút riêng, slot giải phóng, không trừ khách, trừ host <4h theo HOST_HUY). **0 SQL** (`trang_thai_di_danh` là TEXT tự do → status mới "Host từ chối"; cột giờ có sẵn). Cần chốt: status mới hay tái dùng "Khách hủy"; cho đặt lại ca bị từ chối?; phạt host <4h.
+- **3B** Bảng `lich_su_uy_tin` + 2–3 RPC (1 file SQL) + hook vào SSOT `apDiemTheoTrangThai` + tab "Lịch Sử Điểm" (Hồ sơ) + admin view. Cần chốt: thêm bảng+RPC?; admin xem qua JWT policy hay RPC riêng?
+- ⛔ DỪNG — chờ chủ app duyệt từng câu hỏi trước khi build.
 
 ### PHIÊN REDESIGN ĐIỂM UY TÍN — STATE-BASED DELTA (thay event-based) ✅
 - **Vấn đề gốc**: hệ cũ cộng/trừ điểm theo SỰ KIỆN (mỗi lần gọi hàm = 1 lần đổi điểm) → đổi trạng thái qua lại tích lũy sai.

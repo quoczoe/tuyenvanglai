@@ -1835,6 +1835,16 @@
                 </div>
             </div>
 
+            <!-- ── E2: Lịch sử điểm uy tín (Nhóm 3) ── -->
+            <div class="mv-section">
+                <div class="mv-section-title">📜 Lịch Sử Điểm Uy Tín</div>
+                <button class="mv-btn" style="margin-bottom:10px;"
+                    onclick="window._xemLichSuDiemAdmin('${sdtAttr}')">
+                    <i class="fa-solid fa-clock-rotate-left"></i> Tải lịch sử điểm
+                </button>
+                <div id="mvLichSuDiem" style="max-height:240px;overflow-y:auto;"></div>
+            </div>
+
             <!-- ── E: Xóa tài khoản ── -->
             <div class="mv-section mv-section-danger">
                 <div class="mv-section-title" style="color:#ef4444;">🗑️ Xóa Tài Khoản Vĩnh Viễn</div>
@@ -1984,6 +1994,44 @@
             window.moModalQuanLyThanhVien(sdt);
         } catch (e) {
             window.hienToast("Lỗi", `Không thể ${label.toLowerCase()} tài khoản.`, "danger");
+        }
+    };
+
+    // E2 — Lịch sử điểm uy tín của 1 user (Nhóm 3) — RPC admin (authenticated)
+    function _renderAdminLsutRow(it) {
+        const delta = Number(it.delta) || 0;
+        const up = delta > 0;
+        const dStr = (up ? "+" : "") + delta;
+        const dt = it.created_at ? new Date(it.created_at) : null;
+        const tg = dt && !isNaN(dt.getTime())
+            ? dt.toLocaleString("vi-VN", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
+        const san = it.ten_san ? ` · <span style="color:#22d3ee;">${_escHtml(it.ten_san)}</span>` : "";
+        const after = it.diem_sau != null ? `${_escHtml(it.diem_sau)}đ` : "";
+        const dColor = up ? "#00ff88" : "#ff6b6b";
+        const dBg = up ? "rgba(0,255,136,0.1)" : "rgba(239,68,68,0.1)";
+        return `<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 4px;border-bottom:1px solid rgba(255,255,255,0.06);">
+            <span style="flex-shrink:0;min-width:44px;text-align:center;font-weight:800;font-size:0.8rem;padding:3px 6px;border-radius:6px;color:${dColor};background:${dBg};">${_escHtml(dStr)}</span>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:0.83rem;font-weight:600;color:#e2e8f0;">${_escHtml(it.ly_do)}</div>
+                <div style="font-size:0.72rem;color:#64748b;margin-top:2px;">${_escHtml(tg)}${san}</div>
+            </div>
+            <span style="flex-shrink:0;font-size:0.72rem;color:#94a3b8;align-self:center;white-space:nowrap;">${after}</span>
+        </div>`;
+    }
+    window._xemLichSuDiemAdmin = async function (sdt) {
+        const box = document.getElementById("mvLichSuDiem");
+        if (!box) return;
+        box.innerHTML = `<div style="text-align:center;color:#64748b;padding:18px;font-size:0.85rem;">Đang tải…</div>`;
+        try {
+            const { data, error } = await window._sbClient.rpc("get_lich_su_uy_tin_admin", { p_sdt: sdt, p_gioi_han: 100 });
+            if (error) throw error;
+            if (!data || data.status !== "ok" || !Array.isArray(data.data) || !data.data.length) {
+                box.innerHTML = `<div style="text-align:center;color:#64748b;padding:18px;font-size:0.85rem;">Chưa có lịch sử điểm.</div>`;
+                return;
+            }
+            box.innerHTML = data.data.map(_renderAdminLsutRow).join("");
+        } catch (e) {
+            box.innerHTML = `<div style="color:#ef4444;padding:14px;font-size:0.82rem;">Lỗi tải lịch sử: ${_escHtml((e && e.message || "").slice(0, 80))}</div>`;
         }
     };
 

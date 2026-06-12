@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS hệ thống -->
-    <link rel="stylesheet" href="giao-dien.css?v=20260611h">
+    <link rel="stylesheet" href="giao-dien.css?v=20260612c">
     <link rel="stylesheet" href="components.css?v=20260611f">
 
     <style>
@@ -2138,6 +2138,18 @@
                 <!-- Thanh điểm uy tín — nằm ngoài profile-top để full-width -->
                 <div id="profileTrustScore" class="profile-trust-wrap"></div>
 
+                <!-- Nhóm 3: Lịch sử điểm uy tín (timeline) -->
+                <div id="profileLichSuDiem" class="app-card" style="margin-bottom:16px;">
+                    <div class="app-card-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                        <span><i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Điểm Uy Tín</span>
+                        <button onclick="window.taiLichSuDiemUyTin && window.taiLichSuDiemUyTin()"
+                            style="background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);color:#00ff88;font-size:0.74rem;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;font-family:inherit;">
+                            <i class="fa-solid fa-rotate"></i> Tải lại
+                        </button>
+                    </div>
+                    <div id="lichSuDiemBody" style="margin-top:10px;"><div class="lsut-empty">Chưa tải lịch sử.</div></div>
+                </div>
+
                 <div class="app-card-title"><i class="fa-solid fa-pen-to-square"></i> Chỉnh Sửa Hồ Sơ</div>
 
                 <div class="form-row">
@@ -3272,11 +3284,11 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <!-- Supabase JS v2 SDK — BẮT BUỘC load trước ket-noi-supabase.js để guestRPC hoạt động -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="ket-noi-supabase.js?v=20260610d"></script>
-<script src="bo-may-du-lieu.js?v=20260611c"></script>
-<script src="hieu-ung-giao-dien.js?v=20260611b"></script>
-<script src="phan-he-khach-choi.js?v=20260611i"></script>
-<script src="phan-he-host.js?v=20260611i"></script>
-<script src="phan-he-thong-bao.js?v=20260611g"></script>
+<script src="bo-may-du-lieu.js?v=20260612c"></script>
+<script src="hieu-ung-giao-dien.js?v=20260612a"></script>
+<script src="phan-he-khach-choi.js?v=20260612c"></script>
+<script src="phan-he-host.js?v=20260612c"></script>
+<script src="phan-he-thong-bao.js?v=20260612c"></script>
 <script src="phan-he-ung-dung.js?v=20260610b"></script>
 <script src="phan-he-gop-y.js?v=20260610"></script>
 
@@ -3519,6 +3531,8 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
         </div>
         <!-- Tóm tắt cọc X/Y — chỉ hiện khi ca có yeu_cau_coc (JS bật/tắt) -->
         <div id="gl-coc-summary" style="display:none;align-items:center;gap:4px;padding:8px 18px;font-size:0.8rem;color:#fbbf24;background:rgba(245,158,11,0.06);border-bottom:1px solid rgba(245,158,11,0.18);flex-shrink:0;"></div>
+        <!-- Banner pha ca (Nhóm 3) — JS bật theo phase: "trước giờ" (nhắc chỉ Từ chối) / "sau giờ" (nhắc chốt) -->
+        <div id="gl-phase-banner" style="display:none;align-items:center;gap:6px;padding:8px 18px;font-size:0.8rem;flex-shrink:0;border-bottom:1px solid;"></div>
         <div id="modal-guest-list-loading" style="display:none;text-align:center;padding:30px;color:#64748b;">
             <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
         </div>

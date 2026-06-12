@@ -70,16 +70,18 @@
         return new Date(iso).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" });
     }
 
-    // ── Icon + màu theo loại sự kiện ──
+    // ── Màu theo MỨC ĐỘ sự kiện (KHÔNG dùng emoji/icon — chỉ left-border accent + chấm) ──
+    //    Cao = đỏ #ff4444 · TB = cam #ff8800 · Thấp = xanh accent #00ff88
     const _META = {
-        G1:  { icon: "✅", mau: "#00ff88" }, // host xác nhận đã tham gia
-        G2:  { icon: "🗑️", mau: "#ef4444" }, // host hủy ca
-        G3:  { icon: "⚠️", mau: "#fbbf24" }, // bị đánh dấu bùng / khách hủy
-        H1:  { icon: "🏸", mau: "#22d3ee" }, // khách đặt slot
-        H2:  { icon: "↩️", mau: "#fbbf24" }, // khách hủy slot
-        H3b: { icon: "🚫", mau: "#ef4444" }, // khách bùng (ghi cho host)
-        S1:  { icon: "🔒", mau: "#ef4444" }, // tài khoản bị khóa
-        _:   { icon: "🔔", mau: "#94a3b8" }
+        G1:  { mau: "#00ff88" }, // Thấp — host xác nhận đã tham gia (tin vui)
+        G2:  { mau: "#ff4444" }, // Cao  — host hủy ca
+        G3:  { mau: "#ff4444" }, // Cao  — bị đánh dấu bùng / khách hủy
+        H1:  { mau: "#00ff88" }, // Thấp — khách đặt slot (tin vui)
+        H2:  { mau: "#ff8800" }, // TB   — khách hủy slot
+        H3b: { mau: "#ff4444" }, // Cao  — khách bùng kèo (ghi cho host)
+        S1:  { mau: "#ff4444" }, // Cao  — tài khoản bị khóa
+        G4:  { mau: "#ff8800" }, // TB   — host từ chối slot của khách (Nhóm 3)
+        _:   { mau: "#94a3b8" }  // mặc định — trung tính
     };
 
     /* ═══════════════════════════════════════════════════
@@ -105,6 +107,42 @@
         } catch (_) {
             // Im lặng — thông báo là phụ, không được chặn luồng chính.
         }
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * LỊCH SỬ ĐIỂM UY TÍN (Nhóm 3) — ghi (no-token) + đọc của chính mình (token)
+     * RPC: ghi_lich_su_uy_tin / lay_lich_su_uy_tin (migration-lich-su-uy-tin-v1.sql)
+     * ═══════════════════════════════════════════════════ */
+    // Ghi 1 dòng lịch sử điểm — best-effort, fire-and-forget (KHÔNG chặn luồng chính).
+    // o = { sdt, delta, lyDo, caId, tenSan, diemTruoc, diemSau }
+    window.ghiLichSuUyTin = async function (o) {
+        try {
+            const c = _client();
+            if (!c || !o || !o.sdt || o.delta == null || !o.lyDo) return;
+            await c.rpc("ghi_lich_su_uy_tin", {
+                p_sdt:        String(o.sdt),
+                p_delta:      Math.round(o.delta),
+                p_ly_do:      String(o.lyDo),
+                p_ca_id:      o.caId != null ? String(o.caId) : null,
+                p_ten_san:    o.tenSan != null ? String(o.tenSan) : null,
+                p_diem_truoc: o.diemTruoc != null ? Math.round(o.diemTruoc) : null,
+                p_diem_sau:   o.diemSau != null ? Math.round(o.diemSau) : null
+            });
+        } catch (_) { /* im lặng — lịch sử là phụ */ }
+    };
+
+    // Đọc lịch sử điểm của CHÍNH MÌNH (token-verified). Trả về MẢNG (rỗng nếu lỗi).
+    window.layLichSuUyTin = async function (gioiHan) {
+        try {
+            const a = _actor();
+            const c = _client();
+            if (!a || !c) return [];
+            const { data } = await c.rpc("lay_lich_su_uy_tin", {
+                p_token: a.token, p_sdt: a.sdt, p_gioi_han: gioiHan || 50
+            });
+            if (data && data.status === "ok" && Array.isArray(data.data)) return data.data;
+            return [];
+        } catch (_) { return []; }
     };
 
     /* ═══════════════════════════════════════════════════
@@ -160,20 +198,22 @@
         const body = document.getElementById("tbDrawerBody");
         if (!body) return;
         if (!_items.length) {
-            body.innerHTML = `<div class="tb-empty"><span class="tb-empty-ico">🔔</span><span>Chưa có thông báo nào.</span></div>`;
+            body.innerHTML = `<div class="tb-empty"><span>Chưa có thông báo nào.</span></div>`;
             return;
         }
         body.innerHTML = _items.map(it => {
             const m = _META[it.loai] || _META._;
             const desc = it.noi_dung ? `<span class="tb-item-desc">${_esc(it.noi_dung)}</span>` : "";
-            return `<button type="button" class="tb-item${it.da_doc ? "" : " tb-unread"}" onclick="window.moThongBao('${_esc(it.id)}')">
-                <span class="tb-item-icon" style="color:${m.mau};">${m.icon}</span>
+            // KHÔNG icon/emoji: mức độ thể hiện qua left-border (inline) + chấm màu 8px.
+            // Chưa đọc: thêm chấm xanh góc trái (.tb-dot).
+            return `<button type="button" class="tb-item${it.da_doc ? "" : " tb-unread"}" style="border-left-color:${m.mau};" onclick="window.moThongBao('${_esc(it.id)}')">
+                ${it.da_doc ? "" : `<span class="tb-dot" aria-label="chưa đọc"></span>`}
+                <span class="tb-cat-dot" style="background:${m.mau};"></span>
                 <span class="tb-item-main">
                     <span class="tb-item-title">${_esc(it.tieu_de)}</span>
                     ${desc}
                     <span class="tb-item-time">${_esc(_thoiGianTuongDoi(it.created_at))}</span>
                 </span>
-                ${it.da_doc ? "" : `<span class="tb-dot" aria-label="chưa đọc"></span>`}
             </button>`;
         }).join("");
     }
@@ -191,7 +231,7 @@
         document.body.style.overflow = "hidden";
         // Tải danh sách tươi mỗi lần mở
         const body = document.getElementById("tbDrawerBody");
-        if (body && !_items.length) body.innerHTML = `<div class="tb-empty"><span class="tb-empty-ico">⏳</span><span>Đang tải…</span></div>`;
+        if (body && !_items.length) body.innerHTML = `<div class="tb-empty"><span>Đang tải…</span></div>`;
         await _taiDanhSach();
     };
 

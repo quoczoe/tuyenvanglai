@@ -1,4 +1,47 @@
-# TODO — Cập nhật: 2026-06-11 (PHIÊN REDESIGN ĐIỂM UY TÍN — STATE-BASED DELTA)
+# TODO — Cập nhật: 2026-06-12 (PHIÊN BUILD NHÓM 3 — P0 icon + P1 SQL + P2/3 build)
+
+---
+
+## 🏗️ PHIÊN BUILD NHÓM 3 (2026-06-12)
+
+### PHẦN 0 — FIX ICON THÔNG BÁO ✅ (verify `.devtest/verify-p0icon.js` = 7/7 PASS, sạch)
+- [x] Bỏ HOÀN TOÀN emoji/icon trong drawer (`_META` chỉ còn `mau`; `_render` bỏ `.tb-item-icon`). LEFT-BORDER 3px theo mức độ (Cao đỏ #ff4444: G2/G3/H3b/S1 · TB cam #ff8800: H2 · Thấp xanh #00ff88: G1/H1) + chấm `.tb-cat-dot` 8px cùng màu + chấm xanh `.tb-dot` "chưa đọc" góc trái + read `opacity:0.72`. Empty/loading bỏ emoji. Bump `giao-dien.css`+`phan-he-thong-bao.js` `?v=20260612b`. Ảnh `tb-icon-1440.png`/`tb-icon-390.png`.
+
+### PHẦN 1 — SQL (ĐÃ SOẠN, CHỜ DUYỆT — KHÔNG CHẠY)
+- [x] `migration-tu-choi-v1.sql`: KHÔNG cần thay schema (trang_thai_di_danh TEXT tự do → status mới "Host từ chối"; cột giờ + huy_luc có sẵn). RPC `get_slot_time()` TUỲ CHỌN + khối VERIFY chốt giả định.
+- [x] `migration-lich-su-uy-tin-v1.sql`: bảng `lich_su_uy_tin` (9 cột) + index + RLS khóa anon + RPC `ghi_lich_su_uy_tin`(trusted, no-token theo chữ ký duyệt) + `lay_lich_su_uy_tin`(token-verified, đọc của mình) + `get_lich_su_uy_tin_admin`(authenticated/admin) + SELECT verify.
+- [ ] 🔴 DỪNG — chờ chủ app duyệt + chạy 2 file SQL trước khi build PHẦN 2+3.
+
+### PHẦN 2+3 — BUILD CODE + VERIFY ✅ (SQL đã chạy + token giữ no-token v1)
+> **VERIFY** `.devtest/verify-nhom3.js` = **13/13 PASS**, console/network sạch.
+- [x] 2A khóa trạng thái theo phase giờ: SSOT `window.phaCaDau(ca)` (bo-may) → truoc/trong/sau. `openGuestListModal` tính pha + lưu `modal._caInfo`/`dataset.pha` + banner pha. `_renderCustomDropdown(...,pha)`: pha "truoc" → disable "Đã tham gia"/"Bùng kèo"/"Khách hủy" (🔒). Guard ở `_triggerGlCdd` + `doiTrangThaiDiDanh` (chặn server-side). Timer 60s `_glPhaseTimer` refresh khi pha ĐỔI.
+- [x] 2B "Từ chối khách" (chỉ pha trước + "Chờ đánh"): nút cam `.gl-tu-choi-btn` → `window.tuChoiKhach()` → status "Host từ chối" + huy_luc → TB **G4** cho khách → phạt host (`_phatDiemHostTuChoi`) nếu <2h (thang HOST_HUY) + ghi lịch sử host. Khách: `daTuChoiSet` → badge "BỊ TỪ CHỐI" + chặn re-book (datSlot guard + RPC). Slot "Host từ chối" loại khỏi đếm (giải phóng).
+- [x] 2C hook `window.ghiLichSuUyTin()` (phan-he-thong-bao.js) vào `apDiemTheoTrangThai` — chỉ khi net≠0; ly_do tự suy (Tham gia/Bùng lần N/Khách hủy ...); ca_id/ten_san tra từ slotId nếu thiếu.
+- [x] 2D UI tab "Lịch Sử Điểm" trong Hồ Sơ (`taiLichSuDiemUyTin` + `window.layLichSuUyTin` token-verified, timeline `.lsut-*`, escHTML, auto-load khi hiện Hồ Sơ); admin `_xemLichSuDiemAdmin` (RPC `get_lich_su_uy_tin_admin` qua `_sbClient` authenticated, render inline-style).
+- [x] G4 thêm vào `_META` (cam/TB). Bump `?v=20260612c`: giao-dien.css, bo-may, khach-choi, host, thong-bao (index) + bo-may, quan-tri (admin). `node --check` 5 file OK.
+
+---
+
+## 🎯 PHIÊN FIX THEO ƯU TIÊN (2026-06-12)
+
+### NHÓM 1 — NHANH, KHÔNG SQL ✅
+- [x] 1A. Fix "undefined" — gốc: `.then()` của `_triggerGlCdd` (host) dùng mảng `_opts` THIẾU field `label` → `cur.label`=undefined. Fix: dùng `cur.val`. Verify: badge → "Đã tham gia"/"Bùng kèo"/"Chờ đánh" NGAY, KHÔNG undefined, KHÔNG F5.
+- [x] 1B. Visual cue — `giao-dien.css`: `.gl-cdd>button` & `.gl-coc-badge` hover glow accent + `:active scale(0.97)` + ripple `::after` (radial, prefers-reduced-motion tắt); hint `.coc-hint ✏️` cạnh "Chưa cọc" (ẩn khi "✓ Đã cọc"). Verify: hint hiện/ẩn đúng + ::after áp dụng.
+- [x] 1C. Thông báo — `phan-he-thong-bao.js` `_META`: G2 🗑️→❌, H3b 🚫→👻; `giao-dien.css` `.tb-item` list-style divider 1px + padding 15/16 + dải nhấn trái cho unread + body padding 0. Verify icon ❌/👻 + divider + screenshot `tb-drawer-1440.png`/`tb-drawer-390.png` + chuông @390 trong viewport.
+
+### NHÓM 2 — TRUNG BÌNH ✅
+- [x] 2A. `xacNhanModal(msg,icon,opts)` mở rộng nhãn nút (khôi phục mặc định khi đóng → backward compat). `_triggerGlCdd` (async): hỏi xác nhận trước "Đã tham gia"/"Bùng kèo" (nội dung theo trạng thái đích, nút "Hủy bỏ"/"Xác nhận — không sửa lại được"); "Chờ đánh"/"Khách hủy" KHÔNG hỏi. Verify nội dung + nhãn + khôi phục + không hỏi "Chờ đánh".
+
+> **VERIFY** `.devtest/verify-prio1.js` = **15/15 PASS**, console/network SẠCH.
+
+### NHÓM 3 — LỚN (CHỈ THIẾT KẾ — DỪNG CHỜ DUYỆT) 📋
+- [x] 3A. Soạn thiết kế khóa trạng thái theo giờ ca + "Từ chối khách" → `docs/THIET-KE-NHOM3.md` §1. KHÔNG code.
+- [x] 3B. Soạn thiết kế Lịch Sử Điểm Uy Tín → `docs/THIET-KE-NHOM3.md` §2. KHÔNG code.
+- [ ] 🔴 CHỜ CHỦ APP DUYỆT 3A + 3B trước khi build.
+
+### HẬU KỲ ✅
+- [x] Bump `?v=20260612a`: giao-dien.css, hieu-ung-giao-dien.js, phan-he-host.js, phan-he-thong-bao.js (index) + hieu-ung (admin).
+- [x] `node --check` 3 file JS = OK. Playwright `.devtest/verify-prio1.js` = 15/15 PASS (walker v2, recorder console+network).
 
 ---
 

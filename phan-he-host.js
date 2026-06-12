@@ -2327,6 +2327,10 @@
     function _luuCocMap(m) { try { localStorage.setItem(_COC_LS_KEY, JSON.stringify(m)); } catch (_) {} }
     window._daCoc = function (slotId) { return !!_layCocMap()[slotId]; };
 
+    // Nhãn trong badge cọc — kèm hint ✏️ gợi ý "bấm được" khi CHƯA cọc; ẩn khi đã xác nhận.
+    function _cocNhanHTML(da) {
+        return da ? "✓ Đã cọc" : `Chưa cọc <span class="coc-hint" aria-hidden="true">✏️</span>`;
+    }
     // Badge cọc 1 ô. active=false (Khách hủy/Bùng) → "—" (không cần cọc).
     function _cocBadgeHTML(slotId, active) {
         if (!active) return `<span style="color:#475569;font-size:0.72rem;">—</span>`;
@@ -2336,7 +2340,7 @@
         return `<button class="gl-coc-badge" data-slot-id="${slotId}" data-coc="${da ? "1" : "0"}"
             onclick="event.stopPropagation();window._toggleCoc(this)"
             title="${da ? "Đã nhận cọc — bấm để bỏ" : "Chưa nhận cọc — bấm khi đã nhận"}"
-            style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;${da ? onCss : offCss}">${da ? "✓ Đã cọc" : "Chưa cọc"}</button>`;
+            style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:0.72rem;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap;${da ? onCss : offCss}">${_cocNhanHTML(da)}</button>`;
     }
 
     // Toggle cọc 1 khách → lưu LS + cập nhật badge tại chỗ + tóm tắt X/Y.
@@ -2348,7 +2352,7 @@
         _luuCocMap(m);
         btn.dataset.coc = now ? "1" : "0";
         btn.title = now ? "Đã nhận cọc — bấm để bỏ" : "Chưa nhận cọc — bấm khi đã nhận";
-        btn.innerHTML = now ? "✓ Đã cọc" : "Chưa cọc";
+        btn.innerHTML = _cocNhanHTML(now);
         btn.style.background = now ? "rgba(0,255,136,0.10)" : "rgba(245,158,11,0.10)";
         btn.style.color      = now ? "#00ff88" : "#fbbf24";
         btn.style.border     = now ? "1px solid rgba(0,255,136,0.28)" : "1px solid rgba(245,158,11,0.32)";
@@ -2452,6 +2456,30 @@
             })();
             // Lưu trên modal dataset để bulkDoiTrangThai + _triggerGlCdd đọc được
             if (modal) modal.dataset.matchStarted = isMatchStarted ? "1" : "0";
+
+            // ── Nhóm 3: PHA ca (truoc/trong/sau) — khóa option theo giờ + nút "Từ chối khách" ──
+            const pha = window.phaCaDau ? window.phaCaDau(_caInfo) : null;
+            if (modal) {
+                modal._caInfo       = _caInfo;
+                modal.dataset.pha   = pha || "";
+                modal.dataset.tenSan = (_caInfo && _caInfo.ten_san) || "";
+            }
+            // Banner pha: "sau giờ" chưa chốt → nhắc chốt; "trước giờ" → nhắc chỉ Từ chối
+            (function () {
+                const b = document.getElementById("gl-phase-banner");
+                if (!b) return;
+                if (pha === "sau" && !daChotCa) {
+                    b.style.display = "flex";
+                    b.style.color = "#fbbf24"; b.style.background = "rgba(245,158,11,0.08)"; b.style.borderColor = "rgba(245,158,11,0.25)";
+                    b.innerHTML = `<i class="fa-solid fa-clock"></i>&nbsp;Ca đã kết thúc — vui lòng <strong>chốt trạng thái</strong> cho từng khách (Đã tham gia / Bùng kèo).`;
+                } else if (pha === "truoc") {
+                    b.style.display = "flex";
+                    b.style.color = "#60a5fa"; b.style.background = "rgba(96,165,250,0.08)"; b.style.borderColor = "rgba(96,165,250,0.25)";
+                    b.innerHTML = `<i class="fa-solid fa-hourglass-start"></i>&nbsp;Chưa tới giờ đánh — chỉ có thể <strong>Từ chối khách</strong>. "Đã tham gia"/"Bùng kèo" mở khi tới giờ.`;
+                } else {
+                    b.style.display = "none";
+                }
+            })();
             // Cập nhật nút "Khách hủy" trong bulk bar
             const _bulkHuyBtn = document.querySelector("#gl-bulk-bar button[onclick*='Khách hủy']");
             if (_bulkHuyBtn) {
@@ -2528,18 +2556,22 @@
 
             // Custom dropdown trạng thái — thay <select> native, hỗ trợ cả Khách hủy đổi ngược
             // isMatchStarted được đóng gói từ scope ngoài (tính ở đầu openGuestListModal)
-            function _renderCustomDropdown(guestId, caId, trangThai, sdt, ten, daTT, tienBung) {
-                // Bug 3A: slot KHÁCH ĐÃ TỰ HỦY → KHÓA, host không được chỉnh trạng thái nữa.
-                // Render badge tĩnh (không phải dropdown) + tooltip giải thích.
-                if (trangThai === "Khách hủy") {
-                    return `<div title="Khách đã tự hủy slot này — host không thể đổi trạng thái"
+            function _renderCustomDropdown(guestId, caId, trangThai, sdt, ten, daTT, tienBung, pha) {
+                // Bug 3A + Nhóm 3: slot "Khách hủy" (khách tự hủy) hoặc "Host từ chối" (host từ chối)
+                // → KHÓA, render badge tĩnh (không dropdown) + tooltip.
+                if (trangThai === "Khách hủy" || trangThai === "Host từ chối") {
+                    const _isTuChoi = trangThai === "Host từ chối";
+                    const _lbl = _isTuChoi ? "Host từ chối" : "Khách hủy";
+                    const _tip = _isTuChoi ? "Bạn đã từ chối khách này — slot đã được giải phóng"
+                                           : "Khách đã tự hủy slot này — host không thể đổi trạng thái";
+                    return `<div title="${_tip}"
                         style="display:inline-flex;align-items:center;gap:6px;min-width:130px;padding:5px 8px;
                                background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.20);border-radius:8px;
                                color:#f87171;font-size:0.76rem;font-family:inherit;white-space:nowrap;
                                cursor:not-allowed;user-select:none;opacity:0.9;justify-content:space-between;">
                         <span style="display:flex;align-items:center;gap:6px;">
                             <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#f87171" stroke-width="1.3"/><path d="M4.5 4.5l4 4M8.5 4.5l-4 4" stroke="#f87171" stroke-width="1.3" stroke-linecap="round"/></svg>
-                            Khách hủy
+                            ${_lbl}
                         </span>
                         <span style="font-size:0.7rem;line-height:1;">🔒</span>
                     </div>`;
@@ -2557,6 +2589,16 @@
                       disabled: _khachHuyDisabled, disabledTitle: "Ca đã bắt đầu — không thể dùng Khách hủy",
                       icon: `<svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#f87171" stroke-width="1.3"/><path d="M4.5 4.5l4 4M8.5 4.5l-4 4" stroke="#f87171" stroke-width="1.3" stroke-linecap="round"/></svg>` },
                 ];
+                // Nhóm 3: PHA "trước giờ" → KHÓA "Đã tham gia"/"Bùng kèo"/"Khách hủy"
+                // (chỉ "Chờ đánh"; host dùng nút "Từ chối khách" thay vì dropdown).
+                if (pha === "truoc") {
+                    _opts.forEach(o => {
+                        if (o.val !== "Chờ đánh") {
+                            o.disabled = true;
+                            o.disabledTitle = "Chưa tới giờ đánh — chỉ có thể Từ chối khách";
+                        }
+                    });
+                }
                 const cur = _opts.find(o => o.val === trangThai) || _opts[0];
                 const uid = `cdd-${guestId}`;
                 // data-* encode để doiTrangThaiDiDanh đọc được qua _triggerCustomDd()
@@ -2615,12 +2657,21 @@
                 const gioiTinh   = g.gioi_tinh === "female" ? "Nữ" : "Nam";
                 const genderClr  = g.gioi_tinh === "female" ? "#f472b6" : "#60a5fa";
 
-                // Cột Trạng thái: custom dropdown cho tất cả (kể cả Khách hủy có thể đổi ngược)
-                const selectHTML = _renderCustomDropdown(g.id, matchId, trangThai,
+                // Cột Trạng thái: custom dropdown (pha-aware) + nút "Từ chối khách" (chỉ pha trước giờ)
+                let selectHTML = _renderCustomDropdown(g.id, matchId, trangThai,
                     (g.sdt_khach||"").replace(/"/g,""),
                     (g.ten_khach||"").replace(/"/g,""),
                     g.da_thanh_toan ? "1" : "0",
-                    g.tien_thu_bung || 0);
+                    g.tien_thu_bung || 0,
+                    pha);
+                // Nhóm 3: nút "Từ chối khách" — chỉ pha "trước giờ" + đang "Chờ đánh"
+                if (pha === "truoc" && trangThai === "Chờ đánh") {
+                    const _sdtTc = (g.sdt_khach || "").replace(/'/g, "\\x27");
+                    const _tenTc = (g.ten_khach || "").replace(/'/g, "\\x27");
+                    selectHTML += `<button class="gl-tu-choi-btn" onclick="event.stopPropagation();window.tuChoiKhach('${g.id}','${matchId}','${_sdtTc}','${_tenTc}')"
+                        title="Từ chối khách này — slot được giải phóng, khách nhận thông báo">
+                        <i class="fa-solid fa-ban"></i> Từ chối</button>`;
+                }
 
                 // Cột Thanh toán
                 let ttCellHTML;
@@ -2748,6 +2799,22 @@
     };
     window._dongGuestListModal = window.closeGuestListModal;
 
+    // Nhóm 3: TỰ CHUYỂN PHA mỗi 60s khi modal DS Khách đang mở (không cần F5).
+    // Chỉ refresh khi PHA thực sự ĐỔI (trước→trong→sau) → không phá thao tác host mỗi tick.
+    if (!window._glPhaseTimer) {
+        window._glPhaseTimer = setInterval(function () {
+            const m = document.getElementById("modal-guest-list");
+            if (!m || m.style.display === "none" || m.classList.contains("hidden")) return;
+            if (!m._caInfo || !m.dataset.matchId) return;
+            const phaNow = window.phaCaDau ? window.phaCaDau(m._caInfo) : null;
+            if ((phaNow || "") !== (m.dataset.pha || "")) {
+                const titleEl = document.getElementById("modal-guest-list-title");
+                const curTitle = titleEl ? titleEl.textContent.replace(/^DS Khách — /, "") : "";
+                window.openGuestListModal(m.dataset.matchId, curTitle).catch(function () {});
+            }
+        }, 60000);
+    }
+
     /* ── Custom dropdown helpers ─────────────────────────────────── */
     // Đóng tất cả dropdown inline đang mở
     function _closeAllGlCdd() {
@@ -2810,7 +2877,7 @@
         if (tr) tr.classList.add("tr-cdd-open");
     };
 
-    window._triggerGlCdd = function (uid, newState) {
+    window._triggerGlCdd = async function (uid, newState) {
         const wrap = document.getElementById(uid);
         if (!wrap) return;
         const btn = wrap.querySelector("button[data-guest-id]");
@@ -2819,10 +2886,30 @@
         _closeAllGlCdd();
         // Không làm gì nếu chọn lại trạng thái hiện tại
         if (btn.dataset.current === newState) return;
-        // Bug 3A: slot khách đã tự hủy → KHÓA, không cho host đổi trạng thái
-        if (btn.dataset.current === "Khách hủy") {
-            window.hienToast?.("Không được phép", "Khách đã tự hủy slot này — không thể đổi trạng thái.", "warning");
+        // Bug 3A + Nhóm 3: slot "Khách hủy"/"Host từ chối" → KHÓA, không cho host đổi trạng thái
+        if (btn.dataset.current === "Khách hủy" || btn.dataset.current === "Host từ chối") {
+            window.hienToast?.("Không được phép", "Slot này đã giải phóng (khách hủy / host từ chối) — không thể đổi trạng thái.", "warning");
             return;
+        }
+        // ── Nhóm 3: PHA "trước giờ" → chỉ "Từ chối khách", chặn "Đã tham gia"/"Bùng kèo" ──
+        if (newState === "Đã tham gia" || newState === "Bùng kèo") {
+            const _modalP = document.getElementById("modal-guest-list");
+            const _caP = _modalP && _modalP._caInfo;
+            if (_caP && window.phaCaDau && window.phaCaDau(_caP) === "truoc") {
+                window.hienToast?.("Chưa tới giờ", 'Ca chưa bắt đầu — chỉ có thể "Từ chối khách". Chờ tới giờ để xác nhận tham gia/bùng.', "warning");
+                return;
+            }
+        }
+        // ── 2A: XÁC NHẬN 1 LẦN trước khi đổi sang trạng thái HỆ QUẢ (Đã tham gia / Bùng kèo).
+        // "Chờ đánh" (đảo về) + "Khách hủy" (host hiếm dùng) KHÔNG hỏi (vô hại / khách tự làm).
+        if (newState === "Đã tham gia" || newState === "Bùng kèo") {
+            const _ten = (btn.dataset.ten || "").trim() || "khách này";
+            const _msg = newState === "Đã tham gia"
+                ? `Xác nhận "${_ten}" đã tham gia ca đấu?\nĐiểm uy tín của khách sẽ được +2.`
+                : `Xác nhận "${_ten}" bùng kèo?\nĐiểm uy tín của khách sẽ bị TRỪ và có thể bị khóa nếu tái phạm.`;
+            const _icon = newState === "Đã tham gia" ? "✅" : "👻";
+            const _ok = await window.xacNhanModal(_msg, _icon, { ok: "Xác nhận — không sửa lại được", cancel: "Hủy bỏ" });
+            if (!_ok) return; // Hủy bỏ → giữ nguyên dropdown (data-current chưa đổi)
         }
         // Tạo proxy object giống select element để doiTrangThaiDiDanh dùng được
         const proxy = {
@@ -2854,7 +2941,9 @@
             btn.style.borderColor = cur.border;
             btn.style.color = cur.color;
             const labelSpan = btn.querySelector("span");
-            if (labelSpan) labelSpan.innerHTML = `${cur.icon}${cur.label}`;
+            // FIX "undefined": mảng _opts ở đây KHÔNG có field `label` (chỉ _renderCustomDropdown
+            // mới có) → trước đây ghi `${cur.icon}undefined`. Nhãn luôn = val nên dùng cur.val.
+            if (labelSpan) labelSpan.innerHTML = `${cur.icon}${cur.val}`;
             const chevron = btn.querySelector("svg:last-child");
             if (chevron) chevron.querySelector("path").setAttribute("stroke", cur.color);
             // Cập nhật trạng thái active trong menu opts
@@ -3063,6 +3152,15 @@
                     return;
                 }
             }
+            // Nhóm 3: PHA "trước giờ" → chặn "Đã tham gia"/"Bùng kèo" (chỉ Từ chối khách)
+            if (newState === "Đã tham gia" || newState === "Bùng kèo") {
+                const _modalPg = document.getElementById("modal-guest-list");
+                const _caPg = _modalPg && _modalPg._caInfo;
+                if (_caPg && window.phaCaDau && window.phaCaDau(_caPg) === "truoc") {
+                    window.hienToast("Chưa tới giờ", 'Ca chưa bắt đầu — chỉ có thể "Từ chối khách".', "warning");
+                    return;
+                }
+            }
             // Đọc trạng thái CŨ THẬT từ DB (server-authoritative) TRƯỚC khi ghi — không tin
             // DOM/dataset (tránh lệch UI↔DB). _ttCu (dataset.current) chỉ dùng làm fallback.
             let _ttCuDB = _ttCu;
@@ -3078,7 +3176,9 @@
             // đếm lần bùng, khóa TK, toast điểm + thông báo G1/G3/H3b/S1. KHÔNG cộng dồn.
             const _sdtKh = selectEl.dataset.sdt;
             if (_sdtKh && typeof window.apDiemTheoTrangThai === "function") {
-                window.apDiemTheoTrangThai(_sdtKh, _ttCuDB, newState, guestId, {}).catch(() => {});
+                // Truyền caId/tenSan cho hook lịch sử điểm (2C) → tránh 2 read phụ.
+                const _ctx = { caId: selectEl.dataset.caId, tenSan: document.getElementById("modal-guest-list")?.dataset.tenSan };
+                window.apDiemTheoTrangThai(_sdtKh, _ttCuDB, newState, guestId, _ctx).catch(() => {});
             }
             window.hienToast("Đã cập nhật ✅", newState, "success");
 
@@ -3153,6 +3253,91 @@
             window._doiTTBusy = false;
         }
     };
+
+    /* ─── tuChoiKhach (Nhóm 3) ─────────────────────────────────────
+     * Host từ chối 1 khách Ở PHA "TRƯỚC GIỜ":
+     *   • dat_slot.trang_thai_di_danh = "Host từ chối" + huy_luc → slot giải phóng
+     *   • thông báo G4 cho khách "đặt ca khác"
+     *   • KHÔNG trừ điểm khách; trừ điểm HOST nếu còn < 2h trước giờ đánh (thang HOST_HUY)
+     *   • refresh DS Khách + invalidate cache Tìm Kèo
+     * ──────────────────────────────────────────────────────────────── */
+    window.tuChoiKhach = async function (slotId, caId, sdt, ten) {
+        if (window._tuChoiBusy) return;
+        const modal = document.getElementById("modal-guest-list");
+        const ca = (modal && modal._caInfo) || null;
+        const tenSan = (ca && ca.ten_san) || (modal && modal.dataset.tenSan) || "";
+        const phut = ca ? window.phutConLaiToiGioDanh(ca.ngay_danh, ca.gio_bat_dau) : null;
+        const phatHost = (phut != null && phut < 120); // < 2h trước giờ đánh → phạt host
+        const tenHienThi = (ten || "khách này").trim() || "khách này";
+
+        const _msg = `Từ chối "${tenHienThi}"?\nSlot sẽ được GIẢI PHÓNG và khách nhận thông báo đặt ca khác.`
+            + (phatHost ? `\n⚠ Còn ${window.moTaThoiGianConLai(phut)} trước giờ đánh — ĐIỂM UY TÍN CỦA BẠN (host) sẽ bị trừ.` : "");
+        const ok = await window.xacNhanModal(_msg, "🚫", { ok: "Xác nhận từ chối", cancel: "Hủy bỏ" });
+        if (!ok) return;
+
+        window._tuChoiBusy = true;
+        try {
+            await window.dbEngine.ghi("dat_slot",
+                { trang_thai_di_danh: "Host từ chối", huy_luc: new Date().toISOString() }, { id: slotId });
+
+            // Thông báo G4 cho khách
+            window.guiThongBao?.({
+                nguoiNhan: sdt, loai: "G4",
+                tieuDe: "Host đã từ chối slot của bạn",
+                noiDung: `Slot của bạn tại "${tenSan}"${ca && ca.gio_bat_dau ? " (" + ca.gio_bat_dau + ")" : ""} đã bị host từ chối — slot được giải phóng. Vui lòng đặt ca khác.`,
+                linkData: { tab: "timKeo" }
+            });
+
+            // Phạt host nếu < 2h (thang HOST_HUY) + ghi lịch sử điểm host
+            if (phatHost) {
+                const D = window.DIEM_UY_TIN || {};
+                const diemPhat = window.tinhDiemPhatTheoGio(D.HOST_HUY, phut) || 0; // số âm
+                if (diemPhat < 0) {
+                    const hostSdt = (window.currentHostInfo && window.currentHostInfo.sdt_host) || window.currentHostKey;
+                    await _phatDiemHostTuChoi(hostSdt, diemPhat, caId, tenSan, phut);
+                }
+            }
+
+            window.hienToast("Đã từ chối khách", `Slot của "${tenHienThi}" đã được giải phóng.`, "success");
+            window._tkInvalidateCache && window._tkInvalidateCache();
+
+            // Refresh DS Khách (cập nhật badge khóa + bỏ nút Từ chối) + bảng ca
+            if (modal?.dataset.matchId) {
+                const titleEl = document.getElementById("modal-guest-list-title");
+                const curTitle = titleEl ? titleEl.textContent.replace(/^DS Khách — /, "") : "";
+                window.openGuestListModal(modal.dataset.matchId, curTitle).catch(() => {});
+            }
+            _taiLichSuCaDau().catch(() => {});
+        } catch (e) {
+            console.error("Lỗi tuChoiKhach:", e);
+            window.hienToast("Lỗi", "Không thể từ chối khách. Thử lại sau.", "danger");
+        } finally {
+            window._tuChoiBusy = false;
+        }
+    };
+
+    /* Trừ điểm HOST khi từ chối khách muộn (<2h) + ghi lịch sử điểm (best-effort). */
+    async function _phatDiemHostTuChoi(hostSdt, diemPhat, caId, tenSan, phut) {
+        if (!hostSdt || !diemPhat) return;
+        try {
+            const users = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: hostSdt } }).catch(() => []);
+            const u = (users || [])[0];
+            if (!u || u.is_whitelisted) return;
+            const SAN = (window.DIEM_UY_TIN && window.DIEM_UY_TIN.SAN) ?? 0;
+            const TRAN = (window.DIEM_UY_TIN && window.DIEM_UY_TIN.TRAN) ?? 100;
+            const cur = u.diem_uy_tin ?? 100;
+            const next = Math.max(SAN, Math.min(TRAN, cur + diemPhat));
+            if (next === cur) return;
+            await window.dbEngine.ghi("nguoi_dung", { diem_uy_tin: next }, { sdt_khach: hostSdt }).catch(() => {});
+            window.ghiLichSuUyTin?.({
+                sdt: hostSdt, delta: next - cur,
+                lyDo: `Từ chối khách (còn ${window.moTaThoiGianConLai(phut)})`,
+                caId: caId || null, tenSan: tenSan || null, diemTruoc: cur, diemSau: next
+            });
+            window.hienToast(`Trừ ${Math.abs(next - cur)} điểm uy tín (host)`,
+                `Từ chối khách khi còn ${window.moTaThoiGianConLai(phut)} — còn ${next} điểm.`, "warning");
+        } catch (e) { console.error("_phatDiemHostTuChoi:", e); }
+    }
 
     /* ─── capNhatTienBung ──────────────────────────────────────────
      * Lưu số tiền thu được khi khách Bùng kèo (0 = không thu, >0 = phạt)
