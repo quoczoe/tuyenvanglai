@@ -1834,11 +1834,9 @@
                 if (s.is_frozen) return false;
                 // Chỉ hiện ca hôm nay trở đi
                 if (s.ngay_danh && s.ngay_danh < todayStr) return false;
-                // Ẩn ca đã qua giờ kết thúc — so sánh ngay_danh + gio_ket_thuc với now
-                if (s.ngay_danh && s.gio_ket_thuc) {
-                    const endDt = new Date(s.ngay_danh + "T" + s.gio_ket_thuc);
-                    if (now > endDt) return false;
-                }
+                // Ẩn ca đã qua giờ kết thúc — SSOT (xử ca qua nửa đêm 22:00–00:00)
+                const _endTs = window.thoiDiemKetThucCa?.(s.ngay_danh, s.gio_bat_dau, s.gio_ket_thuc);
+                if (_endTs != null && now.getTime() > _endTs) return false;
 
                 // Lọc tỉnh thành
                 if (province && s.tinh_thanh !== province) return false;
@@ -2006,7 +2004,12 @@
             const moreBadge = duCount > 0
                 ? `<span class="kh-level-pill kh-level-more" title="Còn: ${stdLabels.slice(CAP).join(", ")}" onclick="event.stopPropagation();window.moModalChiTietKeo('${slot.id}')">+${duCount}</span>`
                 : "";
-            return shown + moreBadge + (free ? `<em style="color:#64748b;font-size:0.65rem;margin-left:4px;">${free}</em>` : "");
+            // Ghi chú trình độ (free text host nhập) — TRUNCATE 1 dòng + tooltip + escape XSS
+            // (trước đây render full → card cao bất thường, phá equal-height).
+            const noteHtml = free
+                ? `<span class="kh-level-note" title="${_escLsut(free)}">${_escLsut(free)}</span>`
+                : "";
+            return shown + moreBadge + noteHtml;
         };
         const ICON_NAM = '<span style="color:#60a5fa;font-style:normal;flex-shrink:0;">&#9794;</span>';
         const ICON_NU  = '<span style="color:#f472b6;font-style:normal;flex-shrink:0;">&#9792;</span>';
@@ -2293,8 +2296,9 @@
                     const ca = _caMap[s.id_ca_dau];
                     if (!ca) return false;            // ca đã bị xóa (CASCADE) → không còn ràng buộc
                     if (ca.da_chot_ca) return false;  // ca đã chốt → không còn "đang chờ"
-                    if (!ca.ngay_danh || !ca.gio_ket_thuc) return true; // thiếu giờ → tính an toàn
-                    return _now < new Date(ca.ngay_danh + "T" + ca.gio_ket_thuc).getTime(); // chỉ đếm ca CHƯA kết thúc
+                    const _end = window.thoiDiemKetThucCa?.(ca.ngay_danh, ca.gio_bat_dau, ca.gio_ket_thuc);
+                    if (_end == null) return true;    // thiếu giờ → tính an toàn (còn ràng buộc)
+                    return _now < _end;               // chỉ đếm ca CHƯA kết thúc (xử ca qua đêm)
                 }).length;
             };
 
@@ -2468,8 +2472,8 @@
                 // Đang chờ đánh (chưa chốt ca) — chỉ tính ca CHƯA tới giờ kết thúc,
                 // tránh đếm ca đã đánh xong mà host quên chốt (nhất quán với giới hạn đặt slot)
                 if (!caDau.da_chot_ca && slot.trang_thai_di_danh === "Chờ đánh") {
-                    const _chuaKetThuc = (!caDau.ngay_danh || !caDau.gio_ket_thuc)
-                        || Date.now() < new Date(caDau.ngay_danh + "T" + caDau.gio_ket_thuc).getTime();
+                    const _endTs = window.thoiDiemKetThucCa?.(caDau.ngay_danh, caDau.gio_bat_dau, caDau.gio_ket_thuc);
+                    const _chuaKetThuc = _endTs == null || Date.now() < _endTs; // xử ca qua đêm
                     if (_chuaKetThuc) soCho++;
                 }
 
@@ -4056,9 +4060,9 @@
                     : "--";
                 // Nếu slot "Chờ đánh" nhưng ca đã kết thúc → hiển thị "Đã Tham Gia" (không ghi DB)
                 let _displayTT = slot.trang_thai_di_danh;
-                if (_displayTT === "Chờ đánh" && ca.ngay_danh && ca.gio_ket_thuc) {
-                    const _caEnd = new Date(ca.ngay_danh + "T" + ca.gio_ket_thuc);
-                    if (Date.now() > _caEnd.getTime()) _displayTT = "Đã tham gia";
+                if (_displayTT === "Chờ đánh") {
+                    const _caEnd = window.thoiDiemKetThucCa?.(ca.ngay_danh, ca.gio_bat_dau, ca.gio_ket_thuc);
+                    if (_caEnd != null && Date.now() > _caEnd) _displayTT = "Đã tham gia"; // xử ca qua đêm
                 }
                 const tt     = ttMap[_displayTT] || { stripe: "#546e7a", badgeCls: "ls-badge-cancel", label: _displayTT };
                 const itemId = "lsItem_" + slot.id;

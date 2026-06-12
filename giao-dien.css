@@ -2956,6 +2956,26 @@ body::before {
     .dt-filter-btn { flex-shrink: 0; }
 }
 
+/* Cho phép chuỗi flex co lại để ghi chú dài TRUNCATE (mặc định flex item min-width:auto =
+   không co dưới content → note nowrap kéo giãn card ra 875px). Thêm min-width:0 cả chuỗi. */
+.slot-card-body, .slot-level-badge-wrap, .slot-details-row,
+.slot-detail-item, .kh-trinh-do-row, .kh-trinh-do-line { min-width: 0; }
+
+/* Ghi chú trình độ (free text) — TRUNCATE 1 dòng (chiếm dòng riêng) → card không cao bất thường.
+   Selector .slot-card-body .kh-level-note để THẮNG `.slot-card-body *{white-space:normal}` (4499). */
+.slot-card-body .kh-level-note {
+    flex: 0 1 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-style: italic;
+    font-size: 0.65rem;
+    color: #64748b;
+    margin-top: 1px;
+}
+
 /* Badge "+N" pills trình độ (PHẦN 2B) — bấm xem hết trong Chi Tiết */
 .kh-level-more {
     cursor: pointer;

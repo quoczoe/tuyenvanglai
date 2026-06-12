@@ -110,27 +110,42 @@
         return `${m}p`;
     };
 
-    /* PHA của ca theo giờ (GMT+7) — SSOT cho khóa trạng thái Nhóm 3.
+    /* ── SSOT THỜI ĐIỂM CA (GMT+7) — XỬ LÝ CA QUA NỬA ĐÊM ──────────────
+     * Giờ lưu dạng "HH:MM"; new Date("YYYY-MM-DDTHH:MM") (KHÔNG offset) = giờ LOCAL
+     * = GMT+7 trên trình duyệt VN, nhất quán với Date.now(). Bug ca 22:00–00:00:
+     * gio_ket_thuc "00:00" parse ra 00:00 ĐẦU ngày (đã qua) → phải +1 NGÀY khi
+     * gio_ket_thuc <= gio_bat_dau. Mọi nơi tính "ca đã kết thúc?" PHẢI dùng 2 hàm này. */
+    window.thoiDiemBatDauCa = function (ngayDanh, gioBatDau) {
+        if (!ngayDanh || !gioBatDau) return null;
+        const t = new Date(ngayDanh + "T" + gioBatDau);
+        return isNaN(t.getTime()) ? null : t.getTime();
+    };
+    window.thoiDiemKetThucCa = function (ngayDanh, gioBatDau, gioKetThuc) {
+        if (!ngayDanh || !gioKetThuc) return null;
+        let end = new Date(ngayDanh + "T" + gioKetThuc);
+        if (isNaN(end.getTime())) return null;
+        const start = gioBatDau ? new Date(ngayDanh + "T" + gioBatDau) : null;
+        // Ca qua nửa đêm: giờ kết thúc <= giờ bắt đầu → kết thúc thuộc NGÀY HÔM SAU
+        if (start && !isNaN(start.getTime()) && end.getTime() <= start.getTime()) {
+            end = new Date(end.getTime() + 24 * 3600 * 1000);
+        }
+        return end.getTime();
+    };
+
+    /* PHA của ca theo giờ (GMT+7) — SSOT cho khóa trạng thái + badge.
      *   "truoc" : chưa tới giờ bắt đầu  → host chỉ "Từ chối khách"
      *   "trong" : đang trong giờ        → host chọn "Đã tham gia"/"Bùng kèo"
      *   "sau"   : đã qua giờ kết thúc    → host chốt trạng thái cuối
-     * ca: { ngay_danh, gio_bat_dau, gio_ket_thuc }. Thiếu dữ liệu → null (caller
-     * coi như KHÔNG khóa = giữ hành vi cũ). Xử ca qua đêm (end<=start → +1 ngày). */
+     * ca: { ngay_danh, gio_bat_dau, gio_ket_thuc }. Thiếu dữ liệu → null. Ca qua đêm OK. */
     window.phaCaDau = function (ca) {
-        if (!ca || !ca.ngay_danh || !ca.gio_bat_dau) return null;
-        const start = new Date(ca.ngay_danh + "T" + ca.gio_bat_dau);
-        if (isNaN(start.getTime())) return null;
+        if (!ca) return null;
+        const start = window.thoiDiemBatDauCa(ca.ngay_danh, ca.gio_bat_dau);
+        if (start == null) return null;
         const now = Date.now();
-        if (now < start.getTime()) return "truoc";
-        if (ca.gio_ket_thuc) {
-            let end = new Date(ca.ngay_danh + "T" + ca.gio_ket_thuc);
-            if (!isNaN(end.getTime())) {
-                if (end.getTime() <= start.getTime()) end = new Date(end.getTime() + 24 * 3600 * 1000); // ca qua đêm
-                return now <= end.getTime() ? "trong" : "sau";
-            }
-        }
-        // Không có giờ kết thúc → coi như đang trong giờ (cho phép chốt)
-        return "trong";
+        if (now < start) return "truoc";
+        const end = window.thoiDiemKetThucCa(ca.ngay_danh, ca.gio_bat_dau, ca.gio_ket_thuc);
+        if (end == null) return "trong"; // không có giờ kết thúc → coi như đang trong giờ
+        return now <= end ? "trong" : "sau";
     };
 
     /* ═══════════════════════════════════════════════════════════════
