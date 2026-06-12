@@ -67,9 +67,23 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 // user-select: none toàn trang; input/textarea được select
 ```
 
-## CURRENT STATE (cập nhật: 2026-06-12 PHIÊN FIX 4 VẤN ĐỀ — chuông/hủy modal/card align/đánh giá)
+## CURRENT STATE (cập nhật: 2026-06-12 PHIÊN FIX TÍNH GIỜ CA QUA ĐÊM + LỌC DOANH THU MOBILE)
 
-> Cache-bust `?v=` HIỆN TẠI (index.html): giao-dien.css=`20260612e`, components.css=`20260611f`, ket-noi-supabase.js=`20260610d`, bo-may-du-lieu.js=`20260612c`, hieu-ung-giao-dien.js=`20260612a`, phan-he-khach-choi.js=`20260612e`, phan-he-host.js=`20260612c`, phan-he-thong-bao.js=`20260612e`, phan-he-ung-dung.js=`20260612d`, phan-he-gop-y.js=`20260610`. admin/index.html: ket-noi=`20260610d`, bo-may=`20260612c`, hieu-ung=`20260612a`, quan-tri=`20260612c`.
+> Cache-bust `?v=` HIỆN TẠI (index.html): giao-dien.css=`20260612i`, components.css=`20260611f`, ket-noi-supabase.js=`20260610d`, bo-may-du-lieu.js=`20260612h`, hieu-ung-giao-dien.js=`20260612a`, phan-he-khach-choi.js=`20260612h`, phan-he-host.js=`20260612i`, phan-he-thong-bao.js=`20260612e`, phan-he-ung-dung.js=`20260612d`, phan-he-gop-y.js=`20260610`. admin/index.html: ket-noi=`20260610d`, bo-may=`20260612h`, hieu-ung=`20260612a`, quan-tri=`20260612c`.
+
+> **Cột Trạng Thái DS Khách**: dropdown + nút "Từ chối" bọc `.gl-tt-wrap` (flex row, align-items:center, gap; @≤600 column stack căn trái). Cột widen `min-width:235px` (đủ 1 hàng desktop; rebalance Đặt/Hủy/Thanh Toán). Verify `.devtest/verify-ttcol.js` = 9/9. Bump `?v=20260612i` (giao-dien.css, phan-he-host.js).
+
+### PHIÊN FIX TÍNH GIỜ CA QUA ĐÊM + LỌC DOANH THU MOBILE ✅ (verify `.devtest/verify-timecalc.js` = 8/8)
+- **🔴 BUG TÍNH GIỜ (ca qua nửa đêm)**: ca 22:00–00:00, `gio_ket_thuc="00:00"` → 00:00 ĐẦU ngày (đã qua) → "Hết giờ" OAN. **SSOT mới** (bo-may §0B): `thoiDiemBatDauCa(ngay,bd)` + `thoiDiemKetThucCa(ngay,bd,kt)` — nếu `kt<=bd` → kết thúc thuộc NGÀY HÔM SAU (+1 ngày). `phaCaDau` refactor dùng helper. **MỌI nơi so giờ kết thúc PHẢI dùng `thoiDiemKetThucCa`**: host `_isExpiredCa` + badge 3 trạng thái (Sắp diễn ra/Đang diễn ra/Hết giờ qua `phaCaDau`) + `autoUpdateChoDao`(nhận TIMESTAMP, trước nhận "HH:MM"→Invalid→dead); khach auto-hide Tìm Kèo + đếm ca chưa kết thúc + Lịch Sử "Đã tham gia". Giờ "HH:MM" parse = LOCAL = GMT+7 (nhất quán Date.now, không lỗi UTC).
+- **Lọc Doanh Thu mobile**: `.dt-filter-bar` > `.dt-filter-period` + `.dt-filter-range` + CSS responsive (@≤600: period full-width hàng 1; range [từ→đến + Lọc] full-width hàng 2; ẩn "hoặc"; date `flex:1`). PC 1 hàng.
+- Bump `?v=20260612h`: giao-dien.css, bo-may, khach-choi, host (index) + bo-may (admin).
+
+> Cọc-row trong card: ca cọc = banner vàng `.coc-banner--1l`; ca KHÔNG cọc = dòng `.coc-banner--free` "✓ Không yêu cầu cọc trước" (xanh nhạt #4ade80 opacity 0.7, cùng box→cân height). LUÔN render (bỏ gating anyCoc). Bump `?v=20260612g` (giao-dien.css, khach-choi). Verify `.devtest/verify-cardalign.js` = 8/8.
+
+### PHIÊN FIX LAYOUT CARD CA ĐẤU ✅ (verify `.devtest/verify-cardalign.js` = 8/8, sạch)
+- **Equal-height + gom gap**: bỏ `.slot-card-body{flex:1}` (gây gap giữa giá↔host). `.slot-host-banner, .slot-host-spacer { margin-top:auto }` → host+footer dính đáy, khoảng trắng gom 1 chỗ trên host. Card không host → `.slot-host-spacer`. Verify 3 card: height=554, footer=679, host=546 (đều).
+- **Cọc giữ chỗ thông minh**: `anyCoc = results.some(yeu_cau_coc)` truyền vào `_taoCaCard(...,anyCoc)`. Chỉ khi CÓ ca cọc → card không cọc render `.coc-banner--empty` (visibility:hidden 1 dòng) → tên sân thẳng hàng (sanTop=332 đều). Không ca cọc → KHÔNG placeholder (không phí chỗ). Cọc banner rút 1 dòng `.coc-banner--1l` (nowrap+ellipsis, title=full).
+- **Pills**: cap 4 + `.kh-level-more` "+N" → ca nhiều mức không cao hơn. Bump `?v=20260612f`: giao-dien.css, phan-he-khach-choi.js.
 
 ### PHIÊN FIX 4 VẤN ĐỀ ✅ (verify `.devtest/verify-fix4.js` = 18/18, console/network sạch)
 - **P4 chuông F5**: `#tbChuong` LUÔN hiện sẵn (static, bỏ inline display:none; CSS `display:inline-flex`). JS `_hienChuong`=no-op, `_anChuong`=chỉ ẩn badge (không ẩn chuông). Khách chưa login bấm → điều hướng đăng nhập (`moDrawerThongBao` guard `_actor()`). 0ms, không layout shift.

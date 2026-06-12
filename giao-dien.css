@@ -2931,6 +2931,31 @@ body::before {
 }
 .btn-huy-slot-modal:active { transform: scale(0.98); }
 
+/* ════════════════════════════════════════════════════════
+   📊 BỘ LỌC DOANH THU (host) — responsive 1 hàng PC / 2 hàng mobile
+   ════════════════════════════════════════════════════════ */
+.dt-filter-bar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 20px;
+}
+.dt-filter-period { display: flex; align-items: center; gap: 8px; }
+.dt-filter-lbl { color: #94a3b8; font-size: 0.85rem; white-space: nowrap; }
+.dt-filter-select { width: auto; min-width: 160px; font-size: 0.85rem; }
+.dt-filter-or { color: #64748b; font-size: 0.78rem; }
+.dt-filter-range { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.dt-filter-date { width: auto; min-width: 145px; font-size: 0.85rem; }
+.dt-filter-arrow { color: #64748b; font-size: 0.78rem; flex-shrink: 0; }
+.dt-filter-btn { font-size: 0.82rem; white-space: nowrap; flex-shrink: 0; }
+
+@media (max-width: 600px) {
+    .dt-filter-bar { gap: 10px; }
+    .dt-filter-period { width: 100%; }
+    .dt-filter-select { flex: 1; min-width: 0; }     /* select full-width hàng 1 */
+    .dt-filter-or { display: none; }                  /* ẩn "hoặc" trên mobile */
+    .dt-filter-range { width: 100%; gap: 6px; }
+    .dt-filter-date { flex: 1 1 0; min-width: 0; }     /* 2 input ngày chia đều hàng 2 */
+    .dt-filter-btn { flex-shrink: 0; }
+}
+
 /* Badge "+N" pills trình độ (PHẦN 2B) — bấm xem hết trong Chi Tiết */
 .kh-level-more {
     cursor: pointer;
@@ -4950,9 +4975,18 @@ body::before {
 .gl-coc-badge .coc-hint { font-size: 0.82em; opacity: 0.7; margin-left: 1px; line-height: 1; }
 .gl-coc-badge:hover .coc-hint { opacity: 1; }
 
+/* Cột Trạng Thái (DS Khách host): dropdown + nút "Từ chối" CÙNG HÀNG, căn giữa dọc.
+   Hẹp (mobile) → tự xuống dòng: dropdown trên, nút Từ chối dưới (căn trái đều). */
+.gl-tt-wrap {
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+@media (max-width: 600px) {
+    .gl-tt-wrap { flex-direction: column; align-items: flex-start; gap: 6px; }
+}
+
 /* Nút "Từ chối khách" (Nhóm 3) — DS Khách host, chỉ pha "trước giờ" */
 .gl-tu-choi-btn {
-    display: inline-flex; align-items: center; gap: 5px; margin-top: 6px;
+    display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0;
     padding: 4px 10px; background: rgba(251, 146, 60, 0.12);
     border: 1px solid rgba(251, 146, 60, 0.4); color: #fb923c;
     border-radius: 7px; cursor: pointer;

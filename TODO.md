@@ -1,4 +1,24 @@
-# TODO — Cập nhật: 2026-06-12 (PHIÊN FIX 4 VẤN ĐỀ — chuông/hủy modal/card/đánh giá)
+# TODO — Cập nhật: 2026-06-12 (FIX CĂN HÀNG CỘT TRẠNG THÁI DS KHÁCH)
+
+---
+
+## 🎯 FIX CỘT TRẠNG THÁI (dropdown + nút Từ chối) (2026-06-12) ✅ verify `.devtest/verify-ttcol.js` = 9/9
+- [x] Bọc dropdown + nút "Từ chối" trong `.gl-tt-wrap` (flex row, `align-items:center`, gap:8px, flex-wrap). Bỏ `margin-top:6px` trên `.gl-tu-choi-btn`. @≤600: `flex-direction:column; align-items:flex-start` (stack dọc căn trái). Widen cột Trạng Thái `width:19%;min-width:235px` (rebalance Đặt Lúc 13→11, Hủy Lúc 11→10, Thanh Toán 11→10) → dropdown+nút đủ 1 hàng desktop, bảng không vỡ. Verify: @1440 cùng hàng centers thẳng (ddTop 503/btnTop 504, nút bên phải); @390 stack (btn dưới, flex-start). Bump `?v=20260612i` (giao-dien.css, host).
+
+---
+
+## 🐞 PHIÊN FIX 2 BUG (2026-06-12) ✅ verify `.devtest/verify-timecalc.js` = 8/8, sạch
+- [x] **BUG 1 — Tính giờ ca QUA NỬA ĐÊM (nghiêm trọng)**: ca 22:00–00:00, `gio_ket_thuc="00:00"` parse ra 00:00 ĐẦU ngày (đã qua) → bị coi "Hết giờ" oan. SSOT mới (bo-may §0B): `window.thoiDiemBatDauCa(ngay,bd)` + `window.thoiDiemKetThucCa(ngay,bd,kt)` (nếu kt<=bd → +1 NGÀY). `phaCaDau` refactor dùng helper. Áp vào MỌI nơi so giờ kết thúc: host `_isExpiredCa` + badge 3 trạng thái (Sắp diễn ra/Đang diễn ra/Hết giờ qua `phaCaDau`) + `autoUpdateChoDao` (nhận timestamp, trước nhận chuỗi "HH:MM"→Invalid→latent dead); khach auto-hide Tìm Kèo (1837) + đếm ca chưa kết thúc (2295/2471) + Lịch Sử "Đã tham gia" (4059). Verify mock Date.now: 21:33=truoc, 22:30/23:59=trong, 00:01 hôm sau=sau; end=00:00 hôm sau; ca thường 18:00–20:00 không hồi quy; ca 22:00–00:00 HIỆN trong Tìm Kèo.
+- [x] **BUG 2 — Lọc Doanh Thu mobile**: form lọc inline-flex wrap lộn xộn @390. Restructure semantic (`.dt-filter-bar` > `.dt-filter-period` + `.dt-filter-range`) + CSS responsive: PC 1 hàng; @≤600 period full-width (hàng 1) + range [từ ngày → đến ngày Lọc] full-width (hàng 2), ẩn "hoặc", date inputs `flex:1` không cắt dd/mm/yyyy. Verify: @1440 1 hàng (period 230/range 393), @390 period+range full + 2 hàng + không tràn.
+- [x] Bump `?v=20260612h`: giao-dien.css, bo-may-du-lieu.js, phan-he-khach-choi.js, phan-he-host.js (index) + bo-may (admin). Ảnh `dt-filter-{1440,390}.png`. `node --check` OK.
+
+---
+
+## 📐 PHIÊN FIX LAYOUT CARD CA ĐẤU (2026-06-12) ✅ verify `.devtest/verify-cardalign.js` = 8/8, sạch
+- [x] **A. Equal-height + gom gap**: bỏ `.slot-card-body{flex:1}` (đang hút slack → gap giữa giá↔host). Thay: `.slot-host-banner, .slot-host-spacer { margin-top:auto }` → host+footer DÍNH ĐÁY, khoảng trắng gom 1 chỗ trên host (đều). Card không host → render `.slot-host-spacer` (margin-top:auto). Verify: 3 card height=554, footer=679, host=546 (đều).
+- [x] **B. Cọc-row LUÔN có nội dung** (cập nhật): ca cọc = banner vàng `.coc-banner--1l`; ca KHÔNG cọc = dòng `.coc-banner--free` **"✓ Không yêu cầu cọc trước"** (xanh nhạt #4ade80 opacity 0.7, cùng box → cân height + tên sân thẳng hàng). Bỏ gating `anyCoc` (luôn render). Cọc banner rút gọn 1 dòng (nowrap+ellipsis, title=full). Bump `?v=20260612g`.
+- [x] **C. Pills 1 hàng**: cap 4 + badge `.kh-level-more` "+N" (từ phiên trước) — verify ca 8 mức không cao hơn ca 3 mức (height đều 554).
+- [x] `_thucHienTimKiem` truyền `anyCoc`; `_taoCaCard(...,anyCoc)`. Bump `?v=20260612f`: giao-dien.css, phan-he-khach-choi.js. Ảnh `cardalign-{1440,390}.png`. `node --check` OK.
 
 ---
 

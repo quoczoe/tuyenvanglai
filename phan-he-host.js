@@ -1438,11 +1438,11 @@
     window.loadLichSuCaDauHost = _taiLichSuCaDau;
 
     function _isExpiredCa(s) {
-        if (!s.ngay_danh || !s.gio_ket_thuc) return false;
-        const [hh, mm] = s.gio_ket_thuc.split(":").map(Number);
-        const end = new Date(s.ngay_danh);
-        end.setHours(hh, mm, 0, 0);
-        return end < new Date();
+        // SSOT (xử ca qua nửa đêm) — TRƯỚC đây setHours(gio_ket_thuc) trên ngay_danh
+        // làm ca 22:00–00:00 bị coi "hết giờ" lúc 00:00 đầu ngày (sai).
+        const end = window.thoiDiemKetThucCa?.(s.ngay_danh, s.gio_bat_dau, s.gio_ket_thuc);
+        if (end == null) return false;
+        return end < Date.now();
     }
 
     function _caDauStatus(slot) {
@@ -1538,10 +1538,18 @@
                 statusBadge = `<span class="status-badge status-closed"><i class="fa-solid fa-lock"></i> Đã chốt</span>`;
             } else if (isTamKhoa) {
                 statusBadge = `<span class="status-badge" style="background:rgba(234,88,12,0.12);color:#ea580c;border:1px solid rgba(234,88,12,0.3);padding:4px 8px;border-radius:6px;font-size:0.72rem;white-space:nowrap;"><i class="fa-solid fa-ban"></i> Tạm khóa</span>`;
-            } else if (isExpired) {
-                statusBadge = `<span class="status-badge" style="background:rgba(251,146,60,0.12);color:#fb923c;border:1px solid rgba(251,146,60,0.3);padding:4px 8px;border-radius:6px;font-size:0.72rem;white-space:nowrap;"><i class="fa-solid fa-clock"></i> Hết giờ</span>`;
             } else {
-                statusBadge = `<span class="status-badge status-active"><i class="fa-solid fa-circle" style="font-size:0.5rem;"></i> Đang mở</span>`;
+                // 3 trạng thái theo PHA (SSOT phaCaDau, xử ca qua đêm): Sắp diễn ra / Đang diễn ra / Hết giờ
+                const _pha = window.phaCaDau ? window.phaCaDau(slot) : (isExpired ? "sau" : null);
+                if (_pha === "sau") {
+                    statusBadge = `<span class="status-badge" style="background:rgba(251,146,60,0.12);color:#fb923c;border:1px solid rgba(251,146,60,0.3);padding:4px 8px;border-radius:6px;font-size:0.72rem;white-space:nowrap;"><i class="fa-solid fa-clock"></i> Hết giờ</span>`;
+                } else if (_pha === "trong") {
+                    statusBadge = `<span class="status-badge" style="background:rgba(0,255,136,0.12);color:#00ff88;border:1px solid rgba(0,255,136,0.3);padding:4px 8px;border-radius:6px;font-size:0.72rem;white-space:nowrap;"><i class="fa-solid fa-circle" style="font-size:0.5rem;animation:pulse 1.4s infinite;"></i> Đang diễn ra</span>`;
+                } else if (_pha === "truoc") {
+                    statusBadge = `<span class="status-badge" style="background:rgba(34,211,238,0.12);color:#22d3ee;border:1px solid rgba(34,211,238,0.3);padding:4px 8px;border-radius:6px;font-size:0.72rem;white-space:nowrap;"><i class="fa-solid fa-hourglass-start"></i> Sắp diễn ra</span>`;
+                } else {
+                    statusBadge = `<span class="status-badge status-active"><i class="fa-solid fa-circle" style="font-size:0.5rem;"></i> Đang mở</span>`;
+                }
             }
 
             const tenSanEsc = (slot.ten_san||"").replace(/'/g,"\\x27");
@@ -2268,8 +2276,7 @@
 
                 // Nút báo ghost — chỉ hiện sau khi ca đã qua giờ kết thúc + slot đang "Chờ đánh" hoặc "Bùng kèo"
                 const nowMs = Date.now();
-                const caEndDt = slot?.ngay_danh && slot?.gio_ket_thuc
-                    ? new Date(`${slot.ngay_danh}T${slot.gio_ket_thuc}`).getTime() : Infinity;
+                const caEndDt = window.thoiDiemKetThucCa?.(slot?.ngay_danh, slot?.gio_bat_dau, slot?.gio_ket_thuc) ?? Infinity;
                 const ghostBtn = !isChot && nowMs > caEndDt && (tt === "Chờ đánh" || tt === "Bùng kèo")
                     ? `<button class="btn-mini btn-mini-red" style="margin-top:3px;font-size:0.65rem;" onclick="window.baoCaoGhost('${g.id}','${(g.sdt_khach||'').replace(/'/g,"\\'")}')">👻 Ghost</button>` : "";
 
@@ -2489,8 +2496,8 @@
                 _bulkHuyBtn.style.cursor  = isMatchStarted ? "not-allowed" : "";
             }
             // Auto-update Chờ đánh → Đã tham gia nếu ca đã hết giờ
-            const _gioKetThuc = _caInfo?.gio_ket_thuc || _caInfo?.thoi_gian_ket_thuc;
-            if (_gioKetThuc) window.autoUpdateChoDao(matchId, _gioKetThuc).catch(() => {});
+            const _endTs = window.thoiDiemKetThucCa?.(_caInfo?.ngay_danh, _caInfo?.gio_bat_dau, _caInfo?.gio_ket_thuc || _caInfo?.thoi_gian_ket_thuc);
+            if (_endTs != null) window.autoUpdateChoDao(matchId, _endTs).catch(() => {});
             // Map: sdt_nguoi_bi_danh_gia → review object
             const reviewsMap = new Map((reviewsRaw || []).map(r => [r.sdt_nguoi_bi_danh_gia, r]));
 
@@ -2658,7 +2665,7 @@
                 const genderClr  = g.gioi_tinh === "female" ? "#f472b6" : "#60a5fa";
 
                 // Cột Trạng thái: custom dropdown (pha-aware) + nút "Từ chối khách" (chỉ pha trước giờ)
-                let selectHTML = _renderCustomDropdown(g.id, matchId, trangThai,
+                let _ttInner = _renderCustomDropdown(g.id, matchId, trangThai,
                     (g.sdt_khach||"").replace(/"/g,""),
                     (g.ten_khach||"").replace(/"/g,""),
                     g.da_thanh_toan ? "1" : "0",
@@ -2668,10 +2675,12 @@
                 if (pha === "truoc" && trangThai === "Chờ đánh") {
                     const _sdtTc = (g.sdt_khach || "").replace(/'/g, "\\x27");
                     const _tenTc = (g.ten_khach || "").replace(/'/g, "\\x27");
-                    selectHTML += `<button class="gl-tu-choi-btn" onclick="event.stopPropagation();window.tuChoiKhach('${g.id}','${matchId}','${_sdtTc}','${_tenTc}')"
+                    _ttInner += `<button class="gl-tu-choi-btn" onclick="event.stopPropagation();window.tuChoiKhach('${g.id}','${matchId}','${_sdtTc}','${_tenTc}')"
                         title="Từ chối khách này — slot được giải phóng, khách nhận thông báo">
                         <i class="fa-solid fa-ban"></i> Từ chối</button>`;
                 }
+                // Bọc flex row → dropdown + nút Từ chối CÙNG HÀNG căn giữa (tự xuống dòng khi hẹp)
+                const selectHTML = `<div class="gl-tt-wrap">${_ttInner}</div>`;
 
                 // Cột Thanh toán
                 let ttCellHTML;
@@ -3482,10 +3491,11 @@
     };
 
     /* ── Auto-update: Chờ đánh → Đã tham gia khi hết giờ ca ──────── */
-    window.autoUpdateChoDao = async function (matchId, gioKetThuc) {
-        if (!matchId || !gioKetThuc) return;
-        const ketThuc = new Date(gioKetThuc);
-        if (isNaN(ketThuc) || Date.now() < ketThuc.getTime()) return; // Ca chưa kết thúc
+    // ketThucTs = timestamp (ms) giờ kết thúc THẬT (đã xử ca qua đêm). TRƯỚC đây nhận
+    // chuỗi "HH:MM" → new Date("00:00") = Invalid → hàm KHÔNG bao giờ chạy (latent bug).
+    window.autoUpdateChoDao = async function (matchId, ketThucTs) {
+        if (!matchId || ketThucTs == null) return;
+        if (Date.now() < ketThucTs) return; // Ca chưa kết thúc
 
         try {
             const guests = await window.dbEngine.doc("dat_slot", { eq: { id_ca_dau: matchId } });
@@ -3962,25 +3972,26 @@
         const caChoTted = doanhThuRows.filter(c => c.da_chot_ca);
 
         panel.innerHTML = `
-        <!-- Bộ lọc thời gian -->
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px;">
-            <span style="color:#94a3b8;font-size:0.85rem;">Xem theo:</span>
-            <select id="doanhThuFilter" class="form-control" style="width:auto;min-width:160px;font-size:0.85rem;"
-                onchange="_locDoanhThuTheoFilter()">
-                <option value="all">Tất cả thời gian</option>
-                <option value="week">Tuần này</option>
-                <option value="month">Tháng này</option>
-                <option value="year">Năm nay</option>
-            </select>
-            <span style="color:#64748b;font-size:0.78rem;">hoặc</span>
-            <input type="date" id="doanhThuTuNgay" class="form-control" style="width:auto;font-size:0.85rem;"
-                placeholder="Từ ngày">
-            <span style="color:#64748b;font-size:0.78rem;">→</span>
-            <input type="date" id="doanhThuDenNgay" class="form-control" style="width:auto;font-size:0.85rem;"
-                placeholder="Đến ngày">
-            <button class="btn-mini btn-mini-cyan" onclick="_locDoanhThuKhoangNgay()" style="font-size:0.82rem;">
-                <i class="fa-solid fa-filter"></i> Lọc
-            </button>
+        <!-- Bộ lọc thời gian — responsive (1 hàng PC / 2 hàng mobile) -->
+        <div class="dt-filter-bar">
+            <div class="dt-filter-period">
+                <span class="dt-filter-lbl">Xem theo:</span>
+                <select id="doanhThuFilter" class="form-control dt-filter-select" onchange="_locDoanhThuTheoFilter()">
+                    <option value="all">Tất cả thời gian</option>
+                    <option value="week">Tuần này</option>
+                    <option value="month">Tháng này</option>
+                    <option value="year">Năm nay</option>
+                </select>
+            </div>
+            <span class="dt-filter-or">hoặc</span>
+            <div class="dt-filter-range">
+                <input type="date" id="doanhThuTuNgay" class="form-control dt-filter-date" placeholder="Từ ngày" aria-label="Từ ngày">
+                <span class="dt-filter-arrow">→</span>
+                <input type="date" id="doanhThuDenNgay" class="form-control dt-filter-date" placeholder="Đến ngày" aria-label="Đến ngày">
+                <button class="btn-mini btn-mini-cyan dt-filter-btn" onclick="_locDoanhThuKhoangNgay()">
+                    <i class="fa-solid fa-filter"></i> Lọc
+                </button>
+            </div>
         </div>
 
         <!-- 4 Metric Cards -->
