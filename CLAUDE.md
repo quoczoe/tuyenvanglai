@@ -67,9 +67,16 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 // user-select: none toàn trang; input/textarea được select
 ```
 
-## CURRENT STATE (cập nhật: 2026-06-12 PHIÊN FIX LỊCH SỬ ĐIỂM — bug điểm/lịch sử + UI redesign + fix _token)
+## CURRENT STATE (cập nhật: 2026-06-12 PHIÊN FIX 4 VẤN ĐỀ — chuông/hủy modal/card align/đánh giá)
 
-> Cache-bust `?v=` HIỆN TẠI (index.html): giao-dien.css=`20260612c`, components.css=`20260611f`, ket-noi-supabase.js=`20260610d`, bo-may-du-lieu.js=`20260612c`, hieu-ung-giao-dien.js=`20260612a`, phan-he-khach-choi.js=`20260612d`, phan-he-host.js=`20260612c`, phan-he-thong-bao.js=`20260612c`, phan-he-ung-dung.js=`20260612d`, phan-he-gop-y.js=`20260610`. admin/index.html: ket-noi=`20260610d`, bo-may=`20260612c`, hieu-ung=`20260612a`, quan-tri=`20260612c`.
+> Cache-bust `?v=` HIỆN TẠI (index.html): giao-dien.css=`20260612e`, components.css=`20260611f`, ket-noi-supabase.js=`20260610d`, bo-may-du-lieu.js=`20260612c`, hieu-ung-giao-dien.js=`20260612a`, phan-he-khach-choi.js=`20260612e`, phan-he-host.js=`20260612c`, phan-he-thong-bao.js=`20260612e`, phan-he-ung-dung.js=`20260612d`, phan-he-gop-y.js=`20260610`. admin/index.html: ket-noi=`20260610d`, bo-may=`20260612c`, hieu-ung=`20260612a`, quan-tri=`20260612c`.
+
+### PHIÊN FIX 4 VẤN ĐỀ ✅ (verify `.devtest/verify-fix4.js` = 18/18, console/network sạch)
+- **P4 chuông F5**: `#tbChuong` LUÔN hiện sẵn (static, bỏ inline display:none; CSS `display:inline-flex`). JS `_hienChuong`=no-op, `_anChuong`=chỉ ẩn badge (không ẩn chuông). Khách chưa login bấm → điều hướng đăng nhập (`moDrawerThongBao` guard `_actor()`). 0ms, không layout shift.
+- **P1 nút Hủy trong modal Chi Tiết** (`moModalChiTietKeo`): footer thêm `.btn-huy-slot-modal` (đỏ, ưu tiên — chỉ khi có slot active + ca chưa bắt đầu, kể cả full) → gọi CHUNG `huyDatSlot`. Guard chống hủy 2 lần: `huyDatSlot` đọc trạng thái thật, đã "Khách hủy"/"Host từ chối" → bỏ qua. Hủy xong → `dongModalChiTietKeo()` + refresh.
+- **P2 card lệch**: equal-height `@media ≥601px` (stretch + flex column + body flex:1 + footer margin-top:auto). Pills cap 4 + badge `.kh-level-more` "+N" (bấm → Chi Tiết). 3 card cùng hàng = cùng height + footer thẳng hàng.
+- **P3 tab Đánh giá nhận được**: dark theme (`#danhGiaContainer` card; `.kh-review-about` border-bottom; row sao+sân(cyan)+ngày / "Từ Host" `.review-author-link` accent+hover / nội dung) + responsive @390 + escape XSS (`_escLsut`). Link → `xemHoSoCongKhai` mở modal hồ sơ.
+- Bump `?v=20260612e`: giao-dien.css, phan-he-khach-choi.js, phan-he-thong-bao.js.
 
 ### PHIÊN FIX LỊCH SỬ ĐIỂM — bug điểm/lịch sử hủy + UI redesign + 🔴 FIX _token nền ✅
 > Verify `.devtest/verify-fix-lichsu.js` = 7/7 · `.devtest/verify-ui-lichsu.js` = 13/13 · regression Nhóm 3 13/13. Console/network sạch.

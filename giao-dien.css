@@ -2908,8 +2908,41 @@ body::before {
     text-transform: uppercase;
 }
 
-/* ── 2D: Card kèo PC — cùng chiều cao, action row dính đáy ── */
-@media (min-width: 901px) {
+/* Nút "HỦY SLOT" trong modal Chi Tiết Ca (PHẦN 1) — đỏ, bấm được */
+.btn-huy-slot-modal {
+    background: rgba(239,68,68,0.12);
+    border: 1.5px solid rgba(239,68,68,0.5);
+    color: #f87171;
+    cursor: pointer;
+    padding: 11px 12px;
+    border-radius: 9px;
+    font-size: 0.82rem;
+    font-weight: 800;
+    font-family: inherit;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    white-space: nowrap; text-transform: uppercase; letter-spacing: 0.02em;
+    transition: background 0.16s, border-color 0.16s, box-shadow 0.16s, transform 0.1s;
+}
+.btn-huy-slot-modal:hover {
+    background: rgba(239,68,68,0.22);
+    border-color: rgba(239,68,68,0.8);
+    box-shadow: 0 0 14px rgba(239,68,68,0.28);
+    color: #fca5a5;
+}
+.btn-huy-slot-modal:active { transform: scale(0.98); }
+
+/* Badge "+N" pills trình độ (PHẦN 2B) — bấm xem hết trong Chi Tiết */
+.kh-level-more {
+    cursor: pointer;
+    background: rgba(0,255,136,0.12) !important;
+    border-color: rgba(0,255,136,0.4) !important;
+    color: #00ff88 !important;
+    font-weight: 800;
+}
+.kh-level-more:hover { background: rgba(0,255,136,0.22) !important; }
+
+/* ── 2D: Card kèo (tablet+PC) — CÙNG CHIỀU CAO, action row dính đáy ── */
+@media (min-width: 601px) {
     #slotsSearchResultContainer { align-items: stretch; }
     .slot-card {
         display: flex;
@@ -4716,7 +4749,7 @@ body::before {
    ════════════════════════════════════════════════════════ */
 .tb-chuong {
     position: relative;
-    display: none;                /* JS bật khi đã đăng nhập */
+    display: inline-flex;         /* LUÔN hiện sẵn (static) → F5 không trễ/không shift */
     align-items: center; justify-content: center;
     width: 40px; height: 40px;
     background: rgba(0, 255, 136, 0.12);
@@ -4932,6 +4965,42 @@ body::before {
 .lsut-meta .lsut-san { color: #22d3ee; }
 .lsut-after { flex-shrink: 0; font-size: 0.72rem; color: #94a3b8; align-self: center; white-space: nowrap; }
 .lsut-empty { text-align: center; color: #64748b; font-size: 0.85rem; padding: 28px 12px; }
+
+/* ════════════════════════════════════════════════════════
+   ⭐ TAB ĐÁNH GIÁ NHẬN ĐƯỢC (PHẦN 3) — card dark theme + link host
+   ════════════════════════════════════════════════════════ */
+#danhGiaContainer {
+    background: var(--bg-card, #1a2844);
+    border: 1px solid var(--border, #1e3a5f);
+    border-radius: 12px;
+    padding: 2px 14px;
+}
+.kh-review-about {
+    padding: 13px 2px;
+    border-bottom: 1px solid rgba(30, 58, 95, 0.55);
+}
+.kh-review-about:last-child { border-bottom: none; }
+.kh-review-top {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; flex-wrap: wrap; margin-bottom: 6px;
+}
+.kh-review-stars { display: inline-flex; gap: 2px; flex-shrink: 0; }
+.kh-review-meta { font-size: 0.74rem; color: #94a3b8; text-align: right; min-width: 0; }
+.kh-review-meta .kh-review-san { color: #22d3ee; font-weight: 600; }
+.kh-review-host { font-size: 0.76rem; color: #94a3b8; margin-bottom: 5px; }
+.review-author-link {
+    color: #00ff88; font-weight: 700; text-decoration: none; cursor: pointer;
+    border-bottom: 1px dashed rgba(0, 255, 136, 0.45);
+    transition: color 0.15s, border-color 0.15s;
+}
+.review-author-link:hover { color: #34d399; border-bottom-color: #34d399; }
+.review-author-link i { font-size: 0.66rem; margin-right: 2px; }
+.kh-review-text { font-size: 0.83rem; color: #e2e8f0; line-height: 1.55; }
+.kh-review-empty { color: #64748b; font-style: italic; }
+@media (max-width: 460px) {
+    .kh-review-top { flex-direction: column; align-items: flex-start; gap: 3px; }
+    .kh-review-meta { text-align: left; }
+}
 
 @media (prefers-reduced-motion: reduce) {
     .gl-cdd > button[data-guest-id]::after,

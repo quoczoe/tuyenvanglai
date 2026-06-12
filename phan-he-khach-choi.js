@@ -1994,11 +1994,19 @@
         const td = slot.yeu_cau_trinh_do || {};
         const mArr = Array.isArray(td.nam) ? td.nam : (td.nam ? [td.nam] : []);
         const fArr = Array.isArray(td.nu)  ? td.nu  : (td.nu  ? [td.nu]  : []);
+        // PHẦN 2B: giới hạn pills ~1 hàng → tối đa CAP pill + badge "+N" (bấm → Chi Tiết)
         const _pills = arr => {
             if (!arr.length) return `<span style="color:#475569;font-size:0.67rem;">--</span>`;
-            const std = arr.filter(v => STANDARD_LEVELS.has(window.chuanHoaTrinhDo(v))).map(v => `<span class="kh-level-pill">${window.nhanTrinhDo(window.chuanHoaTrinhDo(v))}</span>`).join("");
+            const stdLabels = arr.filter(v => STANDARD_LEVELS.has(window.chuanHoaTrinhDo(v)))
+                                 .map(v => window.nhanTrinhDo(window.chuanHoaTrinhDo(v)));
             const free = arr.filter(v => !STANDARD_LEVELS.has(window.chuanHoaTrinhDo(v))).join(", ");
-            return std + (free ? `<em style="color:#64748b;font-size:0.65rem;margin-left:4px;">${free}</em>` : "");
+            const CAP = 4;
+            const shown = stdLabels.slice(0, CAP).map(lbl => `<span class="kh-level-pill">${lbl}</span>`).join("");
+            const duCount = stdLabels.length - CAP;
+            const moreBadge = duCount > 0
+                ? `<span class="kh-level-pill kh-level-more" title="Còn: ${stdLabels.slice(CAP).join(", ")}" onclick="event.stopPropagation();window.moModalChiTietKeo('${slot.id}')">+${duCount}</span>`
+                : "";
+            return shown + moreBadge + (free ? `<em style="color:#64748b;font-size:0.65rem;margin-left:4px;">${free}</em>` : "");
         };
         const ICON_NAM = '<span style="color:#60a5fa;font-style:normal;flex-shrink:0;">&#9794;</span>';
         const ICON_NU  = '<span style="color:#f472b6;font-style:normal;flex-shrink:0;">&#9792;</span>';
@@ -2933,6 +2941,17 @@
             <div class="kmd-footer-area">
             ${(() => {
                 if (s.da_chot_ca) return `<div class="kmd-footer kmd-footer-chot"><i class="fa-solid fa-lock" style="margin-right:6px;"></i>Ca đấu đã được chốt — không nhận thêm đăng ký.</div>`;
+                // PHẦN 1: khách CÓ slot active + ca CHƯA bắt đầu → nút "HỦY SLOT" (ưu tiên,
+                // kể cả khi ca đã đủ slot). Dùng CHUNG hàm huyDatSlot với Lịch Sử (không duplicate).
+                if (window.currentGuest && !isStartedModal) {
+                    const mySlotActive = datSlotList.find(sl => sl.sdt_khach === window.currentGuest.sdt_khach
+                        && sl.trang_thai_di_danh !== "Khách hủy" && sl.trang_thai_di_danh !== "Host từ chối");
+                    if (mySlotActive) {
+                        return `<button class="btn-huy-slot-modal" style="width:100%;" onclick="window.huyDatSlot('${mySlotActive.id}','${s.id}')">
+                            <i class="fa-solid fa-circle-xmark"></i> HỦY SLOT
+                        </button>`;
+                    }
+                }
                 if (isLockedModal) return `<div class="kmd-footer kmd-footer-locked"><i class="fa-solid fa-hourglass-half" style="color:#fbbf24;margin-right:6px;"></i>${isStartedModal ? "Ca đấu đang diễn ra." : "Đã đủ slot — không nhận thêm."}</div>`;
                 if (s.is_tam_khoa) return `<div class="kmd-footer kmd-footer-locked"><i class="fa-solid fa-ban" style="color:#94a3b8;margin-right:6px;"></i>Ca đấu đang tạm khóa — không nhận đăng ký mới.</div>`;
                 if (!window.currentGuest) return `<div style="text-align:center;padding:4px 0;"><p style="font-size:0.82rem;color:#64748b;margin-bottom:10px;">Đăng nhập để đặt slot tham gia ca này.</p><button class="btn-dat-slot" style="width:100%;" onclick="event.stopPropagation();window.chuyenTab('ca-nhan');window.dongModalChiTietKeo();if(window.innerWidth<768){setTimeout(()=>window.openLoginSheet?.(),300);}"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập / Đăng ký</button></div>`;
@@ -3083,6 +3102,14 @@
         if (window._huyDatSlotBusy) return;
         window._huyDatSlotBusy = true;
         try {
+            // GUARD chống hủy 2 lần (modal Chi Tiết + Lịch Sử dùng chung hàm): nếu slot ĐÃ
+            // ở trạng thái giải phóng → bỏ qua (không trừ điểm lặp). Đọc trạng thái thật từ DB.
+            const _slotNow = ((await window.dbEngine.docThu("dat_slot", { eq: { id: datSlotId } }).catch(() => [])) || [])[0];
+            if (_slotNow && (_slotNow.trang_thai_di_danh === "Khách hủy" || _slotNow.trang_thai_di_danh === "Host từ chối")) {
+                window.hienToast("Đã hủy trước đó", "Slot này đã được hủy rồi.", "info");
+                window.dongModalChiTietKeo?.();
+                return;
+            }
             // Lấy ca đấu TRƯỚC khi xác nhận để: (a) kiểm tra điều kiện, (b) BÁO TRƯỚC mức phạt
             const caDauList = await window.dbEngine.doc("ca_dau", { eq: { id: idCaDau } });
             const caDau = caDauList[0];
@@ -3185,6 +3212,8 @@
             }
 
             window.hienToast("Đã huỷ đăng ký", "Bạn đã huỷ tham gia ca này thành công.", "info");
+            // Đóng modal Chi Tiết nếu đang mở (hủy từ modal) — vô hại nếu hủy từ Lịch Sử.
+            window.dongModalChiTietKeo?.();
 
             // 🔔 H2: báo cho host có khách hủy slot (gộp nhiều khách cùng ca trong 60s)
             if (caDau?.sdt_nguoi_tao) {
@@ -3491,30 +3520,31 @@
                     `<i class="fa-solid fa-star" style="color:${i < soSao ? "#fbbf24" : "#2d3748"};font-size:0.78rem;"></i>`
                 ).join("");
                 const ca     = caDauMap[r.id_ca_dau];
-                const caInfo = ca ? `${ca.ten_san || ""}${ca.ngay_danh ? " · " + new Date(ca.ngay_danh).toLocaleDateString("vi-VN") : ""}` : "";
+                const _ngay  = ca?.ngay_danh ? new Date(ca.ngay_danh).toLocaleDateString("vi-VN") : "";
+                const caInfo = ca
+                    ? `<span class="kh-review-san"><i class="fa-solid fa-table-tennis-paddle-ball"></i> ${_escLsut(ca.ten_san || "Sân")}</span>${_ngay ? ` · ${_escLsut(_ngay)}` : ""}`
+                    : "";
 
-                // FEAT-3: Hiện tên người viết đánh giá (host) với link xem hồ sơ
+                // FEAT-3: Hiện tên người viết đánh giá (host) với link xem hồ sơ (escape XSS)
                 const reviewerSdt  = r.sdt_nguoi_viet || "";
                 const reviewerUser = nguoiDungMap[reviewerSdt];
-                const reviewerName = reviewerUser?.ten_khach || ca?.ten_san || "Chủ sân";
+                const reviewerName = _escLsut(reviewerUser?.ten_khach || ca?.ten_san || "Chủ sân");
                 const reviewerLink = reviewerSdt
-                    ? `<a href="#" class="review-author-link"
+                    ? `<a href="#" class="review-author-link" title="Xem hồ sơ host"
                           onclick="event.preventDefault();window.xemHoSoCongKhai('${reviewerSdt.replace(/'/g,"\\'")}')">
-                          <i class="fa-solid fa-user" style="font-size:0.62rem;margin-right:3px;"></i>${reviewerName}
+                          <i class="fa-solid fa-user"></i> ${reviewerName}
                        </a>`
                     : `<span style="color:#9ca3af;">${reviewerName}</span>`;
 
                 return `<div class="kh-review-about">
-                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:4px;">
+                    <div class="kh-review-top">
                         <div class="kh-review-stars">${stars}</div>
-                        <span style="font-size:0.68rem;color:#64748b;margin-left:auto;">${r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : ""}</span>
+                        ${caInfo ? `<span class="kh-review-meta">${caInfo}</span>` : ""}
                     </div>
-                    ${caInfo ? `<div style="font-size:0.7rem;color:#64748b;margin-bottom:3px;">
-                        <i class="fa-solid fa-table-tennis-paddle-ball" style="color:#00ff88;margin-right:4px;"></i>${caInfo}</div>` : ""}
-                    <div style="font-size:0.72rem;color:#9ca3af;margin-bottom:4px;">Từ Host: ${reviewerLink}</div>
+                    <div class="kh-review-host">Từ Host: ${reviewerLink}</div>
                     ${r.nhan_xet
-                        ? `<div style="font-size:0.78rem;color:var(--text-main);line-height:1.5;">"${r.nhan_xet}"</div>`
-                        : `<div style="font-size:0.75rem;color:#64748b;font-style:italic;">Không có nhận xét</div>`}
+                        ? `<div class="kh-review-text">"${_escLsut(r.nhan_xet)}"</div>`
+                        : `<div class="kh-review-text kh-review-empty">Không có nhận xét</div>`}
                 </div>`;
             }).join("");
         } catch (e) {

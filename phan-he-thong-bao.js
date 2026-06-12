@@ -191,8 +191,10 @@
             b.style.display = "none";
         }
     }
-    function _hienChuong() { const el = document.getElementById("tbChuong"); if (el) el.style.display = "inline-flex"; }
-    function _anChuong()   { const el = document.getElementById("tbChuong"); if (el) el.style.display = "none"; _setBadge(0); }
+    // Chuông LUÔN hiện (CSS static) → 2 hàm này chỉ quản BADGE, KHÔNG ẩn/hiện chuông
+    // (tránh layout shift + trễ khi F5). Khách chưa đăng nhập: chuông vẫn hiện, badge ẩn.
+    function _hienChuong() { /* no-op: chuông đã hiện sẵn */ }
+    function _anChuong()   { _setBadge(0); }
 
     function _render() {
         const body = document.getElementById("tbDrawerBody");
@@ -222,6 +224,13 @@
      * DRAWER — mở / đóng / đánh dấu tất cả / click 1 thông báo
      * ═══════════════════════════════════════════════════ */
     window.moDrawerThongBao = async function () {
+        // Khách CHƯA đăng nhập: bấm chuông → điều hướng đăng nhập (không mở drawer rỗng).
+        if (!_actor()) {
+            if (window.innerWidth < 768 && window.openLoginSheet) window.openLoginSheet();
+            else if (window.chuyenTab) window.chuyenTab("ca-nhan");
+            window.hienToast?.("Cần đăng nhập", "Đăng nhập để xem thông báo của bạn.", "info");
+            return;
+        }
         const ov = document.getElementById("tbOverlay");
         const dr = document.getElementById("tbDrawer");
         if (!dr) return;

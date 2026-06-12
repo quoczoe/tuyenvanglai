@@ -1,4 +1,13 @@
-# TODO — Cập nhật: 2026-06-12 (PHIÊN FIX LỊCH SỬ ĐIỂM — bug + UI redesign)
+# TODO — Cập nhật: 2026-06-12 (PHIÊN FIX 4 VẤN ĐỀ — chuông/hủy modal/card/đánh giá)
+
+---
+
+## 🔧 PHIÊN FIX 4 VẤN ĐỀ (2026-06-12) ✅ verify `.devtest/verify-fix4.js` = 18/18, sạch
+- [x] **P4 — chuông F5 chớp trễ**: `#tbChuong` LUÔN hiện sẵn (static): bỏ inline `display:none`; CSS `.tb-chuong{display:inline-flex}`; JS `_hienChuong`=no-op, `_anChuong`=chỉ ẩn badge. Khách chưa login bấm chuông → điều hướng đăng nhập (`moDrawerThongBao` guard `_actor()`). → 0ms, không layout shift.
+- [x] **P1 — nút Hủy trong modal Chi Tiết**: footer `moModalChiTietKeo` thêm nút đỏ `.btn-huy-slot-modal` (ưu tiên, chỉ khi có slot active + ca chưa bắt đầu, kể cả ca full) → gọi CHUNG `huyDatSlot` (Lịch Sử). Guard chống hủy 2 lần: `huyDatSlot` đọc trạng thái thật, nếu đã "Khách hủy"/"Host từ chối" → bỏ qua. Hủy xong → `dongModalChiTietKeo()` + refresh card.
+- [x] **P2 — card lệch hàng**: equal-height mở rộng `@media ≥601px` (`#slotsSearchResultContainer` stretch + `.slot-card` flex column + body flex:1 + footer margin-top:auto) → footer thẳng hàng + chiều cao bằng nhau. Pills trình độ cap 4 + badge `.kh-level-more` "+N" (bấm → Chi Tiết). Verify: 3 card cùng hàng = 591px, footer = 715px (đều).
+- [x] **P3 — tab Đánh giá nhận được**: CSS dark theme (`#danhGiaContainer` card; `.kh-review-about` border-bottom separator; row1 sao+sân(cyan)+ngày; row2 "Từ Host" link `.review-author-link` accent+hover; row3 nội dung) + responsive @390 + escape XSS (`_escLsut` cho ten_san/reviewerName/nhan_xet). Link host → `xemHoSoCongKhai` (đã có) mở modal hồ sơ.
+- [x] Bump `?v=20260612e`: giao-dien.css, phan-he-khach-choi.js, phan-he-thong-bao.js. Ảnh `fix4-timkeo-{1440,390}.png` / `fix4-danhgia-{1440,390}.png`. `node --check` OK.
 
 ---
 
