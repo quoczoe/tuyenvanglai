@@ -1,4 +1,20 @@
-# TODO — Cập nhật: 2026-06-12 (PHIÊN BUILD NHÓM 3 — P0 icon + P1 SQL + P2/3 build)
+# TODO — Cập nhật: 2026-06-12 (PHIÊN FIX LỊCH SỬ ĐIỂM — bug + UI redesign)
+
+---
+
+## 🔧 PHIÊN FIX LỊCH SỬ ĐIỂM UY TÍN (2026-06-12)
+
+### PHẦN 1 — BUG hủy slot → điểm/lịch sử ✅ (verify `.devtest/verify-fix-lichsu.js` = 7/7)
+- [x] Gốc: `huyDatSlot` trừ điểm qua `_truDiemUyTin` (DB CÓ cập nhật) NHƯNG (a) KHÔNG gọi `ghiLichSuUyTin` → lịch sử trống; (b) KHÔNG refresh thanh điểm → UI kẹt giá trị cũ ("vẫn 96"). Fix: thêm `ghiLichSuUyTin` (delta/lý do/diem_truoc/sau) + `_hienTrustScoreBar()` + `taiLichSuDiemUyTin()` sau hủy. Verify: hủy <30p → DB 100→94, lịch sử 1 dòng −6, thanh điểm = 94, toast "Trừ 6".
+
+### 🔴 BUG NỀN phát hiện khi verify — `_token` mất sau ĐĂNG NHẬP THẬT ✅
+- [x] `_onDangNhapThanhCong` (phan-he-ung-dung.js) gán `currentGuest = user` (hồ sơ DB, KHÔNG có `_token`) → ghi đè `_token` mà `_luuSessionVaDangNhap` vừa set → MỌI RPC token (guiThongBao, layLichSuUyTin, datSlot/huySlot bảo mật) hỏng tới khi F5. Fix: hợp nhất giữ `_token`. Verify (login THẬT): `hasToken=true`, layLichSuUyTin trả 50 dòng. Bump `phan-he-ung-dung.js?v=20260612d`.
+
+### PHẦN 2 — UI lịch sử + badge uy tín ✅ (verify `.devtest/verify-ui-lichsu.js` = 13/13)
+- [x] 2A Collapsible: `#profileLichSuDiem` → `.lsut-card` + nút toggle "Xem/Ẩn" + chevron; mặc định ĐÓNG (max-height 0, transition mượt); tối đa 10 dòng + nút "Xem thêm (N)"; lazy-load lần mở đầu.
+- [x] 2B Pill trạng thái: bỏ ✅ "Tốt" → pill `border-radius:999px` theo band: ≥80 "Uy tín cao" (xanh accent) · 60–79 "Bình thường" (cyan) · 40–59 "Cần cải thiện" (cam) · <40 "Hạn chế" (đỏ) · is_active=false "🔒 Tạm khóa" (đỏ đậm). Đặt cùng hàng số điểm. `_trustLevel` đồng bộ nhãn mới (host profile modal).
+- [x] 2C Layout: [số điểm + pill] / [progress full-width] / [scale 0—40—60—80—100] / [card lịch sử collapsed]. `_renderTrustBar(el,score,isActive)` + `_trustBand()`. Ảnh `lichsu-ui-1440.png` / `lichsu-ui-390.png` (login THẬT, hiển thị timeline).
+- [x] Bump `phan-he-khach-choi.js?v=20260612d` + CSS collapsible/pill trong index.html inline. Regression: Nhóm 3 13/13 + fix 7/7, console/network sạch.
 
 ---
 

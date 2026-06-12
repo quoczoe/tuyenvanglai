@@ -403,9 +403,15 @@
      * Cập nhật toàn bộ feed UI mà không cần reload trang
      * ───────────────────────────────────────────────────────────── */
     window._onDangNhapThanhCong = function (user) {
-        // Sync state
-        window.currentUser  = user;
-        window.currentGuest = user;
+        // GIỮ _token: _luuSessionVaDangNhap (phan-he-khach-choi.js) đã set
+        // window.currentGuest._token TRƯỚC khi gọi hook này. `user` (hồ sơ DB) KHÔNG
+        // có _token → nếu gán thẳng sẽ MẤT token → mọi RPC token (guiThongBao,
+        // layLichSuUyTin, datSlot/huySlot bảo mật) hỏng tới khi F5. Hợp nhất để giữ.
+        const _tk = (window.currentGuest && window.currentGuest._token)
+                 || (window.currentUser && window.currentUser._token) || null;
+        const merged = _tk ? { ...user, _token: _tk } : user;
+        window.currentUser  = merged;
+        window.currentGuest = merged;
 
         // Cập nhật header
         _capNhatHeaderState();

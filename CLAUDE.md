@@ -67,9 +67,17 @@ khach_vang_lai    — LEGACY ONLY, không thêm logic mới
 // user-select: none toàn trang; input/textarea được select
 ```
 
-## CURRENT STATE (cập nhật: 2026-06-12 PHIÊN BUILD NHÓM 3 — HOÀN TẤT P0+P1+P2+P3 ✅)
+## CURRENT STATE (cập nhật: 2026-06-12 PHIÊN FIX LỊCH SỬ ĐIỂM — bug điểm/lịch sử + UI redesign + fix _token)
 
-> Cache-bust `?v=` HIỆN TẠI (index.html): giao-dien.css=`20260612c`, components.css=`20260611f`, ket-noi-supabase.js=`20260610d`, bo-may-du-lieu.js=`20260612c`, hieu-ung-giao-dien.js=`20260612a`, phan-he-khach-choi.js=`20260612c`, phan-he-host.js=`20260612c`, phan-he-thong-bao.js=`20260612c`, phan-he-ung-dung.js=`20260610b`, phan-he-gop-y.js=`20260610`. admin/index.html: ket-noi=`20260610d`, bo-may=`20260612c`, hieu-ung=`20260612a`, quan-tri=`20260612c`.
+> Cache-bust `?v=` HIỆN TẠI (index.html): giao-dien.css=`20260612c`, components.css=`20260611f`, ket-noi-supabase.js=`20260610d`, bo-may-du-lieu.js=`20260612c`, hieu-ung-giao-dien.js=`20260612a`, phan-he-khach-choi.js=`20260612d`, phan-he-host.js=`20260612c`, phan-he-thong-bao.js=`20260612c`, phan-he-ung-dung.js=`20260612d`, phan-he-gop-y.js=`20260610`. admin/index.html: ket-noi=`20260610d`, bo-may=`20260612c`, hieu-ung=`20260612a`, quan-tri=`20260612c`.
+
+### PHIÊN FIX LỊCH SỬ ĐIỂM — bug điểm/lịch sử hủy + UI redesign + 🔴 FIX _token nền ✅
+> Verify `.devtest/verify-fix-lichsu.js` = 7/7 · `.devtest/verify-ui-lichsu.js` = 13/13 · regression Nhóm 3 13/13. Console/network sạch.
+- **Bug hủy slot (PHẦN 1)**: `huyDatSlot` trừ điểm qua `_truDiemUyTin` (DB CÓ cập nhật) nhưng (a) KHÔNG `ghiLichSuUyTin` → lịch sử trống; (b) KHÔNG refresh thanh điểm → UI kẹt "96". Fix: thêm `ghiLichSuUyTin` + `_hienTrustScoreBar()` + `taiLichSuDiemUyTin()` sau hủy thành công.
+- **🔴 FIX NỀN `_token` mất sau ĐĂNG NHẬP THẬT**: `_onDangNhapThanhCong` (phan-he-ung-dung.js) gán `currentGuest = user` (hồ sơ DB, KHÔNG `_token`) → ghi đè token mà `_luuSessionVaDangNhap` vừa set → guiThongBao + layLichSuUyTin + datSlot/huySlot bảo mật hỏng tới F5 (fallback REST cứu datSlot/huySlot; nhưng thông báo + lịch sử KHÔNG chạy sau login mới). Fix: hợp nhất giữ `_token`. **→ Sau login mới: thông báo + lịch sử điểm hoạt động ngay (không cần F5).**
+- **UI Độ Uy Tín redesign (PHẦN 2)**: bỏ ✅ "Tốt" → pill `border-radius:999px` theo band (≥80 Uy tín cao xanh · 60–79 Bình thường cyan · 40–59 Cần cải thiện cam · <40 Hạn chế đỏ · khóa "🔒 Tạm khóa") cùng hàng số điểm; scale 0/40/60/80/100; `_renderTrustBar(el,score,isActive)`+`_trustBand()`. `_trustLevel` đồng bộ nhãn mới.
+- **Lịch sử COLLAPSIBLE**: `#profileLichSuDiem`=`.lsut-card` + toggle "Xem/Ẩn" + chevron, mặc định ĐÓNG (max-height transition), tối đa 10 dòng + "Xem thêm (N)", lazy-load (`toggleLichSuDiem`/`_renderLsutBody`/`_lsutXemThem`). CSS collapsible+pill ở index.html inline.
+- Bump `phan-he-khach-choi.js`+`phan-he-ung-dung.js`=`20260612d`.
 
 ### PHIÊN BUILD NHÓM 3 — KHÓA TRẠNG THÁI THEO GIỜ + TỪ CHỐI KHÁCH + LỊCH SỬ ĐIỂM ✅ LIVE
 > SQL ĐÃ CHẠY: `migration-tu-choi-v1.sql` (verify, 0 schema change) + `migration-lich-su-uy-tin-v1.sql` (bảng `lich_su_uy_tin` + 3 RPC: `ghi_lich_su_uy_tin` no-token / `lay_lich_su_uy_tin` token / `get_lich_su_uy_tin_admin` authenticated). Token GHI = no-token v1 (chủ app chấp nhận; siết v2). **Verify `.devtest/verify-nhom3.js` = 13/13 PASS, console/network sạch.**

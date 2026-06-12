@@ -777,11 +777,43 @@
         .tvl-trust-score { font-size: 2rem; font-weight: 900; line-height: 1; }
         .tvl-trust-max { font-size: 0.78rem; color: #475569; }
         .tvl-trust-track { height: 8px; margin-bottom: 4px; }
-        .tvl-trust-fill { height: 100%; }
+        .tvl-trust-fill { height: 100%; transition: width 0.5s ease, background 0.3s ease; }
         .tvl-trust-scale {
             display: flex; justify-content: space-between;
             font-size: 0.62rem; color: #334155;
         }
+        /* Pill trạng thái uy tín (redesign) — cùng hàng với số điểm */
+        .trust-pill {
+            display: inline-flex; align-items: center; gap: 5px;
+            margin-left: 10px; align-self: center;
+            padding: 4px 12px; border-radius: 999px;
+            font-size: var(--fs-xs, 0.72rem); font-weight: 600; line-height: 1;
+            border: 1px solid; white-space: nowrap;
+        }
+        /* Lịch sử điểm — collapsible (mặc định ĐÓNG) */
+        .lsut-card {
+            background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 12px; margin-bottom: 16px; overflow: hidden;
+        }
+        .lsut-toggle {
+            width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px;
+            padding: 13px 16px; background: transparent; border: none; cursor: pointer; font-family: inherit;
+            font-size: 0.78rem; font-weight: 700; color: #cbd5e1;
+            text-transform: uppercase; letter-spacing: 0.05em; transition: background 0.16s;
+        }
+        .lsut-toggle:hover { background: rgba(255,255,255,0.03); }
+        .lsut-toggle > span:first-child { display: inline-flex; align-items: center; gap: 7px; }
+        .lsut-toggle > span:first-child i { color: #00ff88; }
+        .lsut-toggle-state { display: inline-flex; align-items: center; gap: 6px; color: #00ff88; font-size: 0.74rem; }
+        .lsut-panel { max-height: 0; overflow: hidden; transition: max-height 0.34s cubic-bezier(0.4,0,0.2,1); }
+        .lsut-panel.open { max-height: 660px; }
+        .lsut-panel-inner { padding: 0 16px 14px; }
+        .lsut-xem-them {
+            width: 100%; margin-top: 8px; padding: 8px; background: rgba(0,255,136,0.07);
+            border: 1px solid rgba(0,255,136,0.22); border-radius: 8px; color: #00ff88;
+            font-size: 0.76rem; font-weight: 600; cursor: pointer; font-family: inherit;
+        }
+        .lsut-xem-them:hover { background: rgba(0,255,136,0.14); }
 
         /* ── KÈO CARD ── */
         .keo-grid {
@@ -2138,16 +2170,18 @@
                 <!-- Thanh điểm uy tín — nằm ngoài profile-top để full-width -->
                 <div id="profileTrustScore" class="profile-trust-wrap"></div>
 
-                <!-- Nhóm 3: Lịch sử điểm uy tín (timeline) -->
-                <div id="profileLichSuDiem" class="app-card" style="margin-bottom:16px;">
-                    <div class="app-card-title" style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                <!-- Nhóm 3: Lịch sử điểm uy tín — COLLAPSIBLE, mặc định đóng -->
+                <div id="profileLichSuDiem" class="lsut-card">
+                    <button type="button" id="lsutToggle" class="lsut-toggle" aria-expanded="false"
+                        onclick="window.toggleLichSuDiem && window.toggleLichSuDiem()">
                         <span><i class="fa-solid fa-clock-rotate-left"></i> Lịch Sử Điểm Uy Tín</span>
-                        <button onclick="window.taiLichSuDiemUyTin && window.taiLichSuDiemUyTin()"
-                            style="background:rgba(0,255,136,0.1);border:1px solid rgba(0,255,136,0.3);color:#00ff88;font-size:0.74rem;font-weight:700;padding:5px 12px;border-radius:7px;cursor:pointer;font-family:inherit;">
-                            <i class="fa-solid fa-rotate"></i> Tải lại
-                        </button>
+                        <span class="lsut-toggle-state"><span id="lsutToggleLabel">Xem</span> <i id="lsutToggleChevron" class="fa-solid fa-chevron-down"></i></span>
+                    </button>
+                    <div id="lsutPanel" class="lsut-panel">
+                        <div class="lsut-panel-inner">
+                            <div id="lichSuDiemBody"><div class="lsut-empty">Bấm "Xem" để tải lịch sử điểm.</div></div>
+                        </div>
                     </div>
-                    <div id="lichSuDiemBody" style="margin-top:10px;"><div class="lsut-empty">Chưa tải lịch sử.</div></div>
                 </div>
 
                 <div class="app-card-title"><i class="fa-solid fa-pen-to-square"></i> Chỉnh Sửa Hồ Sơ</div>
@@ -3286,10 +3320,10 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="ket-noi-supabase.js?v=20260610d"></script>
 <script src="bo-may-du-lieu.js?v=20260612c"></script>
 <script src="hieu-ung-giao-dien.js?v=20260612a"></script>
-<script src="phan-he-khach-choi.js?v=20260612c"></script>
+<script src="phan-he-khach-choi.js?v=20260612d"></script>
 <script src="phan-he-host.js?v=20260612c"></script>
 <script src="phan-he-thong-bao.js?v=20260612c"></script>
-<script src="phan-he-ung-dung.js?v=20260610b"></script>
+<script src="phan-he-ung-dung.js?v=20260612d"></script>
 <script src="phan-he-gop-y.js?v=20260610"></script>
 
 <!-- xoaBoLoc dùng bản đầy đủ trong phan-he-khach-choi.js (reset cả pills + lịch + nhãn giá).

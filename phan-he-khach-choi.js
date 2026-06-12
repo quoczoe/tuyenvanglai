@@ -171,10 +171,14 @@
     async function _hienTrustScoreBar() {
         const el = document.getElementById("profileTrustScore");
         if (!el || !window.currentGuest?.sdt_khach) return;
-        const score = await _layDiemUyTin();
-        _renderTrustBar(el, score);
-        // Nhóm 3: tự tải lịch sử điểm khi hiện Hồ Sơ
-        window.taiLichSuDiemUyTin?.();
+        let score = 100, isActive = true;
+        try {
+            const users = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: window.currentGuest.sdt_khach } });
+            const u = (users || [])[0];
+            if (u) { score = u.diem_uy_tin ?? 100; isActive = u.is_active !== false; }
+        } catch (_) {}
+        _renderTrustBar(el, score, isActive);
+        // Lịch sử điểm = collapsible (mặc định ĐÓNG) → KHÔNG auto-load; chỉ tải khi mở/refresh.
     }
     window._hienTrustScoreBar = _hienTrustScoreBar; // expose để phan-he-ung-dung.js gọi sau F5
 
@@ -198,6 +202,20 @@
             <span class="lsut-after">${_escLsut(after)}</span>
         </div>`;
     }
+    // Render body lịch sử: tối đa 10 dòng gần nhất + nút "Xem thêm" nếu >10.
+    function _renderLsutBody(showAll) {
+        const body = document.getElementById("lichSuDiemBody");
+        if (!body) return;
+        const rows = window._lsutAllRows || [];
+        const shown = showAll ? rows : rows.slice(0, 10);
+        let html = `<div class="lsut-list">${shown.map(_renderLsutRow).join("")}</div>`;
+        if (!showAll && rows.length > 10) {
+            html += `<button type="button" class="lsut-xem-them" onclick="window._lsutXemThem()">Xem thêm (${rows.length - 10})</button>`;
+        }
+        body.innerHTML = html;
+    }
+    window._lsutXemThem = function () { _renderLsutBody(true); };
+    window._lsutLoaded = false;
     window.taiLichSuDiemUyTin = async function () {
         const body = document.getElementById("lichSuDiemBody");
         if (!body) return;
@@ -207,32 +225,53 @@
         }
         body.innerHTML = `<div class="lsut-empty">Đang tải…</div>`;
         const rows = await window.layLichSuUyTin(50);
+        window._lsutLoaded = true;
         if (!rows || !rows.length) {
+            window._lsutAllRows = [];
             body.innerHTML = `<div class="lsut-empty">Chưa có lịch sử điểm nào.<br><span style="font-size:0.76rem;">(Lịch sử ghi từ khi tính năng được bật.)</span></div>`;
             return;
         }
-        body.innerHTML = `<div class="lsut-list">${rows.map(_renderLsutRow).join("")}</div>`;
+        window._lsutAllRows = rows;
+        _renderLsutBody(false);
+    };
+    // Mở/đóng panel lịch sử điểm (collapsible) — lazy-load lần mở đầu.
+    window.toggleLichSuDiem = function () {
+        const panel = document.getElementById("lsutPanel");
+        const btn   = document.getElementById("lsutToggle");
+        const label = document.getElementById("lsutToggleLabel");
+        const chev  = document.getElementById("lsutToggleChevron");
+        if (!panel) return;
+        const open = panel.classList.toggle("open");
+        if (btn)   btn.setAttribute("aria-expanded", open ? "true" : "false");
+        if (label) label.textContent = open ? "Ẩn" : "Xem";
+        if (chev)  chev.className = open ? "fa-solid fa-chevron-up" : "fa-solid fa-chevron-down";
+        if (open && !window._lsutLoaded) window.taiLichSuDiemUyTin?.();
     };
 
-    function _renderTrustBar(el, score) {
-        const level  = _trustLevel(score);
-        const pct    = Math.max(0, Math.min(100, score));
-        const barCls = { "trust-ok": "#00ff88", "trust-warn": "#fbbf24", "trust-risk": "#f97316", "trust-dead": "#ef4444" }[level.cls] || "#00ff88";
+    // Band trạng thái uy tín cho PILL — màu + nhãn theo thang điểm (+ trạng thái khóa).
+    function _trustBand(score, isActive) {
+        if (isActive === false) return { label: "Tạm khóa",     color: "#ef4444", bg: "rgba(239,68,68,0.18)",  border: "rgba(239,68,68,0.55)", locked: true };
+        if (score >= 80)        return { label: "Uy tín cao",    color: "#00ff88", bg: "rgba(0,255,136,0.15)",  border: "rgba(0,255,136,0.4)" };
+        if (score >= 60)        return { label: "Bình thường",   color: "#38bdf8", bg: "rgba(56,189,248,0.15)", border: "rgba(56,189,248,0.4)" };
+        if (score >= 40)        return { label: "Cần cải thiện", color: "#fb923c", bg: "rgba(251,146,60,0.15)", border: "rgba(251,146,60,0.4)" };
+        return { label: "Hạn chế", color: "#ef4444", bg: "rgba(239,68,68,0.15)", border: "rgba(239,68,68,0.4)" };
+    }
+    function _renderTrustBar(el, score, isActive) {
+        const band = _trustBand(score, isActive);
+        const pct  = Math.max(0, Math.min(100, score));
         el.innerHTML = `
             <div class="tvl-trust-card">
-                <div class="tvl-trust-header">
-                    <span class="tvl-trust-title"><i class="fa-solid fa-shield-halved"></i> ĐỘ UY TÍN</span>
-                    <span class="tvl-trust-badge trust-label ${level.cls}">${level.icon} ${level.label}</span>
-                </div>
+                <div class="tvl-trust-title" style="margin-bottom:9px;"><i class="fa-solid fa-shield-halved"></i> ĐỘ UY TÍN</div>
                 <div class="tvl-trust-score-row">
-                    <span class="tvl-trust-score" style="color:${barCls};">${score}</span>
+                    <span class="tvl-trust-score" style="color:${band.color};">${score}</span>
                     <span class="tvl-trust-max">/100đ</span>
+                    <span class="trust-pill" style="color:${band.color};background:${band.bg};border-color:${band.border};">${band.locked ? "🔒" : "●"} ${band.label}</span>
                 </div>
                 <div class="trust-bar-track tvl-trust-track">
-                    <div class="trust-bar-fill ${level.cls} tvl-trust-fill" style="width:${pct}%;box-shadow:0 0 8px ${barCls}66;"></div>
+                    <div class="tvl-trust-fill" style="width:${pct}%;background:${band.color};box-shadow:0 0 8px ${band.color}66;border-radius:100px;"></div>
                 </div>
                 <div class="tvl-trust-scale">
-                    <span>0</span><span>25</span><span>50</span><span>75</span><span>100</span>
+                    <span>0</span><span>40</span><span>60</span><span>80</span><span>100</span>
                 </div>
             </div>`;
     }
@@ -596,10 +635,10 @@
 
     // Trạng thái trust theo điểm
     function _trustLevel(score) {
-        if (score >= 80) return { label: "Tốt", cls: "trust-ok",   icon: "✅" };
-        if (score >= 60) return { label: "Cảnh cáo", cls: "trust-warn", icon: "⚠️" };
-        if (score >= 40) return { label: "Rủi ro cao", cls: "trust-risk", icon: "🔴" };
-        return { label: "Tử hình", cls: "trust-dead", icon: "☠️" };
+        if (score >= 80) return { label: "Uy tín cao",    cls: "trust-ok",   icon: "●" };
+        if (score >= 60) return { label: "Bình thường",   cls: "trust-warn", icon: "●" };
+        if (score >= 40) return { label: "Cần cải thiện", cls: "trust-risk", icon: "●" };
+        return { label: "Hạn chế", cls: "trust-dead", icon: "●" };
     }
 
     /**
@@ -3090,8 +3129,16 @@
                             { free_pass_thang: 0, free_pass_reset_thang: thangNow }, { sdt_khach: mySdt });
                         window.hienToast("Free pass đã dùng", "Lần huỷ này được miễn phạt (free pass tháng).", "info");
                     } else {
+                        const truoc  = u.diem_uy_tin ?? 100;
                         await window._truDiemUyTin(mySdt, Math.abs(diemPhat));
-                        const conLai = Math.max(window.DIEM_UY_TIN?.SAN ?? 0, (u.diem_uy_tin ?? 100) + diemPhat);
+                        const conLai = Math.max(window.DIEM_UY_TIN?.SAN ?? 0, truoc + diemPhat);
+                        // GHI LỊCH SỬ ĐIỂM (đồng bộ với apDiemTheoTrangThai — best-effort, fire-and-forget)
+                        window.ghiLichSuUyTin?.({
+                            sdt: mySdt, delta: diemPhat,
+                            lyDo: `Khách hủy (còn ${window.moTaThoiGianConLai?.(phutConLai) || "?"})`,
+                            caId: idCaDau, tenSan: caDau?.ten_san || null,
+                            diemTruoc: truoc, diemSau: conLai
+                        });
                         const mocKe  = window.DIEM_UY_TIN?.NGUONG?.khoa ?? 40;
                         window.hienToast(`Trừ ${Math.abs(diemPhat)} điểm uy tín`,
                             `Huỷ ${window.moTaThoiGianConLai?.(phutConLai) || ""} trước giờ đánh — còn ${conLai} điểm` +
@@ -3151,7 +3198,10 @@
                 });
             }
 
-            // Reload các section liên quan
+            // Reload các section liên quan + REFRESH thanh điểm uy tín & lịch sử điểm
+            // (trước đây thiếu → điểm hiển thị bị kẹt giá trị cũ dù DB đã trừ).
+            window._hienTrustScoreBar?.();
+            window.taiLichSuDiemUyTin?.();
             await Promise.all([_taiThongKeKhach(), _taiLichSuDau()]);
             window.timKiemCaDau();
         } catch (e) {
