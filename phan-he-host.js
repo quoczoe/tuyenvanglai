@@ -1610,16 +1610,10 @@
                             onclick="window.xemChiTietCaDau('${slot.id}')">
                             <i class="fa-solid fa-eye"></i> Chi tiết
                         </button>
-                        <button class="btn-mini btn-mini-cyan"
-                            style="justify-content:center;white-space:nowrap;font-size:0.71rem;padding:5px 6px;"
-                            onclick="window.moModalDanhGiaCa('${slot.id}','${tenSanEsc}')">
-                            <i class="fa-solid fa-star"></i> Đánh giá
-                        </button>
                         <button class="btn-mini btn-mini-red" disabled
                             style="justify-content:center;white-space:nowrap;font-size:0.71rem;padding:5px 6px;">
                             <i class="fa-solid fa-trash"></i> Xóa
-                        </button>
-                        <span></span>`}
+                        </button>`}
                     </div>
                 </td>`;
             tbody.appendChild(tr);
@@ -2794,9 +2788,10 @@
                 const _tgHuyRaw = g.huy_luc || g.cancelled_at || (isHuy ? g.updated_at : null);
                 const tgHuy     = isHuy ? _formatTS(_tgHuyRaw) : "--";
 
-                // Cột Đánh giá
                 const tenKhachEsc = (g.ten_khach || "").replace(/'/g, "\\x27");
                 const sdtKhachEsc = (g.sdt_khach || "").replace(/'/g, "\\x27");
+
+                // Cột Đánh giá
                 let ratingCellHTML;
                 if (!canRate) {
                     ratingCellHTML = `<span style="color:#475569;font-size:0.72rem;">—</span>`;
@@ -3590,65 +3585,6 @@
             window.hienToast("Tự động cập nhật", `${choDao.length} khách "Chờ đánh" → "Đã tham gia"`, "success");
         } catch (e) {
             console.error("autoUpdateChoDao error:", e);
-        }
-    };
-
-    /* ═══════════════════════════════════════════════════
-     * L3: ĐÁNH GIÁ CA ĐẤU — modal đơn giản
-     *     Lưu ghi chú vào field danh_gia trong bảng ca_dau
-     *     (Khác với moModalDanhGiaKhach — chấm điểm cá nhân từng khách)
-     * ═══════════════════════════════════════════════════ */
-    window.moModalDanhGiaCa = async function (slotId, tenSan) {
-        const modal = document.getElementById("modal-danh-gia-ca");
-        if (!modal) return;
-        modal.dataset.slotId = slotId;
-
-        // Cập nhật subtitle
-        const sub = document.getElementById("modal-danh-gia-ca-sTitle");
-        if (sub) sub.textContent = tenSan ? `Sân: ${tenSan}` : `Ca đấu: ${slotId.slice(0,8)}...`;
-
-        // Pre-fill nội dung đã lưu trước đó (nếu có)
-        const textarea = document.getElementById("modal-danh-gia-ca-text");
-        if (textarea) {
-            textarea.value = "";
-            try {
-                const list = await window.dbEngine.doc("ca_dau", { eq: { id: slotId } });
-                if (list?.[0]?.danh_gia) textarea.value = list[0].danh_gia;
-            } catch (_) { /* bỏ qua lỗi pre-fill */ }
-        }
-
-        modal.classList.remove("hidden");
-        modal.style.display = "flex";
-        document.body.style.overflow = "hidden";
-        if (textarea) setTimeout(() => textarea.focus(), 80);
-    };
-
-    window.dongModalDanhGiaCa = function () {
-        const modal = document.getElementById("modal-danh-gia-ca");
-        if (modal) { modal.classList.add("hidden"); modal.style.display = "none"; }
-        document.body.style.overflow = "";
-    };
-
-    window.luuDanhGiaCa = async function () {
-        const modal    = document.getElementById("modal-danh-gia-ca");
-        const slotId   = modal?.dataset.slotId;
-        const textarea = document.getElementById("modal-danh-gia-ca-text");
-        const ghiChu   = textarea?.value?.trim() || "";
-
-        if (!slotId) { window.hienToast("Lỗi", "Không tìm thấy ca đấu.", "danger"); return; }
-
-        const btn = modal?.querySelector("button[onclick*='luuDanhGiaCa']");
-        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...'; }
-
-        try {
-            await window.dbEngine.ghi("ca_dau", { danh_gia: ghiChu || null }, { id: slotId });
-            window.hienToast("Đã lưu đánh giá ⭐", "Ghi chú ca đấu đã được cập nhật.", "success");
-            window.dongModalDanhGiaCa();
-        } catch (e) {
-            console.error("Lỗi luuDanhGiaCa:", e);
-            window.hienToast("Lỗi lưu đánh giá", "Không thể lưu. Thử lại sau.", "danger");
-        } finally {
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu'; }
         }
     };
 
@@ -4451,8 +4387,9 @@
         document.body.style.overflow = "hidden";
 
         try {
-            // Fetch song song: tất cả slot của sdt + ca của host hiện tại + reviews về sdt này + reviews do sdt gửi
-            const [allSlots, myCaDau, reviews, guestSentReviews] = await Promise.all([
+            // Fetch song song: thông tin user (điểm uy tín) + tất cả slot của sdt + ca của host hiện tại + reviews về sdt này + reviews do sdt gửi
+            const [userRows, allSlots, myCaDau, reviews, guestSentReviews] = await Promise.all([
+                window.dbEngine.doc("nguoi_dung", { eq: { sdt_khach: sdt }, select: "sdt_khach,diem_uy_tin,is_active" }).catch(() => []),
                 window.dbEngine.doc("dat_slot", { eq: { sdt_khach: sdt } }).catch(() => []),
                 _docCaDauCuaToi().catch(() => []),
                 window.dbEngine.doc("danh_gia_tin_dung", {
@@ -4462,6 +4399,14 @@
                     eq: { sdt_nguoi_viet: sdt }
                 }).then(r => r.filter(x => x.loai_danh_gia === "GuestToHost")).catch(() => [])
             ]);
+
+            // Điểm uy tín của khách (0–100). Tính band màu + nhãn để hiện thanh uy tín.
+            const _u        = userRows[0] || {};
+            const diemUT    = _u.diem_uy_tin ?? 100;
+            const isLocked  = _u.is_active === false;
+            const pctUT     = Math.max(0, Math.min(100, diemUT));
+            const utColor   = isLocked ? "#ef4444" : diemUT >= 80 ? "#00ff88" : diemUT >= 60 ? "#22d3ee" : diemUT >= 40 ? "#f59e0b" : "#ef4444";
+            const utLabel   = isLocked ? "🔒 Tạm khóa" : diemUT >= 80 ? "Uy tín cao" : diemUT >= 60 ? "Bình thường" : diemUT >= 40 ? "Cần cải thiện" : "Hạn chế";
 
             // Chỉ xem slot liên quan đến ca của HOST này
             const caMap = {};
@@ -4590,6 +4535,21 @@
                     <div style="background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.2);border-radius:8px;padding:10px;text-align:center;">
                         <div style="font-size:1rem;font-weight:700;color:#f59e0b;">${_formatVND(tongChiTieu)}</div>
                         <div style="font-size:0.65rem;color:#64748b;margin-top:2px;">Tổng chi tiêu</div>
+                    </div>
+                </div>
+                <!-- Điểm uy tín của khách -->
+                <div style="background:rgba(255,255,255,0.03);border:1px solid #1e3a5f;border-radius:10px;padding:12px 14px;margin-bottom:16px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <span style="font-size:0.75rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">
+                            <i class="fa-solid fa-shield-halved" style="color:${utColor};margin-right:4px;"></i>Điểm uy tín
+                        </span>
+                        <span style="font-size:0.82rem;font-weight:800;color:${utColor};">${utLabel} — ${diemUT}đ</span>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.06);border-radius:100px;height:8px;overflow:hidden;">
+                        <div style="height:100%;width:${pctUT}%;background:${utColor};border-radius:100px;transition:width 0.5s ease;box-shadow:0 0 6px ${utColor}55;"></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:0.65rem;color:#475569;">
+                        <span>0đ</span><span>50đ</span><span>100đ</span>
                     </div>
                 </div>
                 <!-- Đánh giá về khách (tất cả chủ sân) -->

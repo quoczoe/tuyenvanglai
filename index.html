@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS hệ thống -->
-    <link rel="stylesheet" href="giao-dien.css?v=20260612l">
+    <link rel="stylesheet" href="giao-dien.css?v=20260613a">
     <link rel="stylesheet" href="components.css?v=20260612l">
 
     <style>
@@ -3321,10 +3321,10 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="ket-noi-supabase.js?v=20260610d"></script>
 <script src="bo-may-du-lieu.js?v=20260612h"></script>
 <script src="hieu-ung-giao-dien.js?v=20260612a"></script>
-<script src="phan-he-khach-choi.js?v=20260612j"></script>
-<script src="phan-he-host.js?v=20260612l"></script>
+<script src="phan-he-khach-choi.js?v=20260613a"></script>
+<script src="phan-he-host.js?v=20260613b"></script>
 <script src="phan-he-thong-bao.js?v=20260612k"></script>
-<script src="phan-he-ung-dung.js?v=20260612d"></script>
+<script src="phan-he-ung-dung.js?v=20260613a"></script>
 <script src="phan-he-gop-y.js?v=20260610"></script>
 
 <!-- xoaBoLoc dùng bản đầy đủ trong phan-he-khach-choi.js (reset cả pills + lịch + nhãn giá).
@@ -3754,34 +3754,6 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
                 style="padding:8px 24px;background:rgba(30,58,95,0.5);border:1px solid #2d4a6e;color:#94a3b8;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.85rem;transition: background-color .2s, border-color .2s, color .2s, box-shadow .2s, transform .2s, opacity .2s;"
                 onmouseover="this.style.background='rgba(30,58,95,0.9)';this.style.color='#e2e8f0'"
                 onmouseout="this.style.background='rgba(30,58,95,0.5)';this.style.color='#94a3b8'">Đóng</button>
-        </div>
-    </div>
-</div>
-
-<!-- ══ MODAL: ĐÁNH GIÁ CA ĐẤU ══ -->
-<div id="modal-danh-gia-ca" style="display:none;position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);"
-     onclick="if(event.target===this)this.style.display='none'">
-    <div style="background:#0f1e35;border:1px solid #1e3a5f;border-radius:14px;width:min(98vw,480px);max-height:88vh;display:flex;flex-direction:column;box-shadow:0 12px 48px rgba(0,0,0,0.7);">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;border-bottom:1px solid #1e3a5f;flex-shrink:0;">
-            <h3 style="margin:0;font-size:0.95rem;font-weight:700;color:#e2e8f0;display:flex;align-items:center;gap:8px;">
-                <i class="fa-solid fa-star" style="color:#fbbf24;"></i> Đánh Giá Ca Đấu
-            </h3>
-            <button onclick="document.getElementById('modal-danh-gia-ca').style.display='none'"
-                style="background:rgba(100,116,139,0.2);border:1px solid rgba(100,116,139,0.4);color:#94a3b8;font-size:1rem;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">✕</button>
-        </div>
-        <div style="overflow-y:auto;flex:1;padding:16px 18px;">
-            <div id="modal-danh-gia-ca-sTitle" style="font-size:0.82rem;color:#94a3b8;margin-bottom:12px;"></div>
-            <label style="font-size:0.73rem;color:#94a3b8;display:block;margin-bottom:6px;">Ghi chú / Nhận xét về ca đấu này</label>
-            <textarea id="modal-danh-gia-ca-text" rows="5" placeholder="Nhập nhận xét ca đấu: số người thực tế, chất lượng sân, ghi chú thu chi..."
-                style="width:100%;padding:10px 12px;background:rgba(30,58,95,0.7);border:1px solid #2d4a6e;border-radius:8px;color:#e2e8f0;font-size:0.85rem;resize:vertical;box-sizing:border-box;font-family:inherit;outline:none;"></textarea>
-            <div style="display:flex;gap:8px;margin-top:12px;">
-                <button onclick="window.luuDanhGiaCa()"
-                    style="flex:1;padding:10px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);color:#fbbf24;font-size:0.88rem;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;">
-                    <i class="fa-solid fa-floppy-disk"></i> Lưu Đánh Giá
-                </button>
-                <button onclick="window.dongModalDanhGiaCa()"
-                    style="padding:10px 18px;background:rgba(100,116,139,0.15);border:1px solid rgba(100,116,139,0.3);color:#94a3b8;font-size:0.88rem;border-radius:8px;cursor:pointer;font-family:inherit;">Đóng</button>
-            </div>
         </div>
     </div>
 </div>

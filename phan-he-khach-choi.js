@@ -3838,24 +3838,6 @@
     };
 
     /**
-     * Render inline star rating cho inline review form
-     */
-    function _renderInlineStars(container, rating, slotId) {
-        if (!container) return;
-        container.innerHTML = Array(5).fill(0).map((_, i) =>
-            `<span class="kh-star ${i < rating ? "filled" : ""}"
-                  onclick="window._setInlineStar('${slotId}', ${i + 1})"
-                  style="cursor:pointer;font-size:1.5rem;">★</span>`
-        ).join("");
-        container.dataset.rating = String(rating);
-    }
-
-    window._setInlineStar = function(slotId, val) {
-        const starEl = document.getElementById("stars_" + slotId);
-        if (starEl) _renderInlineStars(starEl, val, slotId);
-    };
-
-    /**
      * Toggle mở/đóng phần chi tiết của một item lịch sử
      */
     window._toggleLsItem = function(itemId) {
@@ -3935,6 +3917,24 @@
             console.error("Lỗi gửi đánh giá inline:", e);
             window.hienToast("Lỗi", "Không gửi được đánh giá.", "danger");
         }
+    };
+
+    /**
+     * Render inline star rating cho inline review form
+     */
+    function _renderInlineStars(container, rating, slotId) {
+        if (!container) return;
+        container.innerHTML = Array(5).fill(0).map((_, i) =>
+            `<span class="kh-star ${i < rating ? "filled" : ""}"
+                  onclick="window._setInlineStar('${slotId}', ${i + 1})"
+                  style="cursor:pointer;font-size:1.5rem;">★</span>`
+        ).join("");
+        container.dataset.rating = String(rating);
+    }
+
+    window._setInlineStar = function(slotId, val) {
+        const starEl = document.getElementById("stars_" + slotId);
+        if (starEl) _renderInlineStars(starEl, val, slotId);
     };
 
     /**
