@@ -2388,9 +2388,9 @@
 
             if (!maSlot) {
                 // Fallback: direct REST insert (khi không có token hoặc RPC chưa deploy)
-                const _chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+                // Định dạng ĐỒNG NHẤT với RPC server: "SLOT-" + 8 hex IN HOA (vd SLOT-9ECEF0F5).
                 let _code = "";
-                for (let _i = 0; _i < 5; _i++) _code += _chars[Math.floor(Math.random() * _chars.length)];
+                for (let _i = 0; _i < 8; _i++) _code += "0123456789ABCDEF"[Math.floor(Math.random() * 16)];
                 maSlot = "SLOT-" + _code;
                 await window.khoDuLieuVinhVien.ghiData("dat_slot", {
                     id_ca_dau:          caDauId,

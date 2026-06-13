@@ -2489,6 +2489,12 @@
         // Ghi nhớ matchId trên modal để xacNhanThamGia có thể reload
         modal.dataset.matchId = matchId;
 
+        // Reset ô điểm danh bằng mã (tránh thông báo cũ của ca trước)
+        const _ciInp = document.getElementById("gl-checkin-input");
+        if (_ciInp) _ciInp.value = "";
+        const _ciMsg = document.getElementById("gl-checkin-msg");
+        if (_ciMsg) { _ciMsg.style.display = "none"; _ciMsg.textContent = ""; }
+
         // Cập nhật tiêu đề
         if (title) title.textContent = matchTitle ? `DS Khách — ${matchTitle}` : "Danh Sách Khách";
 
@@ -2835,7 +2841,11 @@
                               onchange="window._glCapNhatBulkBar && window._glCapNhatBulkBar()"
                               style="width:14px;height:14px;accent-color:#00ff88;cursor:pointer;">`;
 
-                return `<tr data-guest-idx="${idx}" style="background:${bg};transition:background 0.12s;"
+                const maSlotRow = g.ma_slot || "";
+                const maSlotHTML = maSlotRow
+                    ? `<span class="gl-maslot" style="display:block;font-family:monospace;font-size:0.66rem;color:#64748b;letter-spacing:0.3px;margin-top:2px;white-space:nowrap;">${maSlotRow}</span>`
+                    : "";
+                return `<tr data-guest-idx="${idx}" data-uid="cdd-${g.id}" data-ma-slot="${maSlotRow.toLowerCase()}" style="background:${bg};transition:background 0.12s;"
                             onmouseover="this.style.background='rgba(30,58,95,0.5)'"
                             onmouseout="this.style.background='${bg}'">
                     ${td(cbHTML, "text-align:center;")}
@@ -2844,7 +2854,7 @@
                                   onmouseout="this.style.textDecoration='none'"
                                   style="background:none;border:none;color:#e2e8f0;font-weight:600;cursor:pointer;padding:0;font-family:inherit;font-size:0.81rem;text-decoration:none;text-align:center;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;">
                             ${g.ten_khach || "—"}
-                        </button>`, "text-align:center;")}
+                        </button>${maSlotHTML}`, "text-align:center;")}
                     ${td(`<span style="color:#94a3b8;font-family:monospace;font-size:0.76rem;white-space:nowrap;">${g.sdt_khach || "—"}</span>`, "text-align:center;")}
                     ${td(`<span style="color:${genderClr};font-weight:600;font-size:0.8rem;">${gioiTinh}</span>`, "text-align:center;")}
                     ${td(trinhDoHtml, "text-align:center;")}
@@ -2961,6 +2971,78 @@
 
         const tr = wrap.closest("tr");
         if (tr) tr.classList.add("tr-cdd-open");
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * ĐIỂM DANH BẰNG MÃ XÁC NHẬN (ma_slot)
+     * Host nhập/dán mã khách đọc → cuộn tới + tô sáng dòng → xác nhận "Đã tham gia".
+     * ═══════════════════════════════════════════════════ */
+    function _glCheckinMsg(text, mau) {
+        const el = document.getElementById("gl-checkin-msg");
+        if (!el) return;
+        if (!text) { el.style.display = "none"; el.textContent = ""; return; }
+        el.style.display = "block";
+        el.style.color = mau || "#64748b";
+        el.textContent = text;
+    }
+
+    window.glCheckinByCode = async function () {
+        const inp = document.getElementById("gl-checkin-input");
+        const raw = (inp?.value || "").trim();
+        if (!raw) { _glCheckinMsg("Nhập mã xác nhận của khách (vd SLOT-9ECEF0F5).", "#f59e0b"); inp?.focus(); return; }
+
+        // Chuẩn hoá: bỏ khoảng trắng, viết hoa. Khớp cả khi khách đọc thiếu tiền tố "SLOT-".
+        const code = raw.replace(/\s+/g, "").toUpperCase();
+        const codeLc = code.toLowerCase();
+        const altLc  = codeLc.startsWith("slot-") ? codeLc : ("slot-" + codeLc);
+
+        const body = document.getElementById("modal-guest-list-body");
+        const rows = body ? [...body.querySelectorAll("tr[data-ma-slot]")] : [];
+        const tr = rows.find(r => {
+            const v = r.getAttribute("data-ma-slot") || "";
+            return v && (v === codeLc || v === altLc);
+        });
+
+        if (!tr) {
+            _glCheckinMsg(`Không tìm thấy mã "${code}" trong danh sách khách của ca này.`, "#f87171");
+            return;
+        }
+
+        // Cuộn tới + tô sáng (pulse) dòng khách
+        tr.scrollIntoView({ behavior: "smooth", block: "center" });
+        const _bg0 = tr.style.background;
+        tr.style.transition = "background 0.25s";
+        tr.style.background = "rgba(0,255,136,0.28)";
+        setTimeout(() => { tr.style.background = _bg0; }, 1400);
+
+        // Lấy tên + trạng thái hiện tại từ nút dropdown trong dòng
+        const ddBtn = tr.querySelector("button[data-guest-id]");
+        const ten   = (ddBtn?.dataset.ten || "").trim() || "khách";
+        const cur   = ddBtn?.dataset.current || "Chờ đánh";
+        const uid   = tr.getAttribute("data-uid");
+
+        if (cur === "Đã tham gia") {
+            _glCheckinMsg(`✓ "${ten}" đã được điểm danh (Đã tham gia) trước đó.`, "#00ff88");
+            return;
+        }
+        if (cur === "Khách hủy" || cur === "Host từ chối" || cur === "Bùng kèo") {
+            _glCheckinMsg(`⚠ "${ten}" đang ở trạng thái "${cur}" — không thể điểm danh. Kiểm tra lại.`, "#f59e0b");
+            return;
+        }
+
+        // Trạng thái "Chờ đánh" → xác nhận "Đã tham gia" qua luồng chuẩn (có guard pha giờ + xác nhận)
+        _glCheckinMsg(`Đang điểm danh "${ten}"...`, "#94a3b8");
+        if (uid && typeof window._triggerGlCdd === "function") {
+            await window._triggerGlCdd(uid, "Đã tham gia");
+            // Đọc lại trạng thái sau khi đổi để báo đúng kết quả
+            const after = tr.querySelector("button[data-guest-id]")?.dataset.current;
+            if (after === "Đã tham gia") {
+                _glCheckinMsg(`✓ Đã điểm danh "${ten}" — Đã tham gia.`, "#00ff88");
+                if (inp) inp.value = "";
+            } else {
+                _glCheckinMsg(`Chưa điểm danh được "${ten}" (đã huỷ thao tác hoặc ca chưa tới giờ).`, "#f59e0b");
+            }
+        }
     };
 
     window._triggerGlCdd = async function (uid, newState) {

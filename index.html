@@ -3321,8 +3321,8 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="ket-noi-supabase.js?v=20260610d"></script>
 <script src="bo-may-du-lieu.js?v=20260612h"></script>
 <script src="hieu-ung-giao-dien.js?v=20260612a"></script>
-<script src="phan-he-khach-choi.js?v=20260613a"></script>
-<script src="phan-he-host.js?v=20260613b"></script>
+<script src="phan-he-khach-choi.js?v=20260613c"></script>
+<script src="phan-he-host.js?v=20260613c"></script>
 <script src="phan-he-thong-bao.js?v=20260612k"></script>
 <script src="phan-he-ung-dung.js?v=20260613a"></script>
 <script src="phan-he-gop-y.js?v=20260610"></script>
@@ -3568,6 +3568,21 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
         <div id="gl-coc-summary" style="display:none;align-items:center;gap:4px;padding:8px 18px;font-size:0.8rem;color:#fbbf24;background:rgba(245,158,11,0.06);border-bottom:1px solid rgba(245,158,11,0.18);flex-shrink:0;"></div>
         <!-- Banner pha ca (Nhóm 3) — JS bật theo phase: "trước giờ" (nhắc chỉ Từ chối) / "sau giờ" (nhắc chốt) -->
         <div id="gl-phase-banner" style="display:none;align-items:center;gap:6px;padding:8px 18px;font-size:0.8rem;flex-shrink:0;border-bottom:1px solid;"></div>
+        <!-- Điểm danh bằng Mã Xác Nhận — host nhập mã khách đọc → nhảy tới + tô sáng dòng + xác nhận có mặt -->
+        <div id="gl-checkin-bar" style="display:flex;align-items:center;gap:8px;padding:9px 18px;background:rgba(0,255,136,0.04);border-bottom:1px solid rgba(0,255,136,0.12);flex-shrink:0;flex-wrap:wrap;">
+            <span style="font-size:0.78rem;color:#94a3b8;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;">
+                <i class="fa-solid fa-qrcode" style="color:#00ff88;"></i> Điểm danh bằng mã
+            </span>
+            <input id="gl-checkin-input" type="text" autocomplete="off" spellcheck="false"
+                placeholder="Nhập / dán mã (vd SLOT-9ECEF0F5)"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();window.glCheckinByCode();}"
+                style="flex:1;min-width:160px;background:rgba(30,58,95,0.7);border:1px solid #2d4a6e;border-radius:8px;color:#e2e8f0;font-size:0.82rem;padding:6px 10px;font-family:monospace;text-transform:uppercase;outline:none;box-sizing:border-box;">
+            <button onclick="window.glCheckinByCode()"
+                style="background:rgba(0,255,136,0.12);border:1px solid rgba(0,255,136,0.35);color:#00ff88;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;font-weight:700;font-family:inherit;white-space:nowrap;">
+                <i class="fa-solid fa-magnifying-glass"></i> Tìm
+            </button>
+            <span id="gl-checkin-msg" style="font-size:0.74rem;color:#64748b;width:100%;display:none;"></span>
+        </div>
         <div id="modal-guest-list-loading" style="display:none;text-align:center;padding:30px;color:#64748b;">
             <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
         </div>
