@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS hệ thống -->
-    <link rel="stylesheet" href="giao-dien.css?v=20260613d">
+    <link rel="stylesheet" href="giao-dien.css?v=20260613e">
     <link rel="stylesheet" href="components.css?v=20260612l">
 
     <style>
@@ -3322,7 +3322,7 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="bo-may-du-lieu.js?v=20260612h"></script>
 <script src="hieu-ung-giao-dien.js?v=20260612a"></script>
 <script src="phan-he-khach-choi.js?v=20260613e"></script>
-<script src="phan-he-host.js?v=20260613e"></script>
+<script src="phan-he-host.js?v=20260613f"></script>
 <script src="phan-he-thong-bao.js?v=20260612k"></script>
 <script src="phan-he-ung-dung.js?v=20260613a"></script>
 <script src="phan-he-gop-y.js?v=20260610"></script>
@@ -3583,6 +3583,16 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
             </button>
             <span id="gl-checkin-msg" style="font-size:0.74rem;color:#64748b;width:100%;display:none;"></span>
         </div>
+        <!-- Thêm khách đặt riêng (đặt ngoài app: Zalo/FB, khách quen, tuyển ngoài…) → 1 dòng dat_slot -->
+        <div id="gl-addguest-bar" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 18px;background:rgba(96,165,250,0.05);border-bottom:1px solid rgba(96,165,250,0.14);flex-shrink:0;flex-wrap:wrap;">
+            <span style="font-size:0.76rem;color:#94a3b8;display:inline-flex;align-items:center;gap:5px;">
+                <i class="fa-solid fa-user-plus" style="color:#60a5fa;"></i> Khách đặt riêng ngoài app?
+            </span>
+            <button onclick="window.moModalThemKhach()"
+                style="background:rgba(96,165,250,0.12);border:1px solid rgba(96,165,250,0.4);color:#60a5fa;padding:6px 14px;border-radius:8px;cursor:pointer;font-size:0.8rem;font-weight:700;font-family:inherit;white-space:nowrap;">
+                <i class="fa-solid fa-plus"></i> Thêm khách đặt riêng
+            </button>
+        </div>
         <div id="modal-guest-list-loading" style="display:none;text-align:center;padding:30px;color:#64748b;">
             <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
         </div>
@@ -3679,6 +3689,45 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
         </div>
         <div id="modal-ho-so-khach-body" style="overflow-y:auto;flex:1;padding:16px 18px;">
             <div style="text-align:center;padding:40px;color:#64748b;"><i class="fa-solid fa-spinner fa-spin fa-2x"></i></div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ MODAL: THÊM KHÁCH ĐẶT RIÊNG (moModalThemKhach) — host tự thêm khách đặt ngoài app ══ -->
+<div id="modal-them-khach" class="hidden"
+     style="position:fixed;inset:0;z-index:1460;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);padding:16px;backdrop-filter:blur(4px);"
+     onclick="if(event.target===this)window.dongModalThemKhach()">
+    <div style="background:#0f1e35;border:1px solid rgba(96,165,250,0.3);border-radius:14px;width:min(98vw,420px);display:flex;flex-direction:column;box-shadow:0 12px 48px rgba(0,0,0,0.8);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px;border-bottom:1px solid rgba(96,165,250,0.15);flex-shrink:0;">
+            <h3 style="margin:0;font-size:0.95rem;font-weight:700;color:#60a5fa;display:flex;align-items:center;gap:8px;">
+                <i class="fa-solid fa-user-plus"></i> Thêm khách đặt riêng
+            </h3>
+            <button onclick="window.dongModalThemKhach()"
+                style="background:rgba(100,116,139,0.2);border:1px solid rgba(100,116,139,0.4);color:#94a3b8;font-size:1rem;padding:5px 10px;border-radius:7px;cursor:pointer;font-family:inherit;">✕</button>
+        </div>
+        <div style="padding:16px 18px;">
+            <p style="margin:0 0 12px;font-size:0.74rem;color:#64748b;line-height:1.5;">Dành cho khách đặt qua Zalo/Facebook, khách quen, tuyển ngoài… (không qua app). Sẽ tính vào danh sách &amp; doanh thu như khách thường.</p>
+            <label style="display:block;font-size:0.73rem;color:#94a3b8;margin-bottom:5px;">Tên khách <span style="color:#f87171;">*</span></label>
+            <input type="text" id="tk-ten" autocomplete="off" placeholder="Nhập tên khách"
+                style="width:100%;padding:9px 12px;background:rgba(30,58,95,0.7);border:1px solid #2d4a6e;border-radius:8px;color:#e2e8f0;font-size:0.88rem;box-sizing:border-box;font-family:inherit;outline:none;margin-bottom:12px;">
+            <label style="display:block;font-size:0.73rem;color:#94a3b8;margin-bottom:5px;">Giới tính <span style="color:#f87171;">*</span></label>
+            <div style="display:flex;gap:8px;margin-bottom:12px;">
+                <button type="button" id="tk-gt-male" onclick="window._tkChonGT('male')"
+                    style="flex:1;padding:9px;background:rgba(96,165,250,0.18);border:1px solid #60a5fa;color:#60a5fa;font-size:0.85rem;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;">Nam</button>
+                <button type="button" id="tk-gt-female" onclick="window._tkChonGT('female')"
+                    style="flex:1;padding:9px;background:rgba(30,58,95,0.5);border:1px solid #2d4a6e;color:#94a3b8;font-size:0.85rem;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;">Nữ</button>
+            </div>
+            <label style="display:block;font-size:0.73rem;color:#94a3b8;margin-bottom:5px;">Số điện thoại (tuỳ chọn)</label>
+            <input type="tel" id="tk-sdt" autocomplete="off" inputmode="numeric" placeholder="Để trống nếu không có"
+                style="width:100%;padding:9px 12px;background:rgba(30,58,95,0.7);border:1px solid #2d4a6e;border-radius:8px;color:#e2e8f0;font-size:0.88rem;box-sizing:border-box;font-family:inherit;outline:none;">
+            <div style="display:flex;gap:8px;margin-top:16px;">
+                <button id="tk-submit-btn" onclick="window.luuThemKhach()"
+                    style="flex:1;padding:10px;background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.4);color:#60a5fa;font-size:0.88rem;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;">
+                    <i class="fa-solid fa-plus"></i> Thêm khách
+                </button>
+                <button onclick="window.dongModalThemKhach()"
+                    style="padding:10px 18px;background:rgba(100,116,139,0.15);border:1px solid rgba(100,116,139,0.3);color:#94a3b8;font-size:0.88rem;border-radius:8px;cursor:pointer;font-family:inherit;">Huỷ</button>
+            </div>
         </div>
     </div>
 </div>

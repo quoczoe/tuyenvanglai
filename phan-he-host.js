@@ -2843,6 +2843,11 @@
                               style="width:14px;height:14px;accent-color:#00ff88;cursor:pointer;">`;
 
                 const maSlotRow = g.ma_slot || "";
+                // Khách đặt riêng (host tự thêm, đặt ngoài app) → mã prefix "KR-" → badge "Đặt riêng".
+                const isDatRieng   = maSlotRow.startsWith("KR-");
+                const datRiengBadge = isDatRieng
+                    ? `<span class="gl-datrieng-badge" title="Khách đặt riêng ngoài app (Zalo/FB, khách quen…)">Đặt riêng</span>`
+                    : "";
                 // Nút "Nhắn xác nhận" chỉ hiện TRƯỚC giờ bắt đầu ca (qua giờ → 2 bên đã ở sân, nhắn vô nghĩa).
                 const _showNhan = maSlotRow && !isHuy && trangThai !== "Host từ chối" && pha === "truoc";
                 const maSlotHTML = maSlotRow
@@ -2860,12 +2865,15 @@
                             onmouseover="this.style.background='rgba(30,58,95,0.5)'"
                             onmouseout="this.style.background='${bg}'">
                     ${td(cbHTML, "text-align:center;")}
-                    ${td(`<button onclick="window.xemHoSoKhach('${sdtKhachEsc}','${tenKhachEsc}','${matchId}')"
+                    ${td(`${g.sdt_khach
+                            ? `<button onclick="window.xemHoSoKhach('${sdtKhachEsc}','${tenKhachEsc}','${matchId}')"
                                   onmouseover="this.style.textDecoration='underline'"
                                   onmouseout="this.style.textDecoration='none'"
                                   style="background:none;border:none;color:#e2e8f0;font-weight:600;cursor:pointer;padding:0;font-family:inherit;font-size:0.81rem;text-decoration:none;text-align:center;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;">
                             ${g.ten_khach || "—"}
-                        </button>${maSlotHTML}`, "text-align:center;")}
+                        </button>`
+                            : `<span style="color:#e2e8f0;font-weight:600;font-size:0.81rem;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;">${g.ten_khach || "—"}</span>`
+                        }${datRiengBadge}${maSlotHTML}`, "text-align:center;")}
                     ${td(`<span style="color:#94a3b8;font-family:monospace;font-size:0.76rem;white-space:nowrap;">${g.sdt_khach || "—"}</span>`, "text-align:center;")}
                     ${td(`<span style="color:${genderClr};font-weight:600;font-size:0.8rem;">${gioiTinh}</span>`, "text-align:center;")}
                     ${td(trinhDoHtml, "text-align:center;")}
@@ -3022,6 +3030,91 @@ Bạn xác nhận giúp mình sẽ tham gia đúng giờ nhé để mình giữ 
             document.execCommand("copy"); document.body.removeChild(t);
         }
         window.hienToast("Đã sao chép lời nhắn! ✅", "Dán vào Zalo/Facebook gửi khách để xác nhận ca đấu.", "success");
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * THÊM KHÁCH ĐẶT RIÊNG (đặt ngoài app: Zalo/FB, khách quen, tuyển ngoài…)
+     * → tạo 1 dòng dat_slot (KHÔNG cần tài khoản) → tự vào DS Khách + doanh thu.
+     * ═══════════════════════════════════════════════════ */
+    let _tkGioiTinh   = "male";
+    let _themKhachBusy = false;
+
+    window._tkChonGT = function (gt) {
+        _tkGioiTinh = gt;
+        const bM = document.getElementById("tk-gt-male");
+        const bF = document.getElementById("tk-gt-female");
+        const on  = "rgba(96,165,250,0.18)", onB = "#60a5fa", onC = "#60a5fa";
+        const off = "rgba(30,58,95,0.5)",   offB = "#2d4a6e", offC = "#94a3b8";
+        if (bM) { bM.style.background = gt === "male" ? on : off; bM.style.borderColor = gt === "male" ? onB : offB; bM.style.color = gt === "male" ? onC : offC; }
+        if (bF) { bF.style.background = gt === "female" ? on : off; bF.style.borderColor = gt === "female" ? onB : offB; bF.style.color = gt === "female" ? onC : offC; }
+    };
+
+    window.moModalThemKhach = function () {
+        const modal = document.getElementById("modal-them-khach");
+        const gl    = document.getElementById("modal-guest-list");
+        if (!modal) return;
+        if (!gl?.dataset.matchId) { window.hienToast("Lỗi", "Chưa mở danh sách khách của ca nào.", "danger"); return; }
+        const ten = document.getElementById("tk-ten");  if (ten) ten.value = "";
+        const sdt = document.getElementById("tk-sdt");  if (sdt) sdt.value = "";
+        window._tkChonGT("male");
+        modal.classList.remove("hidden");
+        setTimeout(() => ten?.focus(), 80);
+    };
+
+    window.dongModalThemKhach = function () {
+        const modal = document.getElementById("modal-them-khach");
+        if (modal) modal.classList.add("hidden");
+    };
+
+    window.luuThemKhach = async function () {
+        if (_themKhachBusy) return;
+        const gl      = document.getElementById("modal-guest-list");
+        const matchId = gl?.dataset.matchId;
+        if (!matchId) { window.hienToast("Lỗi", "Không xác định được ca đấu.", "danger"); return; }
+        const ten = (document.getElementById("tk-ten")?.value || "").trim();
+        const sdt = (document.getElementById("tk-sdt")?.value || "").trim();
+        if (!ten)        { window.hienToast("Thiếu tên", "Vui lòng nhập tên khách.", "warning"); document.getElementById("tk-ten")?.focus(); return; }
+        if (!_tkGioiTinh){ window.hienToast("Thiếu giới tính", "Vui lòng chọn giới tính.", "warning"); return; }
+
+        // Cảnh báo nhẹ nếu SĐT (nếu có nhập) đã tồn tại trong ca
+        if (sdt) {
+            const existed = await window.dbEngine.doc("dat_slot", { eq: { id_ca_dau: matchId, sdt_khach: sdt } }).catch(() => []);
+            const conHieuLuc = (existed || []).some(s => s.trang_thai_di_danh !== "Khách hủy" && s.trang_thai_di_danh !== "Host từ chối");
+            if (conHieuLuc && !await window.xacNhanModal(`SĐT ${sdt} đã có trong ca này. Vẫn thêm khách mới?`, "⚠️")) return;
+        }
+
+        // Mã đặt riêng: KR- + 8 hex IN HOA (phân biệt với SLOT- của khách web)
+        let _code = "";
+        for (let _i = 0; _i < 8; _i++) _code += "0123456789ABCDEF"[Math.floor(Math.random() * 16)];
+        const maSlot = "KR-" + _code;
+
+        _themKhachBusy = true;
+        const btn = document.getElementById("tk-submit-btn");
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang thêm...'; }
+        try {
+            await window.khoDuLieuVinhVien.ghiData("dat_slot", {
+                id_ca_dau:          matchId,
+                ten_khach:          ten,
+                sdt_khach:          sdt,           // có thể rỗng — khách đặt riêng không bắt buộc SĐT
+                gioi_tinh:          _tkGioiTinh,
+                ma_slot:            maSlot,
+                trang_thai_di_danh: "Chờ đánh",
+                thoi_gian_dat:      new Date().toISOString()
+            }, null);
+            window.hienToast("Đã thêm khách ✅", `${ten} (đặt riêng) đã vào danh sách.`, "success");
+            window.dongModalThemKhach();
+            window._tkInvalidateCache && window._tkInvalidateCache();
+            const titleEl = document.getElementById("modal-guest-list-title");
+            const curTitle = (titleEl?.textContent || "").replace(/^DS Khách — /, "");
+            await window.openGuestListModal(matchId, curTitle).catch(() => {});
+            _taiLichSuCaDau().catch(() => {});
+        } catch (e) {
+            console.error("Lỗi thêm khách đặt riêng:", e);
+            window.hienToast("Lỗi", "Không thêm được khách. Thử lại sau.", "danger");
+        } finally {
+            _themKhachBusy = false;
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-plus"></i> Thêm khách'; }
+        }
     };
 
     /* ═══════════════════════════════════════════════════
