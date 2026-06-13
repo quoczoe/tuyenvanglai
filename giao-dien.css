@@ -3959,6 +3959,21 @@ body::before {
 }
 .ls-copy-btn:hover { background: rgba(255,255,255,0.1); color: #e2e8f0; }
 
+/* Nút "Copy mã & lời nhắn xác nhận" (khách → host, gửi qua Zalo/FB) */
+.ls-btn-xacnhan {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; margin-top: 8px; padding: 7px 10px;
+    background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.3);
+    color: #00e5ff; border-radius: 8px; cursor: pointer;
+    font-family: inherit; font-size: 0.76rem; font-weight: 700;
+    transition: background 0.15s;
+}
+.ls-btn-xacnhan:hover { background: rgba(0,229,255,0.16); }
+.ls-xacnhan-hint {
+    margin-top: 6px; font-size: 0.68rem; line-height: 1.4;
+    color: #64748b;
+}
+
 /* Action buttons */
 .ls-action-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
 .ls-btn-cancel, .ls-btn-contact, .ls-btn-review-trigger, .ls-btn-rebook {

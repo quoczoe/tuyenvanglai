@@ -2537,6 +2537,7 @@
             ]);
             const daChotCa   = !!(caDauList[0]?.da_chot_ca);
             const yeuCauCoc  = !!(caDauList[0]?.yeu_cau_coc); // ca yêu cầu cọc → hiện cột Cọc
+            const _caRow     = caDauList[0] || {}; // thông tin ca → soạn lời nhắn xác nhận host→khách
             // Kiểm tra ca đã bắt đầu chưa — dùng để disable "Khách hủy" option
             const _caInfo = caDauList[0];
             const isMatchStarted = (() => {
@@ -2842,8 +2843,17 @@
                               style="width:14px;height:14px;accent-color:#00ff88;cursor:pointer;">`;
 
                 const maSlotRow = g.ma_slot || "";
+                const _showNhan = maSlotRow && !isHuy && trangThai !== "Host từ chối";
                 const maSlotHTML = maSlotRow
                     ? `<span class="gl-maslot" style="display:block;font-family:monospace;font-size:0.66rem;color:#64748b;letter-spacing:0.3px;margin-top:2px;white-space:nowrap;">${maSlotRow}</span>`
+                      + (_showNhan
+                        ? `<button class="gl-nhan-btn" data-msg="${_glEscAttr(_buildMsgXacNhanHost(g.ten_khach, maSlotRow, _caRow))}"
+                                   onclick="event.stopPropagation();window._glCopyLoiNhanHost(this)"
+                                   title="Copy lời nhắn xác nhận để gửi khách qua Zalo/Facebook. Khách không phản hồi → cân nhắc Từ chối khách."
+                                   style="margin-top:3px;background:rgba(0,255,136,0.10);border:1px solid rgba(0,255,136,0.28);color:#00ff88;font-size:0.66rem;font-family:inherit;padding:2px 8px;border-radius:6px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
+                            <i class="fa-regular fa-paper-plane"></i> Nhắn xác nhận
+                           </button>`
+                        : "")
                     : "";
                 return `<tr data-guest-idx="${idx}" data-uid="cdd-${g.id}" data-ma-slot="${maSlotRow.toLowerCase()}" style="background:${bg};transition:background 0.12s;"
                             onmouseover="this.style.background='rgba(30,58,95,0.5)'"
@@ -2971,6 +2981,46 @@
 
         const tr = wrap.closest("tr");
         if (tr) tr.classList.add("tr-cdd-open");
+    };
+
+    /* ── Soạn sẵn lời nhắn xác nhận slot (host → khách) + copy 1 click ──
+     * Bước 1 của quy trình chống slot ảo: host gửi nội dung này qua Zalo/FB/SĐT
+     * cho khách để đối chiếu mã + xác nhận đúng người trước khi lên sân. */
+    function _glEscAttr(s) {
+        return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+            .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    function _glFmtNgayMsg(ymd) {
+        if (!ymd) return "—";
+        try { return new Date(ymd).toLocaleDateString("vi-VN"); } catch { return ymd; }
+    }
+    function _glFmtGioMsg(bd, kt) {
+        const b = (bd || "").slice(0, 5);
+        const k = (kt || "").slice(0, 5);
+        if (!b) return "—";
+        return k ? `${b}–${k}` : b;
+    }
+    function _buildMsgXacNhanHost(tenKhach, ma, ca) {
+        const gio  = _glFmtGioMsg(ca?.gio_bat_dau, ca?.gio_ket_thuc);
+        const ngay = _glFmtNgayMsg(ca?.ngay_danh);
+        return `Xin chào ${tenKhach || "bạn"}! 👋 Mình là chủ ca đấu cầu lông bạn vừa đặt slot:
+• Sân: ${ca?.ten_san || "—"}
+• Thời gian: ${gio}, ngày ${ngay}
+• Mã đặt slot của bạn: ${ma || "--"}
+Bạn xác nhận giúp mình sẽ tham gia đúng giờ nhé để mình giữ chỗ. Có thay đổi báo mình sớm giúp nhé. Cảm ơn bạn! 🏸`;
+    }
+    window._glCopyLoiNhanHost = async function (btn) {
+        const text = btn?.dataset?.msg || "";
+        if (!text) return;
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch {
+            const t = document.createElement("textarea");
+            t.value = text; document.body.appendChild(t); t.select();
+            document.execCommand("copy"); document.body.removeChild(t);
+        }
+        window.hienToast("Đã sao chép lời nhắn! ✅", "Dán vào Zalo/Facebook gửi khách để xác nhận ca đấu.", "success");
     };
 
     /* ═══════════════════════════════════════════════════

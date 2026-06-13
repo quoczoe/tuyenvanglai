@@ -3867,6 +3867,48 @@
         window.hienToast("Đã sao chép! ✅", `Mã slot: ${ma}`, "success");
     };
 
+    /* ── Soạn sẵn lời nhắn xác nhận slot (khách → host) + copy 1 click ──
+     * Bước 1 của quy trình chống slot ảo: khách gửi nội dung này qua Zalo/FB/SĐT
+     * cho host để đối chiếu mã + xác nhận đúng người trước khi lên sân. */
+    function _escAttr(s) {
+        return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+            .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+    function _fmtNgayMsg(ymd) {
+        if (!ymd) return "—";
+        try { return new Date(ymd).toLocaleDateString("vi-VN"); } catch { return ymd; }
+    }
+    function _fmtGioMsg(bd, kt) {
+        const b = (bd || "").slice(0, 5);
+        const k = (kt || "").slice(0, 5);
+        if (!b) return "—";
+        return k ? `${b}–${k}` : b;
+    }
+    function _buildMsgXacNhanKhach(slot, ca) {
+        const gio  = _fmtGioMsg(ca?.gio_bat_dau, ca?.gio_ket_thuc);
+        const ngay = _fmtNgayMsg(ca?.ngay_danh);
+        return `Xin chào! 👋 Mình vừa đặt slot tham gia ca đấu cầu lông:
+• Sân: ${ca?.ten_san || "—"}
+• Thời gian: ${gio}, ngày ${ngay}
+• Mã đặt slot của mình: ${slot?.ma_slot || "--"}
+Bạn kiểm tra & xác nhận giúp mình với nhé. Cảm ơn bạn nhiều! 🏸`;
+    }
+
+    // Copy nội dung lưu ở thuộc tính data-msg của nút (đã được trình duyệt giải mã HTML entity).
+    window._copyLoiNhanXacNhan = async function (btn) {
+        const text = btn?.dataset?.msg || "";
+        if (!text) return;
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch {
+            const t = document.createElement("textarea");
+            t.value = text; document.body.appendChild(t); t.select();
+            document.execCommand("copy"); document.body.removeChild(t);
+        }
+        window.hienToast("Đã sao chép lời nhắn! ✅", "Dán vào Zalo/Facebook gửi host để xác nhận ca đấu.", "success");
+    };
+
     /**
      * Gửi đánh giá host từ inline form trong LỊCH SỬ ĐẤU
      */
@@ -4198,6 +4240,12 @@
                                         <code class="ls-slot-code">${slot.ma_slot || "--"}</code>
                                         ${slot.ma_slot ? `<button class="ls-copy-btn" aria-label="Sao chép mã slot" onclick="event.stopPropagation();window._copyMaSlot('${slot.ma_slot}')"><i class="fa-regular fa-copy" aria-hidden="true"></i> Copy</button>` : ""}
                                     </div>
+                                    ${slot.ma_slot && slot.trang_thai_di_danh !== "Khách hủy" && slot.trang_thai_di_danh !== "Host từ chối" ? `
+                                    <button class="ls-btn-xacnhan" data-msg="${_escAttr(_buildMsgXacNhanKhach(slot, ca))}"
+                                            onclick="event.stopPropagation();window._copyLoiNhanXacNhan(this)">
+                                        <i class="fa-regular fa-paper-plane" aria-hidden="true"></i> Copy mã &amp; lời nhắn xác nhận
+                                    </button>
+                                    <div class="ls-xacnhan-hint">Gửi lời nhắn cho host qua Zalo/Facebook để xác nhận. Nếu host không phản hồi, cân nhắc tự hủy slot.</div>` : ""}
                                 </div>
                                 ${cocReminder}
                                 ${priceStr ? `<div class="ls-price-zone">${priceStr}</div>` : ""}
