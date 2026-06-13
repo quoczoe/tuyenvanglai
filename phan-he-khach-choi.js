@@ -4190,6 +4190,12 @@ Bạn kiểm tra & xác nhận giúp mình với nhé. Cảm ơn bạn nhiều! 
                     : [ca.quan_huyen, ca.tinh_thanh].filter(Boolean).join(" · ")
                       || '<span class="ls-no-addr">KHÔNG CÓ ĐỊA CHỈ CỤ THỂ</span>';
 
+                // Nút "Copy mã & lời nhắn xác nhận" chỉ hiện TRƯỚC giờ bắt đầu ca (qua giờ → đã lên sân,
+                // nhắn xác nhận vô nghĩa). Ưu tiên SSOT phaCaDau; fallback so giờ bắt đầu; thiếu giờ → vẫn hiện.
+                const _phaCard = window.phaCaDau ? window.phaCaDau(ca) : null;
+                const _startTs = ca?.ngay_danh && ca?.gio_bat_dau ? new Date(`${ca.ngay_danh}T${ca.gio_bat_dau}`).getTime() : null;
+                const _truocGioCard = _phaCard ? _phaCard === "truoc" : (_startTs ? Date.now() < _startTs : true);
+
                 // Nhắc cọc — ca yeu_cau_coc + slot còn "Chờ đánh" (sắp diễn ra). Mark "đã cọc" của
                 // host nằm ở localStorage host (khách không đọc được) → đây là nhắc TĨNH.
                 const cocReminder = (ca.yeu_cau_coc && slot.trang_thai_di_danh === "Chờ đánh")
@@ -4240,7 +4246,7 @@ Bạn kiểm tra & xác nhận giúp mình với nhé. Cảm ơn bạn nhiều! 
                                         <code class="ls-slot-code">${slot.ma_slot || "--"}</code>
                                         ${slot.ma_slot ? `<button class="ls-copy-btn" aria-label="Sao chép mã slot" onclick="event.stopPropagation();window._copyMaSlot('${slot.ma_slot}')"><i class="fa-regular fa-copy" aria-hidden="true"></i> Copy</button>` : ""}
                                     </div>
-                                    ${slot.ma_slot && slot.trang_thai_di_danh !== "Khách hủy" && slot.trang_thai_di_danh !== "Host từ chối" ? `
+                                    ${slot.ma_slot && _truocGioCard && slot.trang_thai_di_danh !== "Khách hủy" && slot.trang_thai_di_danh !== "Host từ chối" ? `
                                     <button class="ls-btn-xacnhan" data-msg="${_escAttr(_buildMsgXacNhanKhach(slot, ca))}"
                                             onclick="event.stopPropagation();window._copyLoiNhanXacNhan(this)">
                                         <i class="fa-regular fa-paper-plane" aria-hidden="true"></i> Copy mã &amp; lời nhắn xác nhận

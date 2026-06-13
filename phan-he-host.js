@@ -2843,7 +2843,8 @@
                               style="width:14px;height:14px;accent-color:#00ff88;cursor:pointer;">`;
 
                 const maSlotRow = g.ma_slot || "";
-                const _showNhan = maSlotRow && !isHuy && trangThai !== "Host từ chối";
+                // Nút "Nhắn xác nhận" chỉ hiện TRƯỚC giờ bắt đầu ca (qua giờ → 2 bên đã ở sân, nhắn vô nghĩa).
+                const _showNhan = maSlotRow && !isHuy && trangThai !== "Host từ chối" && pha === "truoc";
                 const maSlotHTML = maSlotRow
                     ? `<span class="gl-maslot" style="display:block;font-family:monospace;font-size:0.66rem;color:#64748b;letter-spacing:0.3px;margin-top:2px;white-space:nowrap;">${maSlotRow}</span>`
                       + (_showNhan
