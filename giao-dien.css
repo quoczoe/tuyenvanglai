@@ -3848,13 +3848,22 @@ body::before {
 
 /* Cards */
 .ls-card {
-    background: #181818;
-    border: 1px solid rgba(255,255,255,0.05);
+    background: #161c28;
+    border: 1px solid rgba(30,58,95,0.7);   /* viền nét rõ hơn → tách bạch từng ca */
     border-radius: 12px; overflow: hidden;
-    margin-bottom: 10px;
+    margin-bottom: 14px;                     /* khe hở rộng hơn giữa các ca */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.35);
     transition: border-color 0.2s, box-shadow 0.2s;
 }
-.ls-card:hover { border-color: rgba(255,122,0,0.18); }
+.ls-card:hover { border-color: rgba(255,122,0,0.35); }
+
+/* Card ĐANG MỞ — viền accent + glow + đổ bóng → nổi hẳn khỏi 2 ca trên/dưới,
+   không còn dính thành một mảng tối. */
+.ls-card--open {
+    border-color: rgba(0,255,136,0.55);
+    box-shadow: 0 0 0 1px rgba(0,255,136,0.22), 0 10px 28px rgba(0,0,0,0.6);
+}
+.ls-card--open:hover { border-color: rgba(0,255,136,0.7); }
 
 .ls-card-inner {
     display: flex; align-items: stretch;
@@ -4150,8 +4159,8 @@ body::before {
    ═══════════════════════════════════════════════════════ */
 .ls-card-body {
     padding: 16px 18px 16px;
-    border-top: 1px solid rgba(255,255,255,0.06);
-    background: rgba(0,0,0,0.2);
+    border-top: 1px solid rgba(0,255,136,0.22);   /* đường ranh accent rõ giữa header ↔ nội dung */
+    background: #1a2438;                            /* panel SÁNG hơn header → tương phản rõ vùng xổ ra */
     display: flex;
     flex-direction: column;
     gap: 0;

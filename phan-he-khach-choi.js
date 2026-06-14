@@ -3860,6 +3860,9 @@
         const isOpen = body.style.display !== "none";
         body.style.display = isOpen ? "none" : "block";
         if (chevron) chevron.classList.toggle("open", !isOpen);
+        // Đánh dấu card đang mở → CSS tô viền accent + đổ bóng tách khỏi ca liền kề
+        const card = body.closest(".ls-card");
+        if (card) card.classList.toggle("ls-card--open", !isOpen);
     };
 
     /**
