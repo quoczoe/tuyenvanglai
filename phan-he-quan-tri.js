@@ -1706,23 +1706,30 @@
                 _prog(`Đang sinh ca ${i + 1}/${qty}...`);
                 const kv   = _rndItem(_KHU_VUC_SAN);
                 const quan = _rndItem(Object.keys(kv.quans));
-                const san  = _rndItem(kv.quans[quan]);
+                const sanRaw = _rndItem(kv.quans[quan]);
+                // Quy chuẩn tên sân: "SÂN CẦU LÔNG <TÊN>" (bỏ tiền tố "Sân " trong dataset)
+                const tenSan = "SÂN CẦU LÔNG " + sanRaw.replace(/^Sân\s+/i, "").toUpperCase();
                 const host = _rndItem(hostPool);
 
                 const gioiTinhCan = _rndItem(["Nam", "Nữ", "Cả hai"]);
-                const namIdx = _rndIntS(1, LV.length - 1);
-                const nuIdx  = _rndIntS(0, namIdx);                 // nữ ưu tiên trình độ thấp hơn/bằng nam
-                const namLevels = [LV[namIdx]];
-                const nuLevels  = [LV[nuIdx]];
-                if (Math.random() < 0.4 && namIdx - 1 >= 0) namLevels.unshift(LV[namIdx - 1]);
+                // Dải trình độ LIỀN KỀ 2–4 cấp (không nhảy cóc, không chỉ 1 cấp). Nữ nghiêng thấp hơn/bằng nam.
+                const _MAXI   = LV.length - 1;
+                const lenNam  = _rndIntS(2, 4);
+                const baseNam = _rndIntS(0, Math.max(0, _MAXI - lenNam + 1));
+                const namLevels = LV.slice(baseNam, baseNam + lenNam);
+                const lenNu   = _rndIntS(2, 4);
+                const baseNu  = _rndIntS(0, Math.min(baseNam, Math.max(0, _MAXI - lenNu + 1)));
+                const nuLevels  = LV.slice(baseNu, baseNu + lenNu);
 
                 const giaNamK = _rndIntS(10, 17) * 5;               // 50..85 (bước 5K)
                 const giaNuK  = Math.max(50, giaNamK - _rndItem([5, 10]));
                 const gia_nam = gioiTinhCan === "Nữ"  ? 0 : giaNamK * 1000;
                 const gia_nu  = gioiTinhCan === "Nam" ? 0 : giaNuK * 1000;
 
-                const soSan    = _rndIntS(1, 3);
-                const tongSlot = soSan * _rndIntS(7, 8);            // 7-8 người/sân
+                const soSan = _rndIntS(1, 3);
+                // Số người tuyển/sân linh hoạt 3–8 (lẻ lẫn chẵn) — cộng độc lập từng sân → tổng tự nhiên
+                let tongSlot = 0;
+                for (let _s = 0; _s < soSan; _s++) tongSlot += _rndIntS(3, 8);
                 const giaThue1h = _rndIntS(90, 140) * 1000;
                 const dur = _rndIntS(2, 3);
 
@@ -1751,8 +1758,8 @@
                 const caPayload = {
                     id: caId, ma_key_host: null, sdt_nguoi_tao: host.sdt,
                     vung_mien: kv.vung, tinh_thanh: kv.tinh, quan_huyen: quan,
-                    ten_san: san, so_san_cu_the: "S" + _rndIntS(1, 8),
-                    dia_chi_san: [san, quan, kv.tinh].join(", "),
+                    ten_san: tenSan, so_san_cu_the: "S" + _rndIntS(1, 8),
+                    dia_chi_san: [tenSan, quan, kv.tinh].join(", "),
                     so_san_mo: soSan, ngay_danh, gio_bat_dau, gio_ket_thuc, so_gio_choi: dur,
                     gioi_tinh_can: gioiTinhCan,
                     yeu_cau_trinh_do: { nam: gioiTinhCan === "Nữ" ? [] : namLevels, nu: gioiTinhCan === "Nam" ? [] : nuLevels },
@@ -1776,7 +1783,8 @@
                         let tenK = _tenVietHoa(sg), g2 = 0;
                         while (usedNames.has(tenK) && g2++ < 6) tenK = _tenVietHoa(sg);
                         usedNames.add(tenK);
-                        let ma = "VK-" + _hexS(8); while (usedMa.has(ma)) ma = "VK-" + _hexS(8);
+                        // Mã slot ĐỒNG BỘ với khách thật: "SLOT-" + 8 hex IN HOA
+                        let ma = "SLOT-" + _hexS(8); while (usedMa.has(ma)) ma = "SLOT-" + _hexS(8);
                         usedMa.add(ma);
                         rows.push({
                             id_ca_dau: caId, ten_khach: tenK, sdt_khach: _sdtAoNgauNhien(),
