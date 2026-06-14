@@ -1712,14 +1712,16 @@
                 const host = _rndItem(hostPool);
 
                 const gioiTinhCan = _rndItem(["Nam", "Nữ", "Cả hai"]);
-                // Dải trình độ LIỀN KỀ 2–4 cấp (không nhảy cóc, không chỉ 1 cấp). Nữ nghiêng thấp hơn/bằng nam.
-                const _MAXI   = LV.length - 1;
-                const lenNam  = _rndIntS(2, 4);
-                const baseNam = _rndIntS(0, Math.max(0, _MAXI - lenNam + 1));
-                const namLevels = LV.slice(baseNam, baseNam + lenNam);
-                const lenNu   = _rndIntS(2, 4);
-                const baseNu  = _rndIntS(0, Math.min(baseNam, Math.max(0, _MAXI - lenNu + 1)));
-                const nuLevels  = LV.slice(baseNu, baseNu + lenNu);
+                // Dải trình độ theo CỤM tự nhiên: BẮT ĐẦU từ ĐÁY band (NEWBIE/YẾU-/TBY-/TB-),
+                // liền kề 2–4 cấp. KHÔNG bắt đầu từ cấp "+" (tránh "yếu+, tby-, tby..."),
+                // KHÔNG chạm "TB KHÁ"/"KHÁ" (bán chuyên). LV đã = NEWBIE..TB+ (index 0..9).
+                const _TOP    = LV.length - 1;                 // 9 = TB+ (đã loại KHÁ/bán chuyên qua slice(0,10))
+                const _STARTS = [0, 1, 4, 7];                  // NEWBIE, YẾU-, TBY-, TB-
+                const _cumTrinhDo = base => LV.slice(base, base + _rndIntS(2, Math.min(4, _TOP - base + 1)));
+                const baseNam = _rndItem(_STARTS);
+                const namLevels = _cumTrinhDo(baseNam);
+                const baseNu  = _rndItem(_STARTS.filter(s => s <= baseNam));   // nữ band ≤ nam band
+                const nuLevels  = _cumTrinhDo(baseNu);
 
                 const giaNamK = _rndIntS(10, 17) * 5;               // 50..85 (bước 5K)
                 const giaNuK  = Math.max(50, giaNamK - _rndItem([5, 10]));
