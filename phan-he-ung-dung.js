@@ -356,7 +356,7 @@
         if (!u) return;
 
         const payload = {
-            ten_khach:    document.getElementById("profileName")?.value?.trim()     || u.ten_khach,
+            ten_khach:    (document.getElementById("profileName")?.value?.trim() || u.ten_khach || "").toUpperCase() || u.ten_khach,
             gioi_tinh:    document.getElementById("profileGender")?.value           || u.gioi_tinh,
             trinh_do:     (window.chuanHoaTrinhDo ? window.chuanHoaTrinhDo(document.getElementById("profileTrindDo")?.value) : document.getElementById("profileTrindDo")?.value) || "",
             facebook_link:document.getElementById("profileFacebook")?.value?.trim() || null,
@@ -569,18 +569,24 @@
         const loginBtn    = document.getElementById("headerLoginBtn");
         const userInfo    = document.getElementById("headerUserInfo");
         const userNameEl  = document.getElementById("headerUserName");
+        // Mục "Tài Khoản / Đăng Nhập" trong menu 3 gạch mobile — ẩn khi đã đăng nhập
+        // (icon trang cá nhân đã hiện sẵn ngoài header → tránh trùng lặp).
+        const mbAccItem   = document.getElementById("mobileNavAccountItem");
 
         if (window.currentUser) {
             if (loginBtn)   loginBtn.style.display  = "none";
             if (userInfo)   userInfo.style.display  = "flex";
+            if (mbAccItem)  mbAccItem.style.display = "none";
             if (userNameEl) userNameEl.textContent  = window.currentUser.ten_khach
                                                     || window.currentUser.sdt_khach
                                                     || "Tài khoản";
         } else {
             if (loginBtn)   loginBtn.style.display  = "inline-flex";
             if (userInfo)   userInfo.style.display  = "none";
+            if (mbAccItem)  mbAccItem.style.display = "";
         }
     }
+    window._capNhatHeaderState = _capNhatHeaderState;
 
     /* ═══════════════════════════════════════════════════
      * CONFIRM MODAL — dùng chung (nếu chưa có từ giao-dien.css)

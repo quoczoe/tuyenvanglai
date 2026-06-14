@@ -5132,6 +5132,19 @@ body::before {
 }
 .review-author-link:hover { color: #34d399; border-bottom-color: #34d399; }
 .review-author-link i { font-size: 0.66rem; margin-right: 2px; }
+
+/* ── ĐỒNG BỘ TÊN NGƯỜI DÙNG IN HOA TOÀN HỆ THỐNG ──
+   Dù nhập hoa hay thường, mọi vị trí hiển thị TÊN đều render IN HOA.
+   Phối hợp với uppercase ở tầng dữ liệu (đăng ký + lưu hồ sơ + thêm khách đặt riêng). */
+#headerUserName,
+#profileDisplayName,
+#profileGuestName,
+.host-name,
+.review-author-link,
+.gl-ten-khach,
+.tvl-ten-hoa {
+    text-transform: uppercase;
+}
 .kh-review-text { font-size: 0.83rem; color: #e2e8f0; line-height: 1.55; }
 .kh-review-empty { color: #64748b; font-style: italic; }
 @media (max-width: 460px) {

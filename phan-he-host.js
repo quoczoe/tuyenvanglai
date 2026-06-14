@@ -1772,8 +1772,9 @@
             }
 
             // AUTO-LOCK: nhắc host xác nhận ca hết giờ chưa chốt
+            // (bỏ qua nếu host vừa bấm "Không nhắc lại trong 2h" — chống spam, bền qua F5/đổi tab)
             const canAutoLock = mySlots.filter(s => !s.da_chot_ca && _isExpiredCa(s));
-            if (canAutoLock.length > 0) {
+            if (canAutoLock.length > 0 && !window._dangSnoozeNhacChot()) {
                 setTimeout(() => {
                     window.hienToast(
                         `⏰ ${canAutoLock.length} ca đã hết giờ`,
@@ -2190,6 +2191,28 @@
     window.dongModalXacNhanChot = function () {
         const overlay = document.getElementById("modal-xacnhan-chot");
         if (overlay) overlay.style.display = "none";
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * SNOOZE 2H — nút "Không nhắc lại trong 2h" (chống spam modal chốt ca)
+     *   localStorage `tvl_snooze_chotca` = timestamp bấm; auto-show bỏ qua
+     *   trong vòng 2 giờ → bền qua F5 / đổi tab. KHÔNG chặn mở thủ công.
+     * ═══════════════════════════════════════════════════ */
+    window._SNOOZE_CHOTCA_MS = 2 * 60 * 60 * 1000; // 2 giờ
+    window._dangSnoozeNhacChot = function () {
+        try {
+            const ts = parseInt(localStorage.getItem("tvl_snooze_chotca") || "0", 10);
+            return ts > 0 && (Date.now() - ts) < window._SNOOZE_CHOTCA_MS;
+        } catch (_) { return false; }
+    };
+    window.boQuaNhacChotCa2h = function () {
+        try { localStorage.setItem("tvl_snooze_chotca", String(Date.now())); } catch (_) {}
+        window.dongModalXacNhanChot();
+        window.hienToast && window.hienToast(
+            "Đã tắt nhắc trong 2 giờ ⏾",
+            "Bảng xác nhận chốt ca sẽ không tự hiện lại trong 2 giờ tới.",
+            "info"
+        );
     };
 
     /* ═══════════════════════════════════════════════════
@@ -2866,13 +2889,13 @@
                             onmouseout="this.style.background='${bg}'">
                     ${td(cbHTML, "text-align:center;")}
                     ${td(`${g.sdt_khach
-                            ? `<button onclick="window.xemHoSoKhach('${sdtKhachEsc}','${tenKhachEsc}','${matchId}')"
+                            ? `<button class="gl-ten-khach" onclick="window.xemHoSoKhach('${sdtKhachEsc}','${tenKhachEsc}','${matchId}')"
                                   onmouseover="this.style.textDecoration='underline'"
                                   onmouseout="this.style.textDecoration='none'"
                                   style="background:none;border:none;color:#e2e8f0;font-weight:600;cursor:pointer;padding:0;font-family:inherit;font-size:0.81rem;text-decoration:none;text-align:center;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;">
                             ${g.ten_khach || "—"}
                         </button>`
-                            : `<span style="color:#e2e8f0;font-weight:600;font-size:0.81rem;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;">${g.ten_khach || "—"}</span>`
+                            : `<span class="gl-ten-khach" style="color:#e2e8f0;font-weight:600;font-size:0.81rem;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;">${g.ten_khach || "—"}</span>`
                         }${datRiengBadge}${maSlotHTML}`, "text-align:center;")}
                     ${td(`<span style="color:#94a3b8;font-family:monospace;font-size:0.76rem;white-space:nowrap;">${g.sdt_khach || "—"}</span>`, "text-align:center;")}
                     ${td(`<span style="color:${genderClr};font-weight:600;font-size:0.8rem;">${gioiTinh}</span>`, "text-align:center;")}
@@ -3071,7 +3094,7 @@ Bạn xác nhận giúp mình sẽ tham gia đúng giờ nhé để mình giữ 
         const gl      = document.getElementById("modal-guest-list");
         const matchId = gl?.dataset.matchId;
         if (!matchId) { window.hienToast("Lỗi", "Không xác định được ca đấu.", "danger"); return; }
-        const ten = (document.getElementById("tk-ten")?.value || "").trim();
+        const ten = (document.getElementById("tk-ten")?.value || "").trim().toUpperCase();
         const sdt = (document.getElementById("tk-sdt")?.value || "").trim();
         if (!ten)        { window.hienToast("Thiếu tên", "Vui lòng nhập tên khách.", "warning"); document.getElementById("tk-ten")?.focus(); return; }
         if (!_tkGioiTinh){ window.hienToast("Thiếu giới tính", "Vui lòng chọn giới tính.", "warning"); return; }
@@ -4739,7 +4762,7 @@ Bạn xác nhận giúp mình sẽ tham gia đúng giờ nhé để mình giữ 
                 <div style="display:flex;align-items:center;gap:16px;padding-bottom:14px;border-bottom:1px solid #1e3a5f;margin-bottom:14px;">
                     <div style="width:50px;height:50px;background:linear-gradient(135deg,#1e3a5f,#2d4a6e);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">👤</div>
                     <div style="flex:1;min-width:0;">
-                        <div style="font-size:1.05rem;font-weight:700;color:#e2e8f0;">${ten || "—"}</div>
+                        <div class="tvl-ten-hoa" style="font-size:1.05rem;font-weight:700;color:#e2e8f0;">${ten || "—"}</div>
                         <div style="font-size:0.8rem;color:#94a3b8;font-family:monospace;">${sdt}</div>
                         <div style="margin-top:4px;">${starStr}</div>
                     </div>

@@ -20,7 +20,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS hệ thống -->
-    <link rel="stylesheet" href="giao-dien.css?v=20260613f">
+    <link rel="stylesheet" href="giao-dien.css?v=20260614a">
     <link rel="stylesheet" href="components.css?v=20260612l">
 
     <style>
@@ -2020,7 +2020,7 @@
         <button class="mobile-nav-item" onclick="window.moUHoModal&&window.moUHoModal();window.closeMobileNav()">
             <i class="fa-solid fa-heart"></i> Góp ý &amp; Ủng hộ
         </button>
-        <button class="mobile-nav-item" onclick="window.chuyenTab('ca-nhan');window.closeMobileNav()">
+        <button class="mobile-nav-item" id="mobileNavAccountItem" onclick="window.chuyenTab('ca-nhan');window.closeMobileNav()">
             <i class="fa-solid fa-user"></i> Tài Khoản / Đăng Nhập
         </button>
     </div>
@@ -3321,10 +3321,10 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="ket-noi-supabase.js?v=20260610d"></script>
 <script src="bo-may-du-lieu.js?v=20260612h"></script>
 <script src="hieu-ung-giao-dien.js?v=20260612a"></script>
-<script src="phan-he-khach-choi.js?v=20260613e"></script>
-<script src="phan-he-host.js?v=20260613f"></script>
+<script src="phan-he-khach-choi.js?v=20260614b"></script>
+<script src="phan-he-host.js?v=20260614b"></script>
 <script src="phan-he-thong-bao.js?v=20260612k"></script>
-<script src="phan-he-ung-dung.js?v=20260613a"></script>
+<script src="phan-he-ung-dung.js?v=20260614a"></script>
 <script src="phan-he-gop-y.js?v=20260610"></script>
 
 <!-- xoaBoLoc dùng bản đầy đủ trong phan-he-khach-choi.js (reset cả pills + lịch + nhãn giá).
@@ -3782,8 +3782,8 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
                 style="flex:1;padding:10px;background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.4);color:#fbbf24;font-size:0.88rem;font-weight:700;border-radius:8px;cursor:pointer;font-family:inherit;">
                 <i class="fa-solid fa-lock"></i> Xác Nhận & Chốt Ca
             </button>
-            <button onclick="window.dongModalXacNhanChot()"
-                style="padding:10px 18px;background:rgba(100,116,139,0.15);border:1px solid rgba(100,116,139,0.3);color:#94a3b8;font-size:0.88rem;border-radius:8px;cursor:pointer;font-family:inherit;">Bỏ qua</button>
+            <button onclick="window.boQuaNhacChotCa2h()" title="Tắt nhắc tự động trong 2 giờ tới"
+                style="padding:10px 18px;background:rgba(100,116,139,0.15);border:1px solid rgba(100,116,139,0.3);color:#94a3b8;font-size:0.88rem;border-radius:8px;cursor:pointer;font-family:inherit;white-space:nowrap;"><i class="fa-regular fa-clock"></i> Không nhắc lại trong 2h</button>
         </div>
     </div>
 </div>

@@ -850,8 +850,8 @@
         const pass   = extraFields.dataset.pass;
         const gender = extraFields.dataset.gender || "male";
 
-        // Lấy thông tin bổ sung
-        const ten      = (document.getElementById("inputTenKhach")?.value || "").trim();
+        // Lấy thông tin bổ sung — TÊN luôn lưu IN HOA (đồng bộ hiển thị toàn hệ thống)
+        const ten      = (document.getElementById("inputTenKhach")?.value || "").trim().toUpperCase();
         const zaloCk   = document.getElementById("checkZaloTrungSDT")?.checked !== false; // default ON
         const sdtZaloEl = document.getElementById("inputSdtZalo");
         const sdtZalo  = zaloCk ? null : (sdtZaloEl?.value?.replace(/\D/g, "") || null);
@@ -1544,7 +1544,7 @@
                 }).catch(() => [])
             ]);
             const user = userRows[0] || {};
-            const tenHien = user.ten_khach || ten || "Ẩn danh";
+            const tenHien = (user.ten_khach || ten || "Ẩn danh").toUpperCase();
             const sdtReal = user.sdt_khach || sdt;
             // Chỉ hiện SĐT đầy đủ nếu user đã bấm reveal ngoài card
             const uid = scopeId ? `${scopeId}_${sdt}` : sdt;
@@ -2825,6 +2825,17 @@
                    </div>`
                 : "";
 
+            // ── PHÂN QUYỀN HIỂN THỊ MÃ ĐẶT SLOT (chống lấy mã người khác đi phá) ──
+            //  • Host (chủ ca = sdt_nguoi_tao): xem FULL mã của MỌI khách.
+            //  • Khách: chỉ xem FULL mã CỦA CHÍNH MÌNH; mã người khác → ẩn "SLOT-******".
+            const _meSdt    = window.currentGuest?.sdt_khach || "";
+            const _laHostCa = !!_meSdt && _meSdt === s.sdt_nguoi_tao;
+            const _anMaSlot = (ma) => {
+                if (!ma) return "";
+                const i = ma.indexOf("-");                 // giữ tiền tố (SLOT-/KR-), ẩn phần còn lại
+                return (i >= 0 ? ma.slice(0, i + 1) : "") + "******";
+            };
+
             // Danh sách khách mới
             const khoachDaKy = khoachDaKyAll;
             const guestRows = khoachDaKy.map(g => {
@@ -2832,9 +2843,11 @@
                              : g.trang_thai_di_danh === "Bùng kèo"   ? "kmd-status-bung"
                              : g.trang_thai_di_danh === "Khách hủy"  ? "kmd-status-huy"
                              : "kmd-status-cho";
+                const _xemFull = _laHostCa || (!!g.sdt_khach && g.sdt_khach === _meSdt);
+                const _maHien  = _xemFull ? (g.ma_slot || "") : _anMaSlot(g.ma_slot);
                 return `<div class="kmd-guest-item">
                     <span class="kmd-guest-name">${g.ten_khach}</span>
-                    <span class="kmd-guest-slot">${g.ma_slot}</span>
+                    <span class="kmd-guest-slot"${_xemFull ? "" : ' title="Mã của khách khác được ẩn để bảo mật"'}>${_maHien}${_xemFull || !g.ma_slot ? "" : ' <i class="fa-solid fa-lock" style="font-size:0.68em;opacity:0.55;"></i>'}</span>
                     <span class="kmd-status-tag ${tagCls}">${g.trang_thai_di_danh}</span>
                 </div>`;
             }).join("") || `<div style="text-align:center;padding:18px 0;"><i class="fa-solid fa-users-slash" style="font-size:1.6rem;color:#334155;display:block;margin-bottom:8px;"></i><span style="font-size:0.82rem;color:#64748b;">Chưa có ai đăng ký.</span></div>`;
@@ -4559,7 +4572,7 @@ Bạn kiểm tra & xác nhận giúp mình với nhé. Cảm ơn bạn nhiều! 
 
             const user       = userList[0];
             const isHost     = user?.vai_tro === "host";
-            const tenHienThi = user?.ten_khach || sdt;
+            const tenHienThi = (user?.ten_khach || sdt).toUpperCase();
             const joinDate   = user?.ngay_tham_gia
                 ? new Date(user.ngay_tham_gia).toLocaleDateString("vi-VN") : "--";
 
