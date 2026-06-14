@@ -2693,10 +2693,13 @@
      * ═══════════════════════════════════════════════════ */
     /* ═══════════════════════════════════════════════════
      * SHARE KEO — Sao chép link ca đấu để chia sẻ
-     * URL format: ?ca=<id> — tự động mở modal khi load trang
+     * URL format: ?id=<id> — tự động mở modal khi load trang
+     *   Link gọn & uy tín: bỏ www. (thương hiệu tuyenvanglai.io.vn) + tham số ?id=
+     *   (cũ ?ca= vẫn đọc được — xem _autoOpenFromUrl). Backward-compatible.
      * ═══════════════════════════════════════════════════ */
     window.shareKeo = async function (idCaDau) {
-        const url = window.location.origin + window.location.pathname + '?ca=' + idCaDau;
+        const host = window.location.host.replace(/^www\./i, '');   // bỏ miền phụ www. cho link sạch
+        const url  = window.location.protocol + '//' + host + window.location.pathname + '?id=' + idCaDau;
         try {
             if (navigator.share) {
                 await navigator.share({ title: 'Kèo cầu lông', url });
@@ -2716,12 +2719,12 @@
         }
     };
 
-    // Tự động mở modal chi tiết nếu URL có tham số ?ca=<id>
+    // Tự động mở modal chi tiết nếu URL có tham số ?id=<id> (cũ ?ca= vẫn hỗ trợ)
     // Luôn mở modal ngay — modal tự xử lý trạng thái đăng nhập/chưa đăng nhập
     // Nếu chưa đăng nhập → lưu _pendingCaId, sau login sẽ gọi lại moModalChiTietKeo
     (function _autoOpenFromUrl() {
         const params = new URLSearchParams(window.location.search);
-        const caId = params.get('ca');
+        const caId = params.get('id') || params.get('ca');   // ?id= mới, fallback ?ca= cũ
         if (!caId) return;
 
         // Nếu chưa đăng nhập → lưu pending để sau login re-open modal tự động

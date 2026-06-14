@@ -738,6 +738,8 @@
     border: 1px solid rgba(255,255,255,0.22);
     color: #94a3b8; cursor: pointer; font-size: 0.85rem;
     transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease, opacity 0.15s ease; min-height: 38px;
+    /* Giãn ngang để nút Share dễ bấm trên mobile (không còn bó hẹp/tù) */
+    padding: 0 16px; min-width: 52px;
     font-family: inherit;
     box-shadow: 0 0 6px rgba(255,255,255,0.25);
 }
@@ -1080,9 +1082,9 @@
     .slot-court-name { font-size: 0.88rem; }
 }
 
-/* Màn hình rất nhỏ: cột share thu về auto */
+/* Màn hình rất nhỏ: cột share giữ bề ngang tối thiểu đủ rộng để bấm (không co về icon) */
 @media (max-width: 380px) {
-    .slot-card-footer { grid-template-columns: auto 1fr 1fr; }
+    .slot-card-footer { grid-template-columns: minmax(56px, auto) 1fr 1fr; }
 }
 
 @media (max-width: 360px) {

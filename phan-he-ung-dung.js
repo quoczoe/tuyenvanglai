@@ -175,8 +175,9 @@
         // Đảm bảo padding-top khớp header thực tế sau khi layout ổn định
         setTimeout(window._syncBodyPadding, 0);
 
-        // Auto-open modal nếu URL có ?ca=<id>
-        const caId = new URLSearchParams(window.location.search).get("ca");
+        // Auto-open modal nếu URL có ?id=<id> (cũ ?ca= vẫn hỗ trợ)
+        const _p = new URLSearchParams(window.location.search);
+        const caId = _p.get("id") || _p.get("ca");
         if (caId && window.moModalChiTietKeo) {
             setTimeout(() => window.moModalChiTietKeo(caId), 700);
         }
