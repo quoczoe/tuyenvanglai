@@ -1127,6 +1127,7 @@
             khachVL.forEach(u => {
                 const sdt = u.sdt_khach || "";
                 if (!sdt) return;
+                if (u.ma_gioi_thieu === "HOST_AO") return;   // Ẩn host ẢO (ca đấu seed) khỏi DS thành viên + không tính count
                 map.set(sdt, {
                     ten:            u.ten_khach || "Ẩn danh",
                     sdt,
@@ -1559,6 +1560,285 @@
         window.hienToast(ok > 0 ? "Tạo Thành Công ✅" : "Tạo Thất Bại ❌", moTa, ok > 0 ? "success" : "danger");
         document.getElementById("modalTaoTestOverlay").style.display = "none";
         _taiDanhSachKhach();
+    };
+
+    /* ═══════════════════════════════════════════════════════════════
+     * SINH CA ĐẤU ẢO (Seed Virtual Matches) — tăng mật độ & uy tín
+     *   • Host ảo = nguoi_dung vai_tro='host_ao' (KHÔNG cột mới, KHÔNG SQL)
+     *   • Khóa đặt: ~70% FULL (seed đủ slot) + ~30% LIVE (đang diễn ra)
+     *   • Khu vực HCM + Hà Nội, map Quận↔sân chuẩn (khớp window.MOCK_PROVINCES)
+     * ═══════════════════════════════════════════════════════════════ */
+    const _KHU_VUC_SAN = [
+        { tinh: "TP. Hồ Chí Minh", vung: "Miền Nam", quans: {
+            "Quận 12":    ["Sân Hải Yến", "Sân Tân Thới Hiệp", "Sân Hiệp Thành"],
+            "Gò Vấp":     ["Sân Khang An", "Sân Đại Phát", "Sân Quang Trung"],
+            "Tân Bình":   ["Sân Bàu Cát", "Sân K300", "Sân Hoàng Hoa Thám"],
+            "Bình Thạnh": ["Sân Phan Đăng Lưu", "Sân Thanh Đa", "Sân Hồng Bàng"],
+            "Thủ Đức":    ["Sân Hiệp Bình", "Sân Linh Đông", "Sân Tam Phú"],
+            "Quận 7":     ["Sân Phú Mỹ Hưng", "Sân Tân Quy", "Sân Him Lam"],
+            "Bình Tân":   ["Sân Tên Lửa", "Sân Bình Trị Đông", "Sân An Lạc"],
+            "Quận 10":    ["Sân Kỳ Hòa", "Sân Bắc Hải", "Sân Thành Long"],
+        }},
+        { tinh: "Hà Nội", vung: "Miền Bắc", quans: {
+            "Cầu Giấy":     ["Sân Cầu Giấy", "Sân Dịch Vọng", "Sân Trần Thái Tông"],
+            "Đống Đa":      ["Sân Kim Liên", "Sân Thái Hà", "Sân Hoàng Cầu"],
+            "Hai Bà Trưng": ["Sân Bách Khoa", "Sân Quỳnh Mai", "Sân Vĩnh Tuy"],
+            "Thanh Xuân":   ["Sân Nhân Chính", "Sân Khương Trung", "Sân Royal City"],
+            "Hà Đông":      ["Sân Văn Quán", "Sân Mỗ Lao", "Sân Hà Cầu"],
+            "Long Biên":    ["Sân Việt Hưng", "Sân Ngọc Lâm", "Sân Sài Đồng"],
+            "Nam Từ Liêm":  ["Sân Mỹ Đình", "Sân Mễ Trì", "Sân Trung Văn"],
+            "Hoàng Mai":    ["Sân Linh Đàm", "Sân Định Công", "Sân Đại Kim"],
+        }},
+    ];
+    const _HO      = ["Nguyễn","Trần","Lê","Phạm","Hoàng","Huỳnh","Phan","Vũ","Võ","Đặng","Bùi","Đỗ","Hồ","Ngô","Dương","Lý"];
+    const _DEM_NAM = ["Văn","Hữu","Đức","Minh","Quang","Hoàng","Thành","Công","Bá","Đình","Xuân","Ngọc"];
+    const _TEN_NAM = ["Long","Quân","Hùng","Nam","Sơn","Tuấn","Khoa","Phong","Dũng","Hải","Đạt","Trung","Bình","Kiên","Phúc","Thắng"];
+    const _DEM_NU  = ["Thị","Ngọc","Thanh","Thu","Khánh","Phương","Mỹ","Kim","Hương","Thúy"];
+    const _TEN_NU  = ["Linh","Hương","Trang","Anh","Ngân","Thảo","Vy","Nhi","Hà","Mai","Yến","Quỳnh","Diệp","Châu"];
+    const _CAU_BRANDS = ["Cầu 88","Vina","Lining","NewStar","Hải Yến S70","Hải Yến S80","Ba Sao Pro X","HyFA hồng","Taro"];
+    const _GIO_PHO_BIEN = [5, 8, 17, 18, 20];
+
+    const _rndItem = arr => arr[Math.floor(Math.random() * arr.length)];
+    const _rndIntS = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+    const _pad2S   = n => String(n).padStart(2, "0");
+    function _tenVietHoa(gioiTinh) {
+        const isNu = gioiTinh === "female";
+        const ho  = _rndItem(_HO);
+        const dem = isNu ? _rndItem(_DEM_NU) : _rndItem(_DEM_NAM);
+        const ten = isNu ? _rndItem(_TEN_NU) : _rndItem(_TEN_NAM);
+        const r = Math.random();
+        let parts;
+        if (r < 0.25)      parts = [ho, ten];                                                  // 2 từ
+        else if (r < 0.82) parts = [ho, dem, ten];                                             // 3 từ
+        else               parts = [ho, dem, (isNu ? _rndItem(_TEN_NU) : _rndItem(_TEN_NAM)), ten]; // 4 từ
+        return parts.join(" ").toUpperCase();
+    }
+    function _sdtAoNgauNhien() {
+        return _rndItem(["03","05","07","08","09"]) + String(_rndIntS(10000000, 99999999));
+    }
+    function _hexS(n) {
+        let s = ""; for (let i = 0; i < n; i++) s += "0123456789ABCDEF"[Math.floor(Math.random() * 16)];
+        return s;
+    }
+    async function _hashRand() {
+        const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("vk_" + Date.now() + Math.random()));
+        return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+    function _uuidS() {
+        return (crypto.randomUUID && crypto.randomUUID()) ||
+            (_hexS(8) + "-" + _hexS(4) + "-4" + _hexS(3) + "-" + _hexS(4) + "-" + _hexS(12)).toLowerCase();
+    }
+
+    window.moModalSeedCaAo = function () {
+        const existing = document.getElementById("modalSeedCaAoOverlay");
+        if (existing) { existing.style.display = "flex"; return; }
+        const box = document.createElement("div");
+        box.id = "modalSeedCaAoOverlay";
+        box.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;z-index:9999;padding:16px;";
+        box.innerHTML = `
+            <div style="background:#1a2844;border:1px solid rgba(0,255,136,0.3);border-radius:16px;padding:28px 24px;max-width:440px;width:100%;">
+                <div style="font-size:1.05rem;font-weight:800;color:#00ff88;margin-bottom:10px;">🏟️ Sinh Ca Đấu Ảo</div>
+                <div style="color:#9ca3af;font-size:0.82rem;margin-bottom:16px;line-height:1.5;">
+                    Tạo ca đấu ẢO trông tự nhiên (HCM + Hà Nội) để tăng mật độ trang Tìm Kèo.<br>
+                    <strong style="color:#e2e8f0;">Khách KHÔNG đặt được</strong> (full slot hoặc đang diễn ra) &amp; KHÔNG xem được hồ sơ host ảo.
+                </div>
+                <div class="ad-form-group">
+                    <label class="ad-label">Số lượng ca (1–50)</label>
+                    <input type="number" id="seedCaAoQty" class="ad-input" value="10" min="1" max="50">
+                </div>
+                <div style="display:flex;gap:10px;margin-top:16px;">
+                    <button class="ad-btn-primary" onclick="window.seedCaDauAo()" style="flex:1;">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Sinh ngay
+                    </button>
+                    <button class="ad-btn-ghost" onclick="document.getElementById('modalSeedCaAoOverlay').style.display='none';">Hủy</button>
+                </div>
+                <div id="seedCaAoProgress" style="margin-top:12px;font-size:0.8rem;color:#94a3b8;min-height:20px;"></div>
+            </div>`;
+        document.body.appendChild(box);
+    };
+
+    let _seedAoBusy = false;
+    window.seedCaDauAo = async function (qtyArg) {
+        if (_seedAoBusy) return;
+        const qty = Math.min(50, Math.max(1, parseInt(qtyArg != null ? qtyArg : (document.getElementById("seedCaAoQty")?.value || "10"), 10)));
+        const progress = document.getElementById("seedCaAoProgress");
+        const _prog = m => { if (progress) progress.textContent = m; };
+        _seedAoBusy = true;
+        // Ép vai trò ANON cho toàn bộ thao tác ghi: anon có sẵn INSERT policy
+        // (ca_dau/nguoi_dung/dat_slot); authenticated (admin JWT) có thể THIẾU policy → bị chặn.
+        const _savedJWT = window._adminJWT;
+        window._adminJWT = null;
+        try {
+            _prog("Đang chuẩn bị host ảo...");
+            // 1) Pool host ảo (tái dùng nếu có; bù tới TARGET_HOST, có cap chống treo)
+            const TARGET_HOST = 12;
+            let hostPool = [];
+            try {
+                const existed = await window.dbEngine.doc("nguoi_dung", { eq: { ma_gioi_thieu: "HOST_AO" } });
+                hostPool = (existed || []).map(u => ({ sdt: u.sdt_khach, ten: u.ten_khach, gioi_tinh: u.gioi_tinh }));
+            } catch (_) {}
+            const seenSdt = new Set(hostPool.map(h => h.sdt));
+            let _hostTries = 0;
+            while (hostPool.length < TARGET_HOST && _hostTries < TARGET_HOST * 4) {
+                _hostTries++;
+                const gt = Math.random() > 0.5 ? "male" : "female";
+                let sdt = _sdtAoNgauNhien(), guard = 0;
+                while (seenSdt.has(sdt) && guard++ < 8) sdt = _sdtAoNgauNhien();
+                seenSdt.add(sdt);
+                try {
+                    // Marker host ẢO = ma_gioi_thieu='HOST_AO' (vai_tro='host' để hợp lệ chk_vai_tro;
+                    // ma_gioi_thieu là TEXT tự do, KHÔNG hiển thị trên card → an toàn nhận diện)
+                    await window.khoDuLieuVinhVien.ghiData("nguoi_dung", {
+                        ten_khach: _tenVietHoa(gt), sdt_khach: sdt, mat_khau_hash: await _hashRand(),
+                        vai_tro: "host", ma_gioi_thieu: "HOST_AO", gioi_tinh: gt, is_active: true, diem_uy_tin: _rndIntS(88, 100)
+                    }, null);
+                    hostPool.push({ sdt, ten: "", gioi_tinh: gt });
+                } catch (e) { /* trùng SĐT / lỗi mạng → thử SĐT khác (đã có cap) */ }
+            }
+            if (hostPool.length === 0) { window.hienToast("Lỗi", "Không tạo được host ảo (kiểm tra quyền ghi nguoi_dung).", "danger"); return; }
+
+            const LV = (window.TRINH_DO_LIST || ["NEWBIE","YẾU-","YẾU","YẾU+","TBY-","TBY","TBY+","TB-","TB","TB+"]).slice(0, 10);
+            const now = new Date();
+            const nowMin = now.getHours() * 60 + now.getMinutes();
+            let okCa = 0, okSlot = 0;
+
+            for (let i = 0; i < qty; i++) {
+                _prog(`Đang sinh ca ${i + 1}/${qty}...`);
+                const kv   = _rndItem(_KHU_VUC_SAN);
+                const quan = _rndItem(Object.keys(kv.quans));
+                const san  = _rndItem(kv.quans[quan]);
+                const host = _rndItem(hostPool);
+
+                const gioiTinhCan = _rndItem(["Nam", "Nữ", "Cả hai"]);
+                const namIdx = _rndIntS(1, LV.length - 1);
+                const nuIdx  = _rndIntS(0, namIdx);                 // nữ ưu tiên trình độ thấp hơn/bằng nam
+                const namLevels = [LV[namIdx]];
+                const nuLevels  = [LV[nuIdx]];
+                if (Math.random() < 0.4 && namIdx - 1 >= 0) namLevels.unshift(LV[namIdx - 1]);
+
+                const giaNamK = _rndIntS(10, 17) * 5;               // 50..85 (bước 5K)
+                const giaNuK  = Math.max(50, giaNamK - _rndItem([5, 10]));
+                const gia_nam = gioiTinhCan === "Nữ"  ? 0 : giaNamK * 1000;
+                const gia_nu  = gioiTinhCan === "Nam" ? 0 : giaNuK * 1000;
+
+                const soSan    = _rndIntS(1, 3);
+                const tongSlot = soSan * _rndIntS(7, 8);            // 7-8 người/sân
+                const giaThue1h = _rndIntS(90, 140) * 1000;
+                const dur = _rndIntS(2, 3);
+
+                const isLive = Math.random() < 0.3;                 // ~30% live / ~70% full
+                let ngay_danh, gio_bat_dau, gio_ket_thuc;
+                if (isLive) {
+                    // LIVE: hôm nay, bắt đầu trước now, kết thúc sau now (an toàn qua-nửa-đêm)
+                    const startMin = Math.max(0, nowMin - _rndIntS(30, 90));
+                    let endMin = startMin + dur * 60;
+                    if (endMin <= nowMin) endMin = nowMin + 60;
+                    ngay_danh    = now.toLocaleDateString("sv-SE");
+                    gio_bat_dau  = _pad2S(Math.floor(startMin / 60) % 24) + ":" + _pad2S(startMin % 60) + ":00";
+                    gio_ket_thuc = _pad2S(Math.floor(endMin / 60) % 24) + ":" + _pad2S(endMin % 60) + ":00";
+                } else {
+                    // FULL: giờ chẵn phổ biến CHƯA qua (hôm nay hoặc 1-4 ngày tới)
+                    const gioBd = _rndItem(_GIO_PHO_BIEN);
+                    let off = _rndIntS(0, 4);
+                    if (off === 0 && gioBd <= now.getHours()) off = _rndIntS(1, 4);
+                    const d = new Date(now); d.setDate(now.getDate() + off);
+                    ngay_danh    = d.toLocaleDateString("sv-SE");
+                    gio_bat_dau  = _pad2S(gioBd) + ":00:00";
+                    gio_ket_thuc = _pad2S((gioBd + dur) % 24) + ":00:00";
+                }
+
+                const caId = _uuidS();
+                const caPayload = {
+                    id: caId, ma_key_host: null, sdt_nguoi_tao: host.sdt,
+                    vung_mien: kv.vung, tinh_thanh: kv.tinh, quan_huyen: quan,
+                    ten_san: san, so_san_cu_the: "S" + _rndIntS(1, 8),
+                    dia_chi_san: [san, quan, kv.tinh].join(", "),
+                    so_san_mo: soSan, ngay_danh, gio_bat_dau, gio_ket_thuc, so_gio_choi: dur,
+                    gioi_tinh_can: gioiTinhCan,
+                    yeu_cau_trinh_do: { nam: gioiTinhCan === "Nữ" ? [] : namLevels, nu: gioiTinhCan === "Nam" ? [] : nuLevels },
+                    gia_nam, gia_nu,
+                    tien_ich_bao_gom: { san: true, cau: true, nuoc: Math.random() < 0.5, gui_xe: true },
+                    gia_thue_san_1h: giaThue1h, chi_phi_san_co_dinh: giaThue1h * dur * soSan,
+                    loai_cau_su_dung: [{ ten: _rndItem(_CAU_BRANDS) }],
+                    tong_chi_phi_cau: 0, chi_phi_nuoc_khac: 0,
+                    so_nguoi_nam: 0, so_nguoi_nu: 0, chenh_lech_gia: 0, tong_doanh_thu_du_kien: 0,
+                    tong_slot_can: tongSlot,
+                    da_chot_ca: false, yeu_cau_coc: Math.random() < 0.3, scam_warning: false
+                };
+                try { await window.khoDuLieuVinhVien.ghiData("ca_dau", caPayload, null); okCa++; }
+                catch (e) { continue; }
+
+                // FULL → seed đủ tongSlot dòng dat_slot trong 1 request (array bulk insert)
+                if (!isLive) {
+                    const usedNames = new Set(), usedMa = new Set(), rows = [];
+                    for (let k = 0; k < tongSlot; k++) {
+                        const sg = gioiTinhCan === "Nam" ? "male" : gioiTinhCan === "Nữ" ? "female" : (Math.random() > 0.5 ? "male" : "female");
+                        let tenK = _tenVietHoa(sg), g2 = 0;
+                        while (usedNames.has(tenK) && g2++ < 6) tenK = _tenVietHoa(sg);
+                        usedNames.add(tenK);
+                        let ma = "VK-" + _hexS(8); while (usedMa.has(ma)) ma = "VK-" + _hexS(8);
+                        usedMa.add(ma);
+                        rows.push({
+                            id_ca_dau: caId, ten_khach: tenK, sdt_khach: _sdtAoNgauNhien(),
+                            ma_slot: ma, gioi_tinh: sg,
+                            trang_thai_di_danh: "Chờ đánh", thoi_gian_dat: new Date().toISOString()
+                        });
+                    }
+                    try { await window.khoDuLieuVinhVien.ghiData("dat_slot", rows, null); okSlot += rows.length; }
+                    catch (_) { /* batch lỗi → ca vẫn còn (sẽ không full); bỏ qua */ }
+                }
+            }
+
+            window._tkInvalidateCache?.();
+            _prog(`✅ Đã sinh ${okCa} ca (${okSlot} slot ảo).`);
+            window.hienToast("Sinh ca ảo thành công ✅", `Đã tạo ${okCa} ca đấu ảo. Mở trang Tìm Kèo để xem.`, "success");
+        } catch (e) {
+            window.hienToast("Lỗi sinh ca ảo", e.message || "Không rõ", "danger");
+        } finally {
+            window._adminJWT = _savedJWT;   // khôi phục JWT admin
+            _seedAoBusy = false;
+        }
+    };
+
+    window.donDepCaAo = async function () {
+        const ok = window.xacNhanModal
+            ? await window.xacNhanModal("Dọn toàn bộ ca đấu ảo? (ẩn ca + xóa host ảo)", "🧹")
+            : window.confirm("Dọn toàn bộ ca đấu ảo? (ẩn ca + xóa host ảo)");
+        if (!ok) return;
+        const _savedJWT = window._adminJWT;
+        window._adminJWT = null;   // ép anon: anon có UPDATE/DELETE policy cần thiết
+        try {
+            const hosts = await window.dbEngine.doc("nguoi_dung", { eq: { ma_gioi_thieu: "HOST_AO" } });
+            const hostSdts = new Set((hosts || []).map(u => u.sdt_khach));
+            if (hostSdts.size === 0) { window.hienToast("Không có ca ảo", "Không tìm thấy host ảo nào.", "info"); return; }
+            const allCa = await window.dbEngine.doc("ca_dau");
+            const caAo  = (allCa || []).filter(c => hostSdts.has(c.sdt_nguoi_tao));
+            const caIds = new Set(caAo.map(c => c.id));
+            // (1) dat_slot của ca ảo → "Khách hủy" (anon KHÔNG DELETE được ca/slot do RLS → NEUTRALIZE)
+            const allSlot = await window.dbEngine.doc("dat_slot");
+            let nSlot = 0;
+            for (const s of (allSlot || [])) {
+                if (!caIds.has(s.id_ca_dau)) continue;
+                try { await window.dbEngine.ghi("dat_slot", { trang_thai_di_danh: "Khách hủy" }, { id: s.id }); nSlot++; } catch (_) {}
+            }
+            // (2) ca_dau ảo → da_chot_ca=true (ẩn khỏi /tim-keo)
+            let nCa = 0;
+            for (const c of caAo) {
+                try { await window.dbEngine.ghi("ca_dau", { da_chot_ca: true }, { id: c.id }); nCa++; } catch (_) {}
+            }
+            // (3) DELETE host ảo (anon DELETE nguoi_dung được; sdt_nguoi_tao là TEXT, không FK → an toàn)
+            let nHost = 0;
+            for (const sdt of hostSdts) {
+                try { await window.dbEngine.xoa("nguoi_dung", { sdt_khach: sdt }); nHost++; } catch (_) {}
+            }
+            window._tkInvalidateCache?.();
+            _taiDanhSachKhach();
+            window.hienToast("Đã dọn ca ảo ✅", `Ẩn ${nCa} ca, hủy ${nSlot} slot, xóa ${nHost} host ảo.`, "success");
+        } catch (e) {
+            window.hienToast("Lỗi dọn ca ảo", e.message || "Không rõ", "danger");
+        } finally {
+            window._adminJWT = _savedJWT;
+        }
     };
 
     /* ─── Cascade delete một user — xóa toàn bộ dữ liệu liên quan ─── */

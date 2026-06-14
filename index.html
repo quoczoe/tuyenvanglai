@@ -1433,25 +1433,38 @@
             color: var(--gray); max-width: 540px;
             line-height: 1.75; margin: 18px auto 28px;
         }
-        .lp-cta-wrap { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; margin-bottom: 18px; }
+        .lp-cta-wrap { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
+        /* CTA chính "Tìm Kèo Ngay" — to & bứt phá: gradient cyan + glow mạnh */
         .lp-btn-cta {
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 14px 32px; border-radius: 10px;
-            background: #06b6d4; color: #000;
-            font-size: 0.95rem; font-weight: 800; letter-spacing: 0.04em;
+            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+            padding: 18px 42px; border-radius: 12px; min-width: 210px;
+            background: linear-gradient(135deg, #06b6d4 0%, #22d3ee 100%); color: #00131a;
+            font-size: 1.1rem; font-weight: 800; letter-spacing: 0.05em;
             border: none; cursor: pointer; font-family: inherit;
-            box-shadow: 0 0 15px rgba(6,182,212,0.4);
+            box-shadow: 0 6px 22px rgba(6,182,212,0.5), 0 0 0 1px rgba(34,211,238,0.25) inset;
             transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s;
         }
-        .lp-btn-cta:hover { background: #22d3ee; transform: translateY(-2px); box-shadow: 0 0 24px rgba(6,182,212,0.6); }
+        .lp-btn-cta:hover { background: linear-gradient(135deg, #22d3ee 0%, #67e8f9 100%); transform: translateY(-3px); box-shadow: 0 10px 32px rgba(6,182,212,0.7); }
+        .lp-btn-cta:active { transform: translateY(-1px) scale(0.99); }
+        /* Nhịp glow nhẹ thu hút click — tắt khi user tắt animation */
+        @media (prefers-reduced-motion: no-preference) {
+            .lp-btn-cta { animation: lpCtaPulse 2.4s ease-in-out infinite; }
+            @keyframes lpCtaPulse {
+                0%, 100% { box-shadow: 0 6px 22px rgba(6,182,212,0.5), 0 0 0 1px rgba(34,211,238,0.25) inset; }
+                50%      { box-shadow: 0 6px 30px rgba(6,182,212,0.85), 0 0 0 1px rgba(34,211,238,0.4) inset; }
+            }
+            .lp-btn-cta:hover { animation: none; }
+        }
+        /* CTA phụ "Đăng Kèo" — to hơn, viền rõ, nền nhẹ để nổi trên nền tối */
         .lp-btn-sec {
-            display: inline-flex; align-items: center; gap: 7px;
-            padding: 13px 22px; border-radius: 10px;
-            background: transparent; border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; font-size: 0.88rem; font-weight: 600;
+            display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+            padding: 17px 34px; border-radius: 12px; min-width: 180px;
+            background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.32);
+            color: #fff; font-size: 1rem; font-weight: 700; letter-spacing: 0.03em;
             cursor: pointer; font-family: inherit; transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s;
         }
-        .lp-btn-sec:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.35); }
+        .lp-btn-sec:hover { background: rgba(255,255,255,0.12); border-color: rgba(34,211,238,0.6); color: #67e8f9; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+        .lp-btn-sec:active { transform: translateY(0) scale(0.99); }
         .lp-proof {
             font-size: 0.75rem;
             display: flex; align-items: center; gap: 8px;
@@ -3321,7 +3334,7 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="ket-noi-supabase.js?v=20260610d"></script>
 <script src="bo-may-du-lieu.js?v=20260612h"></script>
 <script src="hieu-ung-giao-dien.js?v=20260612a"></script>
-<script src="phan-he-khach-choi.js?v=20260615a"></script>
+<script src="phan-he-khach-choi.js?v=20260615b"></script>
 <script src="phan-he-host.js?v=20260614b"></script>
 <script src="phan-he-thong-bao.js?v=20260612k"></script>
 <script src="phan-he-ung-dung.js?v=20260615a"></script>

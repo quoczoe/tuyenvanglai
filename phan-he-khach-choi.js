@@ -364,6 +364,14 @@
         return s.slice(0, 3) + "XXXX" + s.slice(-3);
     }
 
+    // Mask kiểu "096***600" (che 3 số giữa) — dùng cho host ẢO (vai_tro='host_ao'):
+    // hiển thị tĩnh, KHÔNG có nút reveal, không lộ số đầy đủ (tránh gọi nhầm người lạ).
+    function _maskSdtGiua(sdt) {
+        const s = (sdt || "").replace(/\D/g, "");
+        if (s.length < 6) return "Ẩn danh";
+        return s.slice(0, 3) + "***" + s.slice(-3);
+    }
+
     // HTML chip SĐT host có nút reveal — scopeId = ca_dau_id để tránh trùng DOM id
     // Mỗi card có scopeId riêng → bấm mắt ở card nào chỉ reveal đúng card đó
     function _sdtChipHtml(sdt, sdtEsc, scopeId) {
@@ -1544,6 +1552,12 @@
                 }).catch(() => [])
             ]);
             const user = userRows[0] || {};
+            // Chặn xem hồ sơ tài khoản ẢO (host ảo) — phòng thủ kể cả khi gọi trực tiếp
+            if (user.ma_gioi_thieu === "HOST_AO") {
+                modal.classList.add("hidden"); modal.style.display = "none"; document.body.style.overflow = "";
+                window.hienToast?.("Tài khoản hệ thống", "Không thể xem hồ sơ tài khoản này.", "info");
+                return;
+            }
             const tenHien = (user.ten_khach || ten || "Ẩn danh").toUpperCase();
             const sdtReal = user.sdt_khach || sdt;
             // Chỉ hiện SĐT đầy đủ nếu user đã bấm reveal ngoài card
@@ -1764,7 +1778,7 @@
                     // so_sao_tb/ma_key_host KHÔNG có trong schema nguoi_dung thật → bỏ để tránh
                     // lỗi 400 mỗi lần tìm + 1 round-trip fallback select=*. Ranking đã null-guard
                     // (?? 0) nên không ảnh hưởng kết quả.
-                    window.dbEngine.doc("nguoi_dung", { select: "sdt_khach,ten_khach,diem_uy_tin" })
+                    window.dbEngine.doc("nguoi_dung", { select: "sdt_khach,ten_khach,diem_uy_tin,ma_gioi_thieu" })
                         .catch(() => [])
                 ]);
                 if (_mySeq !== _tkSeq) return;  // đã có lần tìm mới hơn → bỏ kết quả cũ
@@ -1777,11 +1791,13 @@
                 if (k.ma_key) hostMap[k.ma_key] = { ten: k.ten_host || "", sdt: k.sdt_host || "" };
             });
             allUsers.forEach(u => {
+                const _ao = u.ma_gioi_thieu === "HOST_AO";   // host ẢO (ca đấu seed) → khóa tương tác hồ sơ/SĐT
                 if (u.sdt_khach && !hostMap[u.sdt_khach]) {
-                    hostMap[u.sdt_khach] = { ten: u.ten_khach || "", sdt: u.sdt_khach || "", trust: u.diem_uy_tin ?? 100 };
+                    hostMap[u.sdt_khach] = { ten: u.ten_khach || "", sdt: u.sdt_khach || "", trust: u.diem_uy_tin ?? 100, virtual: _ao };
                 } else if (u.sdt_khach && hostMap[u.sdt_khach]) {
                     // Bổ sung trust score cho key từ quan_ly_key
                     hostMap[u.sdt_khach].trust = u.diem_uy_tin ?? 100;
+                    hostMap[u.sdt_khach].virtual = _ao;
                 }
             });
 
@@ -2132,20 +2148,37 @@
                     : _trust >= 60
                     ? `<span style="display:inline-flex;align-items:center;gap:3px;font-size:0.6rem;padding:2px 7px;border-radius:9999px;background:rgba(251,191,36,0.12);border:1px solid rgba(251,191,36,0.35);color:#fbbf24;font-weight:700;margin-left:5px;white-space:nowrap;">⚠ CẢNH CÁO</span>`
                     : `<span style="display:inline-flex;align-items:center;gap:3px;font-size:0.6rem;padding:2px 7px;border-radius:9999px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.35);color:#f97316;font-weight:700;margin-left:5px;white-space:nowrap;">● RỦI RO</span>`;
-                return `<div class="slot-host-banner" onclick="event.stopPropagation()">
-                    <span class="shb-name-chip"
+                // Host ẢO (vai_tro='host_ao'): NGẮT click xem hồ sơ + SĐT che giữa tĩnh (không reveal)
+                const _virtual = !!hostInfo.virtual;
+                const _nameChip = _virtual
+                    ? `<span class="shb-name-chip" title="Tài khoản hệ thống" style="cursor:default;">
+                        <i class="fa-solid fa-crown" style="color:#fbbf24;font-size:0.75em;flex-shrink:0;"></i>
+                        <span class="shb-label">HOST:</span>
+                        <span class="shb-name">${_ten.toUpperCase() || "ẨN DANH"}</span>${_trustBadge}
+                       </span>`
+                    : `<span class="shb-name-chip"
                           onclick="window.xemHoSoNguoiDang('${_sdtEsc}','${_tenEsc}','${slot.id}');event.stopPropagation()"
                           title="Xem hồ sơ & đánh giá host">
                         <i class="fa-solid fa-crown" style="color:#fbbf24;font-size:0.75em;flex-shrink:0;"></i>
                         <span class="shb-label">HOST:</span>
                         <span class="shb-name">${_ten.toUpperCase() || "ẨN DANH"}</span>${_trustBadge}
-                    </span>
-                    ${_sdt ? `<span class="shb-divider">|</span>
+                       </span>`;
+                const _phoneChip = !_sdt ? "" : (_virtual
+                    ? `<span class="shb-divider">|</span>
+                    <span class="shb-phone-chip" title="Số điện thoại đã ẩn" style="cursor:default;">
+                        <i class="fa-solid fa-phone" style="color:#FF5500;font-size:0.75em;flex-shrink:0;"></i>
+                        <span class="shb-label">SĐT:</span>
+                        <span class="shb-sdt">${_maskSdtGiua(_sdt)}</span>
+                    </span>`
+                    : `<span class="shb-divider">|</span>
                     <span class="shb-phone-chip" onclick="event.stopPropagation();(function(el){var btn=el.querySelector('.shb-reveal-btn');if(btn)btn.click();})(this)" title="Bấm để xem SĐT" style="cursor:pointer;">
                         <i class="fa-solid fa-phone" style="color:#FF5500;font-size:0.75em;flex-shrink:0;"></i>
                         <span class="shb-label">SĐT:</span>
                         ${_sdtChipHtml(_sdt, _sdtEsc, slot.id)}
-                    </span>` : ""}
+                    </span>`);
+                return `<div class="slot-host-banner" onclick="event.stopPropagation()">
+                    ${_nameChip}
+                    ${_phoneChip}
                 </div>`;
             })() : `<div class="slot-host-spacer" aria-hidden="true"></div>`}
 
@@ -4577,6 +4610,12 @@ Bạn kiểm tra & xác nhận giúp mình với nhé. Cảm ơn bạn nhiều! 
             ]);
 
             const user       = userList[0];
+            // Chặn xem hồ sơ công khai của tài khoản ẢO (host ảo)
+            if (user?.ma_gioi_thieu === "HOST_AO") {
+                overlay.style.display = "none";
+                window.hienToast?.("Tài khoản hệ thống", "Không thể xem hồ sơ tài khoản này.", "info");
+                return;
+            }
             const isHost     = user?.vai_tro === "host";
             const tenHienThi = (user?.ten_khach || sdt).toUpperCase();
             const joinDate   = user?.ngay_tham_gia
