@@ -1770,17 +1770,22 @@
             } else {
                 container.innerHTML = Array.from({ length: 6 })
                     .map(() => `<div class="tvl-skel tvl-skel-card"></div>`).join("");
-                [allCaDau, allDatSlot, allKeys, allUsers] = await Promise.all([
-                    window.dbEngine.doc("ca_dau"),
-                    window.dbEngine.doc("dat_slot").catch(() => []),
+                // ⚠ Supabase role anon có TRẦN CỨNG 1000 dòng/lần đọc (db-max-rows) → KHÔNG thể
+                // vượt bằng limit. Đọc nguyên bảng dat_slot sẽ chỉ trả 1000 dòng CŨ NHẤT → ca mới
+                // (gồm ca ảo) bị đếm thiếu slot → hiện "0 người"/không full. Khắc phục: chỉ tải slot
+                // của các CA CÒN HIỆU LỰC (chưa chốt/không đóng băng) qua bộ lọc IN → kết quả nhỏ < 1000,
+                // tự loại slot rác của ca đã neutralize.
+                [allCaDau, allKeys, allUsers] = await Promise.all([
+                    window.dbEngine.doc("ca_dau", { limit: 10000 }),
                     window.dbEngine.doc("quan_ly_key").catch(() => []),
                     // Chỉ lấy cột công khai CHẮC CHẮN tồn tại (loại mat_khau_hash + PII).
-                    // so_sao_tb/ma_key_host KHÔNG có trong schema nguoi_dung thật → bỏ để tránh
-                    // lỗi 400 mỗi lần tìm + 1 round-trip fallback select=*. Ranking đã null-guard
-                    // (?? 0) nên không ảnh hưởng kết quả.
                     window.dbEngine.doc("nguoi_dung", { select: "sdt_khach,ten_khach,diem_uy_tin,ma_gioi_thieu" })
                         .catch(() => [])
                 ]);
+                const _activeCaIds = (allCaDau || []).filter(c => !c.da_chot_ca && !c.is_frozen).map(c => c.id);
+                allDatSlot = _activeCaIds.length
+                    ? await window.dbEngine.doc("dat_slot", { in: { id_ca_dau: _activeCaIds }, limit: 10000 }).catch(() => [])
+                    : [];
                 if (_mySeq !== _tkSeq) return;  // đã có lần tìm mới hơn → bỏ kết quả cũ
                 _tkCache = { allCaDau, allDatSlot, allKeys, allUsers };
                 _tkCacheTs = Date.now();

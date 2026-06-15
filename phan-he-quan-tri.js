@@ -1777,10 +1777,17 @@
                 try { await window.khoDuLieuVinhVien.ghiData("ca_dau", caPayload, null); okCa++; }
                 catch (e) { continue; }
 
-                // FULL → seed đủ tongSlot dòng dat_slot trong 1 request (array bulk insert)
-                if (!isLive) {
+                // Số slot cần seed: FULL = đủ tong_slot_can; LIVE = một phần (≥ nửa, < full)
+                // → ca "Đang diễn ra" LUÔN có người tham gia, không bao giờ 0; vẫn không full để giữ nhãn LIVE.
+                let slotCount = tongSlot;
+                if (isLive) {
+                    const _lo = Math.max(2, Math.ceil(tongSlot * 0.5));
+                    const _hi = Math.max(_lo, tongSlot - 1);
+                    slotCount = _rndIntS(_lo, _hi);
+                }
+                if (slotCount > 0) {
                     const usedNames = new Set(), usedMa = new Set(), rows = [];
-                    for (let k = 0; k < tongSlot; k++) {
+                    for (let k = 0; k < slotCount; k++) {
                         const sg = gioiTinhCan === "Nam" ? "male" : gioiTinhCan === "Nữ" ? "female" : (Math.random() > 0.5 ? "male" : "female");
                         let tenK = _tenVietHoa(sg), g2 = 0;
                         while (usedNames.has(tenK) && g2++ < 6) tenK = _tenVietHoa(sg);
@@ -1821,11 +1828,11 @@
             const hosts = await window.dbEngine.doc("nguoi_dung", { eq: { ma_gioi_thieu: "HOST_AO" } });
             const hostSdts = new Set((hosts || []).map(u => u.sdt_khach));
             if (hostSdts.size === 0) { window.hienToast("Không có ca ảo", "Không tìm thấy host ảo nào.", "info"); return; }
-            const allCa = await window.dbEngine.doc("ca_dau");
+            const allCa = await window.dbEngine.doc("ca_dau", { limit: 10000 });
             const caAo  = (allCa || []).filter(c => hostSdts.has(c.sdt_nguoi_tao));
             const caIds = new Set(caAo.map(c => c.id));
             // (1) dat_slot của ca ảo → "Khách hủy" (anon KHÔNG DELETE được ca/slot do RLS → NEUTRALIZE)
-            const allSlot = await window.dbEngine.doc("dat_slot");
+            const allSlot = await window.dbEngine.doc("dat_slot", { limit: 10000 });
             let nSlot = 0;
             for (const s of (allSlot || [])) {
                 if (!caIds.has(s.id_ca_dau)) continue;
