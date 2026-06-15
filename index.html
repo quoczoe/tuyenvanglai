@@ -1157,6 +1157,19 @@
         .tk-pill:hover { border-color: rgba(255,85,0,0.5); color: var(--accent); }
         .tk-pill.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; }
 
+        /* Toggle "Ca của tôi đăng" — pill tối đồng bộ bộ lọc, sáng accent khi bật */
+        .tk-mycas-toggle {
+            display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;
+            padding: 8px 12px; border-radius: 8px;
+            border: 1px solid var(--border); background: rgba(255,255,255,0.04);
+            transition: border-color 0.18s, background-color 0.18s;
+        }
+        .tk-mycas-toggle:hover { border-color: rgba(255,85,0,0.5); }
+        .tk-mycas-toggle input { width: 16px; height: 16px; margin: 0; flex-shrink: 0; cursor: pointer; accent-color: var(--accent); }
+        .tk-mycas-toggle span { font-size: 0.8rem; font-weight: 600; color: var(--text); display: inline-flex; align-items: center; gap: 6px; }
+        .tk-mycas-toggle span i { color: var(--accent); font-size: 0.85em; }
+        .tk-mycas-toggle:has(input:checked) { border-color: var(--accent); background: rgba(255,85,0,0.12); }
+
         .tk-btn-primary {
             display: flex; align-items: center; justify-content: center; gap: 6px;
             width: 100%; padding: 11px; border-radius: 100px; border: none; cursor: pointer;
@@ -2413,6 +2426,21 @@
                                oninput="window.timKiemCaDau && window.timKiemCaDau()">
                     </div>
 
+                    <div class="tk-filter-group">
+                        <label class="tk-filter-label">Host / SĐT người đăng</label>
+                        <input type="text" id="filterHost" class="tk-input"
+                               placeholder="Tên host hoặc SĐT..."
+                               oninput="window.timKiemCaDau && window.timKiemCaDau()">
+                    </div>
+
+                    <div class="tk-filter-group" id="filterMyCasGroup" style="display:none;">
+                        <label class="tk-mycas-toggle">
+                            <input type="checkbox" id="filterMyCas"
+                                   onchange="window.timKiemCaDau && window.timKiemCaDau()">
+                            <span><i class="fa-solid fa-user-check"></i> Ca của tôi đăng</span>
+                        </label>
+                    </div>
+
                     <div style="margin-top:14px;">
                         <button class="tk-btn-secondary"
                                 onclick="window.xoaBoLoc && window.xoaBoLoc()">
@@ -2512,6 +2540,21 @@
                 <label class="tk-filter-label">Tên sân</label>
                 <input type="text" id="filterCourtNameDrawer" class="tk-input"
                        placeholder="Tìm theo tên sân...">
+            </div>
+
+            <!-- Host / SĐT người đăng -->
+            <div class="tk-filter-group">
+                <label class="tk-filter-label">Host / SĐT người đăng</label>
+                <input type="text" id="filterHostDrawer" class="tk-input"
+                       placeholder="Tên host hoặc SĐT...">
+            </div>
+
+            <!-- Ca của tôi đăng (chỉ khi đã đăng nhập) -->
+            <div class="tk-filter-group" id="filterMyCasGroupDrawer" style="display:none;">
+                <label class="tk-mycas-toggle">
+                    <input type="checkbox" id="filterMyCasDrawer">
+                    <span><i class="fa-solid fa-user-check"></i> Ca của tôi đăng</span>
+                </label>
             </div>
 
             <div class="tk-drawer-actions">
@@ -3334,7 +3377,7 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="ket-noi-supabase.js?v=20260610d"></script>
 <script src="bo-may-du-lieu.js?v=20260612h"></script>
 <script src="hieu-ung-giao-dien.js?v=20260612a"></script>
-<script src="phan-he-khach-choi.js?v=20260615d"></script>
+<script src="phan-he-khach-choi.js?v=20260615e"></script>
 <script src="phan-he-host.js?v=20260614b"></script>
 <script src="phan-he-thong-bao.js?v=20260612k"></script>
 <script src="phan-he-ung-dung.js?v=20260615a"></script>

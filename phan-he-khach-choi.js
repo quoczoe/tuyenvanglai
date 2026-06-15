@@ -44,7 +44,23 @@
         ["filterTimeFrom",  "filterTimeFromMobile"],
         ["filterTimeTo",    "filterTimeToMobile"],
         ["filterCourtName", "filterCourtNameDrawer"],
+        ["filterHost",      "filterHostDrawer"],
     ];
+
+    // Hiện/ẩn nút lọc "Ca của tôi đăng" theo trạng thái đăng nhập (chỉ khả dụng khi đã login)
+    window._capNhatBoLocCaNhan = function () {
+        const logged = !!window.currentGuest?.sdt_khach;
+        ["filterMyCasGroup", "filterMyCasGroupDrawer"].forEach(id => {
+            const g = document.getElementById(id);
+            if (g) g.style.display = logged ? "" : "none";
+        });
+        if (!logged) {
+            ["filterMyCas", "filterMyCasDrawer"].forEach(id => {
+                const c = document.getElementById(id);
+                if (c) c.checked = false;
+            });
+        }
+    };
 
     /* ═══════════════════════════════════════════════════
      * 1. KHỞI TẠO TRANG KHÁCH
@@ -1356,6 +1372,10 @@
             const el = document.getElementById(moId);
             if (el) el.value = document.getElementById(pcId)?.value || "";
         });
+        // Đồng bộ toggle "Ca của tôi đăng" PC → drawer + cập nhật hiển thị theo login
+        window._capNhatBoLocCaNhan && window._capNhatBoLocCaNhan();
+        const _mc = document.getElementById("filterMyCas"), _mcd = document.getElementById("filterMyCasDrawer");
+        if (_mc && _mcd) _mcd.checked = _mc.checked;
 
         // Pre-fill mobile gender pills từ PC hidden select
         const curGender = document.getElementById("filterGender")?.value || "";
@@ -1399,6 +1419,9 @@
             const pcEl = document.getElementById(pcId);
             if (pcEl) pcEl.value = document.getElementById(moId)?.value || "";
         });
+        // Sync toggle "Ca của tôi đăng" drawer → PC
+        const _mc = document.getElementById("filterMyCas"), _mcd = document.getElementById("filterMyCasDrawer");
+        if (_mc && _mcd) _mc.checked = _mcd.checked;
 
         // Sync mobile gender pill → PC hidden select + PC gender pills
         const activeMobileGender = document.querySelector("#filterGenderPillsMobile .tk-pill.active")?.dataset.value || "";
@@ -1711,9 +1734,15 @@
     window.xoaBoLoc = function () {
         // Reset tất cả input/select
         ["filterProvince","filterDistrict","filterGender","filterLevel",
-         "filterDate","filterCourtName","filterTimeFrom","filterTimeTo"].forEach(id => {
+         "filterDate","filterCourtName","filterTimeFrom","filterTimeTo",
+         "filterHost","filterHostDrawer"].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = "";
+        });
+        // Reset toggle "Ca của tôi đăng" (cả PC + mobile)
+        ["filterMyCas","filterMyCasDrawer"].forEach(id => {
+            const c = document.getElementById(id);
+            if (c) c.checked = false;
         });
         // Cập nhật dropdown quận/huyện theo tỉnh đã xóa
         _capNhatHuyenBoLoc("", "filterDistrict");
@@ -1760,6 +1789,12 @@
         const filterDate = document.getElementById("filterDate")?.value || "";
         const timeFrom   = document.getElementById("filterTimeFrom")?.value || "";
         const timeTo     = document.getElementById("filterTimeTo")?.value || "";
+        // Tìm theo Host (tên/SĐT người đăng) + lọc nhanh "Ca của tôi đăng"
+        const hostQuery  = document.getElementById("filterHost")?.value?.trim() || "";
+        const myOnly     = !!(document.getElementById("filterMyCas")?.checked
+                           || document.getElementById("filterMyCasDrawer")?.checked);
+        // Cập nhật hiển thị nút "Ca của tôi đăng" theo trạng thái đăng nhập
+        window._capNhatBoLocCaNhan && window._capNhatBoLocCaNhan();
 
         try {
             // C1: cache nền 4 bảng — tránh tải lại toàn bộ mỗi keystroke (lọc đều ở client).
@@ -1848,6 +1883,10 @@
 
             // Court name đã chuẩn hóa accent cho lần so sánh
             const normCourtQuery = _rmAccent(courtName);
+            // Host query: chuẩn hóa tên (accent-insensitive) + tách phần số để khớp SĐT 1 phần
+            const normHostQuery  = _rmAccent(hostQuery);
+            const hostDigits     = hostQuery.replace(/\D/g, "");
+            const myCaSdt        = window.currentGuest?.sdt_khach || "";
 
             let results = allCaDau.filter(s => {
                 // Chỉ hiện ca chưa chốt
@@ -1859,6 +1898,20 @@
                 // Ẩn ca đã qua giờ kết thúc — SSOT (xử ca qua nửa đêm 22:00–00:00)
                 const _endTs = window.thoiDiemKetThucCa?.(s.ngay_danh, s.gio_bat_dau, s.gio_ket_thuc);
                 if (_endTs != null && now.getTime() > _endTs) return false;
+
+                // "Ca của tôi đăng" — chỉ ca do tài khoản hiện tại tạo
+                if (myOnly) {
+                    if (!myCaSdt || s.sdt_nguoi_tao !== myCaSdt) return false;
+                }
+                // Lọc Host (tên HOẶC SĐT người đăng) — không phân biệt hoa/thường, khớp 1 phần
+                if (hostQuery) {
+                    const _h    = hostMap[s.ma_key_host] || hostMap[s.sdt_nguoi_tao] || null;
+                    const _hTen = _rmAccent(_h?.ten || "");
+                    const _hSdt = ((_h?.sdt || s.sdt_nguoi_tao) || "").replace(/\D/g, "");
+                    const _okTen = normHostQuery && _hTen.includes(normHostQuery);
+                    const _okSdt = hostDigits && _hSdt.includes(hostDigits);
+                    if (!_okTen && !_okSdt) return false;
+                }
 
                 // Lọc tỉnh thành
                 if (province && s.tinh_thanh !== province) return false;
