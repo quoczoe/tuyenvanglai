@@ -1712,18 +1712,24 @@
                 const host = _rndItem(hostPool);
 
                 const gioiTinhCan = _rndItem(["Nam", "Nữ", "Cả hai"]);
-                // Dải trình độ theo CỤM tự nhiên: BẮT ĐẦU từ ĐÁY band (NEWBIE/YẾU-/TBY-/TB-),
-                // liền kề 2–4 cấp. KHÔNG bắt đầu từ cấp "+" (tránh "yếu+, tby-, tby..."),
-                // KHÔNG chạm "TB KHÁ"/"KHÁ" (bán chuyên). LV đã = NEWBIE..TB+ (index 0..9).
-                const _TOP    = LV.length - 1;                 // 9 = TB+ (đã loại KHÁ/bán chuyên qua slice(0,10))
-                const _STARTS = [0, 1, 4, 7];                  // NEWBIE, YẾU-, TBY-, TB-
-                const _cumTrinhDo = base => LV.slice(base, base + _rndIntS(2, Math.min(4, _TOP - base + 1)));
-                const baseNam = _rndItem(_STARTS);
-                const namLevels = _cumTrinhDo(baseNam);
-                const baseNu  = _rndItem(_STARTS.filter(s => s <= baseNam));   // nữ band ≤ nam band
-                const nuLevels  = _cumTrinhDo(baseNu);
+                // Dải trình độ RỘNG & tự nhiên: [startIdx,endIdx] trong LV=NEWBIE..TB+ (0..9).
+                // Luôn bắt đầu từ ĐÁY band (0/1/4/7), trải ≥2 band (NEWBIE→YẾU, NEWBIE→TBY,
+                // YẾU→TB...), KHÔNG quanh quẩn 1 band, KHÔNG chạm TB KHÁ/KHÁ (bán chuyên).
+                const _DAI = [
+                    [0, 2], [0, 3],          // NEWBIE→YẾU / YẾU+  (trình THẤP → giá rẻ)
+                    [0, 4], [0, 5], [1, 5], [1, 6],   // NEWBIE/YẾU → TBY (trình TB-yếu → giá vừa)
+                    [1, 8], [4, 8], [4, 9], [7, 9]    // YẾU/TBY/TB → TB+ (trình CAO → giá cao)
+                ];
+                const namRange = _rndItem(_DAI);
+                const nuRange  = _rndItem(_DAI.filter(r => r[1] <= namRange[1]));  // nữ trần ≤ nam trần
+                const namLevels = LV.slice(namRange[0], namRange[1] + 1);
+                const nuLevels  = LV.slice(nuRange[0],  nuRange[1]  + 1);
 
-                const giaNamK = _rndIntS(10, 17) * 5;               // 50..85 (bước 5K)
+                // GIÁ tỷ lệ thuận TRẦN trình độ (topIdx): thấp→rẻ, cao→đắt (loại ca trình thấp giá cao)
+                const topIdx = (gioiTinhCan === "Nữ" ? nuRange[1] : namRange[1]);
+                const giaNamK = topIdx <= 3 ? _rndItem([50, 55, 60])          // NEWBIE..YẾU+
+                              : topIdx <= 6 ? _rndItem([60, 65, 70])          // TBY-..TBY+
+                              :               _rndItem([70, 75, 80, 85]);     // TB-..TB+
                 const giaNuK  = Math.max(50, giaNamK - _rndItem([5, 10]));
                 const gia_nam = gioiTinhCan === "Nữ"  ? 0 : giaNamK * 1000;
                 const gia_nu  = gioiTinhCan === "Nam" ? 0 : giaNuK * 1000;

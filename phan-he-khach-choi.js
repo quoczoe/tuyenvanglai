@@ -364,12 +364,13 @@
         return s.slice(0, 3) + "XXXX" + s.slice(-3);
     }
 
-    // Mask kiểu "096***600" (che 3 số giữa) — dùng cho host ẢO (vai_tro='host_ao'):
-    // hiển thị tĩnh, KHÔNG có nút reveal, không lộ số đầy đủ (tránh gọi nhầm người lạ).
+    // Mask SĐT host ẢO — ĐỒNG BỘ ĐỊNH DẠNG với ca thật (_maskSdt): "096XXXX600".
+    // Dùng "XXXX" giống hệt ca thật để khách KHÔNG phân biệt được ca ảo qua ký tự che.
+    // Hiển thị tĩnh, KHÔNG nút reveal (tránh lộ số/gọi nhầm người lạ).
     function _maskSdtGiua(sdt) {
         const s = (sdt || "").replace(/\D/g, "");
         if (s.length < 6) return "Ẩn danh";
-        return s.slice(0, 3) + "***" + s.slice(-3);
+        return s.slice(0, 3) + "XXXX" + s.slice(-3);
     }
 
     // HTML chip SĐT host có nút reveal — scopeId = ca_dau_id để tránh trùng DOM id
@@ -4630,8 +4631,8 @@ Bạn kiểm tra & xác nhận giúp mình với nhé. Cảm ơn bạn nhiều! 
             const caDauMap = {};
             allCaDau.forEach(c => { caDauMap[c.id] = c; });
 
-            // Hàm ẩn số điện thoại
-            const _maskPhone = (p) => p ? p.slice(0, 3) + "***" + p.slice(-3) : "Ẩn danh";
+            // Hàm ẩn số điện thoại — ĐỒNG BỘ "XXXX" với toàn hệ thống (_maskSdt/_maskSdtGiua)
+            const _maskPhone = (p) => p ? p.slice(0, 3) + "XXXX" + p.slice(-3) : "Ẩn danh";
 
             // Tải tên người viết đánh giá (reviewer names)
             let reviewerMap = {};
