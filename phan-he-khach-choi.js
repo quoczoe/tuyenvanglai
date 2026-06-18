@@ -2089,14 +2089,18 @@
         };
         const ICON_NAM = '<span style="color:#60a5fa;font-style:normal;flex-shrink:0;">&#9794;</span>';
         const ICON_NU  = '<span style="color:#f472b6;font-style:normal;flex-shrink:0;">&#9792;</span>';
+        const _LST = "display:flex;align-items:center;gap:4px;flex-wrap:wrap;";
+        // Dòng GIỮ CHỖ vô hình — cao đúng bằng 1 dòng trình độ thật (1 pill + 1 note) →
+        // ca chỉ Nam/chỉ Nữ vẫn chiếm 2 dòng như "Cả hai" → khung TRÌNH ĐỘ CỐ ĐỊNH, card thẳng hàng.
+        const _spacerLine = `<span class="kh-trinh-do-line kh-trinh-do-line--spacer" aria-hidden="true" style="${_LST}margin-top:3px;visibility:hidden;">${ICON_NAM} <span class="kh-level-pill">--</span><span class="kh-level-note kh-level-note--empty"></span></span>`;
         let levelHTML = "";
         if (slot.gioi_tinh_can === "Cả hai") {
-            levelHTML = `<span class="kh-trinh-do-line" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">${ICON_NAM} ${_pills(mArr)}</span>`
-                      + `<span class="kh-trinh-do-line" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-top:3px;">${ICON_NU} ${_pills(fArr)}</span>`;
+            levelHTML = `<span class="kh-trinh-do-line" style="${_LST}">${ICON_NAM} ${_pills(mArr)}</span>`
+                      + `<span class="kh-trinh-do-line" style="${_LST}margin-top:3px;">${ICON_NU} ${_pills(fArr)}</span>`;
         } else if (slot.gioi_tinh_can === "Nữ") {
-            levelHTML = `<span class="kh-trinh-do-line" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">${ICON_NU} ${_pills(fArr)}</span>`;
+            levelHTML = `<span class="kh-trinh-do-line" style="${_LST}">${ICON_NU} ${_pills(fArr)}</span>` + _spacerLine;
         } else {
-            levelHTML = `<span class="kh-trinh-do-line" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">${ICON_NAM} ${_pills(mArr)}</span>`;
+            levelHTML = `<span class="kh-trinh-do-line" style="${_LST}">${ICON_NAM} ${_pills(mArr)}</span>` + _spacerLine;
         }
 
         // Tiện ích từ JSONB tien_ich_bao_gom
