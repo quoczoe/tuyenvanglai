@@ -2079,11 +2079,12 @@
             const moreBadge = duCount > 0
                 ? `<span class="kh-level-pill kh-level-more" title="Còn: ${stdLabels.slice(CAP).join(", ")}" onclick="event.stopPropagation();window.moModalChiTietKeo('${slot.id}')">+${duCount}</span>`
                 : "";
-            // Ghi chú trình độ (free text host nhập) — TRUNCATE 1 dòng + tooltip + escape XSS
-            // (trước đây render full → card cao bất thường, phá equal-height).
+            // Ghi chú trình độ (free text host nhập) — TRUNCATE 1 dòng + tooltip + escape XSS.
+            // LUÔN render span (rỗng khi không có ghi chú) để GIỮ CHỖ 1 dòng cố định
+            // → các card "Cả hai" thẳng hàng dù ca có/không có ghi chú trình độ.
             const noteHtml = free
                 ? `<span class="kh-level-note" title="${_escLsut(free)}">${_escLsut(free)}</span>`
-                : "";
+                : `<span class="kh-level-note kh-level-note--empty" aria-hidden="true"></span>`;
             return shown + moreBadge + noteHtml;
         };
         const ICON_NAM = '<span style="color:#60a5fa;font-style:normal;flex-shrink:0;">&#9794;</span>';

@@ -3007,9 +3007,14 @@ body::before {
     white-space: nowrap;
     font-style: italic;
     font-size: 0.65rem;
+    line-height: 1.4;
     color: #64748b;
     margin-top: 1px;
+    /* GIỮ CHỖ 1 dòng cố định kể cả khi rỗng → card cùng cấu hình giới tính thẳng hàng */
+    min-height: 15px;
 }
+/* Ghi chú rỗng: vẫn chiếm 1 dòng nhưng vô hình */
+.slot-card-body .kh-level-note--empty { visibility: hidden; }
 
 /* Badge "+N" pills trình độ (PHẦN 2B) — bấm xem hết trong Chi Tiết */
 .kh-level-more {
