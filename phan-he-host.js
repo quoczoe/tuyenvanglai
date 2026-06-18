@@ -249,7 +249,7 @@
         window.shuttlecocksList = [];
         const ctr = document.getElementById("shuttlecockListContainer");
         if (ctr) ctr.innerHTML = "";
-        _themHangCauMoi("Hải Yến", "12", 300000, 12);
+        _themHangCauMoi("", "12", 300000, 12);   // TÊN CẦU để trống — host tự nhập loại cầu thực tế
 
         _tinhThoiGian();
         await _taiLichSuCaDau();
@@ -1380,7 +1380,7 @@
         window.shuttlecocksList = [];
         const ctr = document.getElementById("shuttlecockListContainer");
         if (ctr) ctr.innerHTML = "";
-        _themHangCauMoi("Hải Yến", "12", 300000, 12);
+        _themHangCauMoi("", "12", 300000, 12);   // TÊN CẦU để trống — host tự nhập loại cầu thực tế
 
         const genderMale = document.getElementById("genderMale");
         if (genderMale) { genderMale.checked = true; }
@@ -1825,6 +1825,8 @@
             if (slot.da_chot_ca) { window.hienToast("Đã chốt", "Không thể sửa ca đã chốt.", "danger"); window._dongModalSuaCa(); return; }
 
             const _esc = s => { const d = document.createElement("div"); d.textContent = s == null ? "" : String(s); return d.innerHTML; };
+            // Escape an toàn cho thuộc tính HTML (value="...") — che cả dấu nháy
+            const _escAttr = s => String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
             // K-field (DB lưu đồng → hiện K = /1000; lưu lại ×1000)
             const fldK = (id, valDong, label, ph) =>
                 `<div class="msc-field"><label class="msc-field-label">${label}</label>
@@ -1862,7 +1864,8 @@
             const cauList = Array.isArray(slot.loai_cau_su_dung) ? slot.loai_cau_su_dung : [];
             const cauRows = cauList.map((c, i) =>
                 `<div style="display:grid;grid-template-columns:1fr 78px 92px;gap:8px;align-items:end;margin-bottom:8px;">
-                    <span style="font-size:0.8rem;color:#e2e8f0;align-self:center;">${_esc(c.ten || "Cầu " + (i+1))}</span>
+                    <div><label style="font-size:0.68rem;color:#64748b;">Tên cầu</label>
+                        <input type="text" id="msc_cau_ten_${i}" value="${_escAttr(c.ten || "")}" placeholder="vd: Hải Yến, Vina..." class="msc-input" style="padding:5px 8px;font-size:0.82rem;" autocomplete="off"></div>
                     <div><label style="font-size:0.68rem;color:#64748b;">Số lượng</label>
                         <input type="number" id="msc_cau_sl_${i}" value="${c.so_luong||0}" min="0" class="msc-input" style="padding:5px 8px;font-size:0.82rem;"></div>
                     <div><label style="font-size:0.68rem;color:#64748b;">Giá/ống (K đồng)</label>
@@ -1945,9 +1948,11 @@
             for (let i = 0; i < cauCount; i++) {
                 const sl  = num(`msc_cau_sl_${i}`);
                 const gia = num(`msc_cau_gia_${i}`, 1000); // input K → đồng
+                const ten = (g(`msc_cau_ten_${i}`) || "").trim(); // tên cầu host sửa được (có thể để trống → "Chưa rõ")
                 const orig = originalCau[i] || {};
                 cauListUp.push({
                     ...orig,
+                    ten,                                   // ghi đè tên cầu mới từ ô nhập
                     so_luong: sl,
                     gia_ong: gia,
                     gia_qua: orig.loai ? Math.round(gia / (orig.loai || 12)) : 0,

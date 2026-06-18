@@ -2913,12 +2913,12 @@
                 (Array.isArray(s.loai_cau_su_dung) ? s.loai_cau_su_dung : [])
                     .map(c => (c.ten || "").trim()).filter(Boolean)
             )];
-            const cauNamesHTML = cauNames.length > 0
-                ? `<div class="kmd-row" style="margin-bottom:8px;">
+            // Host bỏ trống tên cầu → hiển thị "Chưa rõ" (luôn hiện hàng LOẠI CẦU cho chuyên nghiệp)
+            const _cauDisplay = cauNames.length > 0 ? cauNames.join(", ") : "Chưa rõ";
+            const cauNamesHTML = `<div class="kmd-row" style="margin-bottom:8px;">
                     <span class="kmd-lbl">LOẠI CẦU:</span>
-                    <span class="kmd-val" style="color:#fbbf24;text-transform:uppercase;">${cauNames.join(", ")}</span>
-                   </div>`
-                : "";
+                    <span class="kmd-val" style="color:#fbbf24;text-transform:uppercase;">${_cauDisplay}</span>
+                   </div>`;
 
             // ── PHÂN QUYỀN HIỂN THỊ MÃ ĐẶT SLOT (chống lấy mã người khác đi phá) ──
             //  • Host (chủ ca = sdt_nguoi_tao): xem FULL mã của MỌI khách.

@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- Preload logo với ưu tiên cao nhất — tránh flash khi render -->
     <link rel="preload" href="/logo.png" as="image">
-    <title>TUYENVANGLAI.IO.VN | Tìm Kèo Cầu Lông Toàn Quốc</title>
-    <meta name="description" content="Tìm kèo, đăng kèo, quản lý ca đấu cầu lông — 1 tài khoản, đầy đủ tính năng">
+    <title>Tuyển Vãng Lai - Tìm Kèo Cầu Lông Miễn Phí Toàn Quốc</title>
+    <meta name="description" content="Tuyển Vãng Lai – nền tảng tìm kèo cầu lông miễn phí toàn quốc. Tìm sân, đặt slot, đăng kèo, quản lý ca đấu, ghép đúng trình độ và xây dựng uy tín minh bạch.">
     <link rel="icon" type="image/png" href="/favicon.png">
     <link rel="apple-touch-icon" href="/favicon.png">
 
@@ -1253,7 +1253,10 @@
         /* ── CARD GRID: 3 cột đều nhau, sát nhau ── */
         #slotsSearchResultContainer.keo-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            /* minmax(0,1fr): 3 cột co giãn ĐỀU, KHÔNG để card tràn cột làm méo ô góc phải.
+               (Trước: repeat(3,1fr) + card min-width:360px → tổng > vùng .tk-main ở 1280/1440px
+               → cột cuối tràn/cắt → card trên-phải lệch khung trình độ + giá.) */
+            grid-template-columns: repeat(3, minmax(0, 1fr));
             align-items: stretch;
             gap: 1px;
             max-width: 1480px;
@@ -1265,7 +1268,7 @@
             display: flex; flex-direction: column;
             height: auto !important;
             min-height: 0 !important;
-            min-width: 360px;
+            min-width: 0;   /* để card thu theo cột grid (mức tối thiểu đặt ở minmax cột) — chống tràn/cắt */
             width: 100%;
             margin-bottom: 0 !important;
         }
@@ -1963,7 +1966,7 @@
 
     <!-- Góc trái: Logo → Landing page -->
     <a href="/" class="app-logo" onclick="window.chuyenTab('gioi-thieu'); return false;">
-        <img src="/logo.png" alt="TuyenVangLai Logo"
+        <img src="/logo.png" alt="Tuyển Vãng Lai - Tìm Kèo Cầu Lông"
              width="1865" height="350"
              style="display:block;width:auto;height:40px;object-fit:contain;">
     </a>
@@ -2027,7 +2030,7 @@
 <div id="mobileNavOverlay" class="mobile-nav-overlay" onclick="window.closeMobileNav()"></div>
 <div id="mobileNavDrawer" class="mobile-nav-drawer" role="dialog" aria-label="Menu điều hướng">
     <div class="mobile-nav-top">
-        <img src="/logo.png" alt="TuyenVangLai" style="height:28px;width:auto;object-fit:contain;">
+        <img src="/logo.png" alt="Tuyển Vãng Lai" style="height:28px;width:auto;object-fit:contain;">
         <button class="mobile-nav-close" onclick="window.closeMobileNav()" aria-label="Đóng menu">
             <i class="fa-solid fa-xmark"></i>
         </button>
@@ -3006,8 +3009,8 @@
             <div class="lp-glow-blob lp-glow-blob-2"></div>
             <div class="lp-badge">Ứng dụng cầu lông hàng đầu Việt Nam</div>
             <h1 class="lp-hero-title">
-                <span class="line1">Tìm Kèo Cầu Lông</span>
-                <span class="line2">Dễ Dàng Hơn Bao Giờ Hết</span>
+                <span class="line1">Tuyển Vãng Lai</span>
+                <span class="line2">Tìm Kèo Cầu Lông Toàn Quốc</span>
             </h1>
             <p class="lp-hero-desc" id="heroDescText">
                 Kết nối người chơi vãng lai và chủ sân cầu lông toàn quốc.<br>
@@ -3035,7 +3038,7 @@
         <section class="lp-feat-wrap">
             <div class="lp-sect-hd">
                 <div class="lp-sect-tag"><i class="fa-solid fa-rocket"></i> Vì sao chọn chúng tôi</div>
-                <h2 class="lp-sect-title">Tìm kèo chưa bao giờ dễ hơn</h2>
+                <h2 class="lp-sect-title">Tìm kèo cầu lông chưa bao giờ dễ hơn</h2>
                 <p class="lp-sect-sub">1 tài khoản — vừa tìm kèo, vừa đăng kèo, vừa quản lý</p>
             </div>
             <div class="lp-feat-grid">
@@ -3111,7 +3114,7 @@
 
         <!-- CTA bottom -->
         <section class="lp-cta-btm">
-            <h2>Sẵn sàng lên sân?</h2>
+            <h2>Sẵn sàng lên sân cầu lông?</h2>
             <p>Đăng ký miễn phí, dùng ngay toàn bộ tính năng. Không cần mã kích hoạt.</p>
             <button onclick="window.chuyenTab('ca-nhan')" class="lp-btn-btm">
                 <i class="fa-solid fa-rocket"></i>
@@ -3377,8 +3380,8 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="ket-noi-supabase.js?v=20260610d"></script>
 <script src="bo-may-du-lieu.js?v=20260612h"></script>
 <script src="hieu-ung-giao-dien.js?v=20260612a"></script>
-<script src="phan-he-khach-choi.js?v=20260615e"></script>
-<script src="phan-he-host.js?v=20260614b"></script>
+<script src="phan-he-khach-choi.js?v=20260615f"></script>
+<script src="phan-he-host.js?v=20260615b"></script>
 <script src="phan-he-thong-bao.js?v=20260612k"></script>
 <script src="phan-he-ung-dung.js?v=20260615a"></script>
 <script src="phan-he-gop-y.js?v=20260610"></script>
