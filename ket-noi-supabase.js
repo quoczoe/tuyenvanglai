@@ -323,6 +323,15 @@
             if (error) throw error;
             return data; // { status }
         },
+        // Host xóa ca đấu CỦA CHÍNH MÌNH — RPC SECURITY DEFINER bỏ qua RLS,
+        // tự verify token + so khớp sdt_nguoi_tao, dọn dat_slot con rồi xóa ca_dau.
+        async xoaCaDau(token, sdt, caId) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('guest_xoa_ca_dau',
+                { p_token: token, p_sdt: sdt, p_ca_id: caId });
+            if (error) throw error;
+            return data; // { status, deleted? }
+        },
         async refreshProfile(token, sdt) {
             const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
             const { data, error } = await c.rpc('get_current_guest_profile',

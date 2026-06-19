@@ -2224,6 +2224,10 @@
      * 13. XÓA CA ĐẤU
      * ═══════════════════════════════════════════════════ */
     window.xoaCaDau = async function (id) {
+        // Định danh chủ ca đang đăng nhập — dùng cho RPC token-verified + so khớp quyền sở hữu
+        const _myUser  = window.currentUser || window.currentGuest;
+        const _myPhone = _myUser?.sdt_khach;
+        const _myToken = _myUser?._token;
         // A2: cảnh báo nếu ca đang có khách giữ slot (xóa sẽ cascade hủy chỗ của họ)
         const _ca     = _caDauRawData.find(s => s.id === id) || {};
         const _bookedSlots = (_caDauSlotMap[id] || []).filter(s => s.trang_thai_di_danh !== "Khách hủy");
@@ -2248,13 +2252,44 @@
         }
         if (!await window.xacNhanModal("Bạn có chắc muốn xóa ca đấu này?\nHành động này không thể hoàn tác." + _canhBao, '🗑️')) return;
         try {
-            await window.dbEngine.xoa("ca_dau", { id });
+            // ── XÓA CA: ưu tiên RPC bảo mật guest_xoa_ca_dau (SECURITY DEFINER bỏ qua RLS;
+            //    server tự verify token + so khớp sdt_nguoi_tao + dọn dat_slot con rồi xóa ca_dau).
+            //    Fallback direct REST khi RPC chưa deploy / đang ở context admin JWT.
+            let _xoaXong = false;
 
-            // Xác minh xóa thực sự thành công (RLS anon có thể silently no-op → HTTP 204 nhưng 0 rows)
-            const check = await window.dbEngine.docThu("ca_dau", { eq: { id } });
-            if (check && check.length > 0) {
-                window.hienToast("Không thể xóa", "Ca đấu vẫn còn trên hệ thống. Có thể do quyền truy cập. Liên hệ Admin nếu cần xóa gấp.", "danger");
-                return;
+            if (_myToken && _myPhone && window.guestRPC?.xoaCaDau) {
+                let _kq = null;
+                try { _kq = await window.guestRPC.xoaCaDau(_myToken, _myPhone, id); }
+                catch (_rpcErr) { _kq = null; } // RPC chưa deploy → dùng fallback bên dưới
+                if (_kq) {
+                    if (_kq.status === "unauthorized") {
+                        window.hienToast("Phiên đã hết hạn", "Vui lòng đăng nhập lại để xóa ca đấu.", "warning");
+                        return;
+                    }
+                    if (_kq.status === "khong_so_huu") {
+                        window.hienToast("Không có quyền", "Bạn chỉ có thể xóa ca đấu do chính mình đăng.", "danger");
+                        return;
+                    }
+                    // "ok" (đã xóa) hoặc "khong_ton_tai" (ca đã bị xóa trước đó) → coi như hoàn tất
+                    if (_kq.status === "ok" || _kq.status === "khong_ton_tai") _xoaXong = true;
+                }
+            }
+
+            if (!_xoaXong) {
+                // Fallback direct REST: dọn dat_slot con TRƯỚC (tránh kẹt FK nếu thiếu CASCADE),
+                // rồi xóa ca_dau theo CHỦ SỞ HỮU (so khớp sdt_nguoi_tao → đúng phân quyền).
+                try { await window.dbEngine.xoa("dat_slot", { id_ca_dau: id }); } catch (_e) { /* RLS có thể chặn — bỏ qua, cascade DB xử lý */ }
+                const _match = _myPhone ? { id, sdt_nguoi_tao: _myPhone } : { id };
+                await window.dbEngine.xoa("ca_dau", _match);
+
+                // Xác minh xóa thực sự thành công (RLS anon có thể silently no-op → HTTP 204 nhưng 0 rows)
+                const check = await window.dbEngine.docThu("ca_dau", { eq: { id } });
+                if (check && check.length > 0) {
+                    window.hienToast("Không thể xóa",
+                        "Chưa thể xóa ca đấu (thiếu quyền DELETE phía DB). Hãy chạy migration-xoa-ca-dau-v1.sql để bật RPC xóa an toàn, hoặc liên hệ Admin.",
+                        "danger");
+                    return;
+                }
             }
 
             // Phạt host sau khi xóa thành công (chỉ khi ca đã có người đặt)
