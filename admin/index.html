@@ -1693,7 +1693,7 @@
 <!-- ══ SCRIPTS — onerror ghi log chẩn đoán nếu Cốc Cốc block script ══ -->
 <script src="/ket-noi-supabase.js?v=20260619a"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: ket-noi-supabase.js — Cốc Cốc có thể đã block file này')"></script>
-<script src="/bo-may-du-lieu.js?v=20260612h"
+<script src="/bo-may-du-lieu.js?v=20260619a"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: bo-may-du-lieu.js')"></script>
 <script src="/hieu-ung-giao-dien.js?v=20260612a"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: hieu-ung-giao-dien.js')"></script>
@@ -1786,26 +1786,30 @@ input, textarea, [contenteditable] { user-select: text; -webkit-user-select: tex
     });
 
     /* ──────────────────────────────────────────────
-     * 3. Phát hiện DevTools bằng chênh lệch kích thước
-     *    Ngưỡng 300px — an toàn với sidebar Cốc Cốc (~65px)
+     * 3. Phát hiện DevTools bằng ĐỘ TRỄ THỰC THI (Timing Attack)
+     *    KHÔNG còn đo kích thước cửa sổ (outerWidth/innerWidth/devicePixelRatio)
+     *    → miễn nhiễm tuyệt đối với Zoom, màn 2K/4K, sidebar (vốn gây chặn nhầm).
+     *    DevTools đóng: `debugger` là no-op (~0ms).
+     *    DevTools mở:   trình duyệt khựng lại → độ trễ vọt > ngưỡng → phát hiện đúng.
      * ────────────────────────────────────────────── */
     var _overlay = null; /* Tham chiếu overlay cảnh báo — null khi chưa hiện */
+    var _NGUONG_TRE_MS = 100; /* Ngưỡng độ trễ (ms): vượt ngưỡng = DevTools đang mở */
 
     /**
-     * Kiểm tra xem DevTools đang dock sang một phía không.
-     * Trả về true khi chênh lệch outerWidth/Height và innerWidth/Height > 300px.
-     * Chênh lệch âm (zoom out) → bỏ qua, trả false để tránh false-positive.
+     * Đo độ trễ khi chạy `debugger`. Trả true khi vượt ngưỡng (DevTools mở).
+     * Hoàn toàn độc lập kích thước/độ phân giải/zoom của trình duyệt.
      */
     function _kiemTraKichThuoc() {
         try {
-            /* Chuẩn hóa theo devicePixelRatio → zoom (125%/150%) không bị nhận nhầm là DevTools */
-            var r = window.devicePixelRatio || 1;
-            var dW = window.outerWidth  - (window.innerWidth  * r);
-            var dH = window.outerHeight - (window.innerHeight * r);
-            /* Chỉ tính số dương để loại bỏ trường hợp browser zoom làm innerWidth lớn hơn */
-            return (dW > 300 || (dH > 300 && dH < 1200));
+            var _now = (window.performance && performance.now)
+                ? function () { return performance.now(); }
+                : function () { return Date.now(); };
+            var t0 = _now();
+            /* eslint-disable-next-line no-debugger */
+            debugger;
+            return (_now() - t0) > _NGUONG_TRE_MS;
         } catch (_) {
-            return false; /* Lỗi đọc window size → không phán đoán */
+            return false; /* Lỗi đo độ trễ → không phán đoán (fail-safe) */
         }
     }
 

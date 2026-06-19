@@ -495,6 +495,103 @@
         }
     };
 
+    /* ═══════════════════════════════════════════════════════════════
+     * VALIDATE TÊN NGƯỜI DÙNG (CHẶT) — window.kiemTraTenHopLe(raw)
+     * Trả { ok:boolean, loai:string, lyDo:string }.
+     * Dùng cho Đăng ký + Đổi tên (chặn tên rác/phá hoại/lách luật).
+     * ═══════════════════════════════════════════════════════════════ */
+
+    // Bỏ dấu tiếng Việt + IN HOA (Đ→D) — dùng so khớp từ cấm "whole-word"
+    function _boDauTen(s) {
+        return String(s == null ? "" : s)
+            .normalize("NFD").replace(/[̀-ͯ]/g, "")
+            .replace(/[Đđ]/g, "D")
+            .toUpperCase();
+    }
+
+    // Nguyên âm tiếng Việt (kể cả có dấu) — phát hiện spam phụ âm liên tiếp
+    const _TEN_NGUYEN_AM = /[AÀÁẢÃẠĂẰẮẲẴẶÂẦẤẨẪẬEÈÉẺẼẸÊỀẾỂỄỆIÌÍỈĨỊOÒÓỎÕỌÔỒỐỔỖỘƠỜỚỞỠỢUÙÚỦŨỤƯỪỨỬỮỰYỲÝỶỸỴ]/u;
+
+    // Ký tự đặc biệt / phân tách bị cấm — chống lách luật "D.I.T", "D_I_T", "D-I-T"...
+    const _TEN_KY_TU_CAM = /[,._+\-@/\\*#$%^&!?;:'"()<>=|{}\[\]~]/;
+
+    // BƯỚC 1 — Whitelist NGUYÊN DẤU: từ thật VN khi bỏ dấu dễ trùng từ bậy → MIỄN kiểm bước 2
+    const _TEN_WHITELIST = new Set([
+        "CÁC", "MỄ", "MỆ", "KÍCH", "CÚC", "CỐC", "ĐÍCH", "ĐỊCH", "DIỄM", "DĨ", "CÒ"
+    ]);
+
+    // BƯỚC 2 — Từ cấm whole-word (ĐÃ BỎ DẤU): test/mạo danh BQT + tục tĩu/mất dạy
+    const _TEN_CAM_TOKEN = new Set([
+        // test / mạo danh
+        "TEST", "DEMO", "CHECK", "USER", "ACCOUNT", "ABC", "XYZ", "ASD", "QWE", "AAA", "NULL", "UNDEFINED", "NAN", "SAMPLE",
+        "AD", "ADMIN", "ADMINS", "ADMINISTRATOR", "MOD", "MODS", "MODERATOR", "BQT", "SUPPORT", "SYSTEM", "ROOT", "SUDO", "STAFF", "CTV", "SUPERADMIN",
+        // tục tĩu / mất dạy
+        "DIT", "CAC", "LON", "BUOI", "CHO", "DEO", "DM", "DMM", "DKM", "DKMM", "VCL", "VKL", "CLM", "DCM", "CC", "CAVE", "DJT", "DICK", "FUCK", "SHIT", "SEX", "CUT", "BUOM"
+    ]);
+
+    // BƯỚC 3 — Cụm nhiều từ cấm (so trên CHUỖI ĐÃ BỎ DẤU — chứa là chặn, bắt viết liền/cách thưa)
+    const _TEN_CAM_CUM = [
+        "QUAN TRI VIEN", "QUAN TRI", "BAN QUAN TRI", "HE THONG", "NHA CAI",
+        "DIT ME", "DIT MIE", "DIT CON", "SUC VAT", "CHET ME", "CON ME MAY", "AN HAI", "AN CUT"
+    ];
+
+    window.kiemTraTenHopLe = function (raw) {
+        const goc = String(raw == null ? "" : raw);
+
+        // ── 1. KIỂM TRA THÔ (trên chuỗi GỐC, trước khi xử lý) ──────────────
+        // 1a. Ký tự đặc biệt / phân tách lách luật
+        if (_TEN_KY_TU_CAM.test(goc)) {
+            return { ok: false, loai: "kytu", lyDo: "Tên không được chứa ký tự đặc biệt hoặc ký tự phân tách." };
+        }
+        // 1b. Khoảng trắng thừa đầu/cuối
+        if (goc !== goc.trim()) {
+            return { ok: false, loai: "khoangtrang", lyDo: "Tên không được có khoảng trắng thừa ở đầu hoặc cuối." };
+        }
+        // 1c. ≥2 khoảng trắng liên tiếp giữa các từ (chống "D   I   T")
+        if (/\s{2,}/.test(goc)) {
+            return { ok: false, loai: "khoangtrang", lyDo: "Các từ chỉ được cách nhau bằng một khoảng trắng." };
+        }
+
+        // Chuẩn hóa IN HOA (GIỮ dấu) — đến đây chỉ còn khoảng trắng đơn, không thừa đầu/cuối
+        const ten = goc.normalize("NFC").toUpperCase();
+
+        // ── 2. ĐỘ DÀI + KÝ TỰ CHO PHÉP + SỐ TỪ ────────────────────────────
+        if (ten.length < 5)  return { ok: false, loai: "ngan", lyDo: "Tên quá ngắn — cần tối thiểu 5 ký tự." };
+        if (ten.length > 35) return { ok: false, loai: "dai",  lyDo: "Tên quá dài — tối đa 35 ký tự (chặn tên dài làm vỡ giao diện)." };
+        if (!/^[A-ZÀ-Ỹ ]+$/u.test(ten)) {
+            return { ok: false, loai: "kytu", lyDo: "Tên chỉ được chứa chữ cái tiếng Việt và khoảng trắng." };
+        }
+        const tokens = ten.split(" ");
+        if (tokens.length < 2) return { ok: false, loai: "itu",     lyDo: "Tên phải có ít nhất 2 từ (Họ và Tên)." };
+        if (tokens.length > 5) return { ok: false, loai: "nhieutu", lyDo: "Tên không hợp lệ — tối đa 5 từ." };
+
+        // ── 3. LỌC TỪ CẤM (whitelist nguyên dấu → bỏ dấu → so khớp whole-word) ──
+        for (const tk of tokens) {
+            if (_TEN_WHITELIST.has(tk)) continue;        // BƯỚC 1: từ thật an toàn → bỏ qua
+            if (_TEN_CAM_TOKEN.has(_boDauTen(tk))) {     // BƯỚC 2: bỏ dấu so khớp nguyên từ
+                return { ok: false, loai: "tuctiu", lyDo: `Tên chứa từ cấm/không phù hợp ("${tk}"). Vui lòng dùng tên thật.` };
+            }
+        }
+        const fullStripped = _boDauTen(ten);             // BƯỚC 3: cụm nhiều từ (đã bỏ dấu)
+        for (const cum of _TEN_CAM_CUM) {
+            if (fullStripped.includes(cum)) {
+                return { ok: false, loai: "tuctiu", lyDo: "Tên chứa cụm từ cấm/không phù hợp. Vui lòng đặt tên nghiêm túc." };
+            }
+        }
+
+        // ── 4. CHẶN SPAM PHÍM (gõ bừa vô nghĩa) ────────────────────────────
+        for (const tk of tokens) {
+            if (tk.length > 8) {
+                return { ok: false, loai: "spam", lyDo: "Tên có từ quá dài bất thường (nghi gõ bừa). Vui lòng nhập tên thật." };
+            }
+            if (tk.length >= 4 && !_TEN_NGUYEN_AM.test(tk)) {
+                return { ok: false, loai: "spam", lyDo: "Tên chứa chuỗi phụ âm vô nghĩa (không có nguyên âm). Vui lòng nhập tên thật." };
+            }
+        }
+
+        return { ok: true, loai: "", lyDo: "" };
+    };
+
     /**
      * Validate realtime — gắn vào sự kiện oninput của input.
      * Tự động toggle class "input-error" và hiện hint lỗi trong .input-hint kế tiếp.

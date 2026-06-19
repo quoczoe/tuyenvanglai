@@ -3416,10 +3416,10 @@ document.addEventListener('keydown',e=>{
         e.preventDefault();return false;
     }
 });
-// Chỉ phát hiện DevTools dock theo CHIỀU NGANG — bỏ check chiều dọc vì thanh địa chỉ/nav
-// trên mobile có thể vượt ngưỡng và xóa trắng app (app Mobile-First).
-// Chuẩn hóa innerWidth theo devicePixelRatio → zoom (125%/150%) KHÔNG còn bị nhận nhầm là DevTools.
-(function(){const t=160;setInterval(()=>{var r=window.devicePixelRatio||1;var adjInner=window.innerWidth*r;if(window.outerWidth-adjInner>t){document.body.innerHTML='<h1 style="color:#FF5500;text-align:center;padding-top:200px;font-family:sans-serif">Vui lòng đóng DevTools</h1>';}},1000);})();
+// Phát hiện DevTools bằng ĐỘ TRỄ THỰC THI (Timing Attack) — KHÔNG dùng kích thước cửa sổ.
+// DevTools đóng: `debugger` là no-op (~0ms). DevTools mở: trình duyệt khựng lại → độ trễ vọt cao.
+// → Miễn nhiễm hoàn toàn với Zoom / màn 2K-4K / sidebar (vốn gây chặn nhầm khi đo innerWidth).
+(function(){var THRESHOLD=100;function _treDevTools(){var t0=(performance&&performance.now)?performance.now():Date.now();/* eslint-disable-next-line no-debugger */debugger;var t1=(performance&&performance.now)?performance.now():Date.now();return (t1-t0)>THRESHOLD;}setInterval(function(){try{if(_treDevTools()){document.body.innerHTML='<h1 style="color:#FF5500;text-align:center;padding-top:200px;font-family:sans-serif">Vui lòng đóng DevTools</h1>';}}catch(_){}},1000);})();
 setInterval(()=>console.clear(),100);console.log=()=>{};
 </script>
 
@@ -3428,7 +3428,7 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <!-- Supabase JS v2 SDK — BẮT BUỘC load trước ket-noi-supabase.js để guestRPC hoạt động -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="ket-noi-supabase.js?v=20260619a"></script>
-<script src="bo-may-du-lieu.js?v=20260612h"></script>
+<script src="bo-may-du-lieu.js?v=20260619a"></script>
 <script src="hieu-ung-giao-dien.js?v=20260612a"></script>
 <script src="phan-he-khach-choi.js?v=20260619e"></script>
 <script src="phan-he-host.js?v=20260619b"></script>

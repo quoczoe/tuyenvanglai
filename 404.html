@@ -264,14 +264,22 @@ document.addEventListener('keydown',e=>{
   }
 });
 (function(){
-  const t=160;
-  setInterval(()=>{
-    // Chỉ kiểm chiều ngang — chiều dọc false-positive trên mobile (thanh địa chỉ/bàn phím)
-    // Chuẩn hóa innerWidth theo devicePixelRatio → zoom trình duyệt không bị nhận nhầm DevTools
-    var r=window.devicePixelRatio||1;
-    if(window.outerWidth-(window.innerWidth*r)>t){
-      document.body.innerHTML='<h1 style="color:#00c96e;text-align:center;padding-top:200px;font-family:sans-serif">Vui lòng đóng DevTools</h1>';
-    }
+  // Timing Attack: đo độ trễ thực thi `debugger` → độc lập kích thước/zoom/độ phân giải.
+  // DevTools đóng = no-op (~0ms); DevTools mở = khựng lại → trễ vọt cao → chặn.
+  var THRESHOLD=100;
+  function _treDevTools(){
+    var t0=(performance&&performance.now)?performance.now():Date.now();
+    /* eslint-disable-next-line no-debugger */
+    debugger;
+    var t1=(performance&&performance.now)?performance.now():Date.now();
+    return (t1-t0)>THRESHOLD;
+  }
+  setInterval(function(){
+    try{
+      if(_treDevTools()){
+        document.body.innerHTML='<h1 style="color:#00c96e;text-align:center;padding-top:200px;font-family:sans-serif">Vui lòng đóng DevTools</h1>';
+      }
+    }catch(_){}
   },1000);
 })();
 setInterval(()=>console.clear(),100);
