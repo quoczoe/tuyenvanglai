@@ -2028,7 +2028,7 @@
         const card = document.createElement("div");
         card.className = "slot-card";
         card.dataset.caId = slot.id; // Để query nút sau khi đặt slot thành công
-        _shareCache[slot.id] = slot; // Lưu data ca để dựng văn bản chia sẻ (menu Share) — tránh query lại
+        _shareCache[slot.id] = { slot, host: hostInfo }; // Data ca + host để dựng văn bản chia sẻ (menu Share) — tránh query lại
 
         const now        = new Date();
         const isToday    = slot.ngay_danh === now.toLocaleDateString("sv-SE");
@@ -2831,18 +2831,11 @@
         return window.location.protocol + '//' + host + window.location.pathname + '?id=' + caId;
     }
 
-    // Dải trình độ yêu cầu → chuỗi gọn (pill chuẩn + ghi chú free-text), theo giới tính tuyển
-    function _fmtTrinhDoShare(slot) {
-        const td = slot.yeu_cau_trinh_do || {};
-        const lst = (arr) => {
-            const a = Array.isArray(arr) ? arr : (arr ? [arr] : []);
-            return a.map(v => STANDARD_LEVELS.has(window.chuanHoaTrinhDo(v))
-                ? window.nhanTrinhDo(window.chuanHoaTrinhDo(v)) : v).filter(Boolean).join(", ");
-        };
-        const nam = lst(td.nam), nu = lst(td.nu);
-        if (slot.gioi_tinh_can === "Cả hai") return `Nam: ${nam || "—"} | Nữ: ${nu || "—"}`;
-        if (slot.gioi_tinh_can === "Nữ")    return nu || "—";
-        return nam || "—";
+    // Danh sách cấp trình độ 1 giới → chuỗi gọn (pill chuẩn + ghi chú free-text)
+    function _lvlListShare(arr) {
+        const a = Array.isArray(arr) ? arr : (arr ? [arr] : []);
+        return a.map(v => STANDARD_LEVELS.has(window.chuanHoaTrinhDo(v))
+            ? window.nhanTrinhDo(window.chuanHoaTrinhDo(v)) : v).filter(Boolean).join(", ") || "—";
     }
 
     // Tên loại cầu — lấy từ loai_cau_su_dung[].ten (bỏ trùng); trống → "Chưa rõ"
@@ -2855,19 +2848,25 @@
     }
 
     // Dựng văn bản full thông tin ca đấu theo mẫu chuẩn (xuống dòng \n rõ ràng, icon đa nền tảng)
-    function _buildShareFull(slot) {
-        const diaBan = [slot.quan_huyen, slot.tinh_thanh].filter(Boolean).join("-") || "—";
+    function _buildShareFull(slot, host) {
+        const diaBan = ([slot.quan_huyen, slot.tinh_thanh].filter(Boolean).join("-") || "—").toUpperCase();
         const ngay = slot.ngay_danh
-            ? new Date(slot.ngay_danh).toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })
+            ? new Date(slot.ngay_danh).toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" }).toUpperCase()
             : "—";
         const gioBd  = (slot.gio_bat_dau  || "").slice(0, 5) || "—";
         const gioKt  = (slot.gio_ket_thuc || "").slice(0, 5) || "—";
         const tenSan = (slot.ten_san || "Chưa có tên sân").toUpperCase();
         const diaChi = (slot.dia_chi_san || "").trim();
+        const td = slot.yeu_cau_trinh_do || {};
+
+        // Trình độ — mỗi giới 1 dòng (ghi rõ giới tính: rồi trình độ); chỉ giới tính được tuyển
+        const tdLines = [];
+        if (slot.gioi_tinh_can !== "Nữ")  tdLines.push(`-Nam: ${_lvlListShare(td.nam)}`);
+        if (slot.gioi_tinh_can !== "Nam") tdLines.push(`-Nữ: ${_lvlListShare(td.nu)}`);
 
         // Chi phí — chỉ hiện giới tính được tuyển
         const giaLines = [];
-        if (slot.gioi_tinh_can !== "Nữ") giaLines.push(`- Nam: ${_fmtK(slot.gia_nam)}`);
+        if (slot.gioi_tinh_can !== "Nữ")  giaLines.push(`- Nam: ${_fmtK(slot.gia_nam)}`);
         if (slot.gioi_tinh_can !== "Nam") giaLines.push(`- Nữ: ${_fmtK(slot.gia_nu)}`);
 
         // Tiện ích đã bao gồm trong giá
@@ -2878,17 +2877,26 @@
         if (bg.nuoc)   inc.push("Nước uống");
         if (bg.gui_xe) inc.push("Gửi xe");
 
+        // Liên hệ người đăng (SĐT/Zalo + tên) — bỏ qua host ảo / thiếu data
+        const isVirtual = !!(host && host.virtual);
+        const hTen = (host && host.ten || "").trim().toUpperCase();
+        const hSdt = (host && host.sdt || "").trim();
+
         const lines = [];
         lines.push(`🏸 [${diaBan}] - TUYỂN VÃNG LAI ${ngay} 🏸`);
         lines.push("");
         lines.push(`⏰ Thời gian: ${gioBd} - ${gioKt}`);
         lines.push(`📍 Địa điểm: ${tenSan}`);
         if (diaChi) lines.push(`🏢 Địa chỉ: ${diaChi}`);
-        lines.push(`💪 Trình độ yêu cầu: ${_fmtTrinhDoShare(slot)}`);
+        lines.push(`💪 Trình độ yêu cầu:`);
+        tdLines.forEach(l => lines.push(l));
         lines.push(`🏸 Loại cầu sử dụng: ${_fmtCauShare(slot)}`);
         lines.push(`💰 Chi phí tham gia:`);
         giaLines.forEach(l => lines.push(l));
         if (inc.length) lines.push(`✨ (Giá đã bao gồm: ${inc.join(" + ")})`);
+        if (!isVirtual && (hSdt || hTen)) {
+            lines.push(`- SĐT/Zalo: ${hSdt || "—"}${hTen ? ` - (${hTen})` : ""}`);
+        }
         lines.push("");
         lines.push("---------------------------------");
         lines.push("👉 Check và đăng ký giữ slot ngay tại:");
@@ -2958,10 +2966,11 @@
         const caId = _shareCurId;
         _dongMenuShare();
         if (!caId) return;
-        const slot = _shareCache[caId];
+        const entry = _shareCache[caId];
+        const slot  = entry && entry.slot;
         let text, okTitle, okMsg;
         if (loai === "full" && slot) {
-            text    = _buildShareFull(slot);
+            text    = _buildShareFull(slot, entry.host);
             okTitle = "Đã copy full thông tin ca đấu! ✅";
             okMsg   = "Dán vào Zalo/Facebook/Messenger để chia sẻ.";
         } else {
