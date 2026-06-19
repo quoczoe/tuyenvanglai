@@ -3418,7 +3418,8 @@ document.addEventListener('keydown',e=>{
 });
 // Chỉ phát hiện DevTools dock theo CHIỀU NGANG — bỏ check chiều dọc vì thanh địa chỉ/nav
 // trên mobile có thể vượt ngưỡng và xóa trắng app (app Mobile-First).
-(function(){const t=160;setInterval(()=>{if(window.outerWidth-window.innerWidth>t){document.body.innerHTML='<h1 style="color:#FF5500;text-align:center;padding-top:200px;font-family:sans-serif">Vui lòng đóng DevTools</h1>';}},1000);})();
+// Chuẩn hóa innerWidth theo devicePixelRatio → zoom (125%/150%) KHÔNG còn bị nhận nhầm là DevTools.
+(function(){const t=160;setInterval(()=>{var r=window.devicePixelRatio||1;var adjInner=window.innerWidth*r;if(window.outerWidth-adjInner>t){document.body.innerHTML='<h1 style="color:#FF5500;text-align:center;padding-top:200px;font-family:sans-serif">Vui lòng đóng DevTools</h1>';}},1000);})();
 setInterval(()=>console.clear(),100);console.log=()=>{};
 </script>
 

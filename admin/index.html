@@ -1798,8 +1798,10 @@ input, textarea, [contenteditable] { user-select: text; -webkit-user-select: tex
      */
     function _kiemTraKichThuoc() {
         try {
-            var dW = window.outerWidth  - window.innerWidth;
-            var dH = window.outerHeight - window.innerHeight;
+            /* Chuẩn hóa theo devicePixelRatio → zoom (125%/150%) không bị nhận nhầm là DevTools */
+            var r = window.devicePixelRatio || 1;
+            var dW = window.outerWidth  - (window.innerWidth  * r);
+            var dH = window.outerHeight - (window.innerHeight * r);
             /* Chỉ tính số dương để loại bỏ trường hợp browser zoom làm innerWidth lớn hơn */
             return (dW > 300 || (dH > 300 && dH < 1200));
         } catch (_) {

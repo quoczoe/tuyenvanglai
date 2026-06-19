@@ -267,7 +267,9 @@ document.addEventListener('keydown',e=>{
   const t=160;
   setInterval(()=>{
     // Chỉ kiểm chiều ngang — chiều dọc false-positive trên mobile (thanh địa chỉ/bàn phím)
-    if(window.outerWidth-window.innerWidth>t){
+    // Chuẩn hóa innerWidth theo devicePixelRatio → zoom trình duyệt không bị nhận nhầm DevTools
+    var r=window.devicePixelRatio||1;
+    if(window.outerWidth-(window.innerWidth*r)>t){
       document.body.innerHTML='<h1 style="color:#00c96e;text-align:center;padding-top:200px;font-family:sans-serif">Vui lòng đóng DevTools</h1>';
     }
   },1000);
