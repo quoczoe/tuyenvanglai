@@ -329,6 +329,42 @@
         const avatarEl = document.getElementById("profileAvatar");
         if (nameEl) nameEl.textContent = u.ten_khach || u.sdt_khach || "Người dùng";
         if (avatarEl && u.avatar_url) avatarEl.src = u.avatar_url;
+
+        // Auto-shrink tên cho vừa 1 hàng trên mobile (sau khi đã set text + layout)
+        _bindAutoShrink();
+        requestAnimationFrame(() => window._autoShrinkTenProfile && window._autoShrinkTenProfile());
+    }
+
+    /* ─────────────────────────────────────────────────────────────────────
+     * AUTO-SHRINK TÊN HỒ SƠ (mobile) — giữ tên LUÔN 1 hàng, không tràn/cắt.
+     * Tên ngắn → 18px; tên dài → giảm dần 0.5px tới khi vừa khít (sàn 12px).
+     * Chỉ áp ≤768px; >768px (PC) trả font-size về mặc định (CSS lo).
+     * ──────────────────────────────────────────────────────────────────── */
+    window._autoShrinkTenProfile = function () {
+        const el = document.getElementById("profileDisplayName");
+        if (!el) return;
+        if (window.innerWidth > 768) { el.style.fontSize = ""; return; } // PC: để CSS quyết định
+        const MAX = 18, MIN = 12;
+        let size = MAX;
+        el.style.fontSize = MAX + "px";
+        // Vòng lặp giảm dần tới khi hết tràn hoặc chạm sàn (guard chống lặp vô hạn)
+        let guard = 0;
+        while (el.scrollWidth > el.clientWidth && size > MIN && guard < 200) {
+            size -= 0.5;
+            el.style.fontSize = size + "px";
+            guard++;
+        }
+    };
+
+    let _shrinkBound = false;
+    function _bindAutoShrink() {
+        if (_shrinkBound) return;
+        _shrinkBound = true;
+        // Xoay màn hình / resize → tính lại (debounce nhẹ)
+        let _t;
+        const reflow = () => { clearTimeout(_t); _t = setTimeout(() => window._autoShrinkTenProfile && window._autoShrinkTenProfile(), 150); };
+        window.addEventListener("resize", reflow);
+        window.addEventListener("orientationchange", reflow);
     }
 
     function _setProfileField(id, val) {

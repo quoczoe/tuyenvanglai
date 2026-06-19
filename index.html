@@ -1159,12 +1159,34 @@
             .btn-profile-logout { padding: 7px 10px; }
             .tvl-trust-score { font-size: 1.6rem; }
 
-            /* ── Tối ưu kích thước TÊN người dùng trên mobile ──
-               Tên hồ sơ trước đây clamp tới 1.3rem + weight 800 → quá to/thô,
-               lấn át badge sao & nút đăng xuất. Hạ size + weight cho cân đối. */
+            /* ── PROFILE MOBILE — Bố cục TRỤC DỌC căn giữa ──
+               Avatar (hàng 1) · Tên RIÊNG 1 hàng (hàng 2) · Sao (hàng 3).
+               Nút Đăng xuất tách hẳn lên góc trên-phải (absolute). */
+            .profile-top {
+                flex-direction: column;
+                align-items: center;
+                position: relative;
+                gap: 10px;
+                text-align: center;
+                padding-top: 4px;
+            }
+            .profile-meta { width: 100%; min-width: 0; text-align: center; }
+            /* Tên user: RIÊNG 1 hàng, căn giữa, KHÔNG xuống dòng, KHÔNG ellipsis.
+               font-size mặc định 18px (tên ngắn); JS auto-shrink khi tràn (≥12px). */
             .profile-display-name {
-                font-size: clamp(0.9rem, 3.3vw, 0.97rem); /* ~14.4–15.5px */
-                font-weight: 600;
+                display: block; width: 100%;
+                font-size: 18px; font-weight: 600;
+                text-align: center;
+                white-space: nowrap; overflow: hidden; text-overflow: clip;
+                margin: 0 0 8px;
+            }
+            /* Khối sao căn giữa dưới tên */
+            .profile-rating { display: inline-flex; }
+            /* Nút Đăng xuất: đẩy hẳn lên góc trên-phải, biệt lập */
+            .btn-profile-logout {
+                position: absolute; top: 0; right: 0;
+                margin-left: 0; align-self: auto;
+                padding: 8px 10px;
             }
             /* Tên user ở header (nếu hiện) cũng gọn, nhẹ */
             #headerUserName { font-size: 0.9rem; font-weight: 600; }
@@ -3454,7 +3476,7 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="phan-he-khach-choi.js?v=20260619f"></script>
 <script src="phan-he-host.js?v=20260619b"></script>
 <script src="phan-he-thong-bao.js?v=20260612k"></script>
-<script src="phan-he-ung-dung.js?v=20260620a"></script>
+<script src="phan-he-ung-dung.js?v=20260620b"></script>
 <script src="phan-he-gop-y.js?v=20260620a"></script>
 
 <!-- xoaBoLoc dùng bản đầy đủ trong phan-he-khach-choi.js (reset cả pills + lịch + nhãn giá).
