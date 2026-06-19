@@ -196,6 +196,9 @@
         document.addEventListener("visibilitychange", function () {
             if (!document.hidden) setTimeout(() => window.quetTenViPham && window.quetTenViPham(), 300);
         });
+
+        // ── POPUP THÔNG BÁO TRANG CHỦ (sau khi UI ổn định) ──
+        setTimeout(() => window._kiemTraPopupTrangChu && window._kiemTraPopupTrangChu(), 1200);
     };
 
     /* ═══════════════════════════════════════════════════
@@ -366,6 +369,86 @@
         window.addEventListener("resize", reflow);
         window.addEventListener("orientationchange", reflow);
     }
+
+    /* ═════════════════════════════════════════════════════════════════════
+     * POPUP THÔNG BÁO TRANG CHỦ — đọc cấu hình (cau_hinh_he_thong) từ Admin.
+     * Hiện modal khi: popup_enabled = "true" VÀ popup_chinh khác rỗng VÀ
+     * mốc popup_updated_at KHÁC last_seen_popup_time trong localStorage.
+     * Bấm "Không hiển thị lại" → lưu mốc → không hiện lại tới khi Admin đổi nội dung.
+     * ═════════════════════════════════════════════════════════════════════ */
+    window._kiemTraPopupTrangChu = async function () {
+        try {
+            if (!window.dbEngine) return;
+            const configs = await window.dbEngine.doc("cau_hinh_he_thong");
+            if (!Array.isArray(configs)) return;
+            const map = {};
+            configs.forEach(c => { if (c && c.id) map[c.id] = c.noi_dung_thong_bao; });
+
+            const enabled = map["popup_enabled"] === "true";
+            const content = (map["popup_chinh"] || "").trim();
+            if (!enabled || !content) return;
+
+            // Mốc cập nhật: ưu tiên popup_updated_at; fallback = chính nội dung
+            // (đổi nội dung mà chưa có timestamp → mốc vẫn đổi theo nội dung).
+            const updated = String(map["popup_updated_at"] || content);
+            let seen = "";
+            try { seen = localStorage.getItem("last_seen_popup_time") || ""; } catch (_) {}
+            if (seen && seen === updated) return; // đã xem đúng mốc này → không hiện lại
+
+            _hienPopupTrangChu(content, updated);
+        } catch (_) { /* im lặng — popup là phụ, không chặn luồng chính */ }
+    };
+
+    function _hienPopupTrangChu(content, updated) {
+        document.getElementById("tvlHomePopupOverlay")?.remove();
+
+        const ov = document.createElement("div");
+        ov.id = "tvlHomePopupOverlay";
+        ov.style.cssText = "position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.72);" +
+            "backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);display:flex;" +
+            "align-items:center;justify-content:center;padding:18px;box-sizing:border-box;";
+
+        const card = document.createElement("div");
+        card.style.cssText = "width:100%;max-width:440px;background:#0f1e35;border:1px solid #1e3a5f;" +
+            "border-radius:16px;box-shadow:0 22px 60px rgba(0,0,0,0.6);overflow:hidden;" +
+            "font-family:system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;";
+
+        // Header
+        const head = document.createElement("div");
+        head.style.cssText = "padding:16px 20px;border-bottom:1px solid #1e3a5f;display:flex;align-items:center;gap:10px;";
+        head.innerHTML = '<i class="fa-solid fa-bullhorn" style="color:#00ff88;"></i>' +
+            '<span style="font-weight:700;color:#e2e8f0;font-size:1.02rem;">Thông Báo</span>';
+
+        // Body — dùng textContent để CHỐNG XSS, giữ xuống dòng
+        const body = document.createElement("div");
+        body.style.cssText = "padding:18px 20px;color:#cbd5e1;font-size:0.92rem;line-height:1.6;" +
+            "white-space:pre-wrap;word-break:break-word;max-height:60vh;overflow:auto;";
+        body.textContent = content;
+
+        // Footer
+        const foot = document.createElement("div");
+        foot.style.cssText = "padding:14px 20px;border-top:1px solid #1e3a5f;display:flex;justify-content:flex-end;";
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.textContent = "Không hiển thị lại";
+        btn.style.cssText = "background:linear-gradient(135deg,#00b368,#00ff88);border:none;color:#04221a;" +
+            "padding:11px 20px;border-radius:10px;cursor:pointer;font-size:0.9rem;font-weight:800;" +
+            "font-family:inherit;width:100%;max-width:220px;";
+        btn.onclick = () => window._dongPopupTrangChu(updated);
+        foot.appendChild(btn);
+
+        card.appendChild(head);
+        card.appendChild(body);
+        card.appendChild(foot);
+        ov.appendChild(card);
+        // Click nền ngoài card → KHÔNG đóng (bắt buộc bấm nút để ghi nhận mốc)
+        document.body.appendChild(ov);
+    }
+
+    window._dongPopupTrangChu = function (updated) {
+        try { if (updated != null) localStorage.setItem("last_seen_popup_time", String(updated)); } catch (_) {}
+        document.getElementById("tvlHomePopupOverlay")?.remove();
+    };
 
     function _setProfileField(id, val) {
         const el = document.getElementById(id);

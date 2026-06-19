@@ -939,7 +939,7 @@
 
         if (page.length === 0) {
             const msg = _gopYAllData.length === 0 ? "Chưa có góp ý nào." : "Không tìm thấy kết quả phù hợp.";
-            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:24px;color:#64748b;">${msg}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:24px;color:#64748b;">${msg}</td></tr>`;
             return;
         }
 
@@ -990,8 +990,12 @@
                 <td><span style="background:${lc.bg};color:${lc.color};padding:2px 8px;border-radius:10px;font-size:0.73rem;white-space:nowrap;">${_escHtml(loai)}</span></td>
                 <td style="max-width:220px;">${ndHtml}</td>
                 <td style="font-size:0.75rem;white-space:nowrap;color:#94a3b8;">${thoiGian}</td>
-                <td style="text-align:center;">
-                    <button onclick="window.xoaGopY(${g.id})" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#f87171;padding:3px 8px;border-radius:6px;cursor:pointer;font-size:0.72rem;">
+                <td style="text-align:center;white-space:nowrap;">${_gopYBadge(g.trang_thai)}</td>
+                <td style="text-align:center;white-space:nowrap;">
+                    <button onclick="window._moModalPhanHoiGopY(${g.id})" title="Xử lý / phản hồi góp ý" style="background:rgba(96,165,250,0.14);border:1px solid rgba(96,165,250,0.35);color:#60a5fa;padding:3px 8px;border-radius:6px;cursor:pointer;font-size:0.72rem;margin-right:4px;">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button onclick="window.xoaGopY(${g.id})" title="Xóa góp ý" style="background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#f87171;padding:3px 8px;border-radius:6px;cursor:pointer;font-size:0.72rem;">
                         <i class="fa-solid fa-trash-can"></i>
                     </button>
                 </td>
@@ -1000,6 +1004,106 @@
 
         setTimeout(window._fitTable, 0);
     }
+
+    /* ── Trạng thái góp ý: nhãn + màu badge ── */
+    const _GOPY_TT = {
+        cho_xu_ly:      { nhan: "Chờ xử lý",      color: "#94a3b8", bg: "rgba(148,163,184,0.14)", border: "rgba(148,163,184,0.4)" },
+        dang_thuc_hien: { nhan: "Đang thực hiện", color: "#60a5fa", bg: "rgba(96,165,250,0.14)",  border: "rgba(96,165,250,0.4)" },
+        da_xong:        { nhan: "Đã xong",        color: "#4ade80", bg: "rgba(74,222,128,0.14)",  border: "rgba(74,222,128,0.4)" },
+        tu_choi:        { nhan: "Từ chối",        color: "#f87171", bg: "rgba(248,113,113,0.14)", border: "rgba(248,113,113,0.4)" }
+    };
+    function _gopYBadge(tt) {
+        const c = _GOPY_TT[tt] || _GOPY_TT.cho_xu_ly;
+        return `<span style="display:inline-block;background:${c.bg};color:${c.color};border:1px solid ${c.border};padding:2px 9px;border-radius:10px;font-size:0.72rem;font-weight:600;white-space:nowrap;">${c.nhan}</span>`;
+    }
+
+    /* ── Modal Xử lý / Phản hồi góp ý (dựng động, inline-style vì admin không nạp giao-dien.css) ── */
+    window._moModalPhanHoiGopY = function (id) {
+        const g = _gopYAllData.find(x => String(x.id) === String(id));
+        if (!g) { window.hienToast("Lỗi", "Không tìm thấy góp ý.", "danger"); return; }
+        document.getElementById("phgyOverlay")?.remove();
+
+        const tt   = g.trang_thai || "cho_xu_ly";
+        const ph   = g.noi_dung_phan_hoi || "";
+        const opts = ["cho_xu_ly","dang_thuc_hien","da_xong","tu_choi"]
+            .map(k => `<option value="${k}"${k === tt ? " selected" : ""}>${_GOPY_TT[k].nhan}</option>`).join("");
+        const ndGoc = _escHtml(g.noi_dung || "(không có nội dung)");
+
+        const ov = document.createElement("div");
+        ov.id = "phgyOverlay";
+        ov.style.cssText = "position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,0.6);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:16px;";
+        ov.onclick = e => { if (e.target === ov) window._dongModalPhanHoiGopY(); };
+        ov.innerHTML = `
+          <div style="width:100%;max-width:460px;background:#0d1525;border:1px solid #1e3a5f;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.6);overflow:hidden;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;">
+            <div style="padding:16px 20px;border-bottom:1px solid #1e3a5f;display:flex;align-items:center;gap:10px;">
+              <i class="fa-solid fa-pen-to-square" style="color:#60a5fa;"></i>
+              <span style="font-weight:700;color:#e2e8f0;font-size:1rem;">Xử lý góp ý #${g.id}</span>
+            </div>
+            <div style="padding:18px 20px;">
+              <div style="font-size:0.72rem;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:5px;">Nội dung góp ý</div>
+              <div style="background:rgba(255,255,255,0.04);border:1px solid #1e3a5f;border-radius:8px;padding:10px 12px;color:#cbd5e1;font-size:0.85rem;max-height:120px;overflow:auto;white-space:pre-wrap;word-break:break-word;margin-bottom:16px;">${ndGoc}</div>
+
+              <label style="display:block;font-size:0.78rem;font-weight:600;color:#94a3b8;margin-bottom:6px;">Trạng thái xử lý</label>
+              <select id="phgySelect" style="width:100%;background:#132033;border:1px solid #1e3a5f;border-radius:8px;color:#e2e8f0;font-size:0.9rem;padding:9px 11px;margin-bottom:16px;cursor:pointer;">${opts}</select>
+
+              <label style="display:block;font-size:0.78rem;font-weight:600;color:#94a3b8;margin-bottom:6px;">Lời nhắn phản hồi (gửi cho người dùng khi chọn "Đã xong")</label>
+              <textarea id="phgyText" rows="4" placeholder="Nhập lời nhắn... vd: Đã sửa lỗi bạn báo, cảm ơn góp ý!" style="width:100%;background:#132033;border:1px solid #1e3a5f;border-radius:8px;color:#e2e8f0;font-size:0.88rem;padding:10px 12px;resize:vertical;font-family:inherit;box-sizing:border-box;">${_escHtml(ph)}</textarea>
+              <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">
+                <i class="fa-solid fa-bell" style="color:#fbbf24;"></i>
+                Chọn "Đã xong" → chuông 🔔 của người gửi sẽ sáng kèm lời nhắn này.
+              </div>
+            </div>
+            <div style="padding:14px 20px;border-top:1px solid #1e3a5f;display:flex;gap:10px;justify-content:flex-end;">
+              <button onclick="window._dongModalPhanHoiGopY()" style="background:rgba(255,255,255,0.06);border:1px solid #334155;color:#94a3b8;padding:9px 16px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-family:inherit;">Hủy</button>
+              <button id="phgyConfirmBtn" onclick="window._xacNhanPhanHoiGopY(${g.id})" style="background:linear-gradient(135deg,#3b82f6,#60a5fa);border:none;color:#fff;padding:9px 18px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:700;font-family:inherit;">Xác nhận</button>
+            </div>
+          </div>`;
+        document.body.appendChild(ov);
+    };
+
+    window._dongModalPhanHoiGopY = function () {
+        document.getElementById("phgyOverlay")?.remove();
+    };
+
+    let _phgyBusy = false;
+    window._xacNhanPhanHoiGopY = async function (id) {
+        if (_phgyBusy) return;
+        const tt   = document.getElementById("phgySelect")?.value || "cho_xu_ly";
+        const phan = (document.getElementById("phgyText")?.value || "").trim();
+        const btn  = document.getElementById("phgyConfirmBtn");
+        if (!window._sbClient) { window.hienToast("Lỗi", "Chưa kết nối Supabase (đăng nhập lại).", "danger"); return; }
+
+        _phgyBusy = true;
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
+        try {
+            const { data, error } = await window._sbClient.rpc("admin_phan_hoi_gop_y", {
+                p_gop_y_id: id,
+                p_trang_thai: tt,
+                p_noi_dung_phan_hoi: phan || null
+            });
+            if (error) throw error;
+            const st = (data && data.status) || "";
+            if (st !== "ok") {
+                const lyDo = st === "khong_ton_tai" ? "Góp ý không còn tồn tại."
+                          : st === "trang_thai_khong_hop_le" ? "Trạng thái không hợp lệ."
+                          : "Không cập nhật được. Hãy chắc chắn đã chạy migration-gopy-phanhoi-v1.sql.";
+                window.hienToast("Thất bại", lyDo, "danger");
+                return;
+            }
+            // Cập nhật local + render
+            const row = _gopYAllData.find(x => String(x.id) === String(id));
+            if (row) { row.trang_thai = tt; row.noi_dung_phan_hoi = phan || null; }
+            window._gopYApplyFilter();
+            const extra = data.da_gui_tb ? " · đã bắn thông báo 🔔 cho người gửi." : "";
+            window.hienToast("Đã cập nhật ✅", `Trạng thái: ${_GOPY_TT[tt].nhan}${extra}`, "success");
+            window._dongModalPhanHoiGopY();
+        } catch (e) {
+            window.hienToast("Lỗi", "Không gọi được RPC. Kiểm tra migration-gopy-phanhoi-v1.sql đã chạy chưa.", "danger");
+        } finally {
+            _phgyBusy = false;
+            if (btn) { btn.disabled = false; btn.innerHTML = "Xác nhận"; }
+        }
+    };
 
     window._moRongGopY = function (rowId) {
         document.getElementById(rowId + "_s")?.style.setProperty("display", "none");
@@ -2662,11 +2766,18 @@
      *   id='logo_url'           → URL ảnh logo trên header
      *   id='favicon_url'        → URL favicon tab trình duyệt
      * ═══════════════════════════════════════════════════ */
+    // Ảnh chụp nội dung/bật-tắt popup lúc tải — để biết khi nào cần bump mốc thời gian.
+    let _popupSnap = null;
+
     async function _taiThongBao() {
         try {
             const configs   = await window.dbEngine.doc("cau_hinh_he_thong");
             const cfgMap    = {};
             configs.forEach(c => { if (c.id) cfgMap[c.id] = c; });
+            _popupSnap = {
+                content: cfgMap["popup_chinh"]?.noi_dung_thong_bao || "",
+                enabled: cfgMap["popup_enabled"]?.noi_dung_thong_bao === "true" ? "true" : "false"
+            };
 
             _setVal("adminAnnouncementContent",
                 cfgMap["popup_chinh"]?.noi_dung_thong_bao || "");
@@ -2716,7 +2827,10 @@
             const up = (id, val) => window.khoDuLieuVinhVien.upsertData(
                 "cau_hinh_he_thong", { id, noi_dung_thong_bao: val }
             );
-            await Promise.all([
+            // Mốc thời gian popup: CHỈ bump khi nội dung HOẶC trạng thái bật/tắt thay đổi
+            // → popup chỉ hiện lại cho khách khi Admin thực sự đổi thông báo (không phải mỗi lần lưu).
+            const popupChanged = !_popupSnap || _popupSnap.content !== content || _popupSnap.enabled !== popupEnabled;
+            const writes = [
                 up("popup_chinh",       content),
                 up("popup_enabled",     popupEnabled),
                 up("qr_donate",         qrDonate),
@@ -2725,7 +2839,10 @@
                 up("text_quang_cao",    textQuangCao),
                 up("telegram_bot_token",tgBotToken),
                 up("telegram_chat_id",  tgChatId)
-            ]);
+            ];
+            if (popupChanged) writes.push(up("popup_updated_at", String(Date.now())));
+            await Promise.all(writes);
+            _popupSnap = { content, enabled: popupEnabled }; // cập nhật ảnh chụp
             window.hienToast("Đã lưu cấu hình ✅", "Cập nhật thành công.", "success");
         } catch (e) {
             window.hienToast("Lỗi lưu cấu hình", "Kiểm tra kết nối Supabase hoặc RLS permissions.", "danger");

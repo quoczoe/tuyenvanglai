@@ -82,6 +82,7 @@
         S1:  { mau: "#ff4444" }, // Cao  — tài khoản bị khóa
         G4:  { mau: "#ff8800" }, // TB   — host từ chối slot của khách (Nhóm 3)
         G6:  { mau: "#ff8800" }, // TB   — host đổi giờ ca đấu
+        gopy_phan_hoi: { mau: "#00ff88" }, // Thấp — Admin đã xử lý góp ý (tin vui)
         _:   { mau: "#94a3b8" }  // mặc định — trung tính
     };
 
