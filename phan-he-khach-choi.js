@@ -2831,11 +2831,19 @@
         return window.location.protocol + '//' + host + window.location.pathname + '?id=' + caId;
     }
 
-    // Danh sách cấp trình độ 1 giới → chuỗi gọn (pill chuẩn + ghi chú free-text)
+    // Chỉ viết hoa chữ cái ĐẦU, phần còn lại thường (vd "TB+"→"Tb+", "KHÁ"→"Khá")
+    function _capFirst(s) {
+        s = String(s == null ? "" : s).trim();
+        return s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s;
+    }
+    // Danh sách cấp trình độ 1 giới → chuỗi gọn (pill chuẩn + ghi chú free-text), viết hoa chữ cái đầu
     function _lvlListShare(arr) {
         const a = Array.isArray(arr) ? arr : (arr ? [arr] : []);
-        return a.map(v => STANDARD_LEVELS.has(window.chuanHoaTrinhDo(v))
-            ? window.nhanTrinhDo(window.chuanHoaTrinhDo(v)) : v).filter(Boolean).join(", ") || "—";
+        return a.map(v => {
+            const lbl = STANDARD_LEVELS.has(window.chuanHoaTrinhDo(v))
+                ? window.nhanTrinhDo(window.chuanHoaTrinhDo(v)) : v;
+            return _capFirst(lbl);
+        }).filter(Boolean).join(", ") || "—";
     }
 
     // Tên loại cầu — lấy từ loai_cau_su_dung[].ten (bỏ trùng); trống → "Chưa rõ"
@@ -2859,10 +2867,12 @@
         const diaChi = (slot.dia_chi_san || "").trim();
         const td = slot.yeu_cau_trinh_do || {};
 
+        // Sân số (vd "Sân 1") — đặt trong ngoặc sau tên sân; ẩn nếu trống
+        const sanSo = _formatSanSo(slot.so_san_cu_the);
         // Trình độ — mỗi giới 1 dòng (ghi rõ giới tính: rồi trình độ); chỉ giới tính được tuyển
         const tdLines = [];
-        if (slot.gioi_tinh_can !== "Nữ")  tdLines.push(`-Nam: ${_lvlListShare(td.nam)}`);
-        if (slot.gioi_tinh_can !== "Nam") tdLines.push(`-Nữ: ${_lvlListShare(td.nu)}`);
+        if (slot.gioi_tinh_can !== "Nữ")  tdLines.push(`- Nam: ${_lvlListShare(td.nam)}`);
+        if (slot.gioi_tinh_can !== "Nam") tdLines.push(`- Nữ: ${_lvlListShare(td.nu)}`);
 
         // Chi phí — chỉ hiện giới tính được tuyển
         const giaLines = [];
@@ -2886,7 +2896,7 @@
         lines.push(`🏸 [${diaBan}] - TUYỂN VÃNG LAI ${ngay} 🏸`);
         lines.push("");
         lines.push(`⏰ Thời gian: ${gioBd} - ${gioKt}`);
-        lines.push(`📍 Địa điểm: ${tenSan}`);
+        lines.push(`📍 Địa điểm: ${tenSan}${sanSo ? ` (${sanSo})` : ""}`);
         if (diaChi) lines.push(`🏢 Địa chỉ: ${diaChi}`);
         lines.push(`💪 Trình độ yêu cầu:`);
         tdLines.forEach(l => lines.push(l));
