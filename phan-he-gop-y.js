@@ -118,23 +118,83 @@
      * CHUYỂN TAB TRONG MODAL
      * ═══════════════════════════════════════════════════ */
     window.chuyenTabUho = function (tab) {
-        const tabUngho = document.getElementById("uhoTabUngho");
-        const tabGopy  = document.getElementById("uhoTabGopy");
-        const btnUngho = document.getElementById("uhoBtnUngho");
-        const btnGopy  = document.getElementById("uhoBtnGopy");
-
-        if (tab === "ungho") {
-            if (tabUngho) tabUngho.style.display = "block";
-            if (tabGopy)  tabGopy.style.display  = "none";
-            if (btnUngho) btnUngho.classList.add("active");
-            if (btnGopy)  btnGopy.classList.remove("active");
-        } else {
-            if (tabUngho) tabUngho.style.display = "none";
-            if (tabGopy)  tabGopy.style.display  = "block";
-            if (btnUngho) btnUngho.classList.remove("active");
-            if (btnGopy)  btnGopy.classList.add("active");
-        }
+        const map = {
+            ungho:  { tab: "uhoTabUngho",  btn: "uhoBtnUngho" },
+            gopy:   { tab: "uhoTabGopy",   btn: "uhoBtnGopy" },
+            lichsu: { tab: "uhoTabLichSu", btn: "uhoBtnLichSu" }
+        };
+        const active = map[tab] ? tab : "ungho";
+        Object.keys(map).forEach(k => {
+            const t = document.getElementById(map[k].tab);
+            const b = document.getElementById(map[k].btn);
+            if (t) t.style.display = k === active ? "block" : "none";
+            if (b) b.classList.toggle("active", k === active);
+        });
+        if (active === "lichsu") _taiLichSuGopY();
     };
+
+    /* ═══════════════════════════════════════════════════
+     * LỊCH SỬ GÓP Ý CỦA TÔI — fetch qua RPC token-verified
+     * ═══════════════════════════════════════════════════ */
+    const _LS_TT = {
+        cho_xu_ly:      { nhan: "Chờ xử lý",      color: "#94a3b8", bg: "rgba(148,163,184,0.16)" },
+        dang_thuc_hien: { nhan: "Đang thực hiện", color: "#60a5fa", bg: "rgba(96,165,250,0.16)" },
+        da_xong:        { nhan: "Đã xong",        color: "#4ade80", bg: "rgba(74,222,128,0.16)" },
+        tu_choi:        { nhan: "Từ chối",        color: "#f87171", bg: "rgba(248,113,113,0.16)" }
+    };
+    function _escLs(s) {
+        return String(s == null ? "" : s)
+            .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    }
+    async function _taiLichSuGopY() {
+        const body = document.getElementById("uhoLichSuBody");
+        if (!body) return;
+
+        const actor = window.currentUser || window.currentGuest;
+        if (!actor || !actor.sdt_khach || !actor._token) {
+            body.innerHTML = `<div class="uho-ls-empty">🔒 Vui lòng đăng nhập để xem lịch sử góp ý của bạn.</div>`;
+            return;
+        }
+
+        body.innerHTML = `<div class="uho-ls-empty">Đang tải...</div>`;
+        let rows = [];
+        try {
+            rows = await window.guestRPC.layGopYCuaToi(actor._token, actor.sdt_khach);
+        } catch (e) {
+            body.innerHTML = `<div class="uho-ls-empty">❌ Không tải được lịch sử. Kiểm tra kết nối và thử lại.</div>`;
+            return;
+        }
+        if (!rows || rows.length === 0) {
+            body.innerHTML = `<div class="uho-ls-empty">📭 Bạn chưa gửi góp ý nào.<br>Hãy chia sẻ ý kiến ở tab "💬 Góp ý" nhé!</div>`;
+            return;
+        }
+
+        body.innerHTML = rows.map(g => {
+            const tt   = _LS_TT[g.trang_thai] || _LS_TT.cho_xu_ly;
+            const sao  = Math.max(0, Math.min(5, g.so_sao || 0));
+            const stars = sao ? `<span class="uho-ls-stars">${"★".repeat(sao)}</span>` : "";
+            const loai = g.loai_gop_y ? `<span class="uho-ls-loai">${_escLs(g.loai_gop_y)}</span>` : "";
+            let thoiGian = "—";
+            if (g.created_at) {
+                const d = new Date(g.created_at);
+                thoiGian = `${d.toLocaleDateString("vi-VN")} ${d.toLocaleTimeString("vi-VN",{hour:"2-digit",minute:"2-digit"})}`;
+            }
+            const nd = g.noi_dung ? `<div class="uho-ls-nd">${_escLs(g.noi_dung)}</div>`
+                                  : `<div class="uho-ls-nd" style="color:#475569;font-style:italic;">(Chỉ đánh giá sao, không kèm nội dung)</div>`;
+            const reply = g.noi_dung_phan_hoi
+                ? `<div class="uho-ls-reply">💬 Admin phản hồi: ${_escLs(g.noi_dung_phan_hoi)}</div>` : "";
+            return `<div class="uho-ls-card">
+                <div class="uho-ls-top">
+                    <span>${stars}${loai}</span>
+                    <span class="uho-ls-badge" style="color:${tt.color};background:${tt.bg};">${tt.nhan}</span>
+                </div>
+                ${nd}
+                <div class="uho-ls-time" style="margin-top:7px;">🕒 ${thoiGian}</div>
+                ${reply}
+            </div>`;
+        }).join("");
+    }
 
     /* ═══════════════════════════════════════════════════
      * STAR RATING

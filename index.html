@@ -1900,6 +1900,42 @@
         .uho-tab-content::-webkit-scrollbar-track { background: transparent; }
         .uho-tab-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 
+        /* Tab 3 — Lịch sử góp ý của tôi */
+        .uho-ls-body { display: flex; flex-direction: column; gap: 12px; }
+        .uho-ls-card {
+            background: rgba(255,255,255,0.035);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px; padding: 12px 14px;
+        }
+        .uho-ls-top {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px; margin-bottom: 8px;
+        }
+        .uho-ls-badge {
+            display: inline-block; padding: 2px 10px; border-radius: 10px;
+            font-size: 0.7rem; font-weight: 700; white-space: nowrap;
+        }
+        .uho-ls-time { font-size: 0.72rem; color: #64748b; white-space: nowrap; }
+        .uho-ls-stars { color: #fbbf24; font-size: 0.78rem; letter-spacing: 1px; }
+        .uho-ls-loai {
+            font-size: 0.7rem; color: #22d3ee; background: rgba(34,211,238,0.1);
+            border-radius: 8px; padding: 1px 8px; margin-left: 6px;
+        }
+        .uho-ls-nd {
+            font-size: 0.86rem; color: #cbd5e1; line-height: 1.55;
+            white-space: pre-wrap; word-break: break-word;
+        }
+        .uho-ls-reply {
+            margin: 9px 0 0 10px; padding: 8px 11px;
+            border-left: 3px solid rgba(0,255,136,0.5);
+            background: rgba(0,255,136,0.06); border-radius: 0 8px 8px 0;
+            font-size: 0.8rem; color: #a7f3d0; line-height: 1.5;
+            white-space: pre-wrap; word-break: break-word;
+        }
+        .uho-ls-empty {
+            text-align: center; color: #64748b; font-size: 0.85rem; padding: 28px 8px;
+        }
+
         /* Tab 1 — Ủng hộ */
         #uhoTabUngho { text-align: center; }
         .uho-qr-wrap {
@@ -3356,6 +3392,10 @@
                     onclick="window.chuyenTabUho('gopy')">
                 💬 Góp ý
             </button>
+            <button id="uhoBtnLichSu" class="uho-tab-btn"
+                    onclick="window.chuyenTabUho('lichsu')">
+                📋 Lịch sử
+            </button>
         </div>
 
         <!-- ── TAB 1: Ủng Hộ ── -->
@@ -3446,6 +3486,14 @@
         </div>
         <!-- /TAB 2 -->
 
+        <!-- ── TAB 3: Lịch sử góp ý của tôi ── -->
+        <div id="uhoTabLichSu" class="uho-tab-content" style="display:none;">
+            <div id="uhoLichSuBody" class="uho-ls-body">
+                <div style="text-align:center;color:#64748b;font-size:0.85rem;padding:24px 0;">Đang tải...</div>
+            </div>
+        </div>
+        <!-- /TAB 3 -->
+
     </div>
     <!-- /uho-modal-box -->
 </div>
@@ -3470,14 +3518,14 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 <!-- Supabase JS v2 SDK — BẮT BUỘC load trước ket-noi-supabase.js để guestRPC hoạt động -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="ket-noi-supabase.js?v=20260619a"></script>
+<script src="ket-noi-supabase.js?v=20260620a"></script>
 <script src="bo-may-du-lieu.js?v=20260620a"></script>
 <script src="hieu-ung-giao-dien.js?v=20260612a"></script>
 <script src="phan-he-khach-choi.js?v=20260619f"></script>
 <script src="phan-he-host.js?v=20260619b"></script>
 <script src="phan-he-thong-bao.js?v=20260620a"></script>
 <script src="phan-he-ung-dung.js?v=20260620c"></script>
-<script src="phan-he-gop-y.js?v=20260620a"></script>
+<script src="phan-he-gop-y.js?v=20260620b"></script>
 
 <!-- xoaBoLoc dùng bản đầy đủ trong phan-he-khach-choi.js (reset cả pills + lịch + nhãn giá).
      Routing /khach, /host được xử lý qua URL param trong khoiTaoUngDung() — không cần redirect ở đây. -->

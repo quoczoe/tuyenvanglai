@@ -1046,11 +1046,11 @@
               <label style="display:block;font-size:0.78rem;font-weight:600;color:#94a3b8;margin-bottom:6px;">Trạng thái xử lý</label>
               <select id="phgySelect" style="width:100%;background:#132033;border:1px solid #1e3a5f;border-radius:8px;color:#e2e8f0;font-size:0.9rem;padding:9px 11px;margin-bottom:16px;cursor:pointer;">${opts}</select>
 
-              <label style="display:block;font-size:0.78rem;font-weight:600;color:#94a3b8;margin-bottom:6px;">Lời nhắn phản hồi (gửi cho người dùng khi chọn "Đã xong")</label>
+              <label style="display:block;font-size:0.78rem;font-weight:600;color:#94a3b8;margin-bottom:6px;">Lời nhắn phản hồi (gửi kèm tới người dùng)</label>
               <textarea id="phgyText" rows="4" placeholder="Nhập lời nhắn... vd: Đã sửa lỗi bạn báo, cảm ơn góp ý!" style="width:100%;background:#132033;border:1px solid #1e3a5f;border-radius:8px;color:#e2e8f0;font-size:0.88rem;padding:10px 12px;resize:vertical;font-family:inherit;box-sizing:border-box;">${_escHtml(ph)}</textarea>
               <div style="font-size:0.72rem;color:#64748b;margin-top:6px;">
                 <i class="fa-solid fa-bell" style="color:#fbbf24;"></i>
-                Chọn "Đã xong" → chuông 🔔 của người gửi sẽ sáng kèm lời nhắn này.
+                🔔 Mọi thay đổi trạng thái xử lý sẽ lập tức kích hoạt chuông 🔔 của người gửi kèm lời nhắn.
               </div>
             </div>
             <div style="padding:14px 20px;border-top:1px solid #1e3a5f;display:flex;gap:10px;justify-content:flex-end;">

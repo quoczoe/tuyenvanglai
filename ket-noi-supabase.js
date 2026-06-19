@@ -338,6 +338,14 @@
                 { p_token: token, p_sdt: sdt });
             if (error) throw error;
             return data; // { status, user? }
+        },
+        // Lịch sử góp ý của CHÍNH MÌNH (token-verified) → mảng dòng gop_y_he_thong
+        async layGopYCuaToi(token, sdt) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('lay_gop_y_cua_toi',
+                { p_token: token, p_sdt: sdt });
+            if (error) throw error;
+            return data || []; // [{id, noi_dung, so_sao, loai_gop_y, trang_thai, noi_dung_phan_hoi, created_at, ...}]
         }
     };
 
