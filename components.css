@@ -756,6 +756,41 @@
     box-shadow: 0 0 10px rgba(255,122,0,0.35);
 }
 
+/* Menu chia sẻ ca đấu — position:fixed (định vị bằng JS) → KHÔNG bị card overflow cắt.
+   Tông cam khớp footer card /tim-keo; responsive PC + mobile (tap target lớn hơn ở mobile). */
+.kh-share-menu {
+    position: fixed;
+    z-index: 9999;
+    display: none;
+    min-width: 212px;
+    background: #14181f;
+    border: 1px solid rgba(255,122,0,0.4);
+    border-radius: 10px;
+    box-shadow: 0 12px 34px rgba(0,0,0,0.6);
+    padding: 6px;
+}
+.kh-share-opt {
+    display: flex; align-items: center; gap: 9px;
+    width: 100%;
+    padding: 11px 12px;
+    background: transparent;
+    border: none; border-radius: 7px;
+    color: #e2e8f0;
+    font-family: inherit; font-size: 0.85rem; font-weight: 600;
+    text-align: left; white-space: nowrap; cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.kh-share-opt + .kh-share-opt { margin-top: 2px; }
+.kh-share-opt i { width: 16px; text-align: center; color: #FF7A00; flex-shrink: 0; }
+.kh-share-opt:hover, .kh-share-opt:active {
+    background: rgba(255,85,0,0.12);
+    color: #FF7A00;
+}
+@media (max-width: 480px) {
+    .kh-share-menu { min-width: 0; width: min(74vw, 264px); }
+    .kh-share-opt { padding: 13px 12px; font-size: 0.9rem; }
+}
+
 /* Nút XEM CHI TIẾT — viền trắng/bạc, chữ trắng; hover đổi cam */
 .btn-slot-detail {
     display: flex; align-items: center; justify-content: center; gap: 5px;

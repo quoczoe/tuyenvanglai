@@ -2028,6 +2028,7 @@
         const card = document.createElement("div");
         card.className = "slot-card";
         card.dataset.caId = slot.id; // Để query nút sau khi đặt slot thành công
+        _shareCache[slot.id] = slot; // Lưu data ca để dựng văn bản chia sẻ (menu Share) — tránh query lại
 
         const now        = new Date();
         const isToday    = slot.ngay_danh === now.toLocaleDateString("sv-SE");
@@ -2249,8 +2250,8 @@
             <!-- Footer: Share(15%) | XEM CHI TIẾT(40%) | ĐẶT SLOT(45%) -->
             <div class="slot-card-footer">
                 <button class="btn-slot-share"
-                        onclick="window.shareKeo('${slot.id}');event.stopPropagation()"
-                        title="Sao chép link">
+                        onclick="window._moMenuShare(event, '${slot.id}')"
+                        title="Chia sẻ ca đấu" aria-haspopup="true">
                     <i class="fa-solid fa-link"></i>
                 </button>
                 <button class="btn-slot-detail"
@@ -2814,6 +2815,169 @@
             document.body.removeChild(ta);
             window.hienToast('Đã sao chép link!', 'Dán link vào Zalo/Facebook để chia sẻ.', 'success');
         }
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * MENU CHIA SẺ CA ĐẤU — 2 lựa chọn: (1) chỉ link · (2) full thông tin
+     *   Mở menu nhỏ (position:fixed → định vị bằng JS, KHÔNG bị card overflow cắt,
+     *   responsive PC+mobile). Văn bản full dựng theo mẫu chuẩn (icon + xuống dòng \n).
+     * ═══════════════════════════════════════════════════ */
+    const _shareCache = {}; // { caId: slot } — data ca để dựng văn bản chia sẻ
+    let _shareCurId = null; // caId của menu đang mở
+
+    // Link chia sẻ gọn (bỏ www. + ?id=) — đồng nhất với shareKeo
+    function _shareUrl(caId) {
+        const host = window.location.host.replace(/^www\./i, '');
+        return window.location.protocol + '//' + host + window.location.pathname + '?id=' + caId;
+    }
+
+    // Dải trình độ yêu cầu → chuỗi gọn (pill chuẩn + ghi chú free-text), theo giới tính tuyển
+    function _fmtTrinhDoShare(slot) {
+        const td = slot.yeu_cau_trinh_do || {};
+        const lst = (arr) => {
+            const a = Array.isArray(arr) ? arr : (arr ? [arr] : []);
+            return a.map(v => STANDARD_LEVELS.has(window.chuanHoaTrinhDo(v))
+                ? window.nhanTrinhDo(window.chuanHoaTrinhDo(v)) : v).filter(Boolean).join(", ");
+        };
+        const nam = lst(td.nam), nu = lst(td.nu);
+        if (slot.gioi_tinh_can === "Cả hai") return `Nam: ${nam || "—"} | Nữ: ${nu || "—"}`;
+        if (slot.gioi_tinh_can === "Nữ")    return nu || "—";
+        return nam || "—";
+    }
+
+    // Tên loại cầu — lấy từ loai_cau_su_dung[].ten (bỏ trùng); trống → "Chưa rõ"
+    function _fmtCauShare(slot) {
+        const names = [...new Set(
+            (Array.isArray(slot.loai_cau_su_dung) ? slot.loai_cau_su_dung : [])
+                .map(c => (c && c.ten || "").trim()).filter(Boolean)
+        )];
+        return names.length ? names.join(", ") : "Chưa rõ";
+    }
+
+    // Dựng văn bản full thông tin ca đấu theo mẫu chuẩn (xuống dòng \n rõ ràng, icon đa nền tảng)
+    function _buildShareFull(slot) {
+        const diaBan = [slot.quan_huyen, slot.tinh_thanh].filter(Boolean).join("-") || "—";
+        const ngay = slot.ngay_danh
+            ? new Date(slot.ngay_danh).toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit", year: "numeric" })
+            : "—";
+        const gioBd  = (slot.gio_bat_dau  || "").slice(0, 5) || "—";
+        const gioKt  = (slot.gio_ket_thuc || "").slice(0, 5) || "—";
+        const tenSan = (slot.ten_san || "Chưa có tên sân").toUpperCase();
+        const diaChi = (slot.dia_chi_san || "").trim();
+
+        // Chi phí — chỉ hiện giới tính được tuyển
+        const giaLines = [];
+        if (slot.gioi_tinh_can !== "Nữ") giaLines.push(`- Nam: ${_fmtK(slot.gia_nam)}`);
+        if (slot.gioi_tinh_can !== "Nam") giaLines.push(`- Nữ: ${_fmtK(slot.gia_nu)}`);
+
+        // Tiện ích đã bao gồm trong giá
+        const bg = slot.tien_ich_bao_gom || {};
+        const inc = [];
+        if (bg.san)    inc.push("Tiền sân");
+        if (bg.cau)    inc.push("Cầu");
+        if (bg.nuoc)   inc.push("Nước uống");
+        if (bg.gui_xe) inc.push("Gửi xe");
+
+        const lines = [];
+        lines.push(`🏸 [${diaBan}] - TUYỂN VÃNG LAI ${ngay} 🏸`);
+        lines.push("");
+        lines.push(`⏰ Thời gian: ${gioBd} - ${gioKt}`);
+        lines.push(`📍 Địa điểm: ${tenSan}`);
+        if (diaChi) lines.push(`🏢 Địa chỉ: ${diaChi}`);
+        lines.push(`💪 Trình độ yêu cầu: ${_fmtTrinhDoShare(slot)}`);
+        lines.push(`🏸 Loại cầu sử dụng: ${_fmtCauShare(slot)}`);
+        lines.push(`💰 Chi phí tham gia:`);
+        giaLines.forEach(l => lines.push(l));
+        if (inc.length) lines.push(`✨ (Giá đã bao gồm: ${inc.join(" + ")})`);
+        lines.push("");
+        lines.push("---------------------------------");
+        lines.push("👉 Check và đăng ký giữ slot ngay tại:");
+        lines.push(`🔗 ${_shareUrl(slot.id)}`);
+        return lines.join("\n");
+    }
+
+    // Đóng menu chia sẻ + gỡ listener
+    function _shareOutside(e) {
+        const menu = document.getElementById("khShareMenu");
+        if (menu && !menu.contains(e.target)) _dongMenuShare();
+    }
+    function _dongMenuShare() {
+        const menu = document.getElementById("khShareMenu");
+        if (menu) menu.style.display = "none";
+        document.removeEventListener("click", _shareOutside, true);
+        window.removeEventListener("scroll", _dongMenuShare, true);
+        window.removeEventListener("resize", _dongMenuShare);
+    }
+
+    // Mở menu chia sẻ ngay tại nút share trên card
+    window._moMenuShare = function (ev, caId) {
+        if (ev) ev.stopPropagation();
+        let menu = document.getElementById("khShareMenu");
+        const dangMo = menu && menu.style.display === "block";
+        // Bấm lại đúng nút đang mở → đóng (toggle)
+        if (dangMo && _shareCurId === caId) { _dongMenuShare(); return; }
+        _shareCurId = caId;
+
+        if (!menu) {
+            menu = document.createElement("div");
+            menu.id = "khShareMenu";
+            menu.className = "kh-share-menu";
+            menu.innerHTML = `
+                <button type="button" class="kh-share-opt" onclick="window._shareChon('link')">
+                    <i class="fa-solid fa-link"></i> Chỉ sao chép liên kết
+                </button>
+                <button type="button" class="kh-share-opt" onclick="window._shareChon('full')">
+                    <i class="fa-solid fa-align-left"></i> Sao chép full thông tin
+                </button>`;
+            document.body.appendChild(menu);
+        }
+
+        // Định vị fixed theo nút (mở LÊN trên — footer nằm đáy card; thiếu chỗ → mở xuống)
+        const btn = ev && ev.currentTarget ? ev.currentTarget : null;
+        menu.style.display = "block";
+        menu.style.visibility = "hidden";
+        const mw = menu.offsetWidth, mh = menu.offsetHeight;
+        const r = btn ? btn.getBoundingClientRect() : { left: 12, top: 80, bottom: 110 };
+        let left = r.left;
+        if (left + mw > window.innerWidth - 8) left = window.innerWidth - mw - 8;
+        if (left < 8) left = 8;
+        let top = r.top - mh - 6;
+        if (top < 8) top = r.bottom + 6;
+        menu.style.left = left + "px";
+        menu.style.top  = top + "px";
+        menu.style.visibility = "visible";
+
+        // Đóng khi click ngoài / cuộn / đổi kích thước
+        setTimeout(() => document.addEventListener("click", _shareOutside, true), 0);
+        window.addEventListener("scroll", _dongMenuShare, true);
+        window.addEventListener("resize", _dongMenuShare);
+    };
+
+    // Người dùng chọn 1 trong 2 hình thức chia sẻ
+    window._shareChon = async function (loai) {
+        const caId = _shareCurId;
+        _dongMenuShare();
+        if (!caId) return;
+        const slot = _shareCache[caId];
+        let text, okTitle, okMsg;
+        if (loai === "full" && slot) {
+            text    = _buildShareFull(slot);
+            okTitle = "Đã copy full thông tin ca đấu! ✅";
+            okMsg   = "Dán vào Zalo/Facebook/Messenger để chia sẻ.";
+        } else {
+            text    = _shareUrl(caId);
+            okTitle = "Đã copy link share! ✅";
+            okMsg   = "Dán link vào Zalo/Facebook để chia sẻ.";
+        }
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch {
+            const t = document.createElement("textarea");
+            t.value = text; t.style.position = "fixed"; t.style.opacity = "0";
+            document.body.appendChild(t); t.select();
+            document.execCommand("copy"); document.body.removeChild(t);
+        }
+        window.hienToast(okTitle, okMsg, "success");
     };
 
     // Tự động mở modal chi tiết nếu URL có tham số ?id=<id> (cũ ?ca= vẫn hỗ trợ)
