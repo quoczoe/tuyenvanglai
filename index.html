@@ -1163,20 +1163,22 @@
                Tên hồ sơ trước đây clamp tới 1.3rem + weight 800 → quá to/thô,
                lấn át badge sao & nút đăng xuất. Hạ size + weight cho cân đối. */
             .profile-display-name {
-                font-size: clamp(0.92rem, 3.4vw, 1.08rem);
-                font-weight: 700;
+                font-size: clamp(0.9rem, 3.3vw, 0.97rem); /* ~14.4–15.5px */
+                font-weight: 600;
             }
+            /* Tên user ở header (nếu hiện) cũng gọn, nhẹ */
+            #headerUserName { font-size: 0.9rem; font-weight: 600; }
 
             /* ── Phóng to vùng bấm THANH ĐIỀU HƯỚNG MOBILE (nav drawer) ──
                Touch target ≥ 48px, icon + nhãn to rõ hơn để dễ chạm chính xác. */
             .mobile-nav-item {
-                padding: 16px 20px;
-                min-height: 52px;
-                font-size: 1.04rem;
-                gap: 15px;
+                padding: 18px 22px;
+                min-height: 56px;
+                font-size: 1.06rem;
+                gap: 16px;
             }
-            .mobile-nav-item i { width: 26px; font-size: 1.18rem; }
-            .mobile-nav-items { padding: 10px 0; }
+            .mobile-nav-item i { width: 28px; font-size: 1.22rem; }
+            .mobile-nav-items { padding: 12px 0; }
         }
         @media (max-width: 480px) {
             .filter-grid { grid-template-columns: 1fr; }
