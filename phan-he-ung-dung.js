@@ -450,6 +450,31 @@
         document.getElementById("tvlHomePopupOverlay")?.remove();
     };
 
+    /* ═══════════════════════════════════════════════════
+     * CUỘN MƯỢT TỚI KHỐI QR ỦNG HỘ (cuối trang chủ)
+     * Nút "☕ Ủng hộ" ở Header/drawer → KHÔNG mở modal, chỉ cuộn xuống.
+     * ═══════════════════════════════════════════════════ */
+    window.cuonToiUngHo = function () {
+        // Khối donate nằm ở trang chủ (tab gioi-thieu) → chuyển về đó trước nếu đang ở tab khác
+        if (window.chuyenTab) window.chuyenTab("gioi-thieu");
+        setTimeout(() => {
+            const el = document.getElementById("donateSectionWrap");
+            if (el && getComputedStyle(el).display !== "none") {
+                el.scrollIntoView({ behavior: "smooth", block: "center" });
+                el.style.transition = "box-shadow 0.4s";
+                const inner = el.firstElementChild;
+                if (inner) {
+                    inner.style.boxShadow = "0 0 0 2px rgba(251,191,36,0.6), 0 0 26px rgba(251,191,36,0.3)";
+                    setTimeout(() => { inner.style.boxShadow = ""; }, 1600);
+                }
+            } else {
+                // QR chưa được Admin cấu hình → cuộn xuống cuối + báo nhẹ
+                window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+                if (window.hienToast) window.hienToast("Ủng hộ", "Khu vực ủng hộ sẽ hiển thị khi Admin cấu hình mã QR.", "info");
+            }
+        }, 360);
+    };
+
     function _setProfileField(id, val) {
         const el = document.getElementById(id);
         if (!el) return;

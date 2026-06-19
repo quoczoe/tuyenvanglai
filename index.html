@@ -154,6 +154,24 @@
             border-color: rgba(255,255,255,0.2);
             color: #fff;
         }
+        /* Nút Ủng hộ — highlight nhẹ (tông cà phê/amber) để hút mắt */
+        .btn-ung-ho {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 16px; border-radius: 9px;
+            background: rgba(251,191,36,0.12);
+            border: 1px solid rgba(251,191,36,0.4);
+            color: #fbbf24;
+            font-size: 0.88rem; font-weight: 700;
+            cursor: pointer; font-family: inherit; white-space: nowrap;
+            transition: background 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s;
+            -webkit-user-select: none; user-select: none;
+        }
+        .btn-ung-ho:hover {
+            background: rgba(251,191,36,0.2);
+            border-color: rgba(251,191,36,0.65);
+            color: #fde68a;
+            box-shadow: 0 0 14px rgba(251,191,36,0.25);
+        }
         .app-logo {
             display: flex; align-items: center;
             text-decoration: none; flex-shrink: 0;
@@ -1120,7 +1138,8 @@
             }
             .app-logo img { height: 30px !important; }
             .app-nav { display: none; }          /* ẩn nav tabs */
-            .btn-gop-y { display: none; }        /* ẩn góp ý */
+            .btn-gop-y { display: none; }        /* ẩn góp ý (có trong drawer) */
+            .btn-ung-ho { display: none; }       /* ẩn ủng hộ (có trong drawer) */
             .login-btn-text { display: none; }   /* login → icon only */
             .btn-header-login { padding: 9px 11px; border-radius: 9px; font-size: 0.9rem; box-shadow: none; }
             #headerUserName { display: none; }
@@ -1892,9 +1911,14 @@
             color: #22d3ee;
         }
 
-        /* Tab Content */
+        /* Tab Content — khóa min-height để KHÔNG giật khung khi switch tab */
         .uho-tab-content {
             flex: 1; overflow-y: auto; padding: 20px;
+            min-height: 440px; box-sizing: border-box; /* ≥ chiều cao form Gửi góp ý (432px) → 2 tab bằng nhau */
+        }
+        /* Mobile: cho co giãn theo form (vẫn không giật vì 2 tab dùng chung ngưỡng) */
+        @media (max-width: 480px) {
+            .uho-tab-content { min-height: 380px; }
         }
         .uho-tab-content::-webkit-scrollbar { width: 4px; }
         .uho-tab-content::-webkit-scrollbar-track { background: transparent; }
@@ -1933,7 +1957,13 @@
             white-space: pre-wrap; word-break: break-word;
         }
         .uho-ls-empty {
-            text-align: center; color: #64748b; font-size: 0.85rem; padding: 28px 8px;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            text-align: center; color: #64748b; font-size: 0.85rem;
+            padding: 28px 8px; min-height: 400px; line-height: 1.6;
+        }
+        @media (max-width: 480px) {
+            .uho-ls-empty { min-height: 320px; }
         }
 
         /* Tab 1 — Ủng hộ */
@@ -2115,10 +2145,14 @@
 
     <!-- Góc phải: Góp ý + Tài khoản + Hamburger -->
     <div class="app-header-account">
-        <!-- Nút Góp ý & Ủng hộ — ẩn trên mobile, có trong drawer -->
+        <!-- Nút Góp ý + Ủng hộ TÁCH RIÊNG — ẩn trên mobile, có trong drawer -->
         <button class="btn-gop-y" onclick="window.moUHoModal && window.moUHoModal()"
-                title="Góp ý & Ủng hộ dự án">
-            💬 <span class="btn-gop-y-label">Góp ý &amp; Ủng hộ</span>
+                title="Đánh giá & Góp ý">
+            💬 <span class="btn-gop-y-label">Góp ý</span>
+        </button>
+        <button class="btn-ung-ho" onclick="window.cuonToiUngHo && window.cuonToiUngHo()"
+                title="Ủng hộ tác giả">
+            ☕ <span class="btn-gop-y-label">Ủng hộ</span>
         </button>
         <!-- Chuông thông báo — LUÔN hiện sẵn (static, 0ms khi F5, không layout shift).
              Badge ẩn tới khi poll xong. Khách chưa đăng nhập: bấm → mở đăng nhập. -->
@@ -2173,7 +2207,10 @@
         </button>
         <div class="mobile-nav-divider"></div>
         <button class="mobile-nav-item" onclick="window.moUHoModal&&window.moUHoModal();window.closeMobileNav()">
-            <i class="fa-solid fa-heart"></i> Góp ý &amp; Ủng hộ
+            <i class="fa-solid fa-comment-dots"></i> Góp ý
+        </button>
+        <button class="mobile-nav-item" onclick="window.closeMobileNav();window.cuonToiUngHo&&window.cuonToiUngHo()">
+            <i class="fa-solid fa-mug-hot"></i> Ủng hộ
         </button>
         <button class="mobile-nav-item" id="mobileNavAccountItem" onclick="window.chuyenTab('ca-nhan');window.closeMobileNav()">
             <i class="fa-solid fa-user"></i> Tài Khoản / Đăng Nhập
@@ -3376,55 +3413,25 @@
 
         <!-- Header -->
         <div class="uho-modal-hd">
-            <span class="uho-modal-title">Ủng Hộ &amp; Góp Ý</span>
+            <span class="uho-modal-title">ĐÁNH GIÁ &amp; GÓP Ý</span>
             <button class="uho-close-btn" onclick="window.dongUHoModal()" title="Đóng">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
 
-        <!-- Tab Navigation -->
+        <!-- Tab Navigation — 2 tab đối xứng 50/50 -->
         <div class="uho-tab-bar">
-            <button id="uhoBtnUngho" class="uho-tab-btn active"
-                    onclick="window.chuyenTabUho('ungho')">
-                ☕ Ủng hộ
-            </button>
-            <button id="uhoBtnGopy" class="uho-tab-btn"
+            <button id="uhoBtnGopy" class="uho-tab-btn active"
                     onclick="window.chuyenTabUho('gopy')">
-                💬 Góp ý
+                💬 Gửi góp ý
             </button>
             <button id="uhoBtnLichSu" class="uho-tab-btn"
                     onclick="window.chuyenTabUho('lichsu')">
-                📋 Lịch sử
+                📋 Lịch sử góp ý
             </button>
         </div>
 
-        <!-- ── TAB 1: Ủng Hộ ── -->
-        <div id="uhoTabUngho" class="uho-tab-content">
-            <!-- Tiêu đề động từ DB -->
-            <p id="uhoTitleEl"
-               style="color:#34d399; font-size:0.9rem; font-weight:800;
-                      letter-spacing:0.06em; text-transform:uppercase;
-                      margin: 0 0 14px;">
-                MỜI ADMIN LY CAFE CHỐT KÈO ☕
-            </p>
-            <!-- QR Image (hiển thị khi có URL trong DB) -->
-            <div class="uho-qr-wrap" id="uhoQrWrap">
-                <img id="uhoQrImg" src="" alt="QR Donate"
-                     style="display:none; width:200px; height:200px;">
-            </div>
-
-            <!-- Placeholder khi chưa config QR -->
-            <div class="uho-qr-empty" id="uhoQrEmpty">
-                <i class="fa-solid fa-qrcode"></i>
-                <span style="font-size:0.82rem;">QR chưa được cấu hình<br>Liên hệ Admin để cập nhật.</span>
-            </div>
-
-            <p class="uho-qr-text" id="uhoQrText">
-                ☕ Ủng hộ tác giả 1 ly cà phê nhé!
-            </p>
-        </div>
-
-        <!-- ── TAB 2: Góp Ý ── -->
+        <!-- ── TAB 1: Gửi Góp Ý ── -->
         <div id="uhoTabGopy" class="uho-tab-content" style="display:none;">
 
             <!-- Đã đánh giá: hiện sao khoá (không tương tác) -->
@@ -3524,8 +3531,8 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="phan-he-khach-choi.js?v=20260619f"></script>
 <script src="phan-he-host.js?v=20260619b"></script>
 <script src="phan-he-thong-bao.js?v=20260620a"></script>
-<script src="phan-he-ung-dung.js?v=20260620c"></script>
-<script src="phan-he-gop-y.js?v=20260620b"></script>
+<script src="phan-he-ung-dung.js?v=20260620d"></script>
+<script src="phan-he-gop-y.js?v=20260620c"></script>
 
 <!-- xoaBoLoc dùng bản đầy đủ trong phan-he-khach-choi.js (reset cả pills + lịch + nhãn giá).
      Routing /khach, /host được xử lý qua URL param trong khoiTaoUngDung() — không cần redirect ở đây. -->

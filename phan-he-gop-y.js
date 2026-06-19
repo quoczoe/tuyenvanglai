@@ -91,17 +91,14 @@
         overlay.style.display = "flex";
         document.body.style.overflow = "hidden";
 
-        // Fetch CMS data nếu chưa có
+        // Fetch CMS data nếu chưa có (cần cho Telegram notify khi gửi góp ý)
         await _loadCmsData();
-
-        // Render tab Ủng hộ
-        _renderDonate();
 
         // Setup trạng thái form góp ý (đã/chưa đánh giá)
         _apDungCheDoRated();
 
-        // Mặc định: mở tab Ủng hộ
-        chuyenTabUho("ungho");
+        // Mặc định: mở tab "Gửi góp ý" (Ủng hộ đã tách ra Header → cuộn tới QR trang chủ)
+        chuyenTabUho("gopy");
     };
 
     /* ═══════════════════════════════════════════════════
@@ -119,11 +116,10 @@
      * ═══════════════════════════════════════════════════ */
     window.chuyenTabUho = function (tab) {
         const map = {
-            ungho:  { tab: "uhoTabUngho",  btn: "uhoBtnUngho" },
             gopy:   { tab: "uhoTabGopy",   btn: "uhoBtnGopy" },
             lichsu: { tab: "uhoTabLichSu", btn: "uhoBtnLichSu" }
         };
-        const active = map[tab] ? tab : "ungho";
+        const active = map[tab] ? tab : "gopy";
         Object.keys(map).forEach(k => {
             const t = document.getElementById(map[k].tab);
             const b = document.getElementById(map[k].btn);
