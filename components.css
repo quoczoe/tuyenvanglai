@@ -727,6 +727,11 @@
 .shb-name    { font-size:0.82rem; font-weight:800; color:#ffffff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:0 1 auto; }
 .shb-sdt     { font-size:0.82rem; font-weight:700; color:#FF5500; white-space:nowrap; }
 .shb-divider { color:#334155; font-size:0.9rem; margin:0 1px; }
+/* Mobile: hạ size + weight tên host trên card cho cân đối (không lấn át SĐT/thông tin) */
+@media (max-width: 600px) {
+    .shb-name { font-size:0.78rem; font-weight:700; }
+    .shb-sdt  { font-size:0.78rem; }
+}
 
 /* Footer card — grid 22% Share | 37% Chi tiết | 41% Đặt slot */
 .slot-card-footer {

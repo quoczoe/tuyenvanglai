@@ -68,7 +68,7 @@
 
     <!-- CSS hệ thống -->
     <link rel="stylesheet" href="giao-dien.css?v=20260615a">
-    <link rel="stylesheet" href="components.css?v=20260619b">
+    <link rel="stylesheet" href="components.css?v=20260620a">
 
     <style>
         /* ══════════════════════════════════════════════════
@@ -1158,6 +1158,25 @@
             .btn-logout-label { display: none; }
             .btn-profile-logout { padding: 7px 10px; }
             .tvl-trust-score { font-size: 1.6rem; }
+
+            /* ── Tối ưu kích thước TÊN người dùng trên mobile ──
+               Tên hồ sơ trước đây clamp tới 1.3rem + weight 800 → quá to/thô,
+               lấn át badge sao & nút đăng xuất. Hạ size + weight cho cân đối. */
+            .profile-display-name {
+                font-size: clamp(0.92rem, 3.4vw, 1.08rem);
+                font-weight: 700;
+            }
+
+            /* ── Phóng to vùng bấm THANH ĐIỀU HƯỚNG MOBILE (nav drawer) ──
+               Touch target ≥ 48px, icon + nhãn to rõ hơn để dễ chạm chính xác. */
+            .mobile-nav-item {
+                padding: 16px 20px;
+                min-height: 52px;
+                font-size: 1.04rem;
+                gap: 15px;
+            }
+            .mobile-nav-item i { width: 26px; font-size: 1.18rem; }
+            .mobile-nav-items { padding: 10px 0; }
         }
         @media (max-width: 480px) {
             .filter-grid { grid-template-columns: 1fr; }
