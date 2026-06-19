@@ -535,7 +535,20 @@
         "DIT ME", "DIT MIE", "DIT CON", "SUC VAT", "CHET ME", "CON ME MAY", "AN HAI", "AN CUT"
     ];
 
-    window.kiemTraTenHopLe = function (raw) {
+    window.kiemTraTenHopLe = function (raw, isAdmin) {
+        // ── 0. BYPASS ADMIN ───────────────────────────────────────────────
+        // Admin (vận hành/quản trị/test) được đặt tên tùy ý: bỏ qua TOÀN BỘ
+        // bộ lọc (độ dài, số từ, khoảng trắng, ký tự đặc biệt, từ cấm, spam).
+        // Chấp nhận: isAdmin===true | "admin" | { vai_tro:"admin" } | { is_admin:true }
+        let _admin = false;
+        if (isAdmin === true || isAdmin === "admin") {
+            _admin = true;
+        } else if (isAdmin && typeof isAdmin === "object") {
+            const vt = String(isAdmin.vai_tro || isAdmin.role || "").toLowerCase();
+            _admin = vt === "admin" || isAdmin.is_admin === true || isAdmin.isAdmin === true;
+        }
+        if (_admin) return { ok: true, loai: "admin", lyDo: "" };
+
         const goc = String(raw == null ? "" : raw);
 
         // ── 1. KIỂM TRA THÔ (trên chuỗi GỐC, trước khi xử lý) ──────────────

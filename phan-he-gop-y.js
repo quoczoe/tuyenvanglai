@@ -195,6 +195,14 @@
     window.guiGopY = async function () {
         if (_dangGui) return;
 
+        // ── CHẶN KHÁCH CHƯA ĐĂNG NHẬP ──────────────────────────────────────
+        // Chỉ user đã định danh (currentUser/currentGuest có sdt_khach) mới gửi.
+        const _actor = window.currentUser || window.currentGuest;
+        if (!_actor || !_actor.sdt_khach) {
+            _hienThongBaoUho("warning", "🔒 Vui lòng đăng nhập để gửi góp ý / đánh giá.");
+            return;
+        }
+
         // Kiểm tra rate limit trước khi validate
         const rl = _kiemTraRateLimit();
         if (!rl.ok) {
@@ -214,13 +222,23 @@
         }
 
         const noiDung  = (document.getElementById("uhoTextarea")?.value || "").trim();
+
+        // ── BẮT BUỘC NHẬP NỘI DUNG ─────────────────────────────────────────
+        // Chặn vote sao trống không kèm chữ (góp ý rỗng, vô nghĩa).
+        if (noiDung.length < 5) {
+            const ta = document.getElementById("uhoTextarea");
+            if (ta) {
+                ta.style.animation = "uho-shake 0.35s ease";
+                setTimeout(() => { ta.style.animation = ""; }, 400);
+                try { ta.focus(); } catch (_) {}
+            }
+            _hienThongBaoUho("warning", "✍️ Vui lòng nhập nội dung góp ý (tối thiểu 5 ký tự) — không nhận đánh giá trống.");
+            return;
+        }
+
         const loai     = _selectedChip || "Khác";
-        const tenUser  = window.currentUser?.ten_khach
-                      || window.currentGuest?.ten_khach
-                      || "Khách vãng lai";
-        const sdtUser  = window.currentUser?.sdt_khach
-                      || window.currentGuest?.sdt_khach
-                      || null;
+        const tenUser  = _actor.ten_khach || "Người dùng";
+        const sdtUser  = _actor.sdt_khach || null;
 
         _dangGui = true;
         const btn = document.getElementById("uhoBtnGui");

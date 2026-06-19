@@ -367,7 +367,7 @@
         // Validate Họ tên TRƯỚC khi lưu (chặt — chống tên rác/phá hoại/lách luật)
         const _tenMoi = (document.getElementById("profileName")?.value?.trim() || u.ten_khach || "").toUpperCase() || u.ten_khach;
         if (window.kiemTraTenHopLe) {
-            const _kqTen = window.kiemTraTenHopLe(_tenMoi);
+            const _kqTen = window.kiemTraTenHopLe(_tenMoi, u);
             if (!_kqTen.ok) {
                 window.hienToast("Tên không hợp lệ", _kqTen.lyDo, "danger");
                 const _el = document.getElementById("profileName");
@@ -576,7 +576,7 @@
         if (_quetTenBusy) return;
         const u = window.currentUser || window.currentGuest;
         if (!u || !u.sdt_khach || !window.kiemTraTenHopLe) return;
-        const kq = window.kiemTraTenHopLe(u.ten_khach || u.ten || "");
+        const kq = window.kiemTraTenHopLe(u.ten_khach || u.ten || "", u);
         if (kq.ok) { window._xoaCanhBaoTen(u.sdt_khach); window._dongModalViPhamTen(); return; }
 
         _quetTenBusy = true;
