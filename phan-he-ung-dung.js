@@ -188,6 +188,14 @@
             const tab   = SLUG_TO_TAB[pSlug] || (e.state?.tab) || "gioi-thieu";
             chuyenTab(tab, true);
         });
+
+        // ── CƯỠNG CHẾ ĐỔI TÊN: quét khi MỞ WEB / F5 + khi ĐỔI TAB trình duyệt ──
+        if (window.currentUser || window.currentGuest) {
+            setTimeout(() => window.quetTenViPham && window.quetTenViPham(), 1000);
+        }
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) setTimeout(() => window.quetTenViPham && window.quetTenViPham(), 300);
+        });
     };
 
     /* ═══════════════════════════════════════════════════
@@ -356,8 +364,20 @@
         const u = window.currentUser;
         if (!u) return;
 
+        // Validate Họ tên TRƯỚC khi lưu (chặt — chống tên rác/phá hoại/lách luật)
+        const _tenMoi = (document.getElementById("profileName")?.value?.trim() || u.ten_khach || "").toUpperCase() || u.ten_khach;
+        if (window.kiemTraTenHopLe) {
+            const _kqTen = window.kiemTraTenHopLe(_tenMoi);
+            if (!_kqTen.ok) {
+                window.hienToast("Tên không hợp lệ", _kqTen.lyDo, "danger");
+                const _el = document.getElementById("profileName");
+                if (_el) { try { _el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (_) {} _el.focus(); }
+                return;
+            }
+        }
+
         const payload = {
-            ten_khach:    (document.getElementById("profileName")?.value?.trim() || u.ten_khach || "").toUpperCase() || u.ten_khach,
+            ten_khach:    _tenMoi,
             gioi_tinh:    document.getElementById("profileGender")?.value           || u.gioi_tinh,
             trinh_do:     (window.chuanHoaTrinhDo ? window.chuanHoaTrinhDo(document.getElementById("profileTrindDo")?.value) : document.getElementById("profileTrindDo")?.value) || "",
             facebook_link:document.getElementById("profileFacebook")?.value?.trim() || null,
@@ -378,6 +398,9 @@
             localStorage.setItem(sessionKey, JSON.stringify(window.currentUser));
             window.hienToast("Đã lưu! ✅", "Thông tin hồ sơ đã được cập nhật.", "success");
             _capNhatHeaderState();
+            // Tên đã hợp lệ → xóa cờ vi phạm (DB + localStorage) + đóng modal tối hậu thư nếu có
+            window._xoaCanhBaoTen && window._xoaCanhBaoTen(u.sdt_khach);
+            window._dongModalViPhamTen && window._dongModalViPhamTen();
         } catch (e) {
             window.hienToast("Lỗi", "Không thể lưu. Thử lại sau.", "danger");
         } finally {
@@ -434,6 +457,134 @@
             // Không ở tab cá nhân → chuyển sang tab cá nhân để user thấy
             setTimeout(() => chuyenTab("ca-nhan"), 200);
         }
+
+        // Quét tên vi phạm ngay sau khi đăng nhập thành công
+        setTimeout(() => window.quetTenViPham && window.quetTenViPham(), 700);
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * CƯỠNG CHẾ ĐỔI TÊN — quét tên vi phạm + tối hậu thư 24h + khóa is_active
+     *   Validate: window.kiemTraTenHopLe (bo-may-du-lieu.js).
+     *   Timestamp cảnh báo lần đầu: cột DB `ten_canh_bao_luc` (primary) + localStorage
+     *   fallback (an toàn khi cột chưa tồn tại / verify). Khóa = is_active=false.
+     * ═══════════════════════════════════════════════════ */
+    const _TEN_VP_24H = 24 * 60 * 60 * 1000;
+    let _quetTenBusy = false;
+    let _tenColOK = null; // null=chưa biết · true=cột ten_canh_bao_luc có · false=chưa có (dùng localStorage, tránh spam 400)
+
+    function _escTen(s) {
+        return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // Lưu mốc cảnh báo (ms) — DB `ten_canh_bao_luc` + localStorage bản sao
+    async function _ghiMocCanhBao(sdt, ms) {
+        try { localStorage.setItem("tvl_ten_vp_" + sdt, String(ms)); } catch (_) {}
+        if (_tenColOK === false) return; // cột chưa có → chỉ localStorage (tránh spam 400)
+        try { await window.dbEngine.ghi("nguoi_dung", { ten_canh_bao_luc: new Date(ms).toISOString() }, { sdt_khach: sdt }); }
+        catch (_) { _tenColOK = false; }
+    }
+    // Đọc mốc cảnh báo (ms) — ưu tiên DB (nếu cột tồn tại), fallback localStorage. 0 nếu chưa có.
+    async function _layMocCanhBao(sdt) {
+        if (_tenColOK !== false) {
+            const rows = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: sdt }, select: "ten_canh_bao_luc" });
+            if (rows === null) { _tenColOK = false; }          // đọc lỗi (cột chưa có) → khóa DB path
+            else {
+                _tenColOK = true;
+                const v = rows[0] && rows[0].ten_canh_bao_luc;
+                if (v) { const t = Date.parse(v); if (!isNaN(t)) return t; }
+            }
+        }
+        return Number(localStorage.getItem("tvl_ten_vp_" + sdt) || 0) || 0;
+    }
+    // Xóa cờ cảnh báo (tên đã hợp lệ)
+    window._xoaCanhBaoTen = async function (sdt) {
+        if (!sdt) return;
+        try { localStorage.removeItem("tvl_ten_vp_" + sdt); } catch (_) {}
+        if (_tenColOK === false) return;
+        try { await window.dbEngine.ghi("nguoi_dung", { ten_canh_bao_luc: null }, { sdt_khach: sdt }); }
+        catch (_) { _tenColOK = false; }
+    };
+
+    window._dongModalViPhamTen = function () {
+        document.getElementById("modalViPhamTen")?.remove();
+    };
+    // "Đổi ngay" → sang tab Cá Nhân + focus ô Họ tên
+    window._doiTenNgay = function () {
+        window._dongModalViPhamTen();
+        if (window.chuyenTab) window.chuyenTab("ca-nhan");
+        setTimeout(() => {
+            const inp = document.getElementById("profileName");
+            if (inp) { try { inp.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (_) {} inp.focus(); try { inp.select(); } catch (_) {} }
+        }, 380);
+    };
+
+    function _hienModalViPhamTen(kq, ts) {
+        if (document.getElementById("modalViPhamTen") || document.getElementById("modalDaKhoaTen")) return;
+        const gioConLai = Math.max(1, Math.ceil((_TEN_VP_24H - (Date.now() - ts)) / 3600000));
+        const modal = document.createElement("div");
+        modal.id = "modalViPhamTen";
+        modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;";
+        modal.innerHTML = `
+            <div style="background:#1a2233;border:1px solid #ef4444;border-radius:16px;padding:26px 22px;max-width:440px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,0.7);">
+                <div style="font-size:2.4rem;text-align:center;margin-bottom:4px;">⚠️</div>
+                <h3 style="color:#ef4444;margin:0 0 12px;font-size:1.16rem;text-align:center;font-weight:800;">TÊN TÀI KHOẢN VI PHẠM</h3>
+                <p style="color:#e2e8f0;font-size:0.92rem;margin:0 0 12px;line-height:1.55;">${_escTen(kq.lyDo)}</p>
+                <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.35);border-radius:10px;padding:11px 13px;margin:0 0 18px;">
+                    <p style="color:#fca5a5;font-size:0.86rem;margin:0;line-height:1.5;">
+                        Bạn phải <strong>ĐỔI TÊN NGAY</strong>. Nếu sau <strong>24 giờ</strong> (còn ~${gioConLai}h) tên vẫn vi phạm, tài khoản sẽ bị <strong>KHÓA</strong>.
+                    </p>
+                </div>
+                <div style="display:flex;gap:10px;">
+                    <button onclick="window._doiTenNgay()" style="flex:1;padding:12px;background:#ef4444;color:#fff;border:none;border-radius:9px;font-weight:800;cursor:pointer;font-size:0.95rem;">Đổi ngay</button>
+                    <button onclick="window._dongModalViPhamTen()" style="padding:12px 18px;background:transparent;color:#9ca3af;border:1px solid #374151;border-radius:9px;cursor:pointer;font-size:0.9rem;">Để sau</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+    }
+
+    function _hienModalDaKhoaTen(kq) {
+        document.getElementById("modalViPhamTen")?.remove();
+        if (document.getElementById("modalDaKhoaTen")) return;
+        const modal = document.createElement("div");
+        modal.id = "modalDaKhoaTen";
+        modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:100001;display:flex;align-items:center;justify-content:center;padding:16px;";
+        modal.innerHTML = `
+            <div style="background:#1a2233;border:1px solid #ef4444;border-radius:16px;padding:28px 22px;max-width:420px;width:100%;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,0.8);">
+                <div style="font-size:2.6rem;margin-bottom:8px;">🔒</div>
+                <h3 style="color:#ef4444;margin:0 0 12px;font-size:1.2rem;font-weight:800;">TÀI KHOẢN ĐÃ BỊ KHÓA</h3>
+                <p style="color:#e2e8f0;font-size:0.92rem;margin:0 0 18px;line-height:1.55;">
+                    Quá 24 giờ nhưng tên vẫn vi phạm (${_escTen(kq.lyDo)}). Tài khoản đã bị khóa. Liên hệ Admin để được hỗ trợ mở khóa.
+                </p>
+                <button onclick="document.getElementById('modalDaKhoaTen')?.remove()" style="padding:11px 26px;background:#ef4444;color:#fff;border:none;border-radius:9px;font-weight:700;cursor:pointer;">Đã hiểu</button>
+            </div>`;
+        document.body.appendChild(modal);
+    }
+
+    // Quét tên user hiện tại — kích hoạt khi open web/F5, đăng nhập, đổi tab
+    window.quetTenViPham = async function () {
+        if (_quetTenBusy) return;
+        const u = window.currentUser || window.currentGuest;
+        if (!u || !u.sdt_khach || !window.kiemTraTenHopLe) return;
+        const kq = window.kiemTraTenHopLe(u.ten_khach || u.ten || "");
+        if (kq.ok) { window._xoaCanhBaoTen(u.sdt_khach); window._dongModalViPhamTen(); return; }
+
+        _quetTenBusy = true;
+        try {
+            let ts = await _layMocCanhBao(u.sdt_khach);
+            if (!ts) { ts = Date.now(); await _ghiMocCanhBao(u.sdt_khach, ts); }
+
+            if (Date.now() - ts > _TEN_VP_24H) {
+                // Tối hậu thư hết hạn → KHÓA tài khoản
+                try { await window.dbEngine.ghi("nguoi_dung", { is_active: false }, { sdt_khach: u.sdt_khach }); } catch (_) {}
+                _hienModalDaKhoaTen(kq);
+                try { localStorage.removeItem("tvl_user"); localStorage.removeItem("tvl_guest"); } catch (_) {}
+                window.currentUser = null; window.currentGuest = null;
+                _capNhatHeaderState();
+                window.dungThongBao && window.dungThongBao();
+            } else {
+                _hienModalViPhamTen(kq, ts);
+            }
+        } finally { _quetTenBusy = false; }
     };
 
     /* ═══════════════════════════════════════════════════

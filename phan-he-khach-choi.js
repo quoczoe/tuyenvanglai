@@ -127,6 +127,8 @@
                         window.currentGuest = { ...parsed };
                         _hienThiDashboardKhach();
                         _batDauKiemTraSession();
+                        // Quét tên vi phạm khi mở web / F5 (open web đã đăng nhập)
+                        setTimeout(() => window.quetTenViPham && window.quetTenViPham(), 900);
                     }
                 }
             } catch {
@@ -884,9 +886,14 @@
         const maGT     = (document.getElementById("inputMaGioiThieu")?.value || "").trim();
         const telegramId = null; // Sẽ kết nối riêng qua poll
 
-        // Validate
-        if (!window.VALIDATE.ten(ten)) {
-            window.hienToast("Tên không hợp lệ", "Tên chỉ được chứa chữ cái tiếng Việt (2-50 ký tự).", "danger"); return;
+        // Validate TÊN (chặt — chống tên rác/phá hoại/lách luật). Helper SSOT ở bo-may-du-lieu.js
+        const _kqTen = window.kiemTraTenHopLe
+            ? window.kiemTraTenHopLe(ten)
+            : { ok: window.VALIDATE.ten(ten), lyDo: "Tên chỉ được chứa chữ cái tiếng Việt (2-50 ký tự)." };
+        if (!_kqTen.ok) {
+            window.hienToast("Tên không hợp lệ", _kqTen.lyDo, "danger");
+            document.getElementById("inputTenKhach")?.focus();
+            return;
         }
         if (!zaloCk && sdtZalo && !window.VALIDATE.sdt(sdtZalo)) {
             window.hienToast("SĐT Zalo không hợp lệ", "Nhập đúng 10 số, đầu 03/05/07/08/09.", "danger"); return;
