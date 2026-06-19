@@ -708,6 +708,7 @@
     display: inline-flex; align-items: center; gap: 4px;
     cursor: pointer; border-radius: 5px; padding: 2px 5px;
     transition: background 0.12s;
+    min-width: 0; max-width: 100%; /* cho phép .shb-name co lại + ellipsis, không tràn card */
 }
 .shb-name-chip:hover { background: rgba(255,255,255,0.07); }
 .shb-name-chip:hover .shb-name { text-decoration: underline; text-underline-offset: 2px; color: #60a5fa; }
@@ -720,8 +721,10 @@
 .shb-phone-chip:hover { background: rgba(255,85,0,0.09); }
 .shb-phone-chip:hover .shb-sdt { text-decoration: underline; text-underline-offset: 2px; color: #ff7a00; }
 /* Shared text classes */
-.shb-label   { font-size:0.67rem; color:#64748b; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; }
-.shb-name    { font-size:0.82rem; font-weight:800; color:#ffffff; white-space:nowrap; }
+/* "HOST:" / "SĐT:" — LUÔN 1 dòng ngang, không bị bóp nhảy dọc từng ký tự */
+.shb-label   { font-size:0.67rem; color:#64748b; font-weight:600; letter-spacing:0.04em; text-transform:uppercase; white-space:nowrap; flex-shrink:0; }
+/* Tên host — co lại + cắt "…" khi quá dài (như tên sân/trình độ), giữ layout vuông vắn */
+.shb-name    { font-size:0.82rem; font-weight:800; color:#ffffff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:0 1 auto; }
 .shb-sdt     { font-size:0.82rem; font-weight:700; color:#FF5500; white-space:nowrap; }
 .shb-divider { color:#334155; font-size:0.9rem; margin:0 1px; }
 

@@ -1172,6 +1172,19 @@
     /* ═══════════════════════════════════════════════════
      * 9. ĐĂNG / CHỈNH SỬA CA ĐẤU → bảng ca_dau
      * ═══════════════════════════════════════════════════ */
+    // Tô viền đỏ trực quan cho ô/khu vực thiếu dữ liệu (box-shadow → KHÔNG đẩy lệch layout),
+    // cuộn tới + focus (nếu là input); tự xóa highlight khi người dùng sửa.
+    function _baoLoiTruong(elId) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        el.style.boxShadow = "0 0 0 2px rgba(239,68,68,0.6)";
+        try { el.style.borderRadius = el.style.borderRadius || "8px"; } catch (_) {}
+        try { el.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (_) {}
+        if (el.tagName === "INPUT") { try { el.focus({ preventScroll: true }); } catch (_) {} }
+        const _clear = () => { el.style.boxShadow = ""; };
+        ["input", "change", "click"].forEach(ev => el.addEventListener(ev, _clear, { once: true }));
+    }
+
     window.dangCaDauCuaHost = async function () {
         if (!window.currentUser && !window.currentGuest) {
             window.hienToast("Cần đăng nhập", "Vui lòng đăng nhập để đăng bài hoặc đặt slot tham gia ca đấu!", "warning"); return;
@@ -1231,6 +1244,28 @@
             if (cu) fLevels.push(cu);
         }
         const yeu_cau_trinh_do = { nam: mLevels, nu: fLevels };
+
+        // ── VALIDATION BẮT BUỘC: Giá tiền + Trình độ theo GIỚI TÍNH ĐƯỢC TUYỂN ──────────
+        const _tuyenNam = (genderRaw === "male"   || genderRaw === "both");
+        const _tuyenNu  = (genderRaw === "female" || genderRaw === "both");
+        // 1) Giá > 0 cho mỗi giới tuyển → chặn ca hiển thị "0K" gây hiểu lầm tuyển miễn phí
+        if (_tuyenNam && !(gia_nam > 0)) {
+            window.hienToast("Thiếu giá tiền", "Vui lòng nhập GIÁ THU NAM (lớn hơn 0K) cho ca đấu.", "danger");
+            _baoLoiTruong("hostPublicPriceMale"); return;
+        }
+        if (_tuyenNu && !(gia_nu > 0)) {
+            window.hienToast("Thiếu giá tiền", "Vui lòng nhập GIÁ THU NỮ (lớn hơn 0K) cho ca đấu.", "danger");
+            _baoLoiTruong("hostPublicPriceFemale"); return;
+        }
+        // 2) Trình độ ≥ 1 mức cho mỗi giới tuyển → tránh dải trình độ trống làm vỡ/nhảy khung card
+        if (_tuyenNam && mLevels.length === 0) {
+            window.hienToast("Thiếu trình độ", "Vui lòng chọn ít nhất 1 trình độ yêu cầu cho NAM.", "danger");
+            _baoLoiTruong("levelNamPills"); return;
+        }
+        if (_tuyenNu && fLevels.length === 0) {
+            window.hienToast("Thiếu trình độ", "Vui lòng chọn ít nhất 1 trình độ yêu cầu cho NỮ.", "danger");
+            _baoLoiTruong("levelNuPills"); return;
+        }
 
         // Tiện ích (JSONB)
         const tien_ich_bao_gom = {

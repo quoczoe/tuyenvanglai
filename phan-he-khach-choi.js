@@ -1297,6 +1297,42 @@
         }
     }
 
+    // ── Ràng buộc khung giờ: "Đến" PHẢI > "Từ". Disable các mốc mâu thuẫn ở 2 select ──
+    function _apDungDisableKhungGio(fromSel, toSel) {
+        if (!fromSel || !toSel) return;
+        const fromVal = fromSel.value, toVal = toSel.value;
+        // Trong "Đến": disable mọi mốc <= Giờ bắt đầu (so sánh chuỗi "HH:MM" an toàn)
+        Array.from(toSel.options).forEach(o => {
+            o.disabled = !!(fromVal && o.value && o.value <= fromVal);
+        });
+        // Trong "Từ": disable mọi mốc >= Giờ kết thúc
+        Array.from(fromSel.options).forEach(o => {
+            o.disabled = !!(toVal && o.value && o.value >= toVal);
+        });
+    }
+    // Áp lại disable cho CẢ PC lẫn mobile theo giá trị hiện tại (gọi sau init/mở drawer/xác nhận/xóa lọc)
+    window._capNhatDisableKhungGio = function () {
+        _apDungDisableKhungGio(document.getElementById("filterTimeFrom"),
+                               document.getElementById("filterTimeTo"));
+        _apDungDisableKhungGio(document.getElementById("filterTimeFromMobile"),
+                               document.getElementById("filterTimeToMobile"));
+    };
+    // onchange của select giờ — tự giải mâu thuẫn (giữ ô VỪA đổi) + disable + (PC) search ngay
+    window._khungGioChange = function (which, isMobile) {
+        const fromSel = document.getElementById(isMobile ? "filterTimeFromMobile" : "filterTimeFrom");
+        const toSel   = document.getElementById(isMobile ? "filterTimeToMobile"   : "filterTimeTo");
+        if (fromSel && toSel) {
+            const fromVal = fromSel.value, toVal = toSel.value;
+            // Mâu thuẫn (Đến <= Từ) → reset ô KHÔNG vừa đổi để không bao giờ chọn được giờ vô lý
+            if (fromVal && toVal && toVal <= fromVal) {
+                if (which === "from") toSel.value = "";
+                else                  fromSel.value = "";
+            }
+            _apDungDisableKhungGio(fromSel, toSel);
+        }
+        if (!isMobile) window.timKiemCaDau && window.timKiemCaDau();
+    };
+
     function _napDropdownBoLoc() {
         const provSel = document.getElementById("filterProvince");
         if (!provSel) return;
@@ -1307,6 +1343,7 @@
         window._renderTkCal && window._renderTkCal();
         _napGioBoLoc("filterTimeFromMobile", "Từ giờ");
         _napGioBoLoc("filterTimeToMobile",   "Đến");
+        window._capNhatDisableKhungGio();  // áp ràng buộc Đến>Từ ngay sau khi nạp option giờ
         provSel.innerHTML = '<option value="">🇻🇳 Toàn Quốc</option>';
         _TK_TINH_THANH.forEach(p => {
             const opt = document.createElement("option");
@@ -1402,6 +1439,8 @@
             const distM = document.getElementById("filterDistrictMobile");
             if (distM && curDist) distM.value = curDist;
         }
+        // Áp ràng buộc Đến>Từ cho select giờ mobile theo giá trị vừa pre-fill
+        window._capNhatDisableKhungGio();
         document.getElementById("tkDrawer")?.classList.add("is-open");
         document.getElementById("tkDrawerOverlay")?.classList.add("is-open");
         document.body.style.overflow = "hidden";
@@ -1437,6 +1476,8 @@
         const _distPC = document.getElementById("filterDistrict");
         if (_distPC) _distPC.value = _distVal;          // giờ option đã có → value mới "stick"
         // ──────────────────────────────────────────────────────────────────────
+        // Áp ràng buộc Đến>Từ cho select giờ PC theo giá trị vừa sync
+        window._capNhatDisableKhungGio();
         // Sync toggle "Ca của tôi đăng" drawer → PC
         const _mc = document.getElementById("filterMyCas"), _mcd = document.getElementById("filterMyCasDrawer");
         if (_mc && _mcd) _mc.checked = _mcd.checked;
@@ -1777,6 +1818,8 @@
         if (priceEl) { priceEl.value = 0; window._capNhatNhanGia && window._capNhatNhanGia(); }
         // Re-render inline calendar (xóa ngày đã chọn)
         window._renderTkCal && window._renderTkCal();
+        // Xóa lọc → giờ về rỗng → bỏ mọi disable mốc giờ (cả PC + mobile)
+        window._capNhatDisableKhungGio && window._capNhatDisableKhungGio();
         window.timKiemCaDau && window.timKiemCaDau();
     };
 
@@ -1936,20 +1979,15 @@
                 // Lọc quận huyện
                 if (district && s.quan_huyen !== district) return false;
 
-                // ── 1. Lọc giới tính — Strict AND (positive inclusion, không dùng negative OR) ──
+                // ── 1. Lọc giới tính — chọn Nam/Nữ VẪN hiện ca tuyển "Cả hai" (KHÔNG ẩn) ──
+                //   KHÔNG gate theo giá > 0 — ca 0K/miễn phí vẫn hợp lệ (fix ẩn ca free).
                 if (gender === "Nam") {
-                    // tuyen_nam = true: gioi_tinh_can PHẢI là "Nam" hoặc "Cả hai"
                     if (s.gioi_tinh_can !== "Nam" && s.gioi_tinh_can !== "Cả hai") return false;
-                    // Có giá nam thực tế > 0
-                    if (!s.gia_nam || s.gia_nam <= 0) return false;
                 }
                 if (gender === "Nữ") {
-                    // tuyen_nu = true: gioi_tinh_can PHẢI là "Nữ" hoặc "Cả hai"
                     if (s.gioi_tinh_can !== "Nữ" && s.gioi_tinh_can !== "Cả hai") return false;
-                    // Có giá nữ thực tế > 0
-                    if (!s.gia_nu || s.gia_nu <= 0) return false;
                 }
-                // "Cả hai" → trả về toàn bộ danh sách (không filter thêm điều kiện nào)
+                // "Cả hai" → không lọc thêm theo giới tính
 
                 // ── 2. Lọc trình độ — gắn chặt với giới tính đang lọc ──
                 if (activeLevelPills.length > 0) {
@@ -1959,8 +1997,9 @@
                     else if (gender === "Nữ")    rawLevels = (td.nu  || []);
                     else                          rawLevels = [...(td.nam || []), ...(td.nu || [])];
                     const levelsToCheck = rawLevels.map(l => window.chuanHoaTrinhDo(l));
-                    // Khớp CHÍNH XÁC 1 mức (không substring) — sau normalize trim+UPPER
-                    if (!activeLevelPills.some(lv => levelsToCheck.includes(lv))) return false;
+                    // AND NGHIÊM NGẶT: ca PHẢI có ĐỦ TẤT CẢ trình độ đã chọn (khớp chính xác,
+                    // không substring). Thiếu BẤT KỲ 1 mức đã chọn → ẩn ca.
+                    if (!activeLevelPills.every(lv => levelsToCheck.includes(lv))) return false;
                 }
 
                 // ── 3. Lọc giá tối đa — dùng đúng giá theo giới tính đang chọn ──
@@ -1968,7 +2007,10 @@
                     if      (gender === "Nam")   { if ((s.gia_nam || 0) > maxPrice) return false; }
                     else if (gender === "Nữ")    { if ((s.gia_nu  || 0) > maxPrice) return false; }
                     else {
-                        const minP = Math.min(s.gia_nam || 999999, s.gia_nu || s.gia_nam || 999999);
+                        // Cả hai: lấy GIÁ THẤP NHẤT trong các giá CÓ ĐỊNH NGHĨA. 0K là giá hợp lệ
+                        // — KHÔNG dùng `gia || 999999` (0 falsy → coi như "không có giá" → ẩn oan ca free).
+                        const _gia = [s.gia_nam, s.gia_nu].filter(g => typeof g === "number");
+                        const minP = _gia.length ? Math.min(..._gia) : 0;
                         if (minP > maxPrice) return false;
                     }
                 }

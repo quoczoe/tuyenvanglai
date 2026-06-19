@@ -68,7 +68,7 @@
 
     <!-- CSS hệ thống -->
     <link rel="stylesheet" href="giao-dien.css?v=20260615a">
-    <link rel="stylesheet" href="components.css?v=20260619a">
+    <link rel="stylesheet" href="components.css?v=20260619b">
 
     <style>
         /* ══════════════════════════════════════════════════
@@ -2436,12 +2436,12 @@
                         <label class="tk-filter-label">Khung giờ</label>
                         <div style="display:flex;gap:6px;align-items:center;">
                             <select id="filterTimeFrom" class="tk-select" style="flex:1;"
-                                    onchange="window.timKiemCaDau&&window.timKiemCaDau()">
+                                    onchange="window._khungGioChange && window._khungGioChange('from', false)">
                                 <option value="">Từ giờ</option>
                             </select>
                             <span style="font-size:0.72rem;color:var(--text-muted);flex-shrink:0;">—</span>
                             <select id="filterTimeTo" class="tk-select" style="flex:1;"
-                                    onchange="window.timKiemCaDau&&window.timKiemCaDau()">
+                                    onchange="window._khungGioChange && window._khungGioChange('to', false)">
                                 <option value="">Đến</option>
                             </select>
                         </div>
@@ -2564,11 +2564,13 @@
             <div class="tk-filter-group">
                 <label class="tk-filter-label">Khung giờ</label>
                 <div style="display:flex;gap:6px;align-items:center;">
-                    <select id="filterTimeFromMobile" class="tk-select" style="flex:1;">
+                    <select id="filterTimeFromMobile" class="tk-select" style="flex:1;"
+                            onchange="window._khungGioChange && window._khungGioChange('from', true)">
                         <option value="">Từ giờ</option>
                     </select>
                     <span style="font-size:0.72rem;color:var(--text-muted,#64748b);flex-shrink:0;">—</span>
-                    <select id="filterTimeToMobile" class="tk-select" style="flex:1;">
+                    <select id="filterTimeToMobile" class="tk-select" style="flex:1;"
+                            onchange="window._khungGioChange && window._khungGioChange('to', true)">
                         <option value="">Đến</option>
                     </select>
                 </div>
@@ -3427,8 +3429,8 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="ket-noi-supabase.js?v=20260619a"></script>
 <script src="bo-may-du-lieu.js?v=20260612h"></script>
 <script src="hieu-ung-giao-dien.js?v=20260612a"></script>
-<script src="phan-he-khach-choi.js?v=20260619d"></script>
-<script src="phan-he-host.js?v=20260619a"></script>
+<script src="phan-he-khach-choi.js?v=20260619e"></script>
+<script src="phan-he-host.js?v=20260619b"></script>
 <script src="phan-he-thong-bao.js?v=20260612k"></script>
 <script src="phan-he-ung-dung.js?v=20260615a"></script>
 <script src="phan-he-gop-y.js?v=20260610"></script>
