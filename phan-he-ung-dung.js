@@ -469,6 +469,9 @@
      *   fallback (an toàn khi cột chưa tồn tại / verify). Khóa = is_active=false.
      * ═══════════════════════════════════════════════════ */
     const _TEN_VP_24H = 24 * 60 * 60 * 1000;
+    const _TEN_SNOOZE_2H = 2 * 60 * 60 * 1000; // "Bỏ qua (Hiện lại sau 2h)"
+    // Font stack hệ thống hỗ trợ tiếng Việt 100% — chống nhảy dấu/lệch chữ trong modal
+    const _MODAL_FONT = "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif";
     let _quetTenBusy = false;
     let _tenColOK = null; // null=chưa biết · true=cột ten_canh_bao_luc có · false=chưa có (dùng localStorage, tránh spam 400)
 
@@ -499,7 +502,7 @@
     // Xóa cờ cảnh báo (tên đã hợp lệ)
     window._xoaCanhBaoTen = async function (sdt) {
         if (!sdt) return;
-        try { localStorage.removeItem("tvl_ten_vp_" + sdt); } catch (_) {}
+        try { localStorage.removeItem("tvl_ten_vp_" + sdt); localStorage.removeItem("tvl_ten_snooze_" + sdt); } catch (_) {}
         if (_tenColOK === false) return;
         try { await window.dbEngine.ghi("nguoi_dung", { ten_canh_bao_luc: null }, { sdt_khach: sdt }); }
         catch (_) { _tenColOK = false; }
@@ -507,6 +510,14 @@
 
     window._dongModalViPhamTen = function () {
         document.getElementById("modalViPhamTen")?.remove();
+    };
+    // "Bỏ qua (Hiện lại sau 2h)" → đóng modal + lưu mốc hiện-lại = now + 2h (per SĐT)
+    window._boQuaTen2h = function () {
+        const u = window.currentUser || window.currentGuest;
+        if (u && u.sdt_khach) {
+            try { localStorage.setItem("tvl_ten_snooze_" + u.sdt_khach, String(Date.now() + _TEN_SNOOZE_2H)); } catch (_) {}
+        }
+        window._dongModalViPhamTen();
     };
     // "Đổi ngay" → sang tab Cá Nhân + focus ô Họ tên
     window._doiTenNgay = function () {
@@ -525,18 +536,18 @@
         modal.id = "modalViPhamTen";
         modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:100000;display:flex;align-items:center;justify-content:center;padding:16px;";
         modal.innerHTML = `
-            <div style="background:#1a2233;border:1px solid #ef4444;border-radius:16px;padding:26px 22px;max-width:440px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,0.7);">
-                <div style="font-size:2.4rem;text-align:center;margin-bottom:4px;">⚠️</div>
-                <h3 style="color:#ef4444;margin:0 0 12px;font-size:1.16rem;text-align:center;font-weight:800;">TÊN TÀI KHOẢN VI PHẠM</h3>
-                <p style="color:#e2e8f0;font-size:0.92rem;margin:0 0 12px;line-height:1.55;">${_escTen(kq.lyDo)}</p>
+            <div style="font-family:${_MODAL_FONT};background:#1a2233;border:1px solid #ef4444;border-radius:16px;padding:26px 22px;max-width:440px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,0.7);">
+                <div style="font-size:2.4rem;text-align:center;margin-bottom:6px;line-height:1;">⚠️</div>
+                <h3 style="color:#ef4444;margin:0 0 12px;font-size:1.18rem;text-align:center;font-weight:700;letter-spacing:0.2px;line-height:1.3;">TÊN TÀI KHOẢN VI PHẠM</h3>
+                <p style="color:#e2e8f0;font-size:0.92rem;margin:0 0 12px;line-height:1.6;font-weight:500;">${_escTen(kq.lyDo)}</p>
                 <div style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.35);border-radius:10px;padding:11px 13px;margin:0 0 18px;">
-                    <p style="color:#fca5a5;font-size:0.86rem;margin:0;line-height:1.5;">
-                        Bạn phải <strong>ĐỔI TÊN NGAY</strong>. Nếu sau <strong>24 giờ</strong> (còn ~${gioConLai}h) tên vẫn vi phạm, tài khoản sẽ bị <strong>KHÓA</strong>.
+                    <p style="color:#fca5a5;font-size:0.86rem;margin:0;line-height:1.6;font-weight:500;">
+                        Bạn phải <strong style="font-weight:700;">ĐỔI TÊN NGAY</strong>. Nếu sau <strong style="font-weight:700;">24 giờ</strong> (còn ~${gioConLai}h) tên vẫn vi phạm, tài khoản sẽ bị <strong style="font-weight:700;">KHÓA</strong>.
                     </p>
                 </div>
-                <div style="display:flex;gap:10px;">
-                    <button onclick="window._doiTenNgay()" style="flex:1;padding:12px;background:#ef4444;color:#fff;border:none;border-radius:9px;font-weight:800;cursor:pointer;font-size:0.95rem;">Đổi ngay</button>
-                    <button onclick="window._dongModalViPhamTen()" style="padding:12px 18px;background:transparent;color:#9ca3af;border:1px solid #374151;border-radius:9px;cursor:pointer;font-size:0.9rem;">Để sau</button>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <button onclick="window._doiTenNgay()" style="font-family:inherit;flex:1 1 120px;padding:12px;background:#ef4444;color:#fff;border:none;border-radius:9px;font-weight:700;cursor:pointer;font-size:0.95rem;line-height:1.2;">Đổi ngay</button>
+                    <button onclick="window._boQuaTen2h()" style="font-family:inherit;flex:1 1 150px;padding:12px 14px;background:transparent;color:#9ca3af;border:1px solid #374151;border-radius:9px;cursor:pointer;font-size:0.84rem;font-weight:600;line-height:1.2;white-space:nowrap;">Bỏ qua (Hiện lại sau 2h)</button>
                 </div>
             </div>`;
         document.body.appendChild(modal);
@@ -549,13 +560,13 @@
         modal.id = "modalDaKhoaTen";
         modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.88);z-index:100001;display:flex;align-items:center;justify-content:center;padding:16px;";
         modal.innerHTML = `
-            <div style="background:#1a2233;border:1px solid #ef4444;border-radius:16px;padding:28px 22px;max-width:420px;width:100%;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,0.8);">
-                <div style="font-size:2.6rem;margin-bottom:8px;">🔒</div>
-                <h3 style="color:#ef4444;margin:0 0 12px;font-size:1.2rem;font-weight:800;">TÀI KHOẢN ĐÃ BỊ KHÓA</h3>
-                <p style="color:#e2e8f0;font-size:0.92rem;margin:0 0 18px;line-height:1.55;">
+            <div style="font-family:${_MODAL_FONT};background:#1a2233;border:1px solid #ef4444;border-radius:16px;padding:28px 22px;max-width:420px;width:100%;text-align:center;box-shadow:0 24px 70px rgba(0,0,0,0.8);">
+                <div style="font-size:2.6rem;margin-bottom:8px;line-height:1;">🔒</div>
+                <h3 style="color:#ef4444;margin:0 0 12px;font-size:1.2rem;font-weight:700;letter-spacing:0.2px;line-height:1.3;">TÀI KHOẢN ĐÃ BỊ KHÓA</h3>
+                <p style="color:#e2e8f0;font-size:0.92rem;margin:0 0 18px;line-height:1.6;font-weight:500;">
                     Quá 24 giờ nhưng tên vẫn vi phạm (${_escTen(kq.lyDo)}). Tài khoản đã bị khóa. Liên hệ Admin để được hỗ trợ mở khóa.
                 </p>
-                <button onclick="document.getElementById('modalDaKhoaTen')?.remove()" style="padding:11px 26px;background:#ef4444;color:#fff;border:none;border-radius:9px;font-weight:700;cursor:pointer;">Đã hiểu</button>
+                <button onclick="document.getElementById('modalDaKhoaTen')?.remove()" style="font-family:inherit;padding:11px 26px;background:#ef4444;color:#fff;border:none;border-radius:9px;font-weight:700;cursor:pointer;font-size:0.92rem;">Đã hiểu</button>
             </div>`;
         document.body.appendChild(modal);
     }
@@ -582,6 +593,10 @@
                 _capNhatHeaderState();
                 window.dungThongBao && window.dungThongBao();
             } else {
+                // "Bỏ qua (Hiện lại sau 2h)": còn trong mốc hiện-lại → KHÔNG hiện modal nhắc
+                let snoozeUntil = 0;
+                try { snoozeUntil = Number(localStorage.getItem("tvl_ten_snooze_" + u.sdt_khach) || 0); } catch (_) {}
+                if (Date.now() < snoozeUntil) return;   // còn trong 2h → bỏ qua (lock 24h vẫn chạy ở nhánh trên)
                 _hienModalViPhamTen(kq, ts);
             }
         } finally { _quetTenBusy = false; }
