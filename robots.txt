@@ -1,0 +1,9 @@
+# robots.txt — TUYENVANGLAI.IO.VN
+# Cho phép mọi bot index toàn site (trừ khu admin). Khai báo sitemap để bot tìm URL.
+
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+
+Sitemap: https://tuyenvanglai.io.vn/sitemap.xml
