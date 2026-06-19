@@ -1419,6 +1419,24 @@
             const pcEl = document.getElementById(pcId);
             if (pcEl) pcEl.value = document.getElementById(moId)?.value || "";
         });
+
+        // ── 🔴 FIX QUẬN/HUYỆN MOBILE ──────────────────────────────────────────
+        // PC #filterDistrict là <select>: gán .value cho 1 option CHƯA TỒN TẠI sẽ FAIL
+        // ÂM THẦM (value về ""). Vòng _FILTER_PAIRS ở trên set province (hidden input) OK
+        // nhưng KHÔNG repopulate options quận PC theo tỉnh mới → district filter bị bỏ qua
+        // → "lọc sai/không hoạt động" trên mobile. Phải: set tỉnh → POPULATE options quận
+        // theo tỉnh → MỚI gán value quận. Đồng bộ luôn pills tỉnh PC (single-select) cho khớp.
+        const _provVal = document.getElementById("filterProvinceMobile")?.value || "";
+        const _distVal = document.getElementById("filterDistrictMobile")?.value || "";
+        const _provInp = document.getElementById("filterProvince");
+        if (_provInp) _provInp.value = _provVal;
+        document.querySelectorAll("#filterProvincePills .tk-province-btn").forEach(b => {
+            b.classList.toggle("active", b.dataset.value === _provVal);
+        });
+        _capNhatHuyenBoLoc(_provVal, "filterDistrict"); // populate options quận PC theo tỉnh
+        const _distPC = document.getElementById("filterDistrict");
+        if (_distPC) _distPC.value = _distVal;          // giờ option đã có → value mới "stick"
+        // ──────────────────────────────────────────────────────────────────────
         // Sync toggle "Ca của tôi đăng" drawer → PC
         const _mc = document.getElementById("filterMyCas"), _mcd = document.getElementById("filterMyCasDrawer");
         if (_mc && _mcd) _mc.checked = _mcd.checked;
