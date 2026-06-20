@@ -1202,7 +1202,7 @@
     async function _taiDanhSachKhach() {
         const tbody = document.getElementById("adminGuestsBody");
         if (!tbody) return;
-        tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:20px;color:#64748b;">
+        tbody.innerHTML = `<tr><td colspan="15" style="text-align:center;padding:20px;color:#64748b;">
             <i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</td></tr>`;
         try {
             const [datSlots, khachVL, caDau, allDanhGia] = await Promise.all([
@@ -1235,6 +1235,7 @@
                 map.set(sdt, {
                     ten:            u.ten_khach || "Ẩn danh",
                     sdt,
+                    gmail:          u.gmail || u.email || "",   // Gmail thành viên (đồng bộ từ Supabase)
                     ngayTG:         u.created_at || u.ngay_tham_gia || null,
                     vai_tro:        u.vai_tro || "guest",
                     isActive:       u.is_active !== false,
@@ -1283,7 +1284,7 @@
             _apDungSortFilter();
         } catch (e) {
             console.error("[Admin] Lỗi tải thành viên:", e);
-            tbody.innerHTML = `<tr><td colspan="14" style="color:#ef4444;text-align:center;padding:16px;">
+            tbody.innerHTML = `<tr><td colspan="15" style="color:#ef4444;text-align:center;padding:16px;">
                 Lỗi: ${_escHtml(e.message || String(e))}</td></tr>`;
         }
     }
@@ -1472,7 +1473,7 @@
         if (!tbody) return;
 
         if (!list.length) {
-            tbody.innerHTML = `<tr><td colspan="14" style="text-align:center;padding:32px;color:#64748b;">
+            tbody.innerHTML = `<tr><td colspan="15" style="text-align:center;padding:32px;color:#64748b;">
                 <i class="fa-solid fa-users-slash" style="font-size:1.5rem;display:block;margin-bottom:8px;"></i>
                 Không tìm thấy thành viên nào phù hợp bộ lọc.</td></tr>`;
             document.getElementById("tvBulkBar").style.display = "none";
@@ -1542,6 +1543,13 @@
                         <i class="fa-solid fa-comment" style="color:#00d4ff;flex-shrink:0;"></i>${g.sdt}
                     </a>
                 </td>
+                <td style="font-size:0.78rem;white-space:nowrap;">${
+                    g.gmail
+                        ? `<a href="mailto:${_escHtml(g.gmail)}" style="text-decoration:none;color:#fbbf24;display:inline-flex;align-items:center;gap:4px;" title="${_escHtml(g.gmail)}">
+                               <i class="fa-regular fa-envelope" style="color:#f59e0b;flex-shrink:0;"></i>${_escHtml(g.gmail)}
+                           </a>`
+                        : `<span style="color:#4b5563;">—</span>`
+                }</td>
                 <td style="font-weight:700;color:#a78bfa;">${g.caDang}</td>
                 <td style="font-weight:700;color:#00ff88;">${g.caTG}</td>
                 <td style="white-space:nowrap;">${_fVND(g.tongChi)}</td>
@@ -2119,7 +2127,7 @@
                     </div>
                     <div>
                         <label class="mv-label">SĐT (khóa chính — không đổi được)</label>
-                        <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mv-inline-row" style="display:flex;align-items:center;gap:8px;">
                             <input type="text" id="mvSdtPK" class="mv-input" value="${sdtAttr}" readonly
                                 style="background:rgba(30,41,59,0.6);flex:1;cursor:default;">
                             <button class="mv-btn" title="Sao chép SĐT"
@@ -2145,6 +2153,18 @@
                             value="${_mvEsc(u.sdt_zalo)}" placeholder="0909...">
                     </div>
                     <div>
+                        <label class="mv-label">Địa chỉ Gmail</label>
+                        <div class="mv-inline-row" style="display:flex;align-items:center;gap:8px;">
+                            <input type="email" id="mvGmail" class="mv-input" style="flex:1;"
+                                value="${_mvEsc(u.gmail || u.email || '')}" placeholder="email@gmail.com">
+                            <button class="mv-btn" title="Sao chép Gmail"
+                                onclick="navigator.clipboard.writeText(document.getElementById('mvGmail').value||'').then(()=>window.hienToast('Đã sao chép 📋','Gmail đã vào clipboard','success')).catch(()=>{})"
+                                style="padding:0 10px;height:40px;flex-shrink:0;">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
                         <label class="mv-label">Telegram / Username</label>
                         <input type="text" id="input-member-telegram" class="mv-input"
                             value="${_mvEsc(u.telegram || '')}" placeholder="@username hoặc link t.me/...">
@@ -2166,7 +2186,7 @@
                         <span>⭐ Whitelist (điểm uy tín khóa cứng 100, bypass mọi giới hạn)</span>
                     </label>
                 </div>
-                <div style="display:flex;align-items:center;gap:8px;">
+                <div class="mv-inline-row" style="display:flex;align-items:center;gap:8px;">
                     <label class="mv-label" style="margin:0;white-space:nowrap;">Điểm uy tín:</label>
                     <input type="number" id="mvDiemUyTin" class="mv-input" style="max-width:100px;"
                         value="${u.diem_uy_tin ?? 100}" min="0" max="100" placeholder="0-100">
@@ -2203,7 +2223,7 @@
                 <div class="mv-form-grid" style="margin-bottom:10px;">
                     <div>
                         <label class="mv-label">Mật khẩu mới (tối thiểu 6 ký tự)</label>
-                        <div style="display:flex;align-items:center;gap:8px;">
+                        <div class="mv-inline-row" style="display:flex;align-items:center;gap:8px;">
                             <input type="password" id="mvNewPassword" class="mv-input" placeholder="••••••••"
                                 style="flex:1;">
                             <button class="mv-btn" title="Sao chép mật khẩu"
@@ -2218,7 +2238,7 @@
                         <input type="password" id="mvConfirmPassword" class="mv-input" placeholder="••••••••">
                     </div>
                 </div>
-                <div style="display:flex;gap:8px;">
+                <div class="mv-inline-row" style="display:flex;gap:8px;">
                     <button class="mv-btn mv-btn-primary" style="flex:1;"
                         onclick="window._luuMatKhauTV('${sdtAttr}')">🔑 Đặt mật khẩu mới</button>
                     <button class="mv-btn"
@@ -2286,6 +2306,7 @@
         const sodu     = document.getElementById("mvSoDu")?.value;
         const fb       = document.getElementById("mvFacebook")?.value?.trim();
         const zalo     = document.getElementById("mvSdtZalo")?.value?.trim();
+        const gmail    = document.getElementById("mvGmail")?.value?.trim();
         const telegram = document.getElementById("input-member-telegram")?.value?.trim();
 
         const payload = {};
@@ -2293,6 +2314,7 @@
         if (sodu     !== undefined) payload.so_du_vi      = Number(sodu) || 0;
         if (fb       !== undefined) payload.facebook_link = fb       || null;
         if (zalo     !== undefined) payload.sdt_zalo      = zalo     || null;
+        if (gmail    !== undefined) payload.gmail         = gmail ? gmail.toLowerCase() : null;
         if (telegram !== undefined) payload.telegram      = telegram || null;
 
         try {

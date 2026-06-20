@@ -641,6 +641,34 @@
         }
         @media (max-width: 500px) { .mv-form-grid { grid-template-columns: 1fr; } }
 
+        /* ══════════════════════════════════════════════════
+         * RESPONSIVE MODAL THÀNH VIÊN (chống vỡ khung mobile)
+         * - PC/Tablet: giữ kích thước chuẩn (max-width 520px).
+         * - Mobile ≤768px: width 95%, max-height 90vh, body cuộn dọc,
+         *   các nhóm input/nút ngang → xếp DỌC + co giãn 100%.
+         * ══════════════════════════════════════════════════ */
+        .mv-inline-row { min-width: 0; }
+        @media (max-width: 768px) {
+            #modalThanhVienOverlay { padding: 10px !important; }
+            .mv-modal-box {
+                width: 95% !important;
+                max-width: 95% !important;
+                margin: 10px auto;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+            /* Nhóm "SĐT Zalo/Telegram", "Đặc quyền & Uy tín", "Cấp lại mật khẩu"
+               → đổi từ hàng ngang sang xếp dọc, ô + nút co giãn full-width */
+            .mv-inline-row {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+            .mv-inline-row > * { width: 100% !important; }
+            .mv-inline-row .mv-btn { justify-content: center; }
+            .mv-role-btns { flex-direction: column !important; }
+            .mv-role-btns > .mv-btn { width: 100% !important; }
+        }
+
         /* A.4 — Input: slate-800 + indigo focus */
         .mv-input {
             background: #1e293b;
@@ -1098,7 +1126,7 @@
             <!-- Bảng thành viên — min-height cố định 10 dòng -->
             <div class="ad-table-wrap">
             <div class="table-responsive">
-                <table class="ad-table" style="min-width:1250px;">
+                <table class="ad-table" style="min-width:1330px;">
                     <thead>
                         <tr>
                             <!-- Cột Chọn (checkbox) -->
@@ -1120,6 +1148,7 @@
                                 Vai Trò <span class="sort-icon" id="sortIcon_vai_tro">↕</span>
                             </th>
                             <th>SĐT Zalo</th>
+                            <th>Gmail</th>
                             <th class="sortable" onclick="window._sortKhach('caDang')" title="Số ca đấu đã tạo">
                                 Ca Đăng <span class="sort-icon" id="sortIcon_caDang">↕</span>
                             </th>
@@ -1149,7 +1178,7 @@
                     </thead>
                     <tbody id="adminGuestsBody">
                         <tr>
-                            <td colspan="14" style="text-align:center;padding:28px;color:#64748b;">
+                            <td colspan="15" style="text-align:center;padding:28px;color:#64748b;">
                                 <i class="fa-solid fa-spinner fa-spin"></i> Đang tải dữ liệu...
                             </td>
                         </tr>
@@ -1698,7 +1727,7 @@
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: bo-may-du-lieu.js')"></script>
 <script src="/hieu-ung-giao-dien.js?v=20260612a"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: hieu-ung-giao-dien.js')"></script>
-<script src="/phan-he-quan-tri.js?v=20260620b"
+<script src="/phan-he-quan-tri.js?v=20260620c"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: phan-he-quan-tri.js — auth panel sẽ hiện sau 8s'); setTimeout(function(){var ap=document.getElementById('adminAuthPanel');if(ap)ap.style.display='block';},500);"></script>
 
 <script>
@@ -1731,10 +1760,9 @@
 </script>
 
 <style>
-/* ── Vô hiệu hóa bôi đen / copy toàn trang ── */
-* { user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
-/* Cho phép nhập liệu bình thường trong ô input / textarea */
-input, textarea, [contenteditable] { user-select: text; -webkit-user-select: text; }
+/* ── CHO PHÉP BÔI ĐEN / COPY TỰ DO TOÀN TRANG ADMIN ──
+   Admin cần tô đen, kéo chọn, sao chép SĐT / Gmail / mã định danh để quản trị. */
+* { user-select: text !important; -webkit-user-select: text !important; -moz-user-select: text !important; -ms-user-select: text !important; }
 </style>
 <script>
 /* ══════════════════════════════════════════════════════════════════════════════
@@ -1764,14 +1792,13 @@ input, textarea, [contenteditable] { user-select: text; -webkit-user-select: tex
     'use strict';
 
     /* ──────────────────────────────────────────────
-     * 1. Chặn chuột phải — ngăn View Page Source
+     * 1. (ĐÃ GỠ) Chặn chuột phải — cho phép Admin chuột phải để Copy
+     *    SĐT / Gmail / mã định danh phục vụ công việc quản trị.
      * ────────────────────────────────────────────── */
-    document.addEventListener('contextmenu', function (e) {
-        e.preventDefault();
-    });
 
     /* ──────────────────────────────────────────────
      * 2. Chặn phím tắt mở DevTools / View Source
+     *    GIỮ chặn F12 / Inspect / View Source; KHÔNG chặn Ctrl+C (copy tự do).
      * ────────────────────────────────────────────── */
     document.addEventListener('keydown', function (e) {
         /* F12 */
@@ -1925,7 +1952,7 @@ input, textarea, [contenteditable] { user-select: text; -webkit-user-select: tex
      MODAL THÀNH VIÊN — dùng chung cho: Sửa thông tin, Xem đánh giá
      ══════════════════════════════════════════════════════════ -->
 <div id="modalThanhVienOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:2000;align-items:center;justify-content:center;padding:16px;">
-    <div style="background:#1a2844;border:1px solid #2d4a6e;border-radius:12px;width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+    <div class="mv-modal-box" style="background:#1a2844;border:1px solid #2d4a6e;border-radius:12px;width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
         <!-- Header -->
         <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid #2d4a6e;flex-shrink:0;">
             <span id="modalThanhVienTitle" style="font-size:1rem;font-weight:700;color:#e2e8f0;">Sửa Thành Viên</span>
