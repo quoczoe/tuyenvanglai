@@ -642,6 +642,30 @@
         @media (max-width: 500px) { .mv-form-grid { grid-template-columns: 1fr; } }
 
         /* ══════════════════════════════════════════════════
+         * TỐI ƯU ĐỘ RỘNG CỘT BẢNG QUẢN LÝ THÀNH VIÊN
+         * - Chuyển riêng bảng này sang table-layout:auto (các bảng khác giữ fixed).
+         * - Cột số/ngắn: width:1% + nowrap → bó sát tiêu đề, không rớt dòng.
+         * - Cột GMAIL (cột 7): width:auto + min 220px → nuốt trọn khoảng trống,
+         *   hiển thị FULL email dài, KHÔNG cắt "…".
+         * - Cột TÊN (cột 4): min-width 160px → họ tên trọn vẹn.
+         * Thứ tự cột: 1 chk · 2 ID · 3 Thao Tác · 4 Tên · 5 Vai Trò · 6 SĐT Zalo ·
+         *   7 Gmail · 8 Ca Đăng · 9 Ca TG · 10 Tổng Chi · 11 Uy Tín · 12 Sao ·
+         *   13 Tình Trạng · 14 Thiết Bị · 15 Ngày Tham Gia.
+         * ══════════════════════════════════════════════════ */
+        .ad-table-members { table-layout: auto; }
+        .ad-table-members th,
+        .ad-table-members td { width: 1%; white-space: nowrap; }
+        /* Cột TÊN — đủ rộng hiển thị họ tên */
+        .ad-table-members th:nth-child(4),
+        .ad-table-members td:nth-child(4) { width: 1%; min-width: 160px; }
+        /* Cột GMAIL — chiếm toàn bộ khoảng trống còn lại, không cắt chuỗi */
+        .ad-table-members th:nth-child(7),
+        .ad-table-members td:nth-child(7) {
+            width: auto; min-width: 220px; white-space: nowrap;
+        }
+        .ad-table-members td:nth-child(7) a { overflow: visible; text-overflow: clip; }
+
+        /* ══════════════════════════════════════════════════
          * RESPONSIVE MODAL THÀNH VIÊN (chống vỡ khung mobile)
          * - PC/Tablet: giữ kích thước chuẩn (max-width 520px).
          * - Mobile ≤768px: width 95%, max-height 90vh, body cuộn dọc,
@@ -1126,7 +1150,7 @@
             <!-- Bảng thành viên — min-height cố định 10 dòng -->
             <div class="ad-table-wrap">
             <div class="table-responsive">
-                <table class="ad-table" style="min-width:1330px;">
+                <table class="ad-table ad-table-members" style="min-width:1100px;">
                     <thead>
                         <tr>
                             <!-- Cột Chọn (checkbox) -->
