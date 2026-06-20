@@ -1131,7 +1131,7 @@
                         <option value="100">100 dòng</option>
                     </select>
                 </div>
-                <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+                <div class="ad-guest-actions" style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
                     <button class="ad-btn-secondary" onclick="window.moModalTaoTaiKhoanTest()">
                         <i class="fa-solid fa-flask"></i> Tạo TK Test
                     </button>
@@ -1528,7 +1528,7 @@
             </div>
 
             <!-- Toolbar gom cụm: filter pills + ô tìm kiếm + số dòng — 1 hàng ngang -->
-            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+            <div class="ad-cadau-bar" style="display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
                 <!-- Pills bên trái — co giãn lấp đầy khoảng còn lại -->
                 <div class="ad-filter-pills" style="margin-bottom:0;flex:1;min-width:0;">
                     <button class="ad-pill active" onclick="locCaDauTheoTrangThai('all', this)">Tất cả</button>
@@ -1543,7 +1543,7 @@
                     </button>
                 </div>
                 <!-- Ô tìm kiếm + số dòng hiển thị — cố định bên phải -->
-                <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+                <div class="ad-cadau-srch" style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
                     <div class="ad-search-wrap">
                         <i class="fa-solid fa-magnifying-glass"></i>
                         <input type="text" class="ad-search-input" id="adminCaDauSearch"
@@ -1770,7 +1770,7 @@
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: bo-may-du-lieu.js')"></script>
 <script src="/hieu-ung-giao-dien.js?v=20260612a"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: hieu-ung-giao-dien.js')"></script>
-<script src="/phan-he-quan-tri.js?v=20260620d"
+<script src="/phan-he-quan-tri.js?v=20260621a"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: phan-he-quan-tri.js — auth panel sẽ hiện sau 8s'); setTimeout(function(){var ap=document.getElementById('adminAuthPanel');if(ap)ap.style.display='block';},500);"></script>
 
 <script>
@@ -1806,6 +1806,87 @@
 /* ── CHO PHÉP BÔI ĐEN / COPY TỰ DO TOÀN TRANG ADMIN ──
    Admin cần tô đen, kéo chọn, sao chép SĐT / Gmail / mã định danh để quản trị. */
 * { user-select: text !important; -webkit-user-select: text !important; -moz-user-select: text !important; -ms-user-select: text !important; }
+
+/* ════════════════════════════════════════════════════════════════════
+   VÁ LAYOUT MOBILE ADMIN (2026-06-21) — đặt CUỐI source để thắng mọi
+   rule trùng độ-đặc-hiệu phía trên. Khắc phục 4 lỗi thực tế quét được
+   qua Playwright @390:
+   (a) 4 card tổng quan quá to → hàng ngang vuốt trượt (mini-card)
+   (b) thanh tab gãy 2 dòng → 1 dòng vuốt trượt
+   (c) bộ lọc + nút thao tác tab Thành Viên tràn/chồng → full-width/2 cột
+   (d) bong bóng trạng thái tab Ca Đấu xếp dọc đè ô tìm kiếm → hàng ngang
+       nằm TRÊN ô tìm kiếm
+   ════════════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+
+    /* (a) — 4 CARD TỔNG QUAN: hàng ngang cuộn vuốt, ẩn thanh cuộn */
+    .ad-metrics-grid {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 10px;
+        margin-bottom: 12px;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .ad-metrics-grid::-webkit-scrollbar { display: none; }
+    .ad-metric-card {
+        flex: 0 0 auto;
+        width: 124px;
+        padding: 12px 10px 10px;
+        gap: 2px;
+    }
+    .ad-metric-icon { font-size: 1.25rem; }
+    .ad-metrics-grid .ad-metric-val { font-size: 1.55rem; }
+    .ad-metric-lbl  { font-size: 0.6rem; letter-spacing: 0.04em; }
+
+    /* (b) — THANH TAB: 1 hàng ngang vuốt trượt, không rớt dòng */
+    .ad-tab-nav {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        padding-bottom: 8px;
+    }
+    .ad-tab-nav::-webkit-scrollbar { display: none; }
+    .ad-tab-btn { flex: 0 0 auto; white-space: nowrap; }
+
+    /* (c) — TAB THÀNH VIÊN: ô lọc + nút thao tác full-width/2 cột */
+    .mv-filters {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+    }
+    .mv-filters .ad-search-wrap { grid-column: 1 / -1; }
+    .mv-filters .ad-search-input { width: 100%; }
+    .mv-filter-select { width: 100%; min-width: 0 !important; }
+    .ad-guest-actions { width: 100%; flex-wrap: wrap; }
+    .ad-guest-actions > button {
+        flex: 1 1 calc(50% - 4px);
+        justify-content: center;
+    }
+
+    /* (d) — TAB CA ĐẤU: pills hàng ngang TRÊN ô tìm kiếm (không xếp dọc) */
+    .ad-cadau-bar { flex-direction: column; align-items: stretch; }
+    .ad-cadau-bar .ad-filter-pills {
+        flex: none;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        width: 100%;
+        margin-bottom: 0;
+        padding-bottom: 2px;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .ad-cadau-bar .ad-filter-pills::-webkit-scrollbar { display: none; }
+    .ad-cadau-bar .ad-pill { flex: 0 0 auto; white-space: nowrap; }
+    .ad-cadau-srch { width: 100%; }
+    .ad-cadau-srch .ad-search-wrap { flex: 1; }
+    .ad-cadau-srch .ad-search-input { width: 100% !important; }
+    .ad-cadau-srch .mv-filter-select { flex-shrink: 0; width: auto; }
+}
 </style>
 <script>
 /* ══════════════════════════════════════════════════════════════════════════════

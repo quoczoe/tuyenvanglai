@@ -2841,6 +2841,12 @@
     // Ảnh chụp nội dung/bật-tắt popup lúc tải — để biết khi nào cần bump mốc thời gian.
     let _popupSnap = null;
 
+    // Helper: gán giá trị cho input/textarea theo id (an toàn nếu phần tử không tồn tại).
+    function _setVal(id, val) {
+        const el = document.getElementById(id);
+        if (el) el.value = val ?? "";
+    }
+
     async function _taiThongBao() {
         try {
             const configs   = await window.dbEngine.doc("cau_hinh_he_thong");
