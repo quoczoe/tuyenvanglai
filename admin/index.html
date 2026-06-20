@@ -693,6 +693,25 @@
             .mv-role-btns > .mv-btn { width: 100% !important; }
         }
 
+        /* ══════════════════════════════════════════════════
+         * LAYOUT 2 CỘT MODAL THÀNH VIÊN (WIDESCREEN PC ≥1024px)
+         * - Mobile/Tablet (mặc định): xếp DỌC 1 cột.
+         * - PC ≥1024px: modal rộng (max-width 1100px / 85vw); chia 2 cột
+         *   Trái 55% (thông tin cá nhân) · Phải 45% (chức năng quản trị).
+         * ══════════════════════════════════════════════════ */
+        .mv-modal-cols { display: flex; flex-direction: column; gap: 16px; }
+        .mv-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+        @media (min-width: 1024px) {
+            .mv-modal-box {
+                max-width: 1100px !important;
+                width: 85vw !important;
+                max-height: 88vh;
+            }
+            .mv-modal-cols { flex-direction: row; align-items: flex-start; gap: 18px; }
+            .mv-col-left  { flex: 0 0 55%; max-width: 55%; }
+            .mv-col-right { flex: 0 0 45%; max-width: 45%; }
+        }
+
         /* A.4 — Input: slate-800 + indigo focus */
         .mv-input {
             background: #1e293b;
@@ -1751,7 +1770,7 @@
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: bo-may-du-lieu.js')"></script>
 <script src="/hieu-ung-giao-dien.js?v=20260612a"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: hieu-ung-giao-dien.js')"></script>
-<script src="/phan-he-quan-tri.js?v=20260620c"
+<script src="/phan-he-quan-tri.js?v=20260620d"
     onerror="console.error('[admin] KHÔNG TẢI ĐƯỢC: phan-he-quan-tri.js — auth panel sẽ hiện sau 8s'); setTimeout(function(){var ap=document.getElementById('adminAuthPanel');if(ap)ap.style.display='block';},500);"></script>
 
 <script>

@@ -2114,8 +2114,10 @@
             const isActive = u.is_active !== false; // mặc định true nếu cột chưa có
 
             bodyEl.innerHTML = `
-            <!-- A.3: Wrapper flex-column gap-16px -->
-            <div style="display:flex;flex-direction:column;gap:16px;">
+            <!-- Layout 2 cột (PC) / 1 cột (mobile) -->
+            <div class="mv-modal-cols">
+            <!-- ══ CỘT TRÁI (55%) — Thông tin cá nhân ══ -->
+            <div class="mv-col mv-col-left">
             <!-- ── A: Thông tin cơ bản ── -->
             <div class="mv-section">
                 <div class="mv-section-title">✏️ Thông Tin Cơ Bản</div>
@@ -2126,10 +2128,10 @@
                             value="${_mvEsc(u.ten_khach)}" placeholder="Họ tên">
                     </div>
                     <div>
-                        <label class="mv-label">SĐT (khóa chính — không đổi được)</label>
+                        <label class="mv-label">Số điện thoại (Khóa chính)</label>
                         <div class="mv-inline-row" style="display:flex;align-items:center;gap:8px;">
-                            <input type="text" id="mvSdtPK" class="mv-input" value="${sdtAttr}" readonly
-                                style="background:rgba(30,41,59,0.6);flex:1;cursor:default;">
+                            <input type="tel" id="mvSdtPK" class="mv-input" value="${sdtAttr}"
+                                data-old="${sdtAttr}" placeholder="0xxxxxxxxx" style="flex:1;">
                             <button class="mv-btn" title="Sao chép SĐT"
                                 onclick="navigator.clipboard.writeText(document.getElementById('mvSdtPK').value||'').then(()=>window.hienToast('Đã sao chép 📋','SĐT đã vào clipboard','success')).catch(()=>{})"
                                 style="padding:0 10px;height:40px;flex-shrink:0;">
@@ -2175,7 +2177,10 @@
                     💾 Lưu thông tin
                 </button>
             </div>
+            </div><!-- /mv-col-left -->
 
+            <!-- ══ CỘT PHẢI (45%) — Chức năng quản trị ══ -->
+            <div class="mv-col mv-col-right">
             <!-- ── A+: Whitelist & Trust Score ── -->
             <div class="mv-section">
                 <div class="mv-section-title">🛡️ Đặc Quyền & Uy Tín</div>
@@ -2292,7 +2297,8 @@
                     🗑️ Xóa vĩnh viễn tài khoản này
                 </button>
             </div>
-            </div><!-- /.flex-column.gap-16px -->`;
+            </div><!-- /mv-col-right -->
+            </div><!-- /mv-modal-cols -->`;
 
         } catch (e) {
             window.hienToast("Lỗi", "Không thể tải dữ liệu thành viên.", "danger");
@@ -2300,7 +2306,7 @@
         }
     };
 
-    // A — Lưu thông tin cơ bản (A6: thêm Telegram field)
+    // A — Lưu thông tin cơ bản (Admin toàn quyền: đổi cả SĐT khóa chính + Email, KHÔNG OTP)
     window._luuThongTinTV = async function (sdt) {
         const ten      = document.getElementById("mvTenKhach")?.value?.trim();
         const sodu     = document.getElementById("mvSoDu")?.value;
@@ -2308,6 +2314,9 @@
         const zalo     = document.getElementById("mvSdtZalo")?.value?.trim();
         const gmail    = document.getElementById("mvGmail")?.value?.trim();
         const telegram = document.getElementById("input-member-telegram")?.value?.trim();
+        const sdtInput = document.getElementById("mvSdtPK");
+        const sdtMoi   = (sdtInput?.value || "").replace(/\D/g, "");   // chỉ giữ chữ số
+        const sdtCu    = (sdtInput?.dataset?.old || sdt || "").replace(/\D/g, "");
 
         const payload = {};
         if (ten      !== undefined) payload.ten_khach     = ten      || null;
@@ -2318,7 +2327,48 @@
         if (telegram !== undefined) payload.telegram      = telegram || null;
 
         try {
-            await window.dbEngine.ghi("nguoi_dung", payload, { sdt_khach: sdt });
+            // ── Đổi SĐT (khóa chính) — chỉ cần check TRÙNG, không OTP ──
+            const doiSdt = sdtMoi && sdtMoi !== sdtCu;
+            if (doiSdt) {
+                if (!/^0[0-9]{8,10}$/.test(sdtMoi)) {
+                    window.hienToast("SĐT không hợp lệ", "Số điện thoại phải bắt đầu bằng 0 và đủ chữ số.", "warning");
+                    return;
+                }
+                // Check trùng với user khác
+                const trung = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: sdtMoi } });
+                if (trung && trung.length > 0) {
+                    window.hienToast("SĐT đã tồn tại", "Số mới đã thuộc về một thành viên khác. Vui lòng chọn số khác.", "danger");
+                    return;
+                }
+                // 1) Cập nhật bản ghi gốc (PK) trước
+                await window.dbEngine.ghi("nguoi_dung", { ...payload, sdt_khach: sdtMoi }, { sdt_khach: sdtCu });
+                // 2) DI CHUYỂN mọi tham chiếu sang SĐT mới (best-effort, bỏ qua bảng/cột không tồn tại)
+                const refs = [
+                    ["dat_slot", "sdt_khach"],
+                    ["ca_dau", "sdt_nguoi_tao"],
+                    ["guest_sessions", "sdt_khach"],
+                    ["thong_bao", "nguoi_nhan"],
+                    ["lich_su_uy_tin", "sdt"],
+                    ["danh_gia_tin_dung", "sdt_nguoi_viet"],
+                    ["danh_gia_tin_dung", "sdt_nguoi_bi_danh_gia"],
+                    ["mat_khau_reset", "sdt_khach"],
+                    ["email_verify_codes", "sdt_khach"],
+                    ["khach_vang_lai", "sdt_khach"]
+                ];
+                for (const [tbl, col] of refs) {
+                    try {
+                        await window.dbEngine.ghi(tbl, { [col]: sdtMoi }, { [col]: sdtCu });
+                    } catch (_) { /* bảng/cột không có hoặc RLS chặn → bỏ qua */ }
+                }
+                if (sdtInput) sdtInput.dataset.old = sdtMoi;
+                window.hienToast("Đã lưu ✅", "Đã đổi SĐT + cập nhật thông tin thành viên.", "success");
+                _taiDanhSachKhach();
+                window.dongModalThanhVien?.();
+                return;
+            }
+
+            // ── Không đổi SĐT — cập nhật các trường còn lại ──
+            await window.dbEngine.ghi("nguoi_dung", payload, { sdt_khach: sdtCu });
             window.hienToast("Đã lưu ✅", "Thông tin thành viên đã cập nhật.", "success");
             _taiDanhSachKhach();
         } catch (e) {
