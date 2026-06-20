@@ -463,13 +463,13 @@
                 : `<span style="font-size:0.72rem;background:rgba(0,255,136,0.1);color:#00ff88;padding:2px 8px;border-radius:10px;font-weight:700;white-space:nowrap;"><i class="fa-solid fa-circle" style="font-size:0.5em;"></i> Đang mở</span>`;
 
             return `<tr>
-                <td style="text-align:center;">
+                <td class="tdm-check" style="text-align:center;">
                     <input type="checkbox" class="ca-chk" data-id="${cId}"
                         style="cursor:pointer;accent-color:#f87171;"
                         onchange="window._caDauCapNhatBulk()">
                 </td>
-                <td style="font-family:monospace;font-size:0.75rem;color:#64748b;" title="${cId}">${c._seqId || "—"}</td>
-                <td>
+                <td class="tdm-id" data-label="ID" style="font-family:monospace;font-size:0.75rem;color:#64748b;" title="${cId}">${c._seqId || "—"}</td>
+                <td class="tdm-actions">
                     <div style="position:relative;display:inline-block;">
                         <button class="btn-mini" style="padding:4px 8px;gap:4px;"
                             onclick="window._toggleCaMenu(this,'${cId}')">
@@ -503,19 +503,19 @@
                         </div>
                     </div>
                 </td>
-                <td style="font-weight:600;white-space:nowrap;">${tenSan}</td>
-                <td style="font-size:0.8rem;white-space:nowrap;">
+                <td class="tdm-title" style="font-weight:600;white-space:nowrap;">${tenSan}</td>
+                <td data-label="Host" style="font-size:0.8rem;white-space:nowrap;">
                     ${c.sdt_nguoi_tao
                         ? `<a href="#" onclick="event.preventDefault();window.moModalQuanLyThanhVien('${_escHtml(c.sdt_nguoi_tao)}')"
                                style="color:#60a5fa;text-decoration:none;" title="Ấn để quản lý tài khoản này">${nguoiDang}</a>`
                         : `<span style="color:#64748b;">${nguoiDang}</span>`}
                 </td>
-                <td style="font-size:0.78rem;color:#9ca3af;white-space:nowrap;">${khuVuc}</td>
-                <td style="white-space:nowrap;font-size:0.8rem;">${ngay}</td>
-                <td style="font-size:0.78rem;color:#94a3b8;white-space:nowrap;">${gioBD}–${gioKT}</td>
-                <td><span style="background:rgba(99,102,241,0.15);color:#a78bfa;padding:2px 8px;border-radius:10px;font-size:0.8rem;font-weight:700;">${soKhach}</span></td>
-                <td>${trangThai}</td>
-                <td style="font-size:0.75rem;text-align:left;">
+                <td class="tdm-hide" style="font-size:0.78rem;color:#9ca3af;white-space:nowrap;">${khuVuc}</td>
+                <td data-label="Ngày" style="white-space:nowrap;font-size:0.8rem;">${ngay}</td>
+                <td data-label="Giờ" style="font-size:0.78rem;color:#94a3b8;white-space:nowrap;">${gioBD}–${gioKT}</td>
+                <td data-label="Khách"><span style="background:rgba(99,102,241,0.15);color:#a78bfa;padding:2px 8px;border-radius:10px;font-size:0.8rem;font-weight:700;">${soKhach}</span></td>
+                <td data-label="Trạng thái">${trangThai}</td>
+                <td class="tdm-hide" style="font-size:0.75rem;text-align:left;">
                     <div style="white-space:nowrap;">Nam: <span style="color:#00ff88;font-weight:600;">${_vnd(c.gia_nam)}</span></div>
                     <div style="white-space:nowrap;">Nữ: <span style="color:#f472b6;font-weight:600;">${_vnd(c.gia_nu)}</span></div>
                 </td>
@@ -981,17 +981,17 @@
             }
 
             return `<tr>
-                <td style="text-align:center;padding:6px 4px;">
+                <td class="tdm-check" style="text-align:center;padding:6px 4px;">
                     <input type="checkbox" class="gy-chk" value="${g.id}" style="cursor:pointer;accent-color:#f87171;" onchange="window._capNhatBulkBar()">
                 </td>
-                <td style="text-align:center;color:#64748b;font-size:0.78rem;padding:6px 4px;">${stt}</td>
-                <td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tenHtml}</td>
-                <td style="white-space:nowrap;">${_stars(g.so_sao)}</td>
-                <td><span style="background:${lc.bg};color:${lc.color};padding:2px 8px;border-radius:10px;font-size:0.73rem;white-space:nowrap;">${_escHtml(loai)}</span></td>
-                <td style="max-width:220px;">${ndHtml}</td>
-                <td style="font-size:0.75rem;white-space:nowrap;color:#94a3b8;">${thoiGian}</td>
-                <td style="text-align:center;white-space:nowrap;">${_gopYBadge(g.trang_thai)}</td>
-                <td style="text-align:center;white-space:nowrap;">
+                <td class="tdm-id" data-label="#" style="text-align:center;color:#64748b;font-size:0.78rem;padding:6px 4px;">${stt}</td>
+                <td class="tdm-title" style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tenHtml}</td>
+                <td data-label="Sao" style="white-space:nowrap;">${_stars(g.so_sao)}</td>
+                <td data-label="Loại"><span style="background:${lc.bg};color:${lc.color};padding:2px 8px;border-radius:10px;font-size:0.73rem;white-space:nowrap;">${_escHtml(loai)}</span></td>
+                <td class="tdm-full" data-label="Nội dung" style="max-width:220px;">${ndHtml}</td>
+                <td data-label="Ngày" style="font-size:0.75rem;white-space:nowrap;color:#94a3b8;">${thoiGian}</td>
+                <td data-label="Trạng thái" style="text-align:center;white-space:nowrap;">${_gopYBadge(g.trang_thai)}</td>
+                <td class="tdm-actions" style="text-align:center;white-space:nowrap;">
                     <button onclick="window._moModalPhanHoiGopY(${g.id})" title="Xử lý / phản hồi góp ý" style="background:rgba(96,165,250,0.14);border:1px solid rgba(96,165,250,0.35);color:#60a5fa;padding:3px 8px;border-radius:6px;cursor:pointer;font-size:0.72rem;margin-right:4px;">
                         <i class="fa-solid fa-pen-to-square"></i>
                     </button>
@@ -1532,32 +1532,32 @@
             if (isGoc) tr.style.background = "rgba(245,158,11,0.04)";
             tr.dataset.sdt = g.sdt;
             tr.innerHTML = `
-                <td>${chkCell}</td>
-                <td style="font-weight:800;font-size:0.85rem;color:${isGoc ? '#fbbf24' : '#94a3b8'};">${g.memberID}</td>
-                <td>${hanhDong}</td>
-                <td style="font-weight:700;font-size:0.85rem;white-space:nowrap;">${tenSafe}${isGoc ? ' <span title="Admin gốc bất khả xâm phạm" style="color:#fbbf24;">👑</span>' : ''}</td>
-                <td style="white-space:nowrap;">${_vaiTroBadge(g.vai_tro)}</td>
-                <td>
+                <td class="tdm-check">${chkCell}</td>
+                <td class="tdm-id" data-label="ID" style="font-weight:800;font-size:0.85rem;color:${isGoc ? '#fbbf24' : '#94a3b8'};">${g.memberID}</td>
+                <td class="tdm-actions">${hanhDong}</td>
+                <td class="tdm-title" style="font-weight:700;font-size:0.85rem;white-space:nowrap;">${tenSafe}${isGoc ? ' <span title="Admin gốc bất khả xâm phạm" style="color:#fbbf24;">👑</span>' : ''}</td>
+                <td data-label="Vai trò" style="white-space:nowrap;">${_vaiTroBadge(g.vai_tro)}</td>
+                <td data-label="SĐT">
                     <a href="https://zalo.me/${g.sdt}" target="_blank"
                        style="font-size:0.8rem;text-decoration:none;color:#60a5fa;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;">
                         <i class="fa-solid fa-comment" style="color:#00d4ff;flex-shrink:0;"></i>${g.sdt}
                     </a>
                 </td>
-                <td style="font-size:0.78rem;white-space:nowrap;">${
+                <td class="tdm-hide" style="font-size:0.78rem;white-space:nowrap;">${
                     g.gmail
                         ? `<a href="mailto:${_escHtml(g.gmail)}" style="text-decoration:none;color:#fbbf24;display:inline-flex;align-items:center;gap:4px;" title="${_escHtml(g.gmail)}">
                                <i class="fa-regular fa-envelope" style="color:#f59e0b;flex-shrink:0;"></i>${_escHtml(g.gmail)}
                            </a>`
                         : `<span style="color:#4b5563;">—</span>`
                 }</td>
-                <td style="font-weight:700;color:#a78bfa;">${g.caDang}</td>
-                <td style="font-weight:700;color:#00ff88;">${g.caTG}</td>
-                <td style="white-space:nowrap;">${_fVND(g.tongChi)}</td>
-                <td>${_trustBadge(g.diemUyTin)}</td>
-                <td>${saoCellHTML}</td>
-                <td style="white-space:nowrap;">${_tinhTrangBadge(g.isActive)}</td>
-                <td>${deviceCell}</td>
-                <td style="text-align:right;font-size:0.75rem;color:#64748b;white-space:nowrap;">${_fNgayGio(g.ngayTG)}</td>`;
+                <td class="tdm-hide" style="font-weight:700;color:#a78bfa;">${g.caDang}</td>
+                <td class="tdm-hide" style="font-weight:700;color:#00ff88;">${g.caTG}</td>
+                <td class="tdm-hide" style="white-space:nowrap;">${_fVND(g.tongChi)}</td>
+                <td data-label="Uy tín">${_trustBadge(g.diemUyTin)}</td>
+                <td class="tdm-hide">${saoCellHTML}</td>
+                <td data-label="Tình trạng" style="white-space:nowrap;">${_tinhTrangBadge(g.isActive)}</td>
+                <td class="tdm-hide">${deviceCell}</td>
+                <td class="tdm-hide" style="text-align:right;font-size:0.75rem;color:#64748b;white-space:nowrap;">${_fNgayGio(g.ngayTG)}</td>`;
             tbody.appendChild(tr);
         });
     }
@@ -2741,26 +2741,26 @@
 
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
-                <td style="text-align:center;">
+                <td class="tdm-check" style="text-align:center;">
                     <input type="checkbox" class="rv-chk" value="${r.id}"
                            style="cursor:pointer;accent-color:#f87171;"
                            onchange="window._capNhatBulkBarDanhGia()">
                 </td>
-                <td>${badge}</td>
-                <td>
+                <td data-label="Loại">${badge}</td>
+                <td class="tdm-title">
                     <div style="font-weight:600;font-size:0.82rem;">${_escHtml(_layTen(sdtViet))}</div>
                     <div style="font-size:0.7rem;color:#64748b;">${_escHtml(_rutGonSdt(sdtViet))}</div>
                 </td>
-                <td>
+                <td data-label="Đối tượng">
                     <div style="font-weight:600;font-size:0.82rem;">${_escHtml(_layTen(sdtBiDG))}</div>
                     <div style="font-size:0.7rem;color:#64748b;">${_escHtml(_rutGonSdt(sdtBiDG))}</div>
                 </td>
-                <td>${thongTinCa}</td>
-                <td style="white-space:nowrap;">${stars}</td>
-                <td style="font-size:0.78rem;max-width:220px;">${
+                <td data-label="Ca đấu">${thongTinCa}</td>
+                <td data-label="Sao" style="white-space:nowrap;">${stars}</td>
+                <td class="tdm-full" data-label="Nhận xét" style="font-size:0.78rem;max-width:220px;">${
                     r.nhan_xet ? _escHtml(r.nhan_xet) : "<em style='color:#64748b'>Không có nhận xét</em>"
                 }</td>
-                <td style="font-size:0.72rem;color:#64748b;white-space:nowrap;">
+                <td class="tdm-actions" style="font-size:0.72rem;color:#64748b;white-space:nowrap;">
                     ${r.created_at ? new Date(r.created_at).toLocaleDateString("vi-VN") : "--"}
                     <br>
                     <button class="ad-btn-icon red" onclick="window.xoaDanhGiaAdmin('${r.id}')"
@@ -2993,13 +2993,13 @@
                 const ngay = b.created_at ? new Date(b.created_at).toLocaleDateString("vi-VN") : "--";
                 const frozen = ca.is_frozen ? `<span style="color:#ef4444;font-size:0.7rem;"> 🔒Đóng băng</span>` : "";
                 return `<tr>
-                    <td style="font-size:0.75rem;color:#94a3b8;">${ngay}</td>
-                    <td style="font-size:0.78rem;">${_escHtml(ca.ten_san || b.id_ca_dau?.slice(0,8) || "--")}${frozen}</td>
-                    <td style="font-size:0.78rem;">${b.sdt_nguoi_bao_cao || "--"}</td>
-                    <td style="font-size:0.78rem;color:#fca5a5;">${b.sdt_bi_bao_cao || "--"}</td>
-                    <td><span style="font-size:0.7rem;padding:2px 6px;background:rgba(251,191,36,0.1);border-radius:4px;">${loaiLabel[b.loai_bao_cao] || b.loai_bao_cao}</span></td>
-                    <td><span style="color:${ttColor[b.trang_thai]||'#94a3b8'};font-size:0.75rem;font-weight:700;">${b.trang_thai}</span></td>
-                    <td style="display:flex;gap:4px;flex-wrap:wrap;">
+                    <td data-label="Ngày" style="font-size:0.75rem;color:#94a3b8;">${ngay}</td>
+                    <td class="tdm-title" style="font-size:0.78rem;">${_escHtml(ca.ten_san || b.id_ca_dau?.slice(0,8) || "--")}${frozen}</td>
+                    <td data-label="Người báo" style="font-size:0.78rem;">${b.sdt_nguoi_bao_cao || "--"}</td>
+                    <td data-label="Bị báo cáo" style="font-size:0.78rem;color:#fca5a5;">${b.sdt_bi_bao_cao || "--"}</td>
+                    <td data-label="Loại"><span style="font-size:0.7rem;padding:2px 6px;background:rgba(251,191,36,0.1);border-radius:4px;">${loaiLabel[b.loai_bao_cao] || b.loai_bao_cao}</span></td>
+                    <td data-label="Trạng thái"><span style="color:${ttColor[b.trang_thai]||'#94a3b8'};font-size:0.75rem;font-weight:700;">${b.trang_thai}</span></td>
+                    <td class="tdm-actions" style="display:flex;gap:4px;flex-wrap:wrap;">
                         <button class="btn-mini btn-mini-red" onclick="window.adminPhatBC('${b.id}','${(b.sdt_nguoi_bao_cao||'').replace(/'/g,"\\'")}','${(b.sdt_bi_bao_cao||'').replace(/'/g,"\\'")}','${b.id_ca_dau||''}')">⚡ Phạt</button>
                         <button class="btn-mini btn-mini-cyan" onclick="window.adminThaBC('${b.id}','${(b.sdt_nguoi_bao_cao||'').replace(/'/g,"\\'")}')">✅ Tha</button>
                         ${ca.is_frozen ? `<button class="btn-mini" onclick="window.adminKhoiPhucCa('${b.id_ca_dau||''}','${b.id}')">🔓 Mở ca</button>` : ""}
