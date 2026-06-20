@@ -346,8 +346,127 @@
                 { p_token: token, p_sdt: sdt });
             if (error) throw error;
             return data || []; // [{id, noi_dung, so_sao, loai_gop_y, trang_thai, noi_dung_phan_hoi, created_at, ...}]
+        },
+        // ── AUTH LINH HOẠT (SĐT hoặc Gmail) ──────────────────────
+        // Đăng nhập: p_dinh_danh có thể là SĐT hoặc Gmail; RPC tự resolve rồi gọi login cũ.
+        // deviceId/ip → chốt chặn anti-spam server-side (DEVICE_BLOCKED_SPAM nếu bị khóa).
+        async dangNhapLinhHoat(dinhDanh, passHash, deviceId, ip) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('auth_dang_nhap_linh_hoat',
+                { p_dinh_danh: dinhDanh, p_pass_hash: passHash, p_device_id: deviceId || null, p_ip: ip || null });
+            if (error) throw error;
+            return data; // { status, token?, user?, la_email? }
+        },
+        // Đăng ký kèm Gmail (gọi register cũ + lưu gmail). deviceFp = device_id anti-spam.
+        async dangKyV2(sdt, ten, gioiTinh, passHash, gmail, sdtZalo, facebook, maGioiThieu, deviceFp, ip) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('auth_dang_ky_v2', {
+                p_sdt: sdt, p_ten: ten, p_gioi_tinh: gioiTinh, p_pass_hash: passHash,
+                p_gmail: gmail || null, p_sdt_zalo: sdtZalo || null, p_facebook: facebook || null,
+                p_ma_gioi_thieu: maGioiThieu || null, p_device_fp: deviceFp || null, p_ip: ip || null
+            });
+            if (error) throw error;
+            return data; // { status, token? }
+        },
+        // READ-ONLY: kiểm tra thiết bị có đang bị khóa không (cổng đầu, KHÔNG ghi log).
+        async kiemTraThietBiBiKhoa(deviceId) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('kiem_tra_thiet_bi_bi_khoa', { p_device_id: deviceId || null });
+            if (error) throw error;
+            return data; // { is_blocked, reason? }
+        },
+        // GHI VẾT + đếm (RPC tự blacklist nếu ≥3) — CHỈ gọi SAU KHI Auth THÀNH CÔNG.
+        async kiemTraChongSpam(deviceId, ip, action, identifier) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('anti_spam_gate', {
+                p_device_id: deviceId || null, p_ip: ip || null,
+                p_action: action || 'unknown', p_identifier: identifier || null
+            });
+            if (error) throw error;
+            return data; // { is_blocked, reason?, so_tai_khoan? }
+        },
+        // Đổi mật khẩu bằng mã khôi phục (anon, mã đến từ email)
+        async doiMatKhauBangMa(dinhDanh, maCode, hashMoi) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('auth_doi_mat_khau_bang_ma',
+                { p_dinh_danh: dinhDanh, p_ma_code: maCode, p_hash_moi: hashMoi });
+            if (error) throw error;
+            return data; // { status }
+        },
+        // Xác nhận mã OTP xác thực email (anon + token) → set gmail + is_email_verified
+        async xacNhanEmail(token, sdt, ma) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('xac_nhan_email',
+                { p_token: token, p_sdt: sdt, p_ma: ma });
+            if (error) throw error;
+            return data; // { status, email? }
+        },
+        // Verify mã "khóa gốc" (check-only, KHÔNG đổi gmail) → mở khóa thao tác đổi SĐT/Email
+        async xacThucMaGoc(token, sdt, ma) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('xac_thuc_ma_goc',
+                { p_token: token, p_sdt: sdt, p_ma: ma });
+            if (error) throw error;
+            return data; // { status }
+        },
+        // Đổi SĐT (PK) — kiểm trùng + di chuyển mọi tham chiếu. Trả { status, sdt? }
+        async doiSoDienThoai(token, sdt, sdtMoi) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('doi_so_dien_thoai',
+                { p_token: token, p_sdt: sdt, p_sdt_moi: sdtMoi });
+            if (error) throw error;
+            return data; // { status: ok|sdt_taken|sdt_khong_hop_le|..., sdt? }
+        },
+        // ── GOOGLE OAUTH → guest token (đọc email từ JWT phiên Auth, server-side) ──
+        // Đăng nhập: tìm nguoi_dung theo gmail = auth.email() → cấp token, hoặc need_phone.
+        async googleDangNhap(deviceId, ip) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('auth_google_dang_nhap',
+                { p_device_id: deviceId || null, p_ip: ip || null });
+            if (error) throw error;
+            return data; // { status: ok|need_phone|blocked|DEVICE_BLOCKED_SPAM, token?, user?, email? }
+        },
+        // Tài khoản Google mới → thêm SĐT để tạo nguoi_dung (gmail lấy từ auth.email()).
+        async googleDangKySdt(sdt, ten, gioiTinh, deviceId, ip) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.rpc('auth_google_dang_ky', {
+                p_sdt: sdt, p_ten: ten, p_gioi_tinh: gioiTinh || 'male',
+                p_device_id: deviceId || null, p_ip: ip || null
+            });
+            if (error) throw error;
+            return data; // { status: ok|sdt_taken|DEVICE_BLOCKED_SPAM, token?, user? }
         }
     };
+
+    // ── EMAIL KHÔI PHỤC + XÁC THỰC — gọi Edge Function gửi mã về Gmail ──
+    window.authEmail = {
+        async guiMaReset(dinhDanh) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.functions.invoke('quen-mat-khau', {
+                body: { dinh_danh: dinhDanh }
+            });
+            if (error) throw error;
+            return data; // { status, email_hien_thi?, la_email? }
+        },
+        // Gửi mã 6 số xác thực email (tài khoản SĐT liên kết Gmail)
+        async guiMaXacThucEmail(token, sdt, email) {
+            const c = _client(); if (!c) throw new Error("Supabase SDK chưa load");
+            const { data, error } = await c.functions.invoke('xac-thuc-email', {
+                body: { token: token, sdt: sdt, email: email }
+            });
+            if (error) throw error;
+            return data; // { status, email? }
+        }
+    };
+
+    // ── EXPOSE getter để mọi file ép tạo/lấy client (tránh _sbClient undefined ngầm) ──
+    //    Trả về client (tự tạo nếu chưa có) hoặc null nếu CDN Supabase chưa load.
+    window.laySbClient = _client;
+
+    // KHỞI TẠO NGAY khi file này chạy (CDN Supabase đã load TRƯỚC theo thứ tự <script>).
+    // → window._sbClient sẵn sàng tức thì, không phụ thuộc việc có RPC nào được gọi hay chưa
+    //   (sửa lỗi nút Google báo "Thư viện chưa tải xong" khi user CHƯA đăng nhập).
+    try { _client(); } catch (_) {}
 
     console.log("🔐 [Auth Module]: supabaseAuth + guestRPC đã sẵn sàng.");
 })();

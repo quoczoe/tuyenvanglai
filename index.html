@@ -67,7 +67,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS hệ thống -->
-    <link rel="stylesheet" href="giao-dien.css?v=20260620b">
+    <link rel="stylesheet" href="giao-dien.css?v=20260620i">
     <link rel="stylesheet" href="components.css?v=20260620a">
 
     <style>
@@ -2252,92 +2252,120 @@
         <!-- Chưa đăng nhập: form login/register (id phải là guestAuthPanel để phan-he-khach-choi.js nhận ra) -->
         <div id="section-login" style="display:none;">
             <div style="max-width:480px;margin:0 auto;">
-                <div id="guestAuthPanel" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px 20px;">
-                    <div style="font-size:0.72rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:16px;display:flex;align-items:center;gap:8px;">
-                        <i class="fa-solid fa-right-to-bracket" style="color:var(--accent);"></i> Đăng Nhập / Đăng Ký
-                    </div>
-                    <p style="font-size:0.82rem;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
-                        Nhập SĐT và mật khẩu. Hệ thống tự phân biệt đăng nhập hay đăng ký.
-                    </p>
-
-                    <label style="font-size:0.72rem;font-weight:600;color:var(--text-sub);letter-spacing:0.04em;display:block;margin-bottom:5px;">📱 Số điện thoại <span style="color:#ef4444;">*</span></label>
-                    <input type="tel" class="app-input" id="inputPhone"
-                        inputmode="numeric" maxlength="10"
-                        placeholder="Vd: 0987654321"
-                        oninput="this.value=this.value.replace(/[^0-9]/g,''); validateRealtime && validateRealtime(this,'sdt','SĐT không hợp lệ (10 số, đầu 03/05/07/08/09)');"
-                        onkeydown="if(event.key==='Enter') document.getElementById('inputPass')?.focus()"
-                        style="margin-bottom:4px;">
-                    <span class="input-hint" style="font-size:0.7rem;color:#ef4444;display:block;min-height:16px;margin-bottom:8px;"></span>
-
-                    <label style="font-size:0.72rem;font-weight:600;color:var(--text-sub);letter-spacing:0.04em;display:block;margin-bottom:5px;margin-top:6px;">🔒 Mật khẩu <span style="color:#ef4444;">*</span></label>
-                    <input type="password" class="app-input" id="inputPass"
-                        placeholder="Tối thiểu 6 ký tự"
-                        oninput="validateRealtime && validateRealtime(this,'pass','Mật khẩu tối thiểu 6 ký tự');"
-                        onkeydown="if(event.key==='Enter') xacThucNguoiDung && xacThucNguoiDung()"
-                        style="margin-bottom:4px;">
-                    <span class="input-hint" style="font-size:0.7rem;color:#ef4444;display:block;min-height:16px;margin-bottom:10px;"></span>
-
-                    <label style="display:flex;align-items:center;gap:9px;margin-bottom:14px;cursor:pointer;">
-                        <input type="checkbox" id="chkLuuDangNhap" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
-                        <span style="font-size:0.78rem;color:var(--text-muted);line-height:1.4;">
-                            Lưu đăng nhập 7 ngày
-                        </span>
-                    </label>
-
-                    <!-- Cloudflare Turnstile — Thay YOUR_SITE_KEY bằng key thật từ Cloudflare Dashboard -->
-                    <div id="cfTurnstileWrap" style="margin-bottom:10px;display:none;">
-                        <div id="turnstile-container" class="cf-turnstile" data-sitekey="0x4AAAAAADeiC_0mMTnc07rd" data-theme="dark" data-size="flexible"></div>
-                    </div>
-                    <button class="btn-primary" id="btnXacNhan" onclick="xacThucNguoiDung && xacThucNguoiDung()" style="width:100%;justify-content:center;">
-                        <i class="fa-solid fa-right-to-bracket"></i> XÁC NHẬN →
-                    </button>
-                    <div style="text-align:center;margin-top:10px;">
-                        <a href="#" onclick="quenMatKhau && quenMatKhau();return false;" style="font-size:0.78rem;color:var(--text-muted);text-decoration:underline;">
-                            Quên mật khẩu?
-                        </a>
+                <div id="guestAuthPanel" class="gauth-panel">
+                    <!-- ── TAB BAR ── -->
+                    <div class="gauth-tabs" role="tablist">
+                        <button type="button" class="gauth-tab active" id="gauthTabLogin" onclick="window.chuyenTabAuth && window.chuyenTabAuth('login')">Đăng nhập</button>
+                        <button type="button" class="gauth-tab" id="gauthTabReg" onclick="window.chuyenTabAuth && window.chuyenTabAuth('register')">Đăng ký</button>
                     </div>
 
-                    <!-- FORM PHỤ ĐĂNG KÝ — slide-down khi SĐT mới -->
-                    <div class="auth-extra-fields" id="authExtraFields">
-                        <div class="extra-divider" style="text-align:center;font-size:0.75rem;color:var(--text-muted);padding:12px 0;border-top:1px solid var(--border);margin-top:14px;">Thông tin bổ sung</div>
+                    <!-- ── VÙNG NỘI DUNG (min-height chống giật khung) ── -->
+                    <div class="gauth-views">
 
-                        <label style="font-size:0.72rem;font-weight:600;color:var(--text-sub);display:block;margin-bottom:5px;">👤 Họ tên <span style="color:#ef4444;">*</span></label>
-                        <input type="text" class="app-input" id="inputTenKhach"
-                            placeholder="Vd: Nguyễn Văn A"
-                            oninput="validateRealtime && validateRealtime(this,'ten','Tên chỉ được chứa chữ cái tiếng Việt (2-50 ký tự)')"
-                            style="margin-bottom:4px;">
-                        <span class="input-hint" style="font-size:0.7rem;color:#ef4444;display:block;min-height:16px;margin-bottom:8px;"></span>
+                        <!-- ===== TAB ĐĂNG NHẬP ===== -->
+                        <div id="gauthLogin" class="gauth-view">
+                            <label class="gauth-label">Số điện thoại hoặc Gmail <span class="gauth-req">*</span></label>
+                            <input type="text" class="app-input" id="inputPhone"
+                                autocomplete="username"
+                                placeholder="Vd: 0987654321 hoặc ten@gmail.com"
+                                onkeydown="if(event.key==='Enter') document.getElementById('inputPass')?.focus()"
+                                style="margin-bottom:4px;">
+                            <span class="input-hint" style="font-size:0.7rem;color:#ef4444;display:block;min-height:16px;margin-bottom:8px;"></span>
 
-                        <label style="font-size:0.72rem;font-weight:600;color:var(--text-sub);display:block;margin-bottom:8px;margin-top:6px;">Giới tính</label>
-                        <div style="display:flex;gap:16px;margin-bottom:14px;">
-                            <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
-                                <input type="radio" name="gioiTinh" value="male" checked> Nam
+                            <label class="gauth-label">Mật khẩu <span class="gauth-req">*</span></label>
+                            <input type="password" class="app-input" id="inputPass"
+                                placeholder="Tối thiểu 6 ký tự"
+                                oninput="validateRealtime && validateRealtime(this,'pass','Mật khẩu tối thiểu 6 ký tự');"
+                                onkeydown="if(event.key==='Enter') xacThucNguoiDung && xacThucNguoiDung()"
+                                style="margin-bottom:4px;">
+                            <span class="input-hint" style="font-size:0.7rem;color:#ef4444;display:block;min-height:16px;margin-bottom:10px;"></span>
+
+                            <label style="display:flex;align-items:center;gap:9px;margin-bottom:14px;cursor:pointer;">
+                                <input type="checkbox" id="chkLuuDangNhap" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
+                                <span style="font-size:0.78rem;color:var(--text-muted);line-height:1.4;">Lưu đăng nhập 7 ngày</span>
                             </label>
-                            <label style="display:flex;align-items:center;gap:6px;font-size:0.85rem;cursor:pointer;">
-                                <input type="radio" name="gioiTinh" value="female"> Nữ
-                            </label>
+
+                            <!-- Cloudflare Turnstile -->
+                            <div id="cfTurnstileWrap" style="margin-bottom:10px;display:none;">
+                                <div id="turnstile-container" class="cf-turnstile" data-sitekey="0x4AAAAAADeiC_0mMTnc07rd" data-theme="dark" data-size="flexible"></div>
+                            </div>
+                            <button class="btn-auth" id="btnXacNhan" onclick="xacThucNguoiDung && xacThucNguoiDung()">XÁC NHẬN →</button>
+                            <div style="text-align:center;margin-top:10px;">
+                                <a href="#" onclick="quenMatKhau && quenMatKhau();return false;" style="font-size:0.78rem;color:var(--text-muted);text-decoration:underline;">Quên mật khẩu?</a>
+                            </div>
+
+                            <div class="gauth-or"><span>hoặc</span></div>
+                            <button type="button" class="btn-google" onclick="window.dangNhapGoogle && window.dangNhapGoogle()">
+                                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M22.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h5.9a5.05 5.05 0 0 1-2.19 3.32v2.76h3.54c2.07-1.91 3.25-4.72 3.25-8.11z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.54-2.76c-.98.66-2.23 1.05-3.74 1.05-2.87 0-5.3-1.94-6.17-4.55H2.18v2.85A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.83 14.08a6.6 6.6 0 0 1 0-4.16V7.07H2.18a11 11 0 0 0 0 9.86l3.65-2.85z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.13-3.13C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.07l3.65 2.85C6.7 7.32 9.13 5.38 12 5.38z"/></svg>
+                                Đăng nhập nhanh bằng Google
+                            </button>
                         </div>
 
-                        <label style="font-size:0.72rem;font-weight:600;color:var(--text-sub);display:block;margin-bottom:5px;">📱 SĐT Zalo</label>
-                        <div style="margin-bottom:6px;">
-                            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.82rem;color:var(--text-muted);">
-                                <input type="checkbox" id="checkZaloTrungSDT" checked style="accent-color:var(--accent);" onchange="toggleZaloRieng && toggleZaloRieng()">
-                                Trùng với SĐT đăng nhập
-                            </label>
-                        </div>
-                        <div id="rowSdtZaloRieng" style="display:none;margin-bottom:10px;">
-                            <input type="tel" class="app-input" id="inputSdtZalo"
-                                inputmode="numeric" maxlength="10" placeholder="SĐT Zalo khác...">
+                        <!-- ===== TAB ĐĂNG KÝ ===== -->
+                        <div id="gauthReg" class="gauth-view" style="display:none;">
+                            <label class="gauth-label">Họ và tên <span class="gauth-req">*</span></label>
+                            <input type="text" class="app-input" id="inputTenKhach"
+                                placeholder="Vd: Nguyễn Văn A"
+                                oninput="validateRealtime && validateRealtime(this,'ten','Tên chỉ được chứa chữ cái tiếng Việt (2-50 ký tự)')"
+                                style="margin-bottom:4px;">
+                            <span class="input-hint" style="font-size:0.7rem;color:#ef4444;display:block;min-height:16px;margin-bottom:8px;"></span>
+
+                            <label class="gauth-label">Số điện thoại <span class="gauth-req">*</span></label>
+                            <input type="tel" class="app-input" id="inputSdtDK"
+                                inputmode="numeric" maxlength="10" autocomplete="tel"
+                                placeholder="Vd: 0987654321"
+                                oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+                                style="margin-bottom:4px;">
+                            <span class="input-hint" style="font-size:0.7rem;color:#ef4444;display:block;min-height:16px;margin-bottom:8px;"></span>
+
+                            <label class="gauth-label">Gmail <span class="gauth-req">*</span></label>
+                            <input type="email" class="app-input" id="inputGmailDK"
+                                placeholder="Vd: ten@gmail.com" autocomplete="email"
+                                style="margin-bottom:4px;">
+                            <span class="input-hint" style="font-size:0.7rem;color:var(--text-muted);display:block;min-height:16px;margin-bottom:8px;">Dùng để khôi phục mật khẩu khi cần.</span>
+
+                            <label class="gauth-label">Mật khẩu <span class="gauth-req">*</span></label>
+                            <input type="password" class="app-input" id="inputPassDK"
+                                placeholder="Tối thiểu 6 ký tự" autocomplete="new-password"
+                                onkeydown="if(event.key==='Enter') hoanTatDangKy && hoanTatDangKy()"
+                                style="margin-bottom:4px;">
+                            <span class="input-hint" style="font-size:0.7rem;color:#ef4444;display:block;min-height:16px;margin-bottom:8px;"></span>
+
+                            <label style="font-size:0.72rem;font-weight:600;color:var(--text-sub);display:block;margin-bottom:6px;">SĐT Zalo</label>
+                            <div style="margin-bottom:6px;">
+                                <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:0.82rem;color:var(--text-muted);">
+                                    <input type="checkbox" id="checkZaloTrungSDT" checked style="accent-color:var(--accent);" onchange="toggleZaloRieng && toggleZaloRieng()">
+                                    Trùng với SĐT đăng ký
+                                </label>
+                            </div>
+                            <div id="rowSdtZaloRieng" style="display:none;margin-bottom:12px;">
+                                <input type="tel" class="app-input" id="inputSdtZalo"
+                                    inputmode="numeric" maxlength="10" placeholder="SĐT Zalo khác...">
+                            </div>
+
+                            <button class="btn-auth" id="btnHoanTatDangKy" onclick="hoanTatDangKy && hoanTatDangKy()">TẠO TÀI KHOẢN</button>
+
+                            <div class="gauth-or"><span>hoặc</span></div>
+                            <button type="button" class="btn-google" onclick="window.dangNhapGoogle && window.dangNhapGoogle()">
+                                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M22.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h5.9a5.05 5.05 0 0 1-2.19 3.32v2.76h3.54c2.07-1.91 3.25-4.72 3.25-8.11z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.54-2.76c-.98.66-2.23 1.05-3.74 1.05-2.87 0-5.3-1.94-6.17-4.55H2.18v2.85A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.83 14.08a6.6 6.6 0 0 1 0-4.16V7.07H2.18a11 11 0 0 0 0 9.86l3.65-2.85z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.13-3.13C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.07l3.65 2.85C6.7 7.32 9.13 5.38 12 5.38z"/></svg>
+                                Đăng ký nhanh bằng Google
+                            </button>
                         </div>
 
-                        <label style="font-size:0.72rem;font-weight:600;color:var(--text-sub);display:block;margin-bottom:5px;">🔗 Facebook (tùy chọn)</label>
-                        <input type="url" class="app-input" id="inputFacebook"
-                            placeholder="https://facebook.com/..."
-                            style="margin-bottom:12px;">
+                        <!-- ===== BƯỚC THÊM SĐT (sau khi đăng nhập Google tài khoản mới) ===== -->
+                        <div id="gauthNeedPhone" class="gauth-view" style="display:none;">
+                            <div class="gauth-gg-hello" id="ggHello"></div>
+                            <p style="font-size:0.82rem;color:var(--text-muted);margin:0 0 14px;line-height:1.6;">Vui lòng thêm Số điện thoại của bạn để đặt slot.</p>
+                            <label class="gauth-label">Họ và tên <span class="gauth-req">*</span></label>
+                            <input type="text" class="app-input" id="ggTen" placeholder="Vd: Nguyễn Văn A" autocomplete="name" style="margin-bottom:4px;">
+                            <span style="font-size:0.7rem;color:var(--text-muted);display:block;min-height:14px;margin-bottom:8px;">Tự động điền từ Google — bạn có thể sửa lại nếu chưa đúng.</span>
+                            <label class="gauth-label">Số điện thoại <span class="gauth-req">*</span></label>
+                            <input type="tel" class="app-input" id="ggSdt" inputmode="numeric" maxlength="10"
+                                placeholder="Vd: 0987654321" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="margin-bottom:4px;">
+                            <span class="input-hint" style="font-size:0.7rem;color:#ef4444;display:block;min-height:16px;margin-bottom:8px;"></span>
+                            <button class="btn-auth" id="btnGoogleSdt" onclick="window.googleHoanTatSdt && window.googleHoanTatSdt()">HOÀN TẤT & VÀO TRANG CHỦ</button>
+                        </div>
 
-                        <button class="btn-primary" id="btnHoanTatDangKy" onclick="hoanTatDangKy && hoanTatDangKy()" style="width:100%;justify-content:center;">
-                            TẠO TÀI KHOẢN & ĐĂNG NHẬP
-                        </button>
                     </div>
                 </div>
             </div>
@@ -2393,9 +2421,12 @@
                         <input type="text" id="profileName" class="app-input" placeholder="Nguyễn Văn A">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="profilePhone">Số điện thoại</label>
+                        <label class="form-label" for="profilePhone" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                            <span>Số điện thoại</span>
+                            <button type="button" class="btn-thaydoi" onclick="window.moDoiThongTin && window.moDoiThongTin('sdt')">Thay đổi</button>
+                        </label>
                         <input type="tel" id="profilePhone" class="app-input" readonly placeholder="0901234567">
-                        <span class="form-hint">Dùng làm định danh — không thể thay đổi</span>
+                        <span class="form-hint">Định danh tài khoản — đổi cần xác thực OTP</span>
                     </div>
                 </div>
                 <div class="form-row">
@@ -2423,8 +2454,20 @@
                         <input type="url" id="profileFacebook" class="app-input" placeholder="https://facebook.com/...">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="profileGmail"><i class="fa-solid fa-envelope" style="color:#ea4335;"></i> Gmail</label>
-                        <input type="email" id="profileGmail" class="app-input" placeholder="example@gmail.com">
+                        <label class="form-label" for="profileGmail" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                            <span><i class="fa-solid fa-envelope" style="color:#ea4335;"></i> Gmail</span>
+                            <button type="button" id="btnThayDoiEmail" class="btn-thaydoi" style="display:none;"
+                                    onclick="window.moDoiThongTin && window.moDoiThongTin('email')">Thay đổi</button>
+                        </label>
+                        <div class="email-input-wrap" id="profileGmailWrap">
+                            <input type="email" id="profileGmail" class="app-input" readonly placeholder="vd: tenban">
+                            <span class="email-suffix" id="profileGmailSuffix">@gmail.com</span>
+                            <span id="profileEmailBadge" class="email-badge email-badge--inside"></span>
+                        </div>
+                        <button type="button" id="btnXacThucEmail" class="btn-xacthuc-email" style="display:none;"
+                                onclick="window.xacThucEmailNgay && window.xacThucEmailNgay()">
+                            <span style="color:#fbbf24;">⚠</span> Xác thực ngay
+                        </button>
                     </div>
                 </div>
                 <div class="form-row col-1">
@@ -3533,13 +3576,13 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="https://cdn.jsdelivr.net/npm/@fingerprintjs/fingerprintjs@3/dist/fp.min.js"></script>
 <!-- Supabase JS v2 SDK — BẮT BUỘC load trước ket-noi-supabase.js để guestRPC hoạt động -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-<script src="ket-noi-supabase.js?v=20260620a"></script>
-<script src="bo-may-du-lieu.js?v=20260620a"></script>
+<script src="ket-noi-supabase.js?v=20260620h"></script>
+<script src="bo-may-du-lieu.js?v=20260620b"></script>
 <script src="hieu-ung-giao-dien.js?v=20260612a"></script>
-<script src="phan-he-khach-choi.js?v=20260619f"></script>
+<script src="phan-he-khach-choi.js?v=20260620k"></script>
 <script src="phan-he-host.js?v=20260619b"></script>
 <script src="phan-he-thong-bao.js?v=20260620b"></script>
-<script src="phan-he-ung-dung.js?v=20260620e"></script>
+<script src="phan-he-ung-dung.js?v=20260620f"></script>
 <script src="phan-he-gop-y.js?v=20260620c"></script>
 
 <!-- xoaBoLoc dùng bản đầy đủ trong phan-he-khach-choi.js (reset cả pills + lịch + nhãn giá).

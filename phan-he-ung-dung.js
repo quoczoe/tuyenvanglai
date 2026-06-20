@@ -199,6 +199,8 @@
 
         // ── POPUP THÔNG BÁO TRANG CHỦ (sau khi UI ổn định) ──
         setTimeout(() => window._kiemTraPopupTrangChu && window._kiemTraPopupTrangChu(), 1200);
+        // ── BANNER nhắc xác thực email (SĐT + email chưa xác thực, snooze 24h) ──
+        setTimeout(() => window._kiemTraNhacEmail && window._kiemTraNhacEmail(), 1800);
     };
 
     /* ═══════════════════════════════════════════════════
@@ -321,6 +323,8 @@
         _setProfileField("profileZalo",     u.sdt_zalo  || "");
         _setProfileField("profileGmail",    u.gmail     || "");
         _setProfileField("profileBio",      u.bio       || "");
+        // Badge trạng thái xác thực email + khóa ô + đuôi @gmail.com (đọc trạng thái thật từ DB)
+        window._capNhatTrangThaiEmail?.(u);
 
         // Điểm uy tín — tải từ DB
         _taiDiemUyTin(u.sdt_khach);
@@ -574,7 +578,8 @@
             trinh_do:     (window.chuanHoaTrinhDo ? window.chuanHoaTrinhDo(document.getElementById("profileTrindDo")?.value) : document.getElementById("profileTrindDo")?.value) || "",
             facebook_link:document.getElementById("profileFacebook")?.value?.trim() || null,
             sdt_zalo:     document.getElementById("profileZalo")?.value?.trim()     || null,
-            gmail:        document.getElementById("profileGmail")?.value?.trim()    || null,
+            // Gmail chuẩn hóa: ô khóa (đã xác thực) = full; ô mở = tiền tố + @gmail.com
+            gmail:        (window._layEmailProfile ? window._layEmailProfile() : (document.getElementById("profileGmail")?.value?.trim() || null)),
             bio:          document.getElementById("profileBio")?.value?.trim()      || null,
         };
 

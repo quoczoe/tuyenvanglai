@@ -800,17 +800,102 @@
         if (btnMain) btnMain.textContent = "→ Xem thêm thông tin bổ sung...";
     }
 
+    /* ═══════════════════════════════════════════════════
+     * ANTI-SPAM — chốt chặn thiết bị/IP (>=3 tài khoản / 10 phút → khóa 24h)
+     * ═══════════════════════════════════════════════════ */
+    let _deviceIdCache = null;
+    let _ipCache = null; // "" = đã thử nhưng không lấy được; null = chưa thử
+
+    async function _layDeviceId() {
+        if (_deviceIdCache) return _deviceIdCache;
+        try {
+            if (window.FingerprintJS) {
+                const fp = await window.FingerprintJS.load();
+                const res = await fp.get();
+                if (res && res.visitorId) { _deviceIdCache = res.visitorId; return _deviceIdCache; }
+            }
+        } catch (_) { /* bỏ qua → fallback localStorage */ }
+        _deviceIdCache = _layHoacTaoDeviceId();
+        return _deviceIdCache;
+    }
+
+    async function _layIpClient() {
+        if (_ipCache !== null) return _ipCache;
+        try {
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), 2000);
+            const r = await fetch("https://api.ipify.org?format=json", { signal: ctrl.signal });
+            clearTimeout(t);
+            const j = await r.json();
+            _ipCache = (j && j.ip) ? String(j.ip) : "";
+        } catch (_) { _ipCache = ""; } // lỗi → để rỗng, anti-spam dựa trên device_id
+        return _ipCache;
+    }
+
+    // ── CỔNG ĐẦU (READ-ONLY): gọi TRƯỚC mỗi hành động Auth. CHỈ kiểm tra blacklist,
+    //    TUYỆT ĐỐI KHÔNG ghi log. Trả { is_blocked, dev, ip }. Lỗi/chưa deploy → fail-open.
+    async function checkDeviceIsBlocked() {
+        let dev = null, ip = null;
+        try {
+            [dev, ip] = await Promise.all([_layDeviceId(), _layIpClient()]);
+            if (!window.guestRPC || !window.guestRPC.kiemTraThietBiBiKhoa) return { is_blocked: false, dev, ip };
+            const res = await window.guestRPC.kiemTraThietBiBiKhoa(dev);
+            return { is_blocked: !!(res && res.is_blocked), reason: res && res.reason, dev, ip };
+        } catch (_) {
+            return { is_blocked: false, dev, ip };
+        }
+    }
+    window.checkDeviceIsBlocked = checkDeviceIsBlocked;
+
+    // ── CỔNG CUỐI (GHI VẾT): CHỈ gọi SAU KHI Auth THÀNH CÔNG mỹ mãn. Ghi định danh vào
+    //    anti_spam_logs + đếm; RPC tự khóa thiết bị nếu ≥3 tài khoản/10 phút (cho lần sau).
+    //    Fire-and-forget — KHÔNG chặn luồng chính, KHÔNG ghi khi sai pass/trùng SĐT/Email.
+    async function logSuccessfulAuthAction(dinhDanh, actionType) {
+        try {
+            const [dev, ip] = await Promise.all([_layDeviceId(), _layIpClient()]);
+            if (window.guestRPC && window.guestRPC.kiemTraChongSpam) {
+                await window.guestRPC.kiemTraChongSpam(dev, ip, actionType || "unknown", dinhDanh || "");
+            }
+        } catch (_) { /* im lặng — ghi vết là phụ */ }
+    }
+    window.logSuccessfulAuthAction = logSuccessfulAuthAction;
+
+    // Cờ khóa thiết bị — true → các finally KHÔNG bật lại nút (giữ disable tới khi F5/hết 2h).
+    let _thietBiBiKhoa = false;
+
+    // Cảnh báo + vô hiệu hóa nút (chống bấm spam tiếp). Toast đỏ z-index tối đa (đã set ở .toast-container).
+    function _canhBaoChanSpam() {
+        _thietBiBiKhoa = true;
+        window.hienToast("⚠️ Thiết bị tạm thời bị khóa",
+            "Thiết bị của bạn tạm thời bị khóa do phát hiện hành vi thay đổi tài khoản liên tục. Vui lòng thử lại sau 2 tiếng hoặc liên hệ Admin.", "danger");
+        ["btnXacNhan", "btnHoanTatDangKy", "btnGoogleSdt"].forEach(id => {
+            const b = document.getElementById(id); if (b) b.disabled = true;
+        });
+        document.querySelectorAll('.btn-google, .btn-dat-slot, [onclick*="datSlot"]').forEach(b => { try { b.disabled = true; } catch (_) {} });
+    }
+    window._canhBaoChanSpam = _canhBaoChanSpam;
+
     /**
      * Hàm chính — gọi khi bấm "XÁC NHẬN" (Bước 1).
      */
     window.xacThucNguoiDung = async function () {
-        const phone  = (document.getElementById("inputPhone")?.value || "").replace(/\D/g, "");
+        const raw    = (document.getElementById("inputPhone")?.value || "").trim();
         const pass   = document.getElementById("inputPass")?.value || "";
         const gender = document.querySelector('input[name="gioiTinh"]:checked')?.value || "male";
 
+        // Nhận diện đầu vào: Email hay SĐT (Flexible Input)
+        const dd = window.nhanDienDinhDanh(raw);
+        const laEmail = dd.loai === "email";
+        const phone = laEmail ? "" : dd.giaTri;       // SĐT (digits) — rỗng nếu đăng nhập bằng email
+        const dinhDanh = dd.giaTri;                    // chuỗi gửi lên RPC (email hoặc sdt)
+
         // Validate đầu vào bước 1
-        if (!window.VALIDATE.sdt(phone)) {
-            window.hienToast("SĐT không hợp lệ", "Nhập đúng 10 số, đầu 03/05/07/08/09.", "danger"); return;
+        if (laEmail) {
+            if (!window.VALIDATE.email(dinhDanh)) {
+                window.hienToast("Email không hợp lệ", "Nhập đúng định dạng email, vd: ten@gmail.com.", "danger"); return;
+            }
+        } else if (!window.VALIDATE.sdt(phone)) {
+            window.hienToast("Tài khoản không hợp lệ", "Nhập SĐT (10 số, đầu 03/05/07/08/09) hoặc Email.", "danger"); return;
         }
         if (!window.VALIDATE.pass(pass)) {
             window.hienToast("Mật khẩu quá ngắn", "Tối thiểu 6 ký tự.", "danger"); return;
@@ -820,19 +905,40 @@
         if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang kiểm tra...'; }
 
         try {
+            // CỔNG ĐẦU (read-only): chỉ kiểm tra thiết bị có bị khóa không — KHÔNG ghi log
+            const _chk = await checkDeviceIsBlocked();
+            if (_chk.is_blocked) { _canhBaoChanSpam(); return; }
+
             // Hash mật khẩu phía client (SHA-256) trước khi gửi lên RPC
             const hashInput = await _hashMatKhau(pass);
 
-            // Gọi RPC — bảng nguoi_dung bị RLS khóa với anon, chỉ đọc qua RPC SECURITY DEFINER
-            const result = await window.guestRPC.login(phone, hashInput);
+            // RPC linh hoạt — tự resolve email→sdt rồi gọi login cũ (giữ nguyên logic phiên)
+            const result = await window.guestRPC.dangNhapLinhHoat(dinhDanh, hashInput, _chk.dev, _chk.ip);
 
             switch (result?.status) {
+                case 'DEVICE_BLOCKED_SPAM':
+                    _canhBaoChanSpam();
+                    break;
                 case 'ok':
                     _bangND = "nguoi_dung";
+                    logSuccessfulAuthAction(dinhDanh, "login");   // ✅ CHỈ ghi vết khi THÀNH CÔNG
                     _luuSessionVaDangNhap(result.user, result.token);
                     break;
                 case 'not_found':
-                    _xoFormPhu(phone, pass, gender);
+                    if (laEmail) {
+                        // Không thể đăng ký bằng email (SĐT là khóa chính) → chuyển sang tab Đăng ký
+                        window.hienToast("Email chưa có tài khoản", "Chưa có tài khoản gắn email này. Vui lòng đăng ký bằng Số điện thoại.", "warning");
+                        window.chuyenTabAuth && window.chuyenTabAuth("register");
+                    } else {
+                        // SĐT chưa có → chuyển sang tab Đăng ký, điền sẵn SĐT + mật khẩu vừa nhập
+                        window.chuyenTabAuth && window.chuyenTabAuth("register");
+                        const elSdt = document.getElementById("inputSdtDK");
+                        const elPass = document.getElementById("inputPassDK");
+                        if (elSdt) elSdt.value = phone;
+                        if (elPass && pass) elPass.value = pass;
+                        window.hienToast("Tạo tài khoản mới", "SĐT chưa đăng ký — điền thêm thông tin để tạo tài khoản.", "info");
+                        document.getElementById("inputTenKhach")?.focus();
+                    }
                     break;
                 case 'blocked':
                     window.hienToast("Tài khoản bị khóa", "Tài khoản của bạn đã bị Admin tạm khóa. Liên hệ Admin để biết thêm.", "danger");
@@ -862,23 +968,35 @@
                 window.hienToast("Lỗi đăng nhập", errMsg || "Không thể xác thực. Kiểm tra kết nối mạng.", "danger");
             }
         } finally {
-            if (btn) { btn.disabled = false; btn.innerHTML = 'XÁC NHẬN →'; }
+            if (btn && !_thietBiBiKhoa) { btn.disabled = false; btn.innerHTML = 'XÁC NHẬN →'; }
         }
     };
 
     /**
-     * Hoàn tất đăng ký — gọi khi bấm "TẠO TÀI KHOẢN" trong form phụ.
+     * Hoàn tất đăng ký — Tab "Đăng ký" (form độc lập: Họ tên + SĐT + Gmail + Mật khẩu).
      */
     window.hoanTatDangKy = async function () {
-        const extraFields = document.getElementById("authExtraFields");
-        if (!extraFields) return;
+        // SĐT + Mật khẩu lấy từ CHÍNH form đăng ký (không còn dùng ô đăng nhập)
+        const phone  = (document.getElementById("inputSdtDK")?.value || "").replace(/\D/g, "");
+        const pass   = document.getElementById("inputPassDK")?.value || "";
+        const gender = document.querySelector('#gauthReg input[name="gioiTinh"]:checked')?.value
+                    || document.querySelector('input[name="gioiTinh"]:checked')?.value || "male";
 
-        const phone  = extraFields.dataset.phone;
-        const pass   = extraFields.dataset.pass;
-        const gender = extraFields.dataset.gender || "male";
+        // Validate SĐT + mật khẩu ngay tại form đăng ký
+        if (!window.VALIDATE.sdt(phone)) {
+            window.hienToast("SĐT không hợp lệ", "Nhập đúng 10 số, đầu 03/05/07/08/09.", "danger");
+            document.getElementById("inputSdtDK")?.focus();
+            return;
+        }
+        if (!window.VALIDATE.pass(pass)) {
+            window.hienToast("Mật khẩu quá ngắn", "Tối thiểu 6 ký tự.", "danger");
+            document.getElementById("inputPassDK")?.focus();
+            return;
+        }
 
         // Lấy thông tin bổ sung — TÊN luôn lưu IN HOA (đồng bộ hiển thị toàn hệ thống)
         const ten      = (document.getElementById("inputTenKhach")?.value || "").trim().toUpperCase();
+        const gmail    = (document.getElementById("inputGmailDK")?.value || "").trim().toLowerCase();
         const zaloCk   = document.getElementById("checkZaloTrungSDT")?.checked !== false; // default ON
         const sdtZaloEl = document.getElementById("inputSdtZalo");
         const sdtZalo  = zaloCk ? null : (sdtZaloEl?.value?.replace(/\D/g, "") || null);
@@ -895,6 +1013,12 @@
             document.getElementById("inputTenKhach")?.focus();
             return;
         }
+        // Gmail BẮT BUỘC khi đăng ký (dùng cho khôi phục mật khẩu)
+        if (!window.VALIDATE.email(gmail)) {
+            window.hienToast("Gmail không hợp lệ", "Vui lòng nhập Gmail chính chủ (vd: ten@gmail.com) để khôi phục mật khẩu khi cần.", "danger");
+            document.getElementById("inputGmailDK")?.focus();
+            return;
+        }
         if (!zaloCk && sdtZalo && !window.VALIDATE.sdt(sdtZalo)) {
             window.hienToast("SĐT Zalo không hợp lệ", "Nhập đúng 10 số, đầu 03/05/07/08/09.", "danger"); return;
         }
@@ -906,27 +1030,37 @@
         if (btnDK) { btnDK.disabled = true; btnDK.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tạo...'; }
 
         try {
+            // CỔNG ĐẦU (read-only): chỉ kiểm tra thiết bị bị khóa — KHÔNG ghi log
+            const _chk = await checkDeviceIsBlocked();
+            if (_chk.is_blocked) { _canhBaoChanSpam(); return; }
+
             const hash = await _hashMatKhau(pass);
 
-            // Lấy fingerprint thiết bị (FingerprintJS) — gửi kèm để RPC lưu
-            let fpId = null;
-            try {
-                if (window.FingerprintJS) {
-                    const fp = await window.FingerprintJS.load();
-                    const res = await fp.get();
-                    fpId = res.visitorId;
-                }
-            } catch (_) { /* FingerprintJS không load được — bỏ qua */ }
+            // device_id anti-spam = fingerprint thiết bị (cache đã lấy ở cổng đầu)
+            const fpId = _chk.dev || await _layDeviceId();
 
-            // Gọi RPC đăng ký — bảng nguoi_dung bị RLS khóa với anon, phải qua SECURITY DEFINER
-            const result = await window.guestRPC.datPassLanDau(
-                phone, ten, gender, hash,
+            // Gọi RPC đăng ký V2 (register cũ + lưu gmail) — RLS khóa anon → qua SECURITY DEFINER
+            const result = await window.guestRPC.dangKyV2(
+                phone, ten, gender, hash, gmail,
                 sdtZalo || null,
                 facebook || null,
                 maGT || null,
-                fpId || null
+                fpId || null,
+                _chk.ip
             );
 
+            if (result?.status === 'DEVICE_BLOCKED_SPAM') { _canhBaoChanSpam(); return; }
+            // 🔴 CHỐNG TRÙNG — giữ nguyên dữ liệu form, KHÔNG ghi đè, focus ô bị trùng
+            if (result?.status === 'REG_PHONE_ALREADY_EXISTS') {
+                window.hienToast("⚠️ SĐT đã được sử dụng", "Số điện thoại này đã được sử dụng cho một tài khoản khác!", "danger");
+                document.getElementById("inputSdtDK")?.focus();
+                return;
+            }
+            if (result?.status === 'REG_EMAIL_ALREADY_EXISTS') {
+                window.hienToast("⚠️ Email đã được liên kết", "Địa chỉ Email này đã được liên kết với một tài khoản khác!", "danger");
+                document.getElementById("inputGmailDK")?.focus();
+                return;
+            }
             if (result?.status === 'already_has_pass') {
                 window.hienToast("SĐT đã có tài khoản", "Vui lòng đăng nhập bằng mật khẩu đã tạo.", "info");
                 return;
@@ -937,10 +1071,11 @@
             }
 
             const newUser = {
-                ten_khach: ten, sdt_khach: phone, gioi_tinh: gender,
+                ten_khach: ten, sdt_khach: phone, gioi_tinh: gender, gmail: gmail,
                 vai_tro: "guest", sdt_zalo: sdtZalo, facebook_link: facebook || null
             };
             window.hienToast("Tạo tài khoản thành công! 🎉", `Chào ${ten}! Tài khoản đã được tạo.`, "success");
+            logSuccessfulAuthAction(phone, "register");   // ✅ CHỈ ghi vết khi đăng ký THÀNH CÔNG
             _luuSessionVaDangNhap(newUser, result.token);
         } catch (e) {
             console.error("Lỗi đăng ký:", e?.message || e);
@@ -951,7 +1086,7 @@
             }
             window.hienToast("Lỗi đăng ký", moTaLoi, "danger");
         } finally {
-            if (btnDK) { btnDK.disabled = false; btnDK.innerHTML = 'TẠO TÀI KHOẢN & ĐĂNG NHẬP'; }
+            if (btnDK && !_thietBiBiKhoa) { btnDK.disabled = false; btnDK.innerHTML = 'TẠO TÀI KHOẢN'; }
         }
     };
 
@@ -964,81 +1099,843 @@
         if (row) row.style.display = checked ? "none" : "block";
     };
 
-    /**
-     * Quên mật khẩu — phân nhánh theo telegram_id có tồn tại không.
-     */
-    window.quenMatKhau = async function () {
-        const phone = (document.getElementById("inputPhone")?.value || "").replace(/\D/g, "");
-        if (!window.VALIDATE.sdt(phone)) {
-            window.hienToast("Nhập SĐT trước", "Vui lòng nhập SĐT ở ô trên, sau đó bấm 'Quên mật khẩu'.", "info");
-            return;
-        }
+    /* ═══════════════════════════════════════════════════
+     * CHUYỂN TAB AUTH — Đăng nhập ↔ Đăng ký (no layout shift nhờ .gauth-views min-height)
+     * ═══════════════════════════════════════════════════ */
+    window.chuyenTabAuth = function (which) {
+        const isReg = which === "register";
+        const vLogin = document.getElementById("gauthLogin");
+        const vReg   = document.getElementById("gauthReg");
+        const vPhone = document.getElementById("gauthNeedPhone");
+        const tLogin = document.getElementById("gauthTabLogin");
+        const tReg   = document.getElementById("gauthTabReg");
+        // Bước thêm SĐT (Google) chỉ hiện khi gọi riêng → ẩn khi đổi tab thường
+        if (vPhone) vPhone.style.display = "none";
+        if (vLogin) vLogin.style.display = isReg ? "none" : "block";
+        if (vReg)   vReg.style.display   = isReg ? "block" : "none";
+        if (tLogin) tLogin.classList.toggle("active", !isReg);
+        if (tReg)   tReg.classList.toggle("active", isReg);
+    };
 
+    /* ═══════════════════════════════════════════════════
+     * ĐĂNG NHẬP NHANH BẰNG GOOGLE (Supabase Auth OAuth)
+     *   1. signInWithOAuth → redirect Google → quay về domain.
+     *   2. Khi quay về: _xuLyGoogleTroVe() đọc session → RPC auth_google_dang_nhap.
+     *      • ok → có guest token → vào thẳng trang chủ.
+     *      • need_phone → hiện bước "Thêm SĐT" (#gauthNeedPhone).
+     * ═══════════════════════════════════════════════════ */
+    // Lấy Supabase client đã sẵn sàng — thử tối đa `soLan` lần, mỗi lần cách `delay`ms.
+    // (CDN có thể tải chậm → không bắn lỗi ngay, chờ vài nhịp cho trải nghiệm tốt hơn.)
+    function _layClientAuth(soLan, delay) {
+        return new Promise((resolve) => {
+            let lan = 0;
+            const thu = () => {
+                // Ưu tiên getter chính chủ từ ket-noi-supabase.js (tự tạo client nếu cần)
+                const c = (typeof window.laySbClient === "function") ? window.laySbClient() : window._sbClient;
+                if (c && c.auth && typeof c.auth.signInWithOAuth === "function") { resolve(c); return; }
+                lan++;
+                if (lan >= soLan) { resolve(null); return; }
+                setTimeout(thu, delay);
+            };
+            thu();
+        });
+    }
+
+    window.dangNhapGoogle = async function () {
+        const btns = document.querySelectorAll(".btn-google");
+        btns.forEach(b => { b.disabled = true; });
         try {
-            const users = await window.dbEngine.doc("nguoi_dung", { eq: { sdt_khach: phone } });
-            const user  = users[0] || null;
-
-            if (!user) {
-                window.hienToast("SĐT chưa đăng ký", "Số điện thoại này chưa có tài khoản trên hệ thống.", "warning");
+            // Thử kết nối tuần hoàn 3 lần (500ms/lần) thay vì báo lỗi tức thì
+            const c = await _layClientAuth(3, 500);
+            if (!c) {
+                window.hienToast("Chưa sẵn sàng", "Thư viện đăng nhập đang tải. Vui lòng thử lại sau giây lát hoặc tải lại trang (F5).", "warning");
                 return;
             }
-
-            if (user.telegram_id) {
-                // Có telegram → hướng dẫn mở Bot nhận mã
-                _hienModalQuenPassTelegram(phone, user.telegram_id);
-            } else {
-                // Không có telegram → liên hệ Admin
-                _hienModalQuenPassAdmin(phone);
+            const redirectTo = window.location.origin + window.location.pathname;
+            const { error } = await c.auth.signInWithOAuth({
+                provider: "google",
+                options: { redirectTo: redirectTo }
+            });
+            if (error) {
+                window.hienToast("Không mở được Google", error.message || "Thử lại sau.", "danger");
             }
+            // Thành công → trình duyệt tự redirect sang Google.
         } catch (e) {
-            window.hienToast("Lỗi kiểm tra", "Không thể kiểm tra tài khoản. Thử lại sau.", "danger");
+            window.hienToast("Lỗi đăng nhập Google", e?.message || "Thử lại sau.", "danger");
+        } finally {
+            btns.forEach(b => { b.disabled = false; });
         }
     };
 
-    function _hienModalQuenPassTelegram(phone) {
-        const modal = document.createElement("div");
-        modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;";
-        modal.innerHTML = `
-            <div style="background:#1a2844;border:1px solid #00ff88;border-radius:16px;padding:28px 24px;max-width:400px;width:100%;">
-                <h3 style="color:#00ff88;margin:0 0 10px;">🔐 Khôi phục mật khẩu</h3>
-                <p style="color:#9ca3af;font-size:0.9rem;margin:0 0 20px;line-height:1.5;">
-                    Mở Telegram Bot để nhận mã khôi phục mật khẩu mới.
-                </p>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                    <button onclick="window.ketNoiTelegramQuenPass('${phone}');this.closest('[style*=fixed]').remove()"
-                        style="flex:1;padding:10px;background:#00ff88;color:#0a1628;border:none;border-radius:8px;font-weight:700;cursor:pointer;">
-                        📲 Mở Telegram Bot →
-                    </button>
-                    <button onclick="this.closest('[style*=fixed]').remove()"
-                        style="padding:10px 16px;background:transparent;color:#9ca3af;border:1px solid #374151;border-radius:8px;cursor:pointer;">
-                        Hủy
-                    </button>
-                </div>
-            </div>`;
-        document.body.appendChild(modal);
+    // Xử lý khi vừa quay về từ Google (gọi 1 lần lúc init)
+    let _googleEmail = "";
+    window._xuLyGoogleTroVe = async function () {
+        try {
+            const c = window._sbClient;
+            if (!c || !c.auth) return;
+            const { data } = await c.auth.getSession();
+            const sess = data && data.session;
+            if (!sess || !sess.user || !sess.user.email) return; // không có phiên Google → bỏ qua
+            // Đã đăng nhập guest rồi thì không xử lý lại (tránh lặp khi đã có token)
+            if (window.currentGuest && window.currentGuest._token) return;
+
+            _googleEmail = sess.user.email;
+            // CỔNG ĐẦU (read-only): kiểm tra thiết bị bị khóa — KHÔNG ghi log
+            const _chk = await checkDeviceIsBlocked();
+            if (_chk.is_blocked) { _canhBaoChanSpam(); try { await c.auth.signOut(); } catch (_) {} return; }
+
+            const res = await window.guestRPC.googleDangNhap(_chk.dev, _chk.ip);
+
+            if (res?.status === "DEVICE_BLOCKED_SPAM") {
+                _canhBaoChanSpam();
+                try { await c.auth.signOut(); } catch (_) {}
+            } else if (res?.status === "ok") {
+                _bangND = "nguoi_dung";
+                logSuccessfulAuthAction(sess.user.email, "login");   // ✅ CHỈ khi THÀNH CÔNG
+                _luuSessionVaDangNhap(res.user, res.token);
+                try { await c.auth.signOut(); } catch (_) {} // bỏ phiên Auth → quay về anon cho RPC guest
+                window.hienToast("Đăng nhập thành công 🎉", `Chào ${res.user?.ten_khach || ""}!`, "success");
+            } else if (res?.status === "need_phone") {
+                // Tài khoản Google mới → yêu cầu thêm SĐT
+                _hienBuocThemSdtGoogle(sess.user);
+            } else if (res?.status === "blocked") {
+                window.hienToast("Tài khoản bị khóa", "Liên hệ Admin để được hỗ trợ.", "danger");
+                try { await c.auth.signOut(); } catch (_) {}
+            }
+        } catch (e) {
+            // RPC chưa cài (chưa chạy SQL google) → báo nhẹ, không vỡ trang
+            const m = e?.message || "";
+            if (m.includes("PGRST202") || m.includes("Could not find") || m.includes("42883")) {
+                window.hienToast("Google chưa sẵn sàng", "Tính năng đăng nhập Google đang được cấu hình. Vui lòng dùng SĐT.", "warning");
+            }
+        }
+    };
+
+    function _hienBuocThemSdtGoogle(gUser) {
+        // Chuyển panel sang bước thêm SĐT
+        const vLogin = document.getElementById("gauthLogin");
+        const vReg   = document.getElementById("gauthReg");
+        const vPhone = document.getElementById("gauthNeedPhone");
+        if (vLogin) vLogin.style.display = "none";
+        if (vReg)   vReg.style.display = "none";
+        if (vPhone) vPhone.style.display = "block";
+        // Đảm bảo panel hiển thị (tab Cá nhân) cho khách chưa đăng nhập
+        if (window.chuyenTab) window.chuyenTab("ca-nhan");
+        const hello = document.getElementById("ggHello");
+        if (hello) hello.textContent = "✓ Đã xác thực Google: " + (gUser.email || "");
+        // Auto-fill TÊN từ hồ sơ Google → đổ sẵn vào ô (vẫn cho sửa lại).
+        const tenGoiY = _tenTuGoogle(gUser);
+        const elTen = document.getElementById("ggTen");
+        if (elTen && tenGoiY) elTen.value = String(tenGoiY).toUpperCase();
+        // Có tên sẵn → ưu tiên focus ô SĐT (việc còn thiếu); chưa có tên → focus ô tên
+        setTimeout(() => document.getElementById(tenGoiY ? "ggSdt" : "ggTen")?.focus(), 80);
     }
 
-    function _hienModalQuenPassAdmin(phone) {
-        const modal = document.createElement("div");
-        modal.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;";
-        modal.innerHTML = `
-            <div style="background:#1a2844;border:1px solid #ef4444;border-radius:16px;padding:28px 24px;max-width:400px;width:100%;">
-                <h3 style="color:#ef4444;margin:0 0 10px;">⚠️ Chưa liên kết Telegram</h3>
-                <p style="color:#9ca3af;font-size:0.9rem;margin:0 0 20px;line-height:1.5;">
-                    Tài khoản <strong style="color:#e2e8f0;">${phone}</strong> chưa liên kết Telegram.<br>
-                    Vui lòng liên hệ Admin để reset mật khẩu.
-                </p>
-                <div style="display:flex;gap:10px;flex-wrap:wrap;">
-                    <a href="tel:0901234567" style="flex:1;text-align:center;padding:10px;background:#00ff88;color:#0a1628;border-radius:8px;font-weight:700;text-decoration:none;font-size:0.95rem;">
-                        📞 Gọi Admin
-                    </a>
-                    <button onclick="this.closest('[style*=fixed]').remove()"
-                        style="padding:10px 16px;background:transparent;color:#9ca3af;border:1px solid #374151;border-radius:8px;cursor:pointer;">
-                        Đóng
-                    </button>
+    // Trích xuất tên hiển thị từ object user của Supabase Auth (Google) — dò nhiều khóa.
+    function _tenTuGoogle(gUser) {
+        if (!gUser) return "";
+        const md = gUser.user_metadata || {};
+        // Các khóa phổ biến Supabase/Google đổ vào user_metadata
+        let ten = md.full_name || md.name || md.fullName || md.display_name || md.given_name || "";
+        // Dự phòng: lấy từ identities[].identity_data (một số provider để tên ở đây)
+        if (!ten && Array.isArray(gUser.identities)) {
+            for (const idt of gUser.identities) {
+                const d = idt && idt.identity_data;
+                if (d && (d.full_name || d.name)) { ten = d.full_name || d.name; break; }
+            }
+        }
+        return String(ten || "").trim();
+    }
+
+    window.googleHoanTatSdt = async function () {
+        const phone = (document.getElementById("ggSdt")?.value || "").replace(/\D/g, "");
+        const ten   = (document.getElementById("ggTen")?.value || "").trim().toUpperCase();
+        if (!window.VALIDATE.sdt(phone)) {
+            window.hienToast("SĐT không hợp lệ", "Nhập đúng 10 số, đầu 03/05/07/08/09.", "danger");
+            document.getElementById("ggSdt")?.focus();
+            return;
+        }
+        const _kqTen = window.kiemTraTenHopLe ? window.kiemTraTenHopLe(ten) : { ok: window.VALIDATE.ten(ten), lyDo: "Tên không hợp lệ." };
+        if (!_kqTen.ok) {
+            window.hienToast("Tên không hợp lệ", _kqTen.lyDo, "danger");
+            document.getElementById("ggTen")?.focus();
+            return;
+        }
+        const gender = document.querySelector('input[name="gioiTinh"]:checked')?.value || "male";
+        const btn = document.getElementById("btnGoogleSdt");
+        if (btn) { btn.disabled = true; btn.textContent = "Đang tạo..."; }
+        try {
+            // CỔNG ĐẦU (read-only): kiểm tra thiết bị bị khóa — KHÔNG ghi log
+            const _chk = await checkDeviceIsBlocked();
+            if (_chk.is_blocked) { _canhBaoChanSpam(); return; }
+
+            const res = await window.guestRPC.googleDangKySdt(phone, ten, gender, _chk.dev, _chk.ip);
+            if (res?.status === "DEVICE_BLOCKED_SPAM") {
+                _canhBaoChanSpam();
+            } else if (res?.status === "ok") {
+                _bangND = "nguoi_dung";
+                logSuccessfulAuthAction(phone, "register");   // ✅ CHỈ khi THÀNH CÔNG
+                _luuSessionVaDangNhap(res.user, res.token);
+                try { await window._sbClient?.auth?.signOut(); } catch (_) {}
+                window.hienToast("Hoàn tất 🎉", `Chào ${ten}! Tài khoản đã sẵn sàng.`, "success");
+            } else if (res?.status === "sdt_taken") {
+                window.hienToast("SĐT đã dùng", "Số điện thoại này đã có tài khoản. Dùng SĐT khác hoặc đăng nhập bằng mật khẩu.", "warning");
+            } else {
+                window.hienToast("Không tạo được", "Có lỗi xảy ra. Thử lại sau.", "danger");
+            }
+        } catch (e) {
+            window.hienToast("Lỗi kết nối", "Không tạo được tài khoản. Thử lại sau.", "danger");
+        } finally {
+            if (btn && !_thietBiBiKhoa) { btn.disabled = false; btn.textContent = "HOÀN TẤT & VÀO TRANG CHỦ"; }
+        }
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * QUÊN MẬT KHẨU — qua EMAIL (mã 6 số). Modal 2 bước, dựng động.
+     *   Bước 1: nhập SĐT/Gmail → gửi mã (Edge Function) → hiện email (mask/full).
+     *   Bước 2: nhập mã + mật khẩu mới → đổi mật khẩu (RPC).
+     * Chống quét data: nhập SĐT → email che 1 phần; nhập Gmail → hiện full.
+     * ═══════════════════════════════════════════════════ */
+    const _SVG_MAIL = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>';
+    function _escQmk(s) { const d = document.createElement("div"); d.textContent = (s == null) ? "" : String(s); return d.innerHTML; }
+
+    /* ── COOLDOWN gửi mã OTP (PERSISTENT qua localStorage — chống tắt/mở lại để spam) ── */
+    // Chạy đếm ngược theo MỐC HẾT HẠN (expiry, ms). Khi về 0 → bật lại nút + xóa key.
+    function _chayCooldown(btn, expiry, storageKey) {
+        if (!btn) return;
+        if (btn._cdTimer) clearInterval(btn._cdTimer);
+        if (btn.dataset.cdGoc == null) btn.dataset.cdGoc = btn.innerHTML;
+        const goc = btn.dataset.cdGoc;
+        const tick = () => {
+            const con = Math.ceil((expiry - Date.now()) / 1000);
+            if (con <= 0) {
+                clearInterval(btn._cdTimer); btn._cdTimer = null;
+                btn.disabled = false; btn.innerHTML = goc; delete btn.dataset.cdGoc;
+                if (storageKey) { try { localStorage.removeItem(storageKey); } catch (_) {} }
+            } else {
+                btn.disabled = true; btn.textContent = "Thử lại sau " + con + "s...";
+            }
+        };
+        tick();
+        if (btn.disabled) btn._cdTimer = setInterval(tick, 500);
+    }
+    // Bắt đầu cooldown `giay` giây. Nếu có storageKey → LƯU mốc hết hạn (bền qua F5/đóng modal).
+    function _cooldownNut(btn, giay, storageKey) {
+        if (!btn) return;
+        const expiry = Date.now() + giay * 1000;
+        if (storageKey) { try { localStorage.setItem(storageKey, String(expiry)); } catch (_) {} }
+        _chayCooldown(btn, expiry, storageKey);
+    }
+    // Khôi phục cooldown từ localStorage khi MỞ LẠI modal / F5. Trả true nếu còn hiệu lực.
+    function _khoiPhucCooldown(btn, storageKey) {
+        if (!btn || !storageKey) return false;
+        let exp = 0;
+        try { exp = +(localStorage.getItem(storageKey) || 0); } catch (_) {}
+        if (exp && Date.now() < exp) { _chayCooldown(btn, exp, storageKey); return true; }
+        return false;
+    }
+    // Toast đỏ ưu tiên cao khi backend trả OTP_SPAM_BLOCKED
+    function _toastOtpSpam() {
+        window.hienToast("⚠️ Gửi mã quá nhiều lần",
+            "Bạn đã yêu cầu gửi mã quá nhiều lần liên tục. Vui lòng đợi 15 phút sau để thử lại.", "danger");
+    }
+    window._cooldownNut = _cooldownNut;
+    window._khoiPhucCooldown = _khoiPhucCooldown;
+
+    window.quenMatKhau = function (prefill) {
+        document.getElementById("qmkOverlay")?.remove();
+        const ov = document.createElement("div");
+        ov.id = "qmkOverlay";
+        ov.className = "qmk-overlay";
+        // prefill có thể là chuỗi (định danh) HOẶC object { dd, code } (từ link email)
+        let ddIn = "", codeIn = "";
+        if (prefill && typeof prefill === "object") {
+            ddIn = (prefill.dd || "").trim();
+            codeIn = (prefill.code || "").replace(/\D/g, "").slice(0, 6);
+        } else if (typeof prefill === "string") {
+            ddIn = prefill.trim();
+        }
+        const dd0 = ddIn || (document.getElementById("inputPhone")?.value || "").trim();
+        ov.innerHTML = `
+            <div class="qmk-box">
+                <button type="button" class="qmk-x" aria-label="Đóng" onclick="document.getElementById('qmkOverlay')?.remove()">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+                <div class="qmk-ic">${_SVG_MAIL}</div>
+                <h3 class="qmk-title">Khôi phục mật khẩu</h3>
+                <p class="qmk-sub" id="qmkSub">Nhập Số điện thoại hoặc Gmail của bạn. Mã xác thực sẽ được gửi về email.</p>
+
+                <!-- BƯỚC 1 -->
+                <div id="qmkStep1" class="qmk-step">
+                    <label class="qmk-label">Số điện thoại hoặc Gmail</label>
+                    <input type="text" class="qmk-input" id="qmkDinhDanh" placeholder="vd: 0987654321 hoặc ten@gmail.com" value="${_escQmk(dd0)}" autocomplete="off">
+                    <button type="button" class="qmk-btn" id="qmkBtnGui" onclick="window._qmkGuiMa()">Gửi mã xác thực</button>
+                </div>
+
+                <!-- BƯỚC 2 -->
+                <div id="qmkStep2" class="qmk-step" style="display:none;">
+                    <div class="qmk-mail-info" id="qmkMailInfo"></div>
+                    <label class="qmk-label">Mã xác thực (6 số)</label>
+                    <input type="text" class="qmk-input qmk-code" id="qmkMaCode" inputmode="numeric" maxlength="6" placeholder="------" autocomplete="one-time-code"
+                        oninput="this.value=this.value.replace(/\\D/g,'')">
+                    <label class="qmk-label">Mật khẩu mới</label>
+                    <input type="password" class="qmk-input" id="qmkPassMoi" placeholder="Tối thiểu 6 ký tự" autocomplete="new-password">
+                    <button type="button" class="qmk-btn" id="qmkBtnDoi" onclick="window._qmkDoiMatKhau()">Đặt lại mật khẩu</button>
+                    <button type="button" class="qmk-link" onclick="window._qmkQuayLai()">← Gửi lại mã / đổi tài khoản</button>
                 </div>
             </div>`;
-        document.body.appendChild(modal);
+        document.body.appendChild(ov);
+        // Static backdrop: KHÔNG đóng khi click nền mờ — chỉ đóng bằng nút X.
+        // Khôi phục cooldown gửi mã nếu còn hiệu lực (chống tắt/mở lại để spam)
+        _khoiPhucCooldown(document.getElementById("qmkBtnGui"), "otp_forgot_cooldown");
+
+        // Vào từ link email (có dd + code) → nhảy THẲNG bước nhập mật khẩu mới,
+        // tự điền mã xác thực, không bắt gửi lại mã (chống giật + tiện cho user).
+        if (dd0 && codeIn) {
+            _qmkDinhDanh = dd0;
+            const info = document.getElementById("qmkMailInfo");
+            if (info) info.innerHTML = `Đặt lại mật khẩu cho tài khoản: <b>${_escQmk(dd0)}</b>`;
+            const maEl = document.getElementById("qmkMaCode");
+            if (maEl) maEl.value = codeIn;
+            document.getElementById("qmkStep1").style.display = "none";
+            document.getElementById("qmkStep2").style.display = "block";
+            const sub = document.getElementById("qmkSub");
+            if (sub) sub.textContent = "Mã đã được điền sẵn từ email. Nhập mật khẩu mới để hoàn tất.";
+            setTimeout(() => document.getElementById("qmkPassMoi")?.focus(), 50);
+        } else {
+            setTimeout(() => document.getElementById("qmkDinhDanh")?.focus(), 50);
+        }
+    };
+
+    // Lưu định danh đã gửi mã để dùng ở bước đổi mật khẩu
+    let _qmkDinhDanh = "";
+
+    window._qmkGuiMa = async function () {
+        const raw = (document.getElementById("qmkDinhDanh")?.value || "").trim();
+        const dd = window.nhanDienDinhDanh(raw);
+        if (dd.loai === "email" ? !window.VALIDATE.email(dd.giaTri) : !window.VALIDATE.sdt(dd.giaTri)) {
+            window.hienToast("Chưa hợp lệ", "Nhập đúng Số điện thoại (10 số) hoặc Gmail.", "warning"); return;
+        }
+        const btn = document.getElementById("qmkBtnGui");
+        _cooldownNut(btn, 60, "otp_forgot_cooldown");   // bền qua F5/đóng-mở modal
+        try {
+            const res = await window.authEmail.guiMaReset(dd.giaTri);
+            if (res?.status === "ok") {
+                _qmkDinhDanh = dd.giaTri;
+                const info = document.getElementById("qmkMailInfo");
+                if (info) info.innerHTML = `Mã khôi phục đã được gửi đến Email: <b>${_escQmk(res.email_hien_thi || "")}</b>`;
+                document.getElementById("qmkStep1").style.display = "none";
+                document.getElementById("qmkStep2").style.display = "block";
+                const sub = document.getElementById("qmkSub");
+                if (sub) sub.textContent = "Kiểm tra hộp thư (cả mục Spam), nhập mã 6 số và mật khẩu mới.";
+                setTimeout(() => document.getElementById("qmkMaCode")?.focus(), 50);
+                window.hienToast("Đã gửi mã ✅", "Vui lòng kiểm tra email khôi phục.", "success");
+            } else if (res?.status === "OTP_SPAM_BLOCKED") {
+                _toastOtpSpam();
+            } else if (res?.status === "not_found") {
+                window.hienToast("Không tìm thấy", "Không có tài khoản gắn với thông tin này.", "warning");
+            } else if (res?.status === "no_email") {
+                window.hienToast("Chưa có email", "Tài khoản chưa gắn Gmail. Vui lòng liên hệ Admin để khôi phục.", "warning");
+            } else if (res?.status === "blocked") {
+                window.hienToast("Tài khoản bị khóa", "Liên hệ Admin để được hỗ trợ.", "danger");
+            } else {
+                window.hienToast("Gửi mã thất bại", "Không gửi được email lúc này. Thử lại sau.", "danger");
+            }
+        } catch (e) {
+            window.hienToast("Lỗi kết nối", "Không gửi được mã. Kiểm tra mạng và thử lại.", "danger");
+        }
+    };
+
+    window._qmkDoiMatKhau = async function () {
+        const ma   = (document.getElementById("qmkMaCode")?.value || "").trim();
+        const pass = document.getElementById("qmkPassMoi")?.value || "";
+        if (ma.length !== 6) { window.hienToast("Mã chưa đúng", "Mã xác thực gồm 6 số.", "warning"); return; }
+        if (!window.VALIDATE.pass(pass)) { window.hienToast("Mật khẩu quá ngắn", "Tối thiểu 6 ký tự.", "warning"); return; }
+        const btn = document.getElementById("qmkBtnDoi");
+        if (btn) { btn.disabled = true; btn.textContent = "Đang đổi..."; }
+        try {
+            const hash = await _hashMatKhau(pass);
+            const res = await window.guestRPC.doiMatKhauBangMa(_qmkDinhDanh, ma, hash);
+            switch (res?.status) {
+                case "ok":
+                    document.getElementById("qmkOverlay")?.remove();
+                    window.hienToast("Đổi mật khẩu thành công 🎉", "Đăng nhập lại bằng mật khẩu mới.", "success");
+                    break;
+                case "ma_sai":      window.hienToast("Mã sai", "Mã xác thực không đúng. Kiểm tra lại email.", "danger"); break;
+                case "ma_het_han":  window.hienToast("Mã hết hạn", "Mã đã quá 15 phút. Bấm 'Gửi lại mã'.", "warning"); break;
+                case "ma_da_dung":  window.hienToast("Mã đã dùng", "Mã này đã được sử dụng. Gửi lại mã mới.", "warning"); break;
+                case "khong_co_ma": window.hienToast("Chưa có mã", "Hãy bấm 'Gửi mã xác thực' trước.", "warning"); break;
+                default:            window.hienToast("Không đổi được", "Có lỗi xảy ra. Thử lại sau.", "danger");
+            }
+        } catch (e) {
+            window.hienToast("Lỗi kết nối", "Không đổi được mật khẩu. Thử lại sau.", "danger");
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = "Đặt lại mật khẩu"; }
+        }
+    };
+
+    window._qmkQuayLai = function () {
+        document.getElementById("qmkStep2").style.display = "none";
+        document.getElementById("qmkStep1").style.display = "block";
+        const sub = document.getElementById("qmkSub");
+        if (sub) sub.textContent = "Nhập Số điện thoại hoặc Gmail của bạn. Mã xác thực sẽ được gửi về email.";
+        setTimeout(() => document.getElementById("qmkDinhDanh")?.focus(), 50);
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * XÁC THỰC EMAIL — badge trạng thái + lọc ô @gmail.com + OTP + banner nhắc
+     * ═══════════════════════════════════════════════════ */
+    const _EMAIL_SUFFIX = "@gmail.com";
+    const _EMAIL_SNOOZE_MS = 24 * 3600 * 1000;
+
+    // Tiền tố (phần trước @gmail.com) từ 1 email đầy đủ
+    function _emailPrefix(full) {
+        const s = String(full || "").trim().toLowerCase();
+        const at = s.indexOf("@");
+        return at >= 0 ? s.slice(0, at) : s;
+    }
+    // Ghép email đầy đủ từ ô nhập (tiền tố) — nếu user lỡ gõ cả @… thì cắt rồi ghép lại
+    function _emailFullTuO(inp) {
+        const raw = String(inp && inp.value || "").trim().toLowerCase();
+        if (!raw) return "";
+        const pre = _emailPrefix(raw);          // luôn lấy phần trước @ (chống nhân đôi)
+        return pre ? pre + _EMAIL_SUFFIX : "";
+    }
+    // BỘ LỌC THÔNG MINH: gõ/paste có "@..." → cắt bỏ, chỉ giữ tiền tố (chặn quoc@gmail.com@gmail.com)
+    window._locEmailInput = function (el) {
+        if (!el) return;
+        let v = el.value;
+        const at = v.indexOf("@");
+        if (at >= 0) v = v.slice(0, at);
+        v = v.replace(/\s+/g, "").toLowerCase();
+        if (v !== el.value) el.value = v;
+    };
+
+    function _renderEmailUI(verified, email) {
+        const inp     = document.getElementById("profileGmail");
+        const wrap    = document.getElementById("profileGmailWrap");
+        const suffix  = document.getElementById("profileGmailSuffix");
+        const badge   = document.getElementById("profileEmailBadge");
+        const btnXt   = document.getElementById("btnXacThucEmail");
+        const btnDoi  = document.getElementById("btnThayDoiEmail");
+        if (!inp) return;
+
+        if (verified && email) {
+            // ĐÃ XÁC THỰC: email đầy đủ + KHÓA ô + badge ✓ NẰM TRONG ô + nút [Thay đổi]
+            inp.value = email;
+            inp.readOnly = true;
+            if (wrap) wrap.classList.add("is-locked");
+            if (suffix) suffix.style.display = "none";
+            if (badge) { badge.className = "email-badge email-badge--inside email-badge--ok"; badge.textContent = "✓ Đã xác thực"; badge.style.display = ""; }
+            if (btnXt) btnXt.style.display = "none";
+            if (btnDoi) { btnDoi.style.display = ""; _khoiPhucCooldown(btnDoi, "otp_change_email_cooldown"); }
+            // Nút [Thay đổi] SĐT cũng khôi phục cooldown nếu còn hiệu lực
+            _khoiPhucCooldown(document.querySelector('.btn-thaydoi[onclick*="\'sdt\'"]'), "otp_change_sdt_cooldown");
+        } else {
+            // CHƯA XÁC THỰC: ô nhập tiền tố + đuôi @gmail.com + nút [Xác thực ngay]
+            inp.value = email ? _emailPrefix(email) : "";
+            inp.readOnly = false;
+            if (wrap) wrap.classList.remove("is-locked");
+            if (suffix) suffix.style.display = "";
+            if (badge) { badge.style.display = "none"; }
+            if (btnXt) { btnXt.style.display = ""; _khoiPhucCooldown(btnXt, "otp_verify_cooldown"); }
+            if (btnDoi) btnDoi.style.display = "none";
+            if (!inp._locBound) { inp.addEventListener("input", () => window._locEmailInput(inp)); inp._locBound = true; }
+        }
+    }
+
+    // Gọi từ _renderProfile (ung-dung) — đọc trạng thái THẬT từ DB rồi render badge/khóa.
+    window._capNhatTrangThaiEmail = async function (u) {
+        if (!u || !u.sdt_khach) return;
+        let verified = !!u.is_email_verified;
+        let email = u.gmail || "";
+        try {
+            const rows = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: u.sdt_khach } });
+            if (rows && rows[0]) { verified = !!rows[0].is_email_verified; email = rows[0].gmail || email; }
+        } catch (_) { /* lỗi mạng → dùng dữ liệu currentUser */ }
+        // Đồng bộ vào currentUser/Guest để các nơi khác dùng
+        if (window.currentUser)  { window.currentUser.is_email_verified = verified; window.currentUser.gmail = email; }
+        if (window.currentGuest) { window.currentGuest.is_email_verified = verified; window.currentGuest.gmail = email; }
+        _renderEmailUI(verified, email);
+    };
+
+    // Chuẩn hóa email khi LƯU PROFILE (ô khóa = full; ô mở = tiền tố + @gmail.com)
+    window._layEmailProfile = function () {
+        const inp = document.getElementById("profileGmail");
+        if (!inp) return null;
+        if (inp.readOnly) return (inp.value || "").trim().toLowerCase() || null;
+        return _emailFullTuO(inp) || null;
+    };
+
+    // "Xác thực ngay" → gửi OTP tới email vừa nhập → mở modal nhập mã
+    let _xteEmail = "";
+    window.xacThucEmailNgay = async function () {
+        const u = window.currentGuest || window.currentUser;
+        if (!u || !u._token || !u.sdt_khach) {
+            window.hienToast("Cần đăng nhập", "Vui lòng đăng nhập để xác thực email.", "warning"); return;
+        }
+        const inp = document.getElementById("profileGmail");
+        const email = _emailFullTuO(inp);
+        if (!window.VALIDATE.email(email)) {
+            window.hienToast("Gmail chưa hợp lệ", "Nhập phần tên trước @gmail.com (vd: tenban).", "warning");
+            inp?.focus(); return;
+        }
+        const btn = document.getElementById("btnXacThucEmail");
+        _cooldownNut(btn, 60, "otp_verify_cooldown");   // bền qua F5
+        try {
+            const res = await window.authEmail.guiMaXacThucEmail(u._token, u.sdt_khach, email);
+            if (res?.status === "ok") {
+                _xteEmail = email;
+                _moModalXacThucEmail(email);
+                window.hienToast("Đã gửi mã ✅", "Kiểm tra hộp thư (cả Spam) để lấy mã xác thực.", "success");
+            } else if (res?.status === "OTP_SPAM_BLOCKED") {
+                _toastOtpSpam();
+            } else if (res?.status === "email_taken") {
+                window.hienToast("Email đã dùng", "Email này đã gắn với tài khoản khác.", "warning");
+            } else {
+                window.hienToast("Gửi mã thất bại", "Không gửi được mã lúc này. Thử lại sau.", "danger");
+            }
+        } catch (e) {
+            window.hienToast("Lỗi kết nối", "Không gửi được mã. Kiểm tra mạng và thử lại.", "danger");
+        }
+    };
+
+    function _moModalXacThucEmail(email) {
+        document.getElementById("xteOverlay")?.remove();
+        const ov = document.createElement("div");
+        ov.id = "xteOverlay"; ov.className = "qmk-overlay";
+        ov.innerHTML = `
+            <div class="qmk-box">
+                <button type="button" class="qmk-x" aria-label="Đóng" onclick="document.getElementById('xteOverlay')?.remove()">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+                <div class="qmk-ic">${_SVG_MAIL}</div>
+                <h3 class="qmk-title">Xác thực Email</h3>
+                <p class="qmk-sub">Mã 6 số đã gửi tới <b style="color:#00e676;">${_escQmk(email)}</b>. Nhập mã để hoàn tất.</p>
+                <div class="qmk-step">
+                    <label class="qmk-label">Mã xác thực (6 số)</label>
+                    <input type="text" class="qmk-input qmk-code" id="xteMaCode" inputmode="numeric" maxlength="6" placeholder="------" autocomplete="one-time-code"
+                        oninput="this.value=this.value.replace(/\\D/g,'')">
+                    <button type="button" class="qmk-btn" id="xteBtn" onclick="window._xacNhanMaEmail()">Xác nhận</button>
+                </div>
+            </div>`;
+        document.body.appendChild(ov);
+        // Static backdrop: KHÔNG đóng khi click nền mờ — chỉ đóng bằng nút X.
+        setTimeout(() => document.getElementById("xteMaCode")?.focus(), 50);
+    }
+
+    window._xacNhanMaEmail = async function () {
+        const u = window.currentGuest || window.currentUser;
+        const ma = (document.getElementById("xteMaCode")?.value || "").trim();
+        if (ma.length !== 6) { window.hienToast("Mã chưa đúng", "Mã gồm 6 số.", "warning"); return; }
+        const btn = document.getElementById("xteBtn");
+        if (btn) { btn.disabled = true; btn.textContent = "Đang kiểm tra..."; }
+        try {
+            const res = await window.guestRPC.xacNhanEmail(u._token, u.sdt_khach, ma);
+            switch (res?.status) {
+                case "ok":
+                    document.getElementById("xteOverlay")?.remove();
+                    if (window.currentUser)  { window.currentUser.gmail = res.email || _xteEmail; window.currentUser.is_email_verified = true; }
+                    if (window.currentGuest) { window.currentGuest.gmail = res.email || _xteEmail; window.currentGuest.is_email_verified = true; }
+                    _renderEmailUI(true, res.email || _xteEmail);
+                    document.getElementById("emailNhacBanner")?.remove();
+                    window.hienToast("Xác thực thành công 🎉", "Email của bạn đã được xác thực.", "success");
+                    break;
+                case "ma_sai":     window.hienToast("Mã sai", "Mã xác thực không đúng. Kiểm tra lại email.", "danger"); break;
+                case "ma_het_han": window.hienToast("Mã hết hạn", "Mã đã quá 15 phút. Bấm Xác thực ngay để gửi lại.", "warning"); break;
+                case "ma_da_dung": window.hienToast("Mã đã dùng", "Gửi lại mã mới.", "warning"); break;
+                default:           window.hienToast("Không xác thực được", "Có lỗi xảy ra. Thử lại sau.", "danger");
+            }
+        } catch (e) {
+            window.hienToast("Lỗi kết nối", "Không xác thực được. Thử lại sau.", "danger");
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = "Xác nhận"; }
+        }
+    };
+
+    // BANNER nhắc liên kết email (snooze 24h) — chỉ khi đăng nhập SĐT + email chưa xác thực
+    window._kiemTraNhacEmail = async function () {
+        const u = window.currentGuest || window.currentUser;
+        if (!u || !u.sdt_khach) return;
+        if (document.getElementById("emailNhacBanner")) return;
+        let snoozeUntil = 0;
+        try { snoozeUntil = +(localStorage.getItem("tvl_email_nhac_" + u.sdt_khach) || 0); } catch (_) {}
+        if (Date.now() < snoozeUntil) return;
+        // Trạng thái thật từ DB
+        let verified = !!u.is_email_verified;
+        try {
+            const rows = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: u.sdt_khach } });
+            if (rows && rows[0]) verified = !!rows[0].is_email_verified;
+        } catch (_) { return; }
+        if (verified) return;
+        _hienBannerNhacEmail(u.sdt_khach);
+    };
+
+    function _hienBannerNhacEmail(sdt) {
+        document.getElementById("emailNhacBanner")?.remove();
+        const b = document.createElement("div");
+        b.id = "emailNhacBanner"; b.className = "email-nhac-banner";
+        b.innerHTML = `
+            <p>⚠️ Tài khoản của bạn chưa được xác thực Email. Hãy liên kết ngay để tránh mất quyền truy cập khi quên mật khẩu!</p>
+            <div class="email-nhac-actions">
+                <button type="button" class="email-nhac-btn email-nhac-btn--go" onclick="window._nhacEmailDiToi()">Xác thực ngay</button>
+                <button type="button" class="email-nhac-btn email-nhac-btn--skip" onclick="window._nhacEmailBoQua('${sdt}')">Bỏ qua 24h</button>
+            </div>`;
+        document.body.appendChild(b);
+    }
+    window._nhacEmailDiToi = function () {
+        document.getElementById("emailNhacBanner")?.remove();
+        if (window.chuyenTab) window.chuyenTab("ca-nhan");
+        setTimeout(() => {
+            const el = document.getElementById("profileGmail");
+            if (el) { el.scrollIntoView({ behavior: "smooth", block: "center" }); if (!el.readOnly) el.focus(); }
+        }, 300);
+    };
+    window._nhacEmailBoQua = function (sdt) {
+        try { localStorage.setItem("tvl_email_nhac_" + sdt, String(Date.now() + _EMAIL_SNOOZE_MS)); } catch (_) {}
+        document.getElementById("emailNhacBanner")?.remove();
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * ĐỔI SĐT / EMAIL bằng OTP "KHÓA GỐC" (gửi về Gmail đã xác thực hiện tại)
+     * ═══════════════════════════════════════════════════ */
+    let _dctLoai = "";        // 'sdt' | 'email'
+    let _dctEmailMoi = "";
+
+    // Che email giữa (đồng bộ kiểu XXXX hệ thống): quoctu@gmail.com → quo***u@gmail.com
+    function _maskEmailGiua(e) {
+        const [l, d] = String(e || "").split("@");
+        if (!d) return e;
+        if (l.length <= 2) return l[0] + "***@" + d;
+        return l.slice(0, 3) + "***" + l.slice(-1) + "@" + d;
+    }
+
+    window.moDoiThongTin = async function (loai) {
+        const u = window.currentGuest || window.currentUser;
+        if (!u || !u._token || !u.sdt_khach) {
+            window.hienToast("Cần đăng nhập", "Vui lòng đăng nhập để thay đổi thông tin.", "warning"); return;
+        }
+        // Phải có Gmail ĐÃ XÁC THỰC để nhận mã khóa gốc
+        let verified = !!u.is_email_verified, gmail = u.gmail || "";
+        try {
+            const rows = await window.dbEngine.docThu("nguoi_dung", { eq: { sdt_khach: u.sdt_khach } });
+            if (rows && rows[0]) { verified = !!rows[0].is_email_verified; gmail = rows[0].gmail || gmail; }
+        } catch (_) {}
+        if (!verified || !gmail) {
+            window.hienToast("Cần xác thực Email trước",
+                "Hãy xác thực Email ở mục Gmail trước khi đổi " + (loai === "sdt" ? "Số điện thoại" : "Email") + ".", "warning");
+            return;
+        }
+        _dctLoai = loai;
+        // Gửi mã khóa gốc về gmail hiện tại
+        const btn = document.querySelector(loai === "sdt"
+            ? '.btn-thaydoi[onclick*="\'sdt\'"]' : "#btnThayDoiEmail");
+        _cooldownNut(btn, 60, loai === "sdt" ? "otp_change_sdt_cooldown" : "otp_change_email_cooldown");
+        try {
+            const res = await window.authEmail.guiMaXacThucEmail(u._token, u.sdt_khach, gmail);
+            if (res?.status === "ok") {
+                _moModalDoiThongTin(loai, gmail);
+            } else if (res?.status === "OTP_SPAM_BLOCKED") {
+                _toastOtpSpam();
+            } else {
+                window.hienToast("Gửi mã thất bại", "Không gửi được mã khóa gốc. Thử lại sau.", "danger");
+            }
+        } catch (e) {
+            window.hienToast("Lỗi kết nối", "Không gửi được mã. Kiểm tra mạng và thử lại.", "danger");
+        }
+    };
+
+    function _moModalDoiThongTin(loai, gmail) {
+        document.getElementById("dctOverlay")?.remove();
+        const tieuDe = loai === "sdt" ? "Đổi Số điện thoại" : "Đổi Email";
+        const ov = document.createElement("div");
+        ov.id = "dctOverlay"; ov.className = "qmk-overlay";
+        ov.innerHTML = `
+            <div class="qmk-box">
+                <button type="button" class="qmk-x" aria-label="Đóng" onclick="document.getElementById('dctOverlay')?.remove()">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+                <div class="qmk-ic">${_SVG_MAIL}</div>
+                <h3 class="qmk-title">${tieuDe}</h3>
+                <p class="qmk-sub" id="dctSub">Mã khóa gốc đã gửi tới <b style="color:#00e676;">${_escQmk(_maskEmailGiua(gmail))}</b>. Nhập mã để mở khóa.</p>
+
+                <!-- BƯỚC 1: mã khóa gốc -->
+                <div id="dctStep1" class="qmk-step">
+                    <label class="qmk-label">Mã khóa gốc (6 số)</label>
+                    <input type="text" class="qmk-input qmk-code" id="dctMaGoc" inputmode="numeric" maxlength="6" placeholder="------" autocomplete="one-time-code" oninput="this.value=this.value.replace(/\\D/g,'')">
+                    <button type="button" class="qmk-btn" id="dctBtnGoc" onclick="window._xacNhanMaGoc()">Xác nhận mã gốc</button>
+                </div>
+
+                <!-- BƯỚC 2a: đổi SĐT -->
+                <div id="dctStepSdt" class="qmk-step" style="display:none;">
+                    <label class="qmk-label">Số điện thoại mới</label>
+                    <input type="tel" class="qmk-input" id="dctSdtMoi" inputmode="numeric" maxlength="10" placeholder="vd: 0987654321" oninput="this.value=this.value.replace(/\\D/g,'')">
+                    <button type="button" class="qmk-btn" id="dctBtnSdt" onclick="window._luuSdtMoi()">Lưu Số điện thoại mới</button>
+                </div>
+
+                <!-- BƯỚC 2b: nhập email mới -->
+                <div id="dctStepEmailNhap" class="qmk-step" style="display:none;">
+                    <label class="qmk-label">Email mới</label>
+                    <div class="email-input-wrap">
+                        <input type="text" class="qmk-input" id="dctEmailMoi" placeholder="vd: tenban" style="border-top-right-radius:0;border-bottom-right-radius:0;border-right:none;" oninput="window._locEmailInput(this)">
+                        <span class="email-suffix">@gmail.com</span>
+                    </div>
+                    <button type="button" class="qmk-btn" id="dctBtnEmailGui" onclick="window._guiMaEmailMoi()">Gửi mã xác nhận email mới</button>
+                </div>
+
+                <!-- BƯỚC 3b: xác nhận email mới -->
+                <div id="dctStepEmailMa" class="qmk-step" style="display:none;">
+                    <div class="qmk-mail-info" id="dctEmailMaInfo"></div>
+                    <label class="qmk-label">Mã xác nhận (6 số)</label>
+                    <input type="text" class="qmk-input qmk-code" id="dctEmailMa" inputmode="numeric" maxlength="6" placeholder="------" autocomplete="one-time-code" oninput="this.value=this.value.replace(/\\D/g,'')">
+                    <button type="button" class="qmk-btn" id="dctBtnEmailXn" onclick="window._xacNhanEmailMoi()">Xác nhận & Lưu email</button>
+                </div>
+            </div>`;
+        document.body.appendChild(ov);
+        // Static backdrop: KHÔNG đóng khi click nền mờ — chỉ đóng bằng nút X.
+        setTimeout(() => document.getElementById("dctMaGoc")?.focus(), 50);
+    }
+
+    function _dctChuyenBuoc(id) {
+        ["dctStep1", "dctStepSdt", "dctStepEmailNhap", "dctStepEmailMa"].forEach(s => {
+            const el = document.getElementById(s); if (el) el.style.display = (s === id) ? "block" : "none";
+        });
+    }
+
+    window._xacNhanMaGoc = async function () {
+        const u = window.currentGuest || window.currentUser;
+        const ma = (document.getElementById("dctMaGoc")?.value || "").trim();
+        if (ma.length !== 6) { window.hienToast("Mã chưa đúng", "Mã khóa gốc gồm 6 số.", "warning"); return; }
+        const btn = document.getElementById("dctBtnGoc");
+        if (btn) { btn.disabled = true; btn.textContent = "Đang kiểm tra..."; }
+        try {
+            const res = await window.guestRPC.xacThucMaGoc(u._token, u.sdt_khach, ma);
+            if (res?.status === "ok") {
+                if (_dctLoai === "sdt") {
+                    _dctChuyenBuoc("dctStepSdt");
+                    const sub = document.getElementById("dctSub");
+                    if (sub) sub.textContent = "Đã mở khóa. Nhập Số điện thoại mới (chưa từng đăng ký).";
+                    setTimeout(() => document.getElementById("dctSdtMoi")?.focus(), 50);
+                } else {
+                    _dctChuyenBuoc("dctStepEmailNhap");
+                    const sub = document.getElementById("dctSub");
+                    if (sub) sub.textContent = "Đã mở khóa. Nhập Email mới, hệ thống sẽ gửi mã về email đó.";
+                    _khoiPhucCooldown(document.getElementById("dctBtnEmailGui"), "otp_newemail_cooldown");
+                    setTimeout(() => document.getElementById("dctEmailMoi")?.focus(), 50);
+                }
+            } else if (res?.status === "ma_sai") {
+                window.hienToast("Mã sai", "Mã khóa gốc không đúng. Không thể thay đổi.", "danger");
+            } else if (res?.status === "ma_het_han") {
+                window.hienToast("Mã hết hạn", "Mã đã quá 15 phút. Đóng và bấm Thay đổi lại.", "warning");
+            } else {
+                window.hienToast("Không xác thực được", "Có lỗi xảy ra. Thử lại sau.", "danger");
+            }
+        } catch (e) {
+            window.hienToast("Lỗi kết nối", "Không kiểm tra được mã. Thử lại sau.", "danger");
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = "Xác nhận mã gốc"; }
+        }
+    };
+
+    window._luuSdtMoi = async function () {
+        const u = window.currentGuest || window.currentUser;
+        const sdtMoi = (document.getElementById("dctSdtMoi")?.value || "").replace(/\D/g, "");
+        if (!window.VALIDATE.sdt(sdtMoi)) {
+            window.hienToast("SĐT không hợp lệ", "Nhập đúng 10 số, đầu 03/05/07/08/09.", "warning"); return;
+        }
+        const btn = document.getElementById("dctBtnSdt");
+        if (btn) { btn.disabled = true; btn.textContent = "Đang lưu..."; }
+        try {
+            const res = await window.guestRPC.doiSoDienThoai(u._token, u.sdt_khach, sdtMoi);
+            switch (res?.status) {
+                case "ok": {
+                    const moi = res.sdt || sdtMoi;
+                    if (window.currentGuest) window.currentGuest.sdt_khach = moi;
+                    if (window.currentUser)  window.currentUser.sdt_khach = moi;
+                    _capNhatSessionLocal({ sdt_khach: moi });
+                    const inp = document.getElementById("profilePhone"); if (inp) { inp.value = moi; inp.readOnly = true; }
+                    document.getElementById("dctOverlay")?.remove();
+                    window.hienToast("Đổi SĐT thành công 🎉", "Số điện thoại mới: " + moi, "success");
+                    break;
+                }
+                case "sdt_taken":        window.hienToast("SĐT đã tồn tại", "Số này đã có tài khoản. Dùng số khác.", "warning"); break;
+                case "sdt_khong_hop_le": window.hienToast("SĐT không hợp lệ", "Nhập đúng định dạng SĐT VN.", "warning"); break;
+                case "khong_doi":        window.hienToast("Không thay đổi", "SĐT mới trùng SĐT hiện tại.", "info"); break;
+                default:                 window.hienToast("Không đổi được", "Có lỗi xảy ra. Thử lại sau.", "danger");
+            }
+        } catch (e) {
+            window.hienToast("Lỗi kết nối", "Không đổi được SĐT. Thử lại sau.", "danger");
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = "Lưu Số điện thoại mới"; }
+        }
+    };
+
+    window._guiMaEmailMoi = async function () {
+        const u = window.currentGuest || window.currentUser;
+        const inp = document.getElementById("dctEmailMoi");
+        const email = _emailFullTuO(inp);
+        if (!window.VALIDATE.email(email)) {
+            window.hienToast("Email chưa hợp lệ", "Nhập phần tên trước @gmail.com.", "warning"); inp?.focus(); return;
+        }
+        const btn = document.getElementById("dctBtnEmailGui");
+        _cooldownNut(btn, 60, "otp_newemail_cooldown");   // bền qua đóng-mở modal
+        try {
+            const res = await window.authEmail.guiMaXacThucEmail(u._token, u.sdt_khach, email);
+            if (res?.status === "ok") {
+                _dctEmailMoi = email;
+                const info = document.getElementById("dctEmailMaInfo");
+                if (info) info.innerHTML = `Mã đã gửi tới email mới: <b>${_escQmk(email)}</b>`;
+                _dctChuyenBuoc("dctStepEmailMa");
+                setTimeout(() => document.getElementById("dctEmailMa")?.focus(), 50);
+            } else if (res?.status === "OTP_SPAM_BLOCKED") {
+                _toastOtpSpam();
+            } else if (res?.status === "email_taken") {
+                window.hienToast("Email đã dùng", "Email này đã gắn tài khoản khác.", "warning");
+            } else {
+                window.hienToast("Gửi mã thất bại", "Không gửi được mã tới email mới. Thử lại sau.", "danger");
+            }
+        } catch (e) {
+            window.hienToast("Lỗi kết nối", "Không gửi được mã. Thử lại sau.", "danger");
+        }
+    };
+
+    window._xacNhanEmailMoi = async function () {
+        const u = window.currentGuest || window.currentUser;
+        const ma = (document.getElementById("dctEmailMa")?.value || "").trim();
+        if (ma.length !== 6) { window.hienToast("Mã chưa đúng", "Mã gồm 6 số.", "warning"); return; }
+        const btn = document.getElementById("dctBtnEmailXn");
+        if (btn) { btn.disabled = true; btn.textContent = "Đang lưu..."; }
+        try {
+            const res = await window.guestRPC.xacNhanEmail(u._token, u.sdt_khach, ma);
+            if (res?.status === "ok") {
+                const moi = res.email || _dctEmailMoi;
+                if (window.currentGuest) { window.currentGuest.gmail = moi; window.currentGuest.is_email_verified = true; }
+                if (window.currentUser)  { window.currentUser.gmail = moi; window.currentUser.is_email_verified = true; }
+                _capNhatSessionLocal({ gmail: moi });
+                _renderEmailUI(true, moi);
+                document.getElementById("dctOverlay")?.remove();
+                document.getElementById("emailNhacBanner")?.remove();
+                window.hienToast("Đổi Email thành công 🎉", "Email mới đã được xác thực: " + moi, "success");
+            } else if (res?.status === "ma_sai") {
+                window.hienToast("Mã sai", "Mã xác nhận không đúng. Kiểm tra email mới.", "danger");
+            } else if (res?.status === "ma_het_han") {
+                window.hienToast("Mã hết hạn", "Mã đã quá 15 phút. Gửi lại mã.", "warning");
+            } else {
+                window.hienToast("Không lưu được", "Có lỗi xảy ra. Thử lại sau.", "danger");
+            }
+        } catch (e) {
+            window.hienToast("Lỗi kết nối", "Không xác nhận được. Thử lại sau.", "danger");
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = "Xác nhận & Lưu email"; }
+        }
+    };
+
+    // Cập nhật bản sao session ở localStorage (giữ token, đổi field)
+    function _capNhatSessionLocal(patch) {
+        try {
+            const stored = JSON.parse(localStorage.getItem("tvl_guest") || "{}");
+            localStorage.setItem("tvl_guest", JSON.stringify({ ...stored, ...patch }));
+        } catch (_) {}
     }
 
     /* ═══════════════════════════════════════════════════
@@ -2399,6 +3296,10 @@
         window._datSlotBusy = true;
 
         try {
+            // CỔNG ĐẦU (read-only): thiết bị bị khóa → chặn đặt slot — KHÔNG ghi log
+            const _chk = await checkDeviceIsBlocked();
+            if (_chk.is_blocked) { _canhBaoChanSpam(); return; }
+
             // Kiểm tra ca đấu còn mở không
             const caDauList = await window.dbEngine.doc("ca_dau", { eq: { id: caDauId } });
             const caDau = caDauList[0];
@@ -2566,6 +3467,7 @@
                 }, null);
             }
             window.hienToast("Đặt slot thành công! 🎉", `Mã của bạn: ${maSlot}. Liên hệ host qua Zalo để xác nhận.`, "success");
+            logSuccessfulAuthAction(window.currentGuest.sdt_khach, "booking");   // ✅ ghi vết khi đặt slot THÀNH CÔNG
 
             // 🔔 H1: báo cho host có khách đặt slot mới (gộp nhiều khách cùng ca trong 60s)
             if (caDau?.sdt_nguoi_tao) {
@@ -5149,6 +6051,32 @@ Bạn kiểm tra & xác nhận giúp mình với nhé. Cảm ơn bạn nhiều! 
     window._napDropdownBoLoc  = _napDropdownBoLoc;
     window._napDropdownDrawer = _napDropdownDrawer;
     window._taiDanhGiaVeToi   = _taiDanhGiaVeToi;
+
+    // Auto-mở form Quên mật khẩu khi vào từ link CTA trong email (?reset=1&dd=...)
+    // + Xử lý quay về từ Google OAuth (đọc session → đăng nhập/thêm SĐT).
+    document.addEventListener("DOMContentLoaded", function () {
+        try {
+            const p = new URLSearchParams(window.location.search);
+            if (p.get("reset") === "1") {
+                const dd = p.get("dd") || "";
+                // Hỗ trợ cả 'code' (mới) lẫn 'token' (phòng xa) — auto-điền mã + nhảy bước nhập MK mới
+                const code = p.get("code") || p.get("token") || "";
+                setTimeout(() => window.quenMatKhau && window.quenMatKhau({ dd: dd, code: code }), 600);
+            }
+        } catch (_) {}
+
+        // Google trở về: chờ _sbClient sẵn sàng rồi xử lý (tối đa ~6s)
+        let _ggTries = 0;
+        const _ggInt = setInterval(function () {
+            _ggTries++;
+            if (window._sbClient && window._sbClient.auth && window.guestRPC && window.guestRPC.googleDangNhap) {
+                clearInterval(_ggInt);
+                window._xuLyGoogleTroVe && window._xuLyGoogleTroVe();
+            } else if (_ggTries > 30) {
+                clearInterval(_ggInt);
+            }
+        }, 200);
+    });
 
     console.log("⚡ [Phân Hệ Khách Chơi v4.4]: BUG1-3-4 ✅ | ĐÁNH_GIÁ_VỀ_TÔI ✅ | TÔI_ĐÃ_ĐÁNH_GIÁ ✅ | HỒ_SƠ_TÍN_DỤNG_v2 ✅");
 })();

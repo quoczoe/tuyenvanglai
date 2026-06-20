@@ -492,7 +492,29 @@
          */
         keyHost: function (val) {
             return /^TVL-[A-Z0-9]{5}-[A-Z0-9]{4}$/.test((val || "").trim().toUpperCase());
+        },
+
+        /**
+         * Kiểm tra Email (ưu tiên Gmail nhưng chấp nhận email hợp lệ chung).
+         * Rỗng → KHÔNG hợp lệ (dùng cho ô bắt buộc; nơi tùy chọn tự check rỗng trước).
+         */
+        email: function (val) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test((val || "").trim().toLowerCase());
         }
+    };
+
+    /**
+     * Nhận diện 1 chuỗi đầu vào là EMAIL hay SĐT (hoặc không xác định).
+     * Trả { loai: 'email'|'sdt'|'?', giaTri } — giaTri đã chuẩn hóa.
+     */
+    window.nhanDienDinhDanh = function (raw) {
+        const s = String(raw == null ? "" : raw).trim();
+        if (s.indexOf("@") >= 0) {
+            return { loai: "email", giaTri: s.toLowerCase() };
+        }
+        const digits = s.replace(/\D/g, "");
+        if (digits.length >= 9) return { loai: "sdt", giaTri: digits };
+        return { loai: "?", giaTri: s };
     };
 
     /* ═══════════════════════════════════════════════════════════════
