@@ -2293,12 +2293,6 @@
                             <div style="text-align:center;margin-top:10px;">
                                 <a href="#" onclick="quenMatKhau && quenMatKhau();return false;" style="font-size:0.78rem;color:var(--text-muted);text-decoration:underline;">Quên mật khẩu?</a>
                             </div>
-
-                            <div class="gauth-or"><span>hoặc</span></div>
-                            <button type="button" class="btn-google" onclick="window.dangNhapGoogle && window.dangNhapGoogle()">
-                                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M22.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h5.9a5.05 5.05 0 0 1-2.19 3.32v2.76h3.54c2.07-1.91 3.25-4.72 3.25-8.11z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.54-2.76c-.98.66-2.23 1.05-3.74 1.05-2.87 0-5.3-1.94-6.17-4.55H2.18v2.85A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.83 14.08a6.6 6.6 0 0 1 0-4.16V7.07H2.18a11 11 0 0 0 0 9.86l3.65-2.85z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.13-3.13C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.07l3.65 2.85C6.7 7.32 9.13 5.38 12 5.38z"/></svg>
-                                Đăng nhập nhanh bằng Google
-                            </button>
                         </div>
 
                         <!-- ===== TAB ĐĂNG KÝ ===== -->
@@ -2344,26 +2338,6 @@
                             </div>
 
                             <button class="btn-auth" id="btnHoanTatDangKy" onclick="hoanTatDangKy && hoanTatDangKy()">TẠO TÀI KHOẢN</button>
-
-                            <div class="gauth-or"><span>hoặc</span></div>
-                            <button type="button" class="btn-google" onclick="window.dangNhapGoogle && window.dangNhapGoogle()">
-                                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="#4285F4" d="M22.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h5.9a5.05 5.05 0 0 1-2.19 3.32v2.76h3.54c2.07-1.91 3.25-4.72 3.25-8.11z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.54-2.76c-.98.66-2.23 1.05-3.74 1.05-2.87 0-5.3-1.94-6.17-4.55H2.18v2.85A11 11 0 0 0 12 23z"/><path fill="#FBBC05" d="M5.83 14.08a6.6 6.6 0 0 1 0-4.16V7.07H2.18a11 11 0 0 0 0 9.86l3.65-2.85z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.13-3.13C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.07l3.65 2.85C6.7 7.32 9.13 5.38 12 5.38z"/></svg>
-                                Đăng ký nhanh bằng Google
-                            </button>
-                        </div>
-
-                        <!-- ===== BƯỚC THÊM SĐT (sau khi đăng nhập Google tài khoản mới) ===== -->
-                        <div id="gauthNeedPhone" class="gauth-view" style="display:none;">
-                            <div class="gauth-gg-hello" id="ggHello"></div>
-                            <p style="font-size:0.82rem;color:var(--text-muted);margin:0 0 14px;line-height:1.6;">Vui lòng thêm Số điện thoại của bạn để đặt slot.</p>
-                            <label class="gauth-label">Họ và tên <span class="gauth-req">*</span></label>
-                            <input type="text" class="app-input" id="ggTen" placeholder="Vd: Nguyễn Văn A" autocomplete="name" style="margin-bottom:4px;">
-                            <span style="font-size:0.7rem;color:var(--text-muted);display:block;min-height:14px;margin-bottom:8px;">Tự động điền từ Google — bạn có thể sửa lại nếu chưa đúng.</span>
-                            <label class="gauth-label">Số điện thoại <span class="gauth-req">*</span></label>
-                            <input type="tel" class="app-input" id="ggSdt" inputmode="numeric" maxlength="10"
-                                placeholder="Vd: 0987654321" oninput="this.value=this.value.replace(/[^0-9]/g,'')" style="margin-bottom:4px;">
-                            <span class="input-hint" style="font-size:0.7rem;color:#ef4444;display:block;min-height:16px;margin-bottom:8px;"></span>
-                            <button class="btn-auth" id="btnGoogleSdt" onclick="window.googleHoanTatSdt && window.googleHoanTatSdt()">HOÀN TẤT & VÀO TRANG CHỦ</button>
                         </div>
 
                     </div>
@@ -3579,7 +3553,7 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="ket-noi-supabase.js?v=20260620h"></script>
 <script src="bo-may-du-lieu.js?v=20260620b"></script>
 <script src="hieu-ung-giao-dien.js?v=20260612a"></script>
-<script src="phan-he-khach-choi.js?v=20260620l"></script>
+<script src="phan-he-khach-choi.js?v=20260620m"></script>
 <script src="phan-he-host.js?v=20260619b"></script>
 <script src="phan-he-thong-bao.js?v=20260620b"></script>
 <script src="phan-he-ung-dung.js?v=20260620f"></script>

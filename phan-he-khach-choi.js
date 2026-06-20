@@ -1074,9 +1074,12 @@
                 ten_khach: ten, sdt_khach: phone, gioi_tinh: gender, gmail: gmail,
                 vai_tro: "guest", sdt_zalo: sdtZalo, facebook_link: facebook || null
             };
-            window.hienToast("Tạo tài khoản thành công! 🎉", `Chào ${ten}! Tài khoản đã được tạo.`, "success");
             logSuccessfulAuthAction(phone, "register");   // ✅ CHỈ ghi vết khi đăng ký THÀNH CÔNG
-            _luuSessionVaDangNhap(newUser, result.token);
+            // Tài khoản đã tạo (is_email_verified=false). BẮT BUỘC xác thực Gmail bằng OTP 6 số
+            // rồi mới vào trang chủ → gửi mã ngay + mở modal nhập mã (tĩnh, cooldown 60s/email).
+            _dkPending = { user: newUser, token: result.token, email: gmail };
+            _moModalDangKyOtp(gmail);
+            await _guiOtpDangKy(true);
         } catch (e) {
             console.error("Lỗi đăng ký:", e?.message || e);
             const msg = e?.message || "";
@@ -1087,6 +1090,97 @@
             window.hienToast("Lỗi đăng ký", moTaLoi, "danger");
         } finally {
             if (btnDK && !_thietBiBiKhoa) { btnDK.disabled = false; btnDK.innerHTML = 'TẠO TÀI KHOẢN'; }
+        }
+    };
+
+    /* ═══════════════════════════════════════════════════
+     * ĐĂNG KÝ — XÁC THỰC EMAIL OTP (tài khoản tạo trước, OTP xác thực sau)
+     *   hoanTatDangKy tạo tài khoản (chưa xác thực) → gửi OTP tới Gmail → modal nhập mã
+     *   tĩnh (không đóng khi click nền) → nhập đúng 6 số → set is_email_verified=true → vào trang chủ.
+     *   Tái dùng Edge Function `xac-thuc-email` + RPC `xac_nhan_email` (token-verified) sẵn có.
+     * ═══════════════════════════════════════════════════ */
+    let _dkPending = null;   // { user, token, email } — chờ xác thực OTP sau khi tạo tài khoản
+
+    // Gửi (hoặc gửi lại) mã OTP 6 số tới Gmail đăng ký. Cooldown 60s/email (bền qua F5).
+    async function _guiOtpDangKy() {
+        if (!_dkPending) return;
+        const { token, user, email } = _dkPending;
+        const btnGui = document.getElementById("dkOtpResend");
+        _cooldownNut(btnGui, 60, "otp_dangky_" + email);
+        try {
+            const res = await window.authEmail.guiMaXacThucEmail(token, user.sdt_khach, email);
+            if (res?.status === "ok") {
+                window.hienToast("Đã gửi mã ✅", "Mã 6 số đã gửi tới " + email + ". Kiểm tra hộp thư (cả Spam).", "success");
+            } else if (res?.status === "OTP_SPAM_BLOCKED") {
+                _toastOtpSpam();
+            } else {
+                window.hienToast("Gửi mã thất bại", "Không gửi được mã lúc này. Bấm Gửi lại mã sau giây lát.", "danger");
+            }
+        } catch (e) {
+            window.hienToast("Lỗi kết nối", "Không gửi được mã. Kiểm tra mạng và thử lại.", "danger");
+        }
+    }
+    window._guiLaiOtpDangKy = function () { _guiOtpDangKy(); };
+
+    function _moModalDangKyOtp(email) {
+        document.getElementById("dkOtpOverlay")?.remove();
+        const ov = document.createElement("div");
+        ov.id = "dkOtpOverlay"; ov.className = "qmk-overlay";
+        ov.innerHTML = `
+            <div class="qmk-box">
+                <button type="button" class="qmk-x" aria-label="Đóng" onclick="window._huyDangKyOtp()">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+                <div class="qmk-ic">${_SVG_MAIL}</div>
+                <h3 class="qmk-title">Xác thực Email</h3>
+                <p class="qmk-sub">Mã 6 số đã gửi tới <b style="color:#00e676;">${_escQmk(email)}</b>. Nhập mã để hoàn tất đăng ký.</p>
+                <div class="qmk-step">
+                    <label class="qmk-label">Mã xác thực (6 số)</label>
+                    <input type="text" class="qmk-input qmk-code" id="dkOtpCode" inputmode="numeric" maxlength="6" placeholder="------" autocomplete="one-time-code"
+                        oninput="this.value=this.value.replace(/\\D/g,'')"
+                        onkeydown="if(event.key==='Enter') window._xacNhanOtpDangKy()">
+                    <button type="button" class="qmk-btn" id="dkOtpBtn" onclick="window._xacNhanOtpDangKy()">Xác nhận &amp; Vào trang chủ</button>
+                    <button type="button" id="dkOtpResend" onclick="window._guiLaiOtpDangKy()"
+                        style="margin-top:10px;width:100%;padding:10px;background:transparent;border:1px solid var(--border,#1e3a5f);border-radius:10px;color:var(--text-muted,#94a3b8);font-size:0.82rem;cursor:pointer;">Gửi lại mã</button>
+                </div>
+            </div>`;
+        document.body.appendChild(ov);
+        // Static backdrop: KHÔNG đóng khi click nền mờ — chỉ nút X.
+        setTimeout(() => document.getElementById("dkOtpCode")?.focus(), 50);
+    }
+
+    // Nút X: bỏ modal OTP. Tài khoản đã tạo (chưa xác thực) — đăng nhập lại bằng mật khẩu sau cũng được.
+    window._huyDangKyOtp = function () {
+        document.getElementById("dkOtpOverlay")?.remove();
+        _dkPending = null;
+    };
+
+    window._xacNhanOtpDangKy = async function () {
+        if (!_dkPending) { document.getElementById("dkOtpOverlay")?.remove(); return; }
+        const ma = (document.getElementById("dkOtpCode")?.value || "").trim();
+        if (ma.length !== 6) { window.hienToast("Mã chưa đúng", "Mã gồm 6 số.", "warning"); return; }
+        const btn = document.getElementById("dkOtpBtn");
+        if (btn) { btn.disabled = true; btn.textContent = "Đang kiểm tra..."; }
+        const { token, user, email } = _dkPending;
+        try {
+            const res = await window.guestRPC.xacNhanEmail(token, user.sdt_khach, ma);
+            switch (res?.status) {
+                case "ok":
+                    document.getElementById("dkOtpOverlay")?.remove();
+                    user.is_email_verified = true; user.gmail = res.email || email;
+                    _dkPending = null;
+                    window.hienToast("Đăng ký thành công 🎉", `Chào ${user.ten_khach}! Email đã được xác thực.`, "success");
+                    _luuSessionVaDangNhap(user, token);
+                    break;
+                case "ma_sai":     window.hienToast("Mã sai", "Mã xác thực không đúng. Kiểm tra lại email.", "danger"); break;
+                case "ma_het_han": window.hienToast("Mã hết hạn", "Mã đã quá 15 phút. Bấm Gửi lại mã.", "warning"); break;
+                case "ma_da_dung": window.hienToast("Mã đã dùng", "Bấm Gửi lại mã để nhận mã mới.", "warning"); break;
+                default:           window.hienToast("Không xác thực được", "Có lỗi xảy ra. Thử lại sau.", "danger");
+            }
+        } catch (e) {
+            window.hienToast("Lỗi kết nối", "Không xác thực được. Thử lại sau.", "danger");
+        } finally {
+            if (btn) { btn.disabled = false; btn.textContent = "Xác nhận & Vào trang chủ"; }
         }
     };
 
@@ -1118,178 +1212,11 @@
     };
 
     /* ═══════════════════════════════════════════════════
-     * ĐĂNG NHẬP NHANH BẰNG GOOGLE (Supabase Auth OAuth)
-     *   1. signInWithOAuth → redirect Google → quay về domain.
-     *   2. Khi quay về: _xuLyGoogleTroVe() đọc session → RPC auth_google_dang_nhap.
-     *      • ok → có guest token → vào thẳng trang chủ.
-     *      • need_phone → hiện bước "Thêm SĐT" (#gauthNeedPhone).
+     * (ĐÃ GỠ) ĐĂNG NHẬP GOOGLE — khai tử hoàn toàn luồng Google OAuth.
+     *   Đăng ký/đăng nhập nay chỉ qua SĐT|Gmail + mật khẩu, kèm xác thực Email OTP khi đăng ký.
+     *   Mọi hàm dangNhapGoogle / _xuLyGoogleTroVe / googleHoanTatSdt + listener onAuthStateChange
+     *   đã được loại bỏ để tránh xung đột script.
      * ═══════════════════════════════════════════════════ */
-    // Lấy Supabase client đã sẵn sàng — thử tối đa `soLan` lần, mỗi lần cách `delay`ms.
-    // (CDN có thể tải chậm → không bắn lỗi ngay, chờ vài nhịp cho trải nghiệm tốt hơn.)
-    function _layClientAuth(soLan, delay) {
-        return new Promise((resolve) => {
-            let lan = 0;
-            const thu = () => {
-                // Ưu tiên getter chính chủ từ ket-noi-supabase.js (tự tạo client nếu cần)
-                const c = (typeof window.laySbClient === "function") ? window.laySbClient() : window._sbClient;
-                if (c && c.auth && typeof c.auth.signInWithOAuth === "function") { resolve(c); return; }
-                lan++;
-                if (lan >= soLan) { resolve(null); return; }
-                setTimeout(thu, delay);
-            };
-            thu();
-        });
-    }
-
-    window.dangNhapGoogle = async function () {
-        const btns = document.querySelectorAll(".btn-google");
-        btns.forEach(b => { b.disabled = true; });
-        try {
-            // Thử kết nối tuần hoàn 3 lần (500ms/lần) thay vì báo lỗi tức thì
-            const c = await _layClientAuth(3, 500);
-            if (!c) {
-                window.hienToast("Chưa sẵn sàng", "Thư viện đăng nhập đang tải. Vui lòng thử lại sau giây lát hoặc tải lại trang (F5).", "warning");
-                return;
-            }
-            const redirectTo = window.location.origin + window.location.pathname;
-            const { error } = await c.auth.signInWithOAuth({
-                provider: "google",
-                options: { redirectTo: redirectTo }
-            });
-            if (error) {
-                window.hienToast("Không mở được Google", error.message || "Thử lại sau.", "danger");
-            }
-            // Thành công → trình duyệt tự redirect sang Google.
-        } catch (e) {
-            window.hienToast("Lỗi đăng nhập Google", e?.message || "Thử lại sau.", "danger");
-        } finally {
-            btns.forEach(b => { b.disabled = false; });
-        }
-    };
-
-    // Xử lý khi vừa quay về từ Google (gọi 1 lần lúc init)
-    let _googleEmail = "";
-    window._xuLyGoogleTroVe = async function () {
-        try {
-            const c = window._sbClient;
-            if (!c || !c.auth) return;
-            const { data } = await c.auth.getSession();
-            const sess = data && data.session;
-            if (!sess || !sess.user || !sess.user.email) return; // không có phiên Google → bỏ qua
-            // Đã đăng nhập guest rồi thì không xử lý lại (tránh lặp khi đã có token)
-            if (window.currentGuest && window.currentGuest._token) return;
-
-            _googleEmail = sess.user.email;
-            // CỔNG ĐẦU (read-only): kiểm tra thiết bị bị khóa — KHÔNG ghi log
-            const _chk = await checkDeviceIsBlocked();
-            if (_chk.is_blocked) { _canhBaoChanSpam(); try { await c.auth.signOut(); } catch (_) {} return; }
-
-            const res = await window.guestRPC.googleDangNhap(_chk.dev, _chk.ip);
-
-            if (res?.status === "DEVICE_BLOCKED_SPAM") {
-                _canhBaoChanSpam();
-                try { await c.auth.signOut(); } catch (_) {}
-            } else if (res?.status === "ok") {
-                _bangND = "nguoi_dung";
-                logSuccessfulAuthAction(sess.user.email, "login");   // ✅ CHỈ khi THÀNH CÔNG
-                _luuSessionVaDangNhap(res.user, res.token);
-                try { await c.auth.signOut(); } catch (_) {} // bỏ phiên Auth → quay về anon cho RPC guest
-                window.hienToast("Đăng nhập thành công 🎉", `Chào ${res.user?.ten_khach || ""}!`, "success");
-            } else if (res?.status === "need_phone") {
-                // Tài khoản Google mới → yêu cầu thêm SĐT
-                _hienBuocThemSdtGoogle(sess.user);
-            } else if (res?.status === "blocked") {
-                window.hienToast("Tài khoản bị khóa", "Liên hệ Admin để được hỗ trợ.", "danger");
-                try { await c.auth.signOut(); } catch (_) {}
-            }
-        } catch (e) {
-            // RPC chưa cài (chưa chạy SQL google) → báo nhẹ, không vỡ trang
-            const m = e?.message || "";
-            if (m.includes("PGRST202") || m.includes("Could not find") || m.includes("42883")) {
-                window.hienToast("Google chưa sẵn sàng", "Tính năng đăng nhập Google đang được cấu hình. Vui lòng dùng SĐT.", "warning");
-            }
-        }
-    };
-
-    function _hienBuocThemSdtGoogle(gUser) {
-        // Chuyển panel sang bước thêm SĐT
-        const vLogin = document.getElementById("gauthLogin");
-        const vReg   = document.getElementById("gauthReg");
-        const vPhone = document.getElementById("gauthNeedPhone");
-        if (vLogin) vLogin.style.display = "none";
-        if (vReg)   vReg.style.display = "none";
-        if (vPhone) vPhone.style.display = "block";
-        // Đảm bảo panel hiển thị (tab Cá nhân) cho khách chưa đăng nhập
-        if (window.chuyenTab) window.chuyenTab("ca-nhan");
-        const hello = document.getElementById("ggHello");
-        if (hello) hello.textContent = "✓ Đã xác thực Google: " + (gUser.email || "");
-        // Auto-fill TÊN từ hồ sơ Google → đổ sẵn vào ô (vẫn cho sửa lại).
-        const tenGoiY = _tenTuGoogle(gUser);
-        const elTen = document.getElementById("ggTen");
-        if (elTen && tenGoiY) elTen.value = String(tenGoiY).toUpperCase();
-        // Có tên sẵn → ưu tiên focus ô SĐT (việc còn thiếu); chưa có tên → focus ô tên
-        setTimeout(() => document.getElementById(tenGoiY ? "ggSdt" : "ggTen")?.focus(), 80);
-    }
-
-    // Trích xuất tên hiển thị từ object user của Supabase Auth (Google) — dò nhiều khóa.
-    function _tenTuGoogle(gUser) {
-        if (!gUser) return "";
-        const md = gUser.user_metadata || {};
-        // Các khóa phổ biến Supabase/Google đổ vào user_metadata
-        let ten = md.full_name || md.name || md.fullName || md.display_name || md.given_name || "";
-        // Dự phòng: lấy từ identities[].identity_data (một số provider để tên ở đây)
-        if (!ten && Array.isArray(gUser.identities)) {
-            for (const idt of gUser.identities) {
-                const d = idt && idt.identity_data;
-                if (d && (d.full_name || d.name)) { ten = d.full_name || d.name; break; }
-            }
-        }
-        return String(ten || "").trim();
-    }
-
-    window.googleHoanTatSdt = async function () {
-        const phone = (document.getElementById("ggSdt")?.value || "").replace(/\D/g, "");
-        const ten   = (document.getElementById("ggTen")?.value || "").trim().toUpperCase();
-        if (!window.VALIDATE.sdt(phone)) {
-            window.hienToast("SĐT không hợp lệ", "Nhập đúng 10 số, đầu 03/05/07/08/09.", "danger");
-            document.getElementById("ggSdt")?.focus();
-            return;
-        }
-        const _kqTen = window.kiemTraTenHopLe ? window.kiemTraTenHopLe(ten) : { ok: window.VALIDATE.ten(ten), lyDo: "Tên không hợp lệ." };
-        if (!_kqTen.ok) {
-            window.hienToast("Tên không hợp lệ", _kqTen.lyDo, "danger");
-            document.getElementById("ggTen")?.focus();
-            return;
-        }
-        const gender = document.querySelector('input[name="gioiTinh"]:checked')?.value || "male";
-        const btn = document.getElementById("btnGoogleSdt");
-        if (btn) { btn.disabled = true; btn.textContent = "Đang tạo..."; }
-        try {
-            // CỔNG ĐẦU (read-only): kiểm tra thiết bị bị khóa — KHÔNG ghi log
-            const _chk = await checkDeviceIsBlocked();
-            if (_chk.is_blocked) { _canhBaoChanSpam(); return; }
-
-            const res = await window.guestRPC.googleDangKySdt(phone, ten, gender, _chk.dev, _chk.ip);
-            if (res?.status === "DEVICE_BLOCKED_SPAM") {
-                _canhBaoChanSpam();
-            } else if (res?.status === "ok") {
-                _bangND = "nguoi_dung";
-                logSuccessfulAuthAction(phone, "register");   // ✅ CHỈ khi THÀNH CÔNG
-                _luuSessionVaDangNhap(res.user, res.token);
-                try { await window._sbClient?.auth?.signOut(); } catch (_) {}
-                window.hienToast("Hoàn tất 🎉", `Chào ${ten}! Tài khoản đã sẵn sàng.`, "success");
-            } else if (res?.status === "sdt_taken") {
-                window.hienToast("SĐT đã dùng", "Số điện thoại này đã có tài khoản. Dùng SĐT khác hoặc đăng nhập bằng mật khẩu.", "warning");
-            } else {
-                window.hienToast("Không tạo được", "Có lỗi xảy ra. Thử lại sau.", "danger");
-            }
-        } catch (e) {
-            window.hienToast("Lỗi kết nối", "Không tạo được tài khoản. Thử lại sau.", "danger");
-        } finally {
-            if (btn && !_thietBiBiKhoa) { btn.disabled = false; btn.textContent = "HOÀN TẤT & VÀO TRANG CHỦ"; }
-        }
-    };
-
     /* ═══════════════════════════════════════════════════
      * QUÊN MẬT KHẨU — qua EMAIL (mã 6 số). Modal 2 bước, dựng động.
      *   Bước 1: nhập SĐT/Gmail → gửi mã (Edge Function) → hiện email (mask/full).
@@ -6096,31 +6023,8 @@ Bạn kiểm tra & xác nhận giúp mình với nhé. Cảm ơn bạn nhiều! 
             }
         } catch (_) {}
 
-        // Google trở về: chờ _sbClient sẵn sàng rồi (1) đăng ký onAuthStateChange (bền vững,
-        // bắt SIGNED_IN ngay khi Supabase nạp session sau redirect) + (2) gọi 1 lần xử lý trở về.
-        let _ggTries = 0, _authSubBound = false;
-        const _ggInt = setInterval(function () {
-            _ggTries++;
-            if (window._sbClient && window._sbClient.auth && window.guestRPC && window.guestRPC.googleDangNhap) {
-                clearInterval(_ggInt);
-                if (!_authSubBound) {
-                    _authSubBound = true;
-                    try {
-                        // SIGNED_IN / INITIAL_SESSION (sau Google redirect) → xử lý đăng nhập guest.
-                        // _xuLyGoogleTroVe có guard chống xử lý lặp (đã có token thì bỏ qua).
-                        window._sbClient.auth.onAuthStateChange(function (event, session) {
-                            if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session && session.user) {
-                                window._xuLyGoogleTroVe && window._xuLyGoogleTroVe();
-                            }
-                        });
-                    } catch (_) { /* SDK cũ không có onAuthStateChange → vẫn còn fallback gọi 1 lần dưới */ }
-                }
-                // Fallback gọi 1 lần (phòng listener chưa kịp bắt phiên đã có sẵn)
-                window._xuLyGoogleTroVe && window._xuLyGoogleTroVe();
-            } else if (_ggTries > 30) {
-                clearInterval(_ggInt);
-            }
-        }, 200);
+        // (ĐÃ GỠ) Bộ lắng nghe onAuthStateChange/redirect token của Google đã được loại bỏ
+        // hoàn toàn để tránh xung đột script. Đăng nhập/đăng ký chỉ còn qua SĐT|Gmail + mật khẩu.
     });
 
     console.log("⚡ [Phân Hệ Khách Chơi v4.4]: BUG1-3-4 ✅ | ĐÁNH_GIÁ_VỀ_TÔI ✅ | TÔI_ĐÃ_ĐÁNH_GIÁ ✅ | HỒ_SƠ_TÍN_DỤNG_v2 ✅");
