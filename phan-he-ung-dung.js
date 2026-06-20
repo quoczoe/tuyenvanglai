@@ -451,29 +451,77 @@
     };
 
     /* ═══════════════════════════════════════════════════
-     * CUỘN MƯỢT TỚI KHỐI QR ỦNG HỘ (cuối trang chủ)
-     * Nút "☕ Ủng hộ" ở Header/drawer → KHÔNG mở modal, chỉ cuộn xuống.
+     * MODAL DONATE — Nút "☕ Ủng hộ" (Header/drawer)
+     * Mở popup độc lập, dữ liệu QR/tiêu đề/mô tả lấy ĐỘNG từ
+     * cau_hinh_he_thong (qr_donate / tieu_de_donate / text_donate).
+     * KHÔNG hardcode, mở được ở bất kỳ tab nào.
      * ═══════════════════════════════════════════════════ */
-    window.cuonToiUngHo = function () {
-        // Khối donate nằm ở trang chủ (tab gioi-thieu) → chuyển về đó trước nếu đang ở tab khác
-        if (window.chuyenTab) window.chuyenTab("gioi-thieu");
-        setTimeout(() => {
-            const el = document.getElementById("donateSectionWrap");
-            if (el && getComputedStyle(el).display !== "none") {
-                el.scrollIntoView({ behavior: "smooth", block: "center" });
-                el.style.transition = "box-shadow 0.4s";
-                const inner = el.firstElementChild;
-                if (inner) {
-                    inner.style.boxShadow = "0 0 0 2px rgba(251,191,36,0.6), 0 0 26px rgba(251,191,36,0.3)";
-                    setTimeout(() => { inner.style.boxShadow = ""; }, 1600);
-                }
-            } else {
-                // QR chưa được Admin cấu hình → cuộn xuống cuối + báo nhẹ
-                window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
-                if (window.hienToast) window.hienToast("Ủng hộ", "Khu vực ủng hộ sẽ hiển thị khi Admin cấu hình mã QR.", "info");
-            }
-        }, 360);
+    window.dongModalDonate = function () {
+        document.getElementById("tvlDonateOverlay")?.remove();
     };
+
+    window.moModalDonate = async function () {
+        // Tránh mở chồng
+        document.getElementById("tvlDonateOverlay")?.remove();
+
+        // ── Lấy cấu hình động từ DB ──
+        let qrUrl = "", tieude = "MỜI ADMIN LY CAFE CHỐT KÈO ☕", txt = "Ủng hộ tác giả 1 ly cà phê nhé!";
+        try {
+            if (window.dbEngine) {
+                const cfgList = await window.dbEngine.docThu("cau_hinh_he_thong", {});
+                if (cfgList) {
+                    const cfg = {};
+                    cfgList.forEach(c => { if (c.id) cfg[c.id] = c.noi_dung_thong_bao || ""; });
+                    qrUrl  = cfg["qr_donate"]      || "";
+                    if (cfg["tieu_de_donate"]) tieude = cfg["tieu_de_donate"];
+                    if (cfg["text_donate"] != null && cfg["text_donate"] !== "") txt = cfg["text_donate"];
+                }
+            }
+        } catch (_) { /* lỗi mạng → dùng mặc định + thông báo dưới */ }
+
+        const ov = document.createElement("div");
+        ov.id = "tvlDonateOverlay";
+        ov.style.cssText = "position:fixed;inset:0;z-index:100000;background:rgba(5,10,20,0.78);" +
+            "backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:18px;" +
+            "font-family:'Inter',system-ui,sans-serif;animation:tvlDonateFade .18s ease;";
+
+        const qrBlock = qrUrl
+            ? `<img src="${_escTen(qrUrl)}" alt="Mã QR ủng hộ" style="width:100%;max-width:280px;height:auto;` +
+              `display:block;margin:0 auto;border-radius:14px;background:#fff;padding:10px;box-sizing:border-box;` +
+              `box-shadow:0 6px 22px rgba(0,0,0,0.4);">`
+            : `<div style="padding:34px 16px;border:1px dashed #1e3a5f;border-radius:14px;color:#94a3b8;` +
+              `font-size:0.9rem;line-height:1.6;">Admin chưa cấu hình mã QR ủng hộ.<br>Vui lòng quay lại sau nhé! ☕</div>`;
+
+        ov.innerHTML =
+            `<style>@keyframes tvlDonateFade{from{opacity:0}to{opacity:1}}` +
+            `@keyframes tvlDonatePop{from{transform:translateY(14px) scale(.97);opacity:0}to{transform:none;opacity:1}}</style>` +
+            `<div style="background:#1a2844;border:1px solid #1e3a5f;border-radius:18px;max-width:360px;width:100%;` +
+            `box-shadow:0 18px 50px rgba(0,0,0,0.55);overflow:hidden;animation:tvlDonatePop .22s ease;position:relative;">` +
+                `<button id="tvlDonateX" aria-label="Đóng" style="position:absolute;top:12px;right:12px;width:34px;height:34px;` +
+                `border:none;border-radius:50%;background:rgba(255,255,255,0.08);color:#cbd5e1;font-size:1.1rem;cursor:pointer;` +
+                `display:flex;align-items:center;justify-content:center;line-height:1;transition:background .15s;">✕</button>` +
+                `<div style="padding:26px 22px 22px;text-align:center;">` +
+                    `<h3 style="color:#00ff88;font-size:1.08rem;font-weight:800;margin:0 0 16px;line-height:1.4;` +
+                    `letter-spacing:0.02em;padding:0 14px;">${_escTen(tieude)}</h3>` +
+                    qrBlock +
+                    `<p style="color:#e2e8f0;font-size:0.92rem;line-height:1.6;margin:16px 0 0;font-weight:500;">${_escTen(txt)}</p>` +
+                `</div>` +
+                `<div style="padding:0 22px 22px;">` +
+                    `<button id="tvlDonateClose" style="width:100%;padding:12px;border:none;border-radius:12px;` +
+                    `background:linear-gradient(135deg,#06b6d4,#22d3ee);color:#04121f;font-weight:700;font-size:0.95rem;` +
+                    `cursor:pointer;font-family:inherit;">Đóng lại</button>` +
+                `</div>` +
+            `</div>`;
+
+        document.body.appendChild(ov);
+        // Đóng: nút X, nút Đóng lại, click nền ngoài card
+        ov.querySelector("#tvlDonateX").addEventListener("click", window.dongModalDonate);
+        ov.querySelector("#tvlDonateClose").addEventListener("click", window.dongModalDonate);
+        ov.addEventListener("click", (e) => { if (e.target === ov) window.dongModalDonate(); });
+    };
+
+    // Tương thích ngược: caller cũ gọi cuonToiUngHo → nay mở modal.
+    window.cuonToiUngHo = function () { window.moModalDonate(); };
 
     function _setProfileField(id, val) {
         const el = document.getElementById(id);

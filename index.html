@@ -1844,6 +1844,10 @@
             padding: 16px;
         }
 
+        /* Box model đồng bộ — mọi phần tử trong modal tính cả padding/border vào kích thước
+           → chống sai số pixel khi switch tab */
+        .uho-modal-box, .uho-modal-box * { box-sizing: border-box; }
+
         /* Modal Box */
         .uho-modal-box {
             background: #111118;
@@ -1911,21 +1915,22 @@
             color: #22d3ee;
         }
 
-        /* Tab Content — khóa min-height để KHÔNG giật khung khi switch tab */
+        /* Tab Content — ÉP CỨNG height cố định → modal ĐỨNG IM TUYỆT ĐỐI khi switch tab.
+           overflow-y:auto: dữ liệu dài (lịch sử) tự cuộn TRONG container, không kéo dài phom. */
         .uho-tab-content {
-            flex: 1; overflow-y: auto; padding: 20px;
-            min-height: 440px; box-sizing: border-box; /* ≥ chiều cao form Gửi góp ý (432px) → 2 tab bằng nhau */
+            flex: 0 0 auto; overflow-y: auto; padding: 20px;
+            height: 440px; box-sizing: border-box; /* ≥ chiều cao form Gửi góp ý (432px) → 2 tab bằng nhau, không scroll */
         }
-        /* Mobile: cho co giãn theo form (vẫn không giật vì 2 tab dùng chung ngưỡng) */
+        /* Mobile: vẫn ép cứng height (đứng im); form dài hơn thì tự cuộn trong container */
         @media (max-width: 480px) {
-            .uho-tab-content { min-height: 380px; }
+            .uho-tab-content { height: 420px; }
         }
         .uho-tab-content::-webkit-scrollbar { width: 4px; }
         .uho-tab-content::-webkit-scrollbar-track { background: transparent; }
         .uho-tab-content::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 
         /* Tab 3 — Lịch sử góp ý của tôi */
-        .uho-ls-body { display: flex; flex-direction: column; gap: 12px; }
+        .uho-ls-body { display: flex; flex-direction: column; gap: 12px; min-height: 100%; }
         .uho-ls-card {
             background: rgba(255,255,255,0.035);
             border: 1px solid rgba(255,255,255,0.08);
@@ -1956,14 +1961,12 @@
             font-size: 0.8rem; color: #a7f3d0; line-height: 1.5;
             white-space: pre-wrap; word-break: break-word;
         }
+        /* Chưa đăng nhập: căn giữa tuyệt đối trong container đã cố định height (Bước 2) */
         .uho-ls-empty {
             display: flex; flex-direction: column;
             align-items: center; justify-content: center;
             text-align: center; color: #64748b; font-size: 0.85rem;
-            padding: 28px 8px; min-height: 400px; line-height: 1.6;
-        }
-        @media (max-width: 480px) {
-            .uho-ls-empty { min-height: 320px; }
+            padding: 28px 8px; flex: 1 1 auto; line-height: 1.6;
         }
 
         /* Tab 1 — Ủng hộ */
@@ -2150,7 +2153,7 @@
                 title="Đánh giá & Góp ý">
             💬 <span class="btn-gop-y-label">Góp ý</span>
         </button>
-        <button class="btn-ung-ho" onclick="window.cuonToiUngHo && window.cuonToiUngHo()"
+        <button class="btn-ung-ho" onclick="window.moModalDonate && window.moModalDonate()"
                 title="Ủng hộ tác giả">
             ☕ <span class="btn-gop-y-label">Ủng hộ</span>
         </button>
@@ -2209,7 +2212,7 @@
         <button class="mobile-nav-item" onclick="window.moUHoModal&&window.moUHoModal();window.closeMobileNav()">
             <i class="fa-solid fa-comment-dots"></i> Góp ý
         </button>
-        <button class="mobile-nav-item" onclick="window.closeMobileNav();window.cuonToiUngHo&&window.cuonToiUngHo()">
+        <button class="mobile-nav-item" onclick="window.closeMobileNav();window.moModalDonate&&window.moModalDonate()">
             <i class="fa-solid fa-mug-hot"></i> Ủng hộ
         </button>
         <button class="mobile-nav-item" id="mobileNavAccountItem" onclick="window.chuyenTab('ca-nhan');window.closeMobileNav()">
@@ -3531,7 +3534,7 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="phan-he-khach-choi.js?v=20260619f"></script>
 <script src="phan-he-host.js?v=20260619b"></script>
 <script src="phan-he-thong-bao.js?v=20260620a"></script>
-<script src="phan-he-ung-dung.js?v=20260620d"></script>
+<script src="phan-he-ung-dung.js?v=20260620e"></script>
 <script src="phan-he-gop-y.js?v=20260620c"></script>
 
 <!-- xoaBoLoc dùng bản đầy đủ trong phan-he-khach-choi.js (reset cả pills + lịch + nhãn giá).
