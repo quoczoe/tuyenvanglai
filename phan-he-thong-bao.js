@@ -86,6 +86,34 @@
         _:   { mau: "#94a3b8" }  // mặc định — trung tính
     };
 
+    // ── BADGE TRẠNG THÁI GÓP Ý (SVG phẳng, nét mảnh — KHÔNG emoji) ──
+    //    Dùng cho thông báo loai='gopy_phan_hoi' (link_data.trang_thai).
+    const _GOPY_BADGE = {
+        dang_thuc_hien: {
+            mau: "#3b82f6", nen: "rgba(59,130,246,0.1)", chu: "Đang xử lý",
+            // Cờ lê (wrench)
+            svg: '<path d="M14.7 6.3a4 4 0 0 1-5.4 5.4L4 17v3h3l5.3-5.3a4 4 0 0 0 5.4-5.4l-2.3 2.3-2-2 2.3-2.3z"/>'
+        },
+        da_xong: {
+            mau: "#10b981", nen: "rgba(16,185,129,0.1)", chu: "Đã hoàn thành",
+            // Dấu tích (checkmark)
+            svg: '<path d="M20 6 9 17l-5-5"/>'
+        },
+        tu_choi: {
+            mau: "#ef4444", nen: "rgba(239,68,68,0.1)", chu: "Từ chối / Tạm hoãn",
+            // Cảnh báo (alert triangle)
+            svg: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>'
+        }
+    };
+    function _gopyBadgeHTML(tt) {
+        const b = _GOPY_BADGE[tt];
+        if (!b) return "";
+        return `<span class="tb-status-badge" style="color:${b.mau};background:${b.nen};">` +
+            `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" ` +
+            `stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${b.svg}</svg>` +
+            `${_esc(b.chu)}</span>`;
+    }
+
     /* ═══════════════════════════════════════════════════
      * GHI THÔNG BÁO — gọi từ các điểm phát (fire-and-forget)
      * ═══════════════════════════════════════════════════ */
@@ -207,6 +235,14 @@
         }
         body.innerHTML = _items.map(it => {
             const m = _META[it.loai] || _META._;
+            const ld = it.link_data || {};
+            // Thông báo phản hồi góp ý: badge SVG trạng thái + lời nhắn (chỉ khi Admin nhập).
+            let badge = "", reply = "";
+            if (it.loai === "gopy_phan_hoi") {
+                badge = _gopyBadgeHTML(ld.trang_thai);
+                const ph = (ld.phan_hoi != null) ? String(ld.phan_hoi).trim() : "";
+                if (ph) reply = `<span class="tb-item-reply">${_esc(ph)}</span>`;
+            }
             const desc = it.noi_dung ? `<span class="tb-item-desc">${_esc(it.noi_dung)}</span>` : "";
             // KHÔNG icon/emoji: mức độ thể hiện qua left-border (inline) + chấm màu 8px.
             // Chưa đọc: thêm chấm xanh góc trái (.tb-dot).
@@ -215,7 +251,9 @@
                 <span class="tb-cat-dot" style="background:${m.mau};"></span>
                 <span class="tb-item-main">
                     <span class="tb-item-title">${_esc(it.tieu_de)}</span>
+                    ${badge}
                     ${desc}
+                    ${reply}
                     <span class="tb-item-time">${_esc(_thoiGianTuongDoi(it.created_at))}</span>
                 </span>
             </button>`;
@@ -286,7 +324,12 @@
         window.dongDrawerThongBao();
 
         try {
-            if (ld.tab === "guestList" && ld.caId && typeof window.openGuestListModal === "function") {
+            if (ld.tab === "gopyLichSu" && typeof window.moUHoModal === "function") {
+                // Phản hồi góp ý: mở modal "Ý KIẾN & GÓP Ý" → tab "Lịch sử góp ý"
+                Promise.resolve(window.moUHoModal()).then(() => {
+                    if (typeof window.chuyenTabUho === "function") window.chuyenTabUho("lichsu");
+                }).catch(() => {});
+            } else if (ld.tab === "guestList" && ld.caId && typeof window.openGuestListModal === "function") {
                 window.chuyenTab && window.chuyenTab("dang-quan-ly");
                 window.openGuestListModal(ld.caId, ld.tenSan || "").catch(() => {});
             } else if (ld.tab === "lichSu") {

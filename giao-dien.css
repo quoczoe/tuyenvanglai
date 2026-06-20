@@ -5002,6 +5002,22 @@ body::before {
     -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
 .tb-item-time { font-size: 0.68rem; color: #64748b; margin-top: 1px; }
+/* Badge trạng thái góp ý — SVG phẳng + nền mờ 0.1 (thay emoji thô) */
+.tb-status-badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 4px 8px; border-radius: 6px;
+    font-size: 12px; font-weight: 500; line-height: 1;
+    width: fit-content; align-self: flex-start; margin: 1px 0;
+}
+.tb-status-badge svg { flex-shrink: 0; }
+/* Lời nhắn Admin — block thụt lề riêng, chỉ render khi có nội dung */
+.tb-item-reply {
+    font-size: 0.76rem; color: #a7f3d0; line-height: 1.45;
+    margin-top: 2px; padding: 6px 10px;
+    border-left: 2px solid rgba(0, 255, 136, 0.45);
+    background: rgba(0, 255, 136, 0.06); border-radius: 0 7px 7px 0;
+    white-space: pre-wrap; word-break: break-word;
+}
 /* Chấm xanh "chưa đọc" — góc trái trên */
 .tb-dot {
     position: absolute; top: 8px; left: 7px;
