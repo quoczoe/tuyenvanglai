@@ -1886,6 +1886,48 @@
     .ad-cadau-srch .ad-search-wrap { flex: 1; }
     .ad-cadau-srch .ad-search-input { width: 100% !important; }
     .ad-cadau-srch .mv-filter-select { flex-shrink: 0; width: auto; }
+
+    /* ── BỔ SUNG 2026-06-21 (phiên 2) ─────────────────────────────── */
+
+    /* (1) CHỈ BÁO CUỘN: gradient mờ mép phải gợi ý còn nội dung vuốt tiếp.
+       Dùng mask-image (không thêm phần tử HTML, zero tác động desktop). */
+    .ad-metrics-grid,
+    .ad-tab-nav {
+        -webkit-mask-image: linear-gradient(to right, #000 0, #000 88%, transparent 100%);
+        mask-image: linear-gradient(to right, #000 0, #000 88%, transparent 100%);
+    }
+
+    /* (2) TOUCH TARGET ≥40px: nút icon/hành động dày đủ chạm ngón tay.
+       (40px cân bằng cho bảng dày; nút đứng riêng đạt chuẩn 44.) */
+    .mv-ql-btn,
+    .btn-mini,
+    .ad-table .btn-mini {
+        min-width: 40px;
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .ad-btn-ghost { min-height: 40px; }
+    .ad-btn-icon  { width: 40px; height: 40px; }
+    #gopYPrevBtn, #gopYNextBtn {
+        min-width: 44px; min-height: 44px;
+        display: inline-flex; align-items: center; justify-content: center;
+    }
+    /* Nút thao tác đứng riêng (không trong bảng) đạt chuẩn 44px đầy đủ */
+    .ad-guest-actions > button { min-height: 44px; }
+    /* Pill lọc (Tất cả/Đang mở/Đã chốt/Hôm nay...) cao đủ chạm */
+    .ad-pill { min-height: 38px; }
+
+    /* (3) EMPTY-STATE / DÒNG TRẠNG THÁI: ghim trái + căn trái để thông bá
+       "Chưa có..." luôn hiện trong viewport (không bị cuộn khỏi bảng rộng). */
+    .ad-table td[colspan] {
+        text-align: left !important;
+        position: sticky;
+        left: 0;
+        padding-left: 14px;
+        max-width: 100vw;
+    }
 }
 </style>
 <script>
