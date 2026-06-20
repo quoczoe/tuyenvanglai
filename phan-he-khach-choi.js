@@ -1334,6 +1334,28 @@
         if (exp && Date.now() < exp) { _chayCooldown(btn, exp, storageKey); return true; }
         return false;
     }
+    // Tên key cooldown THEO ĐỊNH DANH (SĐT/Email) — chuẩn hóa qua nhanDienDinhDanh.
+    function _keyCooldownTheoDinhDanh(raw) {
+        const dd = window.nhanDienDinhDanh ? window.nhanDienDinhDanh(raw) : { giaTri: String(raw || "").trim().toLowerCase() };
+        return "otp_cooldown_" + (dd.giaTri || "");
+    }
+    // Cập nhật nút cooldown theo ĐỊNH DANH đang gõ. Gõ tài khoản khác → tự kiểm key mới:
+    //   còn hạn → đếm tiếp; chưa gửi/ hết hạn → BẬT LẠI nút ngay (không áp cooldown của tk cũ).
+    function _capNhatCooldownTheoDinhDanh(btn, raw) {
+        if (!btn) return;
+        const key = _keyCooldownTheoDinhDanh(raw);
+        let exp = 0;
+        try { exp = +(localStorage.getItem(key) || 0); } catch (_) {}
+        if (btn._cdTimer) { clearInterval(btn._cdTimer); btn._cdTimer = null; }
+        if (exp && Date.now() < exp) {
+            _chayCooldown(btn, exp, key);             // tài khoản này đang trong 60s
+        } else {
+            // tài khoản này KHÔNG bị khóa → khôi phục nhãn gốc + bật nút
+            if (btn.dataset.cdGoc != null) { btn.innerHTML = btn.dataset.cdGoc; delete btn.dataset.cdGoc; }
+            btn.disabled = false;
+        }
+    }
+    window._capNhatCooldownTheoDinhDanh = _capNhatCooldownTheoDinhDanh;
     // Toast đỏ ưu tiên cao khi backend trả OTP_SPAM_BLOCKED
     function _toastOtpSpam() {
         window.hienToast("⚠️ Gửi mã quá nhiều lần",
@@ -1386,8 +1408,16 @@
             </div>`;
         document.body.appendChild(ov);
         // Static backdrop: KHÔNG đóng khi click nền mờ — chỉ đóng bằng nút X.
-        // Khôi phục cooldown gửi mã nếu còn hiệu lực (chống tắt/mở lại để spam)
-        _khoiPhucCooldown(document.getElementById("qmkBtnGui"), "otp_forgot_cooldown");
+        // Cooldown THEO ĐỊNH DANH: kiểm tài khoản đang gõ + cập nhật mỗi lần gõ khác.
+        const _qmkInp = document.getElementById("qmkDinhDanh");
+        const _qmkBtn = document.getElementById("qmkBtnGui");
+        _capNhatCooldownTheoDinhDanh(_qmkBtn, _qmkInp ? _qmkInp.value : "");
+        if (_qmkInp && !_qmkInp._cdBound) {
+            _qmkInp._cdBound = true;
+            _qmkInp.addEventListener("input", function () {
+                _capNhatCooldownTheoDinhDanh(_qmkBtn, _qmkInp.value);
+            });
+        }
 
         // Vào từ link email (có dd + code) → nhảy THẲNG bước nhập mật khẩu mới,
         // tự điền mã xác thực, không bắt gửi lại mã (chống giật + tiện cho user).
@@ -1417,7 +1447,8 @@
             window.hienToast("Chưa hợp lệ", "Nhập đúng Số điện thoại (10 số) hoặc Gmail.", "warning"); return;
         }
         const btn = document.getElementById("qmkBtnGui");
-        _cooldownNut(btn, 60, "otp_forgot_cooldown");   // bền qua F5/đóng-mở modal
+        // Cooldown THEO ĐỊNH DANH (key = otp_cooldown_<sđt|email>) → đổi tài khoản không bị dính
+        _cooldownNut(btn, 60, _keyCooldownTheoDinhDanh(dd.giaTri));
         try {
             const res = await window.authEmail.guiMaReset(dd.giaTri);
             if (res?.status === "ok") {
@@ -6065,12 +6096,26 @@ Bạn kiểm tra & xác nhận giúp mình với nhé. Cảm ơn bạn nhiều! 
             }
         } catch (_) {}
 
-        // Google trở về: chờ _sbClient sẵn sàng rồi xử lý (tối đa ~6s)
-        let _ggTries = 0;
+        // Google trở về: chờ _sbClient sẵn sàng rồi (1) đăng ký onAuthStateChange (bền vững,
+        // bắt SIGNED_IN ngay khi Supabase nạp session sau redirect) + (2) gọi 1 lần xử lý trở về.
+        let _ggTries = 0, _authSubBound = false;
         const _ggInt = setInterval(function () {
             _ggTries++;
             if (window._sbClient && window._sbClient.auth && window.guestRPC && window.guestRPC.googleDangNhap) {
                 clearInterval(_ggInt);
+                if (!_authSubBound) {
+                    _authSubBound = true;
+                    try {
+                        // SIGNED_IN / INITIAL_SESSION (sau Google redirect) → xử lý đăng nhập guest.
+                        // _xuLyGoogleTroVe có guard chống xử lý lặp (đã có token thì bỏ qua).
+                        window._sbClient.auth.onAuthStateChange(function (event, session) {
+                            if ((event === "SIGNED_IN" || event === "INITIAL_SESSION") && session && session.user) {
+                                window._xuLyGoogleTroVe && window._xuLyGoogleTroVe();
+                            }
+                        });
+                    } catch (_) { /* SDK cũ không có onAuthStateChange → vẫn còn fallback gọi 1 lần dưới */ }
+                }
+                // Fallback gọi 1 lần (phòng listener chưa kịp bắt phiên đã có sẵn)
                 window._xuLyGoogleTroVe && window._xuLyGoogleTroVe();
             } else if (_ggTries > 30) {
                 clearInterval(_ggInt);
