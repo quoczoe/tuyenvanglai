@@ -323,6 +323,9 @@
         _setProfileField("profileZalo",     u.sdt_zalo  || "");
         _setProfileField("profileGmail",    u.gmail     || "");
         _setProfileField("profileBio",      u.bio       || "");
+        // Đồng bộ bộ đếm ký tự bio sau khi điền (set .value qua JS không bắn 'input')
+        const _bioCount = document.getElementById("profileBioCount");
+        if (_bioCount) _bioCount.textContent = String((u.bio || "").length);
         // Badge trạng thái xác thực email + khóa ô + đuôi @gmail.com (đọc trạng thái thật từ DB)
         window._capNhatTrangThaiEmail?.(u);
 

@@ -1233,12 +1233,17 @@
         if (btn._cdTimer) clearInterval(btn._cdTimer);
         if (btn.dataset.cdGoc == null) btn.dataset.cdGoc = btn.innerHTML;
         const goc = btn.dataset.cdGoc;
+        // Nút icon (✏️ trong ô) KHÔNG đủ chỗ cho chữ đếm ngược → giữ icon, chỉ disable + tooltip
+        const isIcon = btn.classList.contains("input-edit-icon");
         const tick = () => {
             const con = Math.ceil((expiry - Date.now()) / 1000);
             if (con <= 0) {
                 clearInterval(btn._cdTimer); btn._cdTimer = null;
                 btn.disabled = false; btn.innerHTML = goc; delete btn.dataset.cdGoc;
+                if (isIcon) btn.title = btn.getAttribute("aria-label") || "";
                 if (storageKey) { try { localStorage.removeItem(storageKey); } catch (_) {} }
+            } else if (isIcon) {
+                btn.disabled = true; btn.title = "Thử lại sau " + con + "s";
             } else {
                 btn.disabled = true; btn.textContent = "Thử lại sau " + con + "s...";
             }
@@ -1484,7 +1489,7 @@
             inp.readOnly = true;
             if (wrap) wrap.classList.add("is-locked");
             if (suffix) suffix.style.display = "none";
-            if (badge) { badge.className = "email-badge email-badge--inside email-badge--ok"; badge.textContent = "✓ Đã xác thực"; badge.style.display = ""; }
+            if (badge) { badge.className = "email-badge email-badge--ok"; badge.textContent = "✓ Đã xác thực"; badge.style.display = ""; }
             if (btnXt) btnXt.style.display = "none";
             if (btnDoi) { btnDoi.style.display = ""; _khoiPhucCooldown(btnDoi, "otp_change_email_cooldown"); }
             // Nút [Thay đổi] SĐT cũng khôi phục cooldown nếu còn hiệu lực
@@ -1721,7 +1726,7 @@
                 <div id="dctStep1" class="qmk-step">
                     <label class="qmk-label">Mã khóa gốc (6 số)</label>
                     <input type="text" class="qmk-input qmk-code" id="dctMaGoc" inputmode="numeric" maxlength="6" placeholder="------" autocomplete="one-time-code" oninput="this.value=this.value.replace(/\\D/g,'')">
-                    <button type="button" class="qmk-btn" id="dctBtnGoc" onclick="window._xacNhanMaGoc()">Xác nhận mã gốc</button>
+                    <button type="button" class="qmk-btn" id="dctBtnGoc" onclick="window._xacNhanMaGoc()">Xác nhận</button>
                 </div>
 
                 <!-- BƯỚC 2a: đổi SĐT -->
@@ -1791,7 +1796,7 @@
         } catch (e) {
             window.hienToast("Lỗi kết nối", "Không kiểm tra được mã. Thử lại sau.", "danger");
         } finally {
-            if (btn) { btn.disabled = false; btn.textContent = "Xác nhận mã gốc"; }
+            if (btn) { btn.disabled = false; btn.textContent = "Xác nhận"; }
         }
     };
 

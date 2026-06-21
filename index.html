@@ -391,6 +391,12 @@
             white-space: nowrap;
         }
 
+        /* ── Trình độ Nam/Nữ trong card Ca Đã Đăng (DESKTOP: 1 dòng gọn, giống cũ) ── */
+        .cdd-lvlwrap { font-size: 0.75rem; color: #7dd3fc; margin-top: 2px; }
+        .cdd-lvlwrap .cdd-gt::after { content: " · "; color: #64748b; }
+        .cdd-lvlsec b { font-weight: 700; }
+        .cdd-lvlsec-nu::before { content: " | "; color: #64748b; }
+
         /* Thead: font đậm, nổi bật */
         #subtab-dang-quan-ly-ds-ca .app-table thead th {
             font-weight: 700;
@@ -425,6 +431,253 @@
         #cdd-prev:disabled, #cdd-next:disabled {
             opacity: 0.3;
             cursor: not-allowed;
+        }
+
+        /* ════════════════════════════════════════════════════════════════
+           CA ĐÃ ĐĂNG — BẢNG → CARD LIST trên mobile (≤767px).
+           Mỗi <tr> = 1 card; <td> = "Nhãn: giá trị"; cột Sân = tiêu đề;
+           hàng nút thao tác xuống cuối, mỗi nút ≥44px (touch-friendly).
+           Desktop (≥768px) GIỮ NGUYÊN: mọi rule nằm trong @media này;
+           class/data-label chỉ là thuộc tính trình bày, vô hại ở desktop.
+           Màu lấy từ PALETTE host (CLAUDE.md): card #1a2844, viền #1e3a5f,
+           chữ #e2e8f0, chữ phụ #94a3b8, nhãn #94a3b8, divider rgba trắng 0.07.
+           ════════════════════════════════════════════════════════════════ */
+        @media (max-width: 767px) {
+            /* Wrapper: bỏ cuộn nội bộ + nền fill → cả trang cuộn dọc tự nhiên */
+            #subtab-dang-quan-ly-ds-ca > .app-card { overflow: visible; min-height: 0; }
+            #subtab-dang-quan-ly-ds-ca > .app-card > .table-wrap {
+                overflow: visible !important;
+                outline: none !important;
+                background: transparent !important;
+                border-radius: 0 !important;
+            }
+            #subtab-dang-quan-ly-ds-ca .cdd-scroll-outer { overflow-x: visible !important; }
+
+            /* Pagination/refresh touch target ≥44px */
+            #subtab-dang-quan-ly-ds-ca #cdd-prev,
+            #subtab-dang-quan-ly-ds-ca #cdd-next { width: 44px; height: 44px; font-size: 1.1rem; }
+
+            /* Table → block; ẩn thead + colgroup (không còn ràng buộc cột) */
+            #subtab-dang-quan-ly-ds-ca .app-table {
+                display: block; width: 100% !important; min-width: 0 !important;
+                table-layout: auto !important; border-collapse: collapse;
+            }
+            #subtab-dang-quan-ly-ds-ca .app-table colgroup { display: none; }
+            #subtab-dang-quan-ly-ds-ca .app-table thead { display: none; }
+            #subtab-dang-quan-ly-ds-ca .app-table tbody { display: block; }
+
+            /* Mỗi <tr> = 1 CARD (flex column → dùng order sắp xếp ưu tiên) */
+            #subtab-dang-quan-ly-ds-ca .app-table tbody tr {
+                display: flex; flex-direction: column;
+                position: relative;
+                background: #1a2844 !important;          /* palette host: card */
+                border: 1px solid #1e3a5f !important;    /* palette host: border */
+                border-radius: 12px;
+                padding: 14px 14px 12px !important;
+                margin-bottom: 12px;
+            }
+
+            /* Ô mặc định = "NHÃN: giá trị" xếp dọc, căn trái */
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td {
+                display: block; order: 0;
+                width: auto !important; max-width: none !important;
+                border: none !important;
+                padding: 4px 0 !important;
+                text-align: left !important;
+                white-space: normal !important;
+                overflow: visible !important; text-overflow: clip !important;
+                font-size: 0.85rem; color: #e2e8f0;
+            }
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td[data-label]::before {
+                content: attr(data-label) ": ";
+                color: #94a3b8; font-weight: 700;
+                font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em;
+                margin-right: 4px;
+            }
+            /* Khối tiền/ngày/badge: bỏ căn giữa, trải trái cho khớp card */
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td .price-container { align-items: flex-start; }
+
+            /* Cột STT — ẩn (chỉ là số đếm, không cần trên card) */
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td.tdm-hide { display: none !important; }
+
+            /* DÒNG 1 — Sân = tiêu đề card; KHÔNG ép cỡ chữ con (giữ phân cấp) */
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td.tdm-title {
+                order: -3;
+                padding: 0 0 8px 0 !important; margin-bottom: 8px;
+                border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+            }
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td.tdm-title::before { content: none; }
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td.tdm-title > div:first-child {
+                font-size: 1rem !important; font-weight: 800 !important; color: #e2e8f0;
+            }
+
+            /* ISSUE 1A — SLOT: gộp "1/24" + "0 tham gia" về 1 hàng (sau nhãn SLOT:) */
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td[data-label="Slot"] .cdd-slotinfo,
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td[data-label="Slot"] .cdd-slot-count,
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td[data-label="Slot"] .cdd-slot-join { display: inline; }
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td[data-label="Slot"] .cdd-slot-join::before {
+                content: ", "; color: #64748b; font-weight: 400;
+            }
+            /* Cột Slot: nút "DS Khách" full-width ≥44px (block riêng dòng dưới) */
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td[data-label="Slot"] .btn-mini {
+                display: flex; width: 100%; min-height: 44px; margin-top: 6px;
+                font-size: 0.8rem !important; padding: 8px 6px !important;
+            }
+
+            /* ISSUE 1B — GIÁ: nhãn Nam (xanh #38bdf8) / Nữ (hồng #f472b6) khớp màu Trình độ */
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td .price-row--nam .price-label { color: #38bdf8; font-weight: 700; }
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td .price-row--nu  .price-label { color: #f472b6; font-weight: 700; }
+
+            /* DÒNG CUỐI — hàng nút thao tác, gạch ngăn trên, nút ≥44px */
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td.tdm-actions {
+                order: 10;
+                margin-top: 10px; padding-top: 10px !important;
+                border-top: 1px solid rgba(255,255,255,0.07) !important;
+            }
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td.tdm-actions::before { content: none; }
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td.tdm-actions > div {
+                grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important;
+            }
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td.tdm-actions .btn-mini {
+                min-height: 44px !important;
+                font-size: 0.8rem !important; padding: 8px 6px !important;
+            }
+
+            /* Empty/loading: 1 td colspan → text căn giữa, không viền ô */
+            #subtab-dang-quan-ly-ds-ca .app-table tbody td[colspan] {
+                text-align: center !important; padding: 18px 8px !important;
+            }
+
+            /* ISSUE 1 — Trình độ Nam/Nữ: tách 2 section màu (xanh nam / hồng nữ) */
+            #subtab-dang-quan-ly-ds-ca .cdd-lvlwrap {
+                display: flex; flex-direction: column; gap: 5px; margin-top: 8px;
+            }
+            #subtab-dang-quan-ly-ds-ca .cdd-lvlwrap .cdd-gt { margin-bottom: 1px; }
+            #subtab-dang-quan-ly-ds-ca .cdd-lvlwrap .cdd-gt::after { content: none; }
+            #subtab-dang-quan-ly-ds-ca .cdd-lvlsec {
+                display: block; padding: 6px 9px; border-radius: 8px;
+                font-size: 0.8rem; line-height: 1.45; color: #e2e8f0;
+                border-left: 3px solid;
+            }
+            #subtab-dang-quan-ly-ds-ca .cdd-lvlsec-nam {
+                background: rgba(56,189,248,0.10); border-left-color: #38bdf8;
+            }
+            #subtab-dang-quan-ly-ds-ca .cdd-lvlsec-nam b { color: #38bdf8; }
+            #subtab-dang-quan-ly-ds-ca .cdd-lvlsec-nu {
+                background: rgba(244,114,182,0.10); border-left-color: #f472b6;
+            }
+            #subtab-dang-quan-ly-ds-ca .cdd-lvlsec-nu b { color: #f472b6; }
+            #subtab-dang-quan-ly-ds-ca .cdd-lvlsec-nu::before { content: none; }
+        }
+
+        /* ════════════════════════════════════════════════════════════════
+           DOANH THU (/dang-quan-ly → tab Doanh Thu) — BẢNG .hs-table → CARD
+           LIST trên mobile (≤767px). CÙNG pattern "Ca Đã Đăng". Scope CHẶT vào
+           #tabDoanhThu → KHÔNG đụng .hs-table khác (modal DS Khách dùng chung class).
+           Desktop (≥768px) GIỮ NGUYÊN. Màu: PALETTE host (card #1a2844, viền
+           #1e3a5f, chữ #e2e8f0, nhãn #94a3b8, divider rgba trắng 0.07).
+           ════════════════════════════════════════════════════════════════ */
+        @media (max-width: 767px) {
+            /* bỏ cuộn ngang (table vốn min-width:860px inline) */
+            #tabDoanhThu .tvl-xscroll { overflow-x: visible !important; }
+            #tabDoanhThu .hs-table {
+                display: block; width: 100% !important; min-width: 0 !important;
+                border-collapse: collapse;
+            }
+            #tabDoanhThu .hs-table thead { display: none; }
+            #tabDoanhThu .hs-table tbody { display: block; }
+
+            /* mỗi <tr> = 1 card — ISSUE 3: body 2 CỘT (cân đối, lấp khoảng trống phải) */
+            #tabDoanhThu .hs-table tbody tr {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 6px 14px; align-items: start;
+                background: #1a2844 !important;          /* palette host: card */
+                border: 1px solid #1e3a5f !important;    /* palette host: border */
+                border-radius: 12px;
+                padding: 14px 14px 12px !important;
+                margin-bottom: 12px;
+            }
+            /* Màn rất hẹp (≤380px) → về 1 cột cho dễ đọc */
+            @media (max-width: 380px) {
+                #tabDoanhThu .hs-table tbody tr { grid-template-columns: 1fr; }
+            }
+
+            /* ô mặc định = "NHÃN: giá trị" */
+            #tabDoanhThu .hs-table tbody td {
+                display: block; order: 0;
+                width: auto !important; max-width: none !important;
+                border: none !important;
+                padding: 4px 0 !important;
+                text-align: left !important; white-space: normal !important;
+                font-size: 0.85rem; color: #e2e8f0;
+            }
+            /* Tổng Chi vốn ẩn ở mobile (dt-hide-sm) → HIỆN lại trong card (đủ chỗ) */
+            #tabDoanhThu .hs-table tbody td.dt-hide-sm { display: block !important; }
+            #tabDoanhThu .hs-table tbody td[data-label]::before {
+                content: attr(data-label) ": ";
+                color: #94a3b8; font-weight: 700;
+                font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.03em;
+                margin-right: 4px;
+            }
+
+            /* ISSUE 3A+3B — TỔNG CHI / TỔNG THU / LỜI LỖ: mỗi mục = sub-card full-width,
+               nhãn trái + số tiền phải trên CÙNG 1 hàng (hybrid: viền + nền mờ nhẹ). */
+            #tabDoanhThu .hs-table tbody td[data-label="Tổng chi"],
+            #tabDoanhThu .hs-table tbody td[data-label="Tổng thu"],
+            #tabDoanhThu .hs-table tbody td[data-label="Lời / Lỗ"] {
+                grid-column: 1 / -1;
+                display: flex !important; flex-wrap: wrap;   /* !important: thắng .dt-hide-sm{display:block!important} ở Tổng Chi */
+                align-items: baseline; justify-content: space-between; gap: 2px 10px;
+                background: rgba(255,255,255,0.03);
+                border: 1px solid rgba(255,255,255,0.07) !important;
+                border-radius: 8px;
+                padding: 9px 12px !important;
+                margin-top: 2px;
+            }
+            #tabDoanhThu .hs-table tbody td[data-label="Tổng chi"] { order: 1; }
+            #tabDoanhThu .hs-table tbody td[data-label="Tổng thu"] { order: 2; }
+            #tabDoanhThu .hs-table tbody td[data-label="Lời / Lỗ"] { order: 3; }
+            /* nhãn ::before không co (giữ bên trái) */
+            #tabDoanhThu .hs-table tbody td[data-label="Tổng chi"]::before,
+            #tabDoanhThu .hs-table tbody td[data-label="Tổng thu"]::before,
+            #tabDoanhThu .hs-table tbody td[data-label="Lời / Lỗ"]::before { flex: 0 0 auto; margin-right: 0; }
+            /* số tiền dồn sang phải, 1 hàng với nhãn */
+            #tabDoanhThu .hs-table tbody td[data-label="Tổng thu"] > span,
+            #tabDoanhThu .hs-table tbody td[data-label="Lời / Lỗ"] > span { margin-left: auto; }
+            /* TỔNG CHI: số tiền chính bên phải (đỏ — chi phí, khớp card Tổng Chi modal) */
+            #tabDoanhThu .hs-table tbody td[data-label="Tổng chi"] > div:first-child {
+                margin-left: auto; color: #f87171 !important; font-size: 0.9rem !important;
+            }
+            /* TỔNG CHI: dòng bóc tách 🏟/🏸/💧 xuống dòng riêng, full-width */
+            #tabDoanhThu .hs-table tbody td[data-label="Tổng chi"] > div:nth-child(2) {
+                flex: 0 0 100%; margin-left: 0; margin-top: 4px;
+            }
+
+            /* Tên Sân = tiêu đề card (full-width trên lưới 2 cột) */
+            #tabDoanhThu .hs-table tbody td.tdm-title {
+                order: -3; grid-column: 1 / -1;
+                padding: 0 0 8px 0 !important; margin-bottom: 8px;
+                border-bottom: 1px solid rgba(255,255,255,0.07) !important;
+            }
+            #tabDoanhThu .hs-table tbody td.tdm-title::before { content: none; }
+            #tabDoanhThu .hs-table tbody td.tdm-title > div:first-child {
+                font-size: 1rem !important; font-weight: 800 !important; color: #e2e8f0;
+            }
+
+            /* hàng nút thao tác (Chi tiết / CSV; In vẫn ẩn mobile theo .dt-print-btn): nút ≥44px */
+            #tabDoanhThu .hs-table tbody td.tdm-actions {
+                order: 10; grid-column: 1 / -1;
+                display: flex; flex-wrap: wrap;
+                margin-top: 10px; padding-top: 10px !important;
+                border-top: 1px solid rgba(255,255,255,0.07) !important;
+            }
+            #tabDoanhThu .hs-table tbody td.tdm-actions::before { content: none; }
+            #tabDoanhThu .hs-table tbody td.tdm-actions > div { gap: 8px !important; }
+            #tabDoanhThu .hs-table tbody td.tdm-actions .btn-mini {
+                flex: 1 1 40%;
+                min-height: 44px !important; font-size: 0.8rem !important; padding: 8px 6px !important;
+            }
         }
 
         /* ── CARD CHUNG ── */
@@ -485,6 +738,40 @@
         .app-textarea { resize: vertical; min-height: 80px; }
         .app-input::placeholder, .app-textarea::placeholder { color: rgba(255,255,255,0.32); }
         .app-input[readonly] { color: var(--text-sub); cursor: default; }
+
+        /* ════════════════════════════════════════════════════════════════
+           HỒ SƠ (/ca-nhan) — REDESIGN CARD-BASED
+           Cột nội dung gọn (chống input bị kéo dãn trên màn rộng .app-body 1700px)
+           + tách form thành các card nhóm logic. Card = .app-card (HỆ A cam sẵn có);
+           field 2-cột desktop / 1-cột mobile = .form-row (đã responsive @768).
+           ════════════════════════════════════════════════════════════════ */
+        #section-profile { max-width: 1040px; margin-left: auto; margin-right: auto; }
+        /* Stack card đều khoảng cách (gap thay margin-bottom mặc định .app-card) */
+        .profile-edit-grid { display: flex; flex-direction: column; gap: 16px; }
+        .profile-edit-grid > .profile-edit-card { margin-bottom: 0; }
+        /* Đếm ký tự ô "Giới thiệu bản thân" */
+        .bio-charcount { margin-top: 6px; text-align: right; font-size: 0.7rem; color: var(--text-muted); }
+        /* Nút Lưu — full-width dưới các card (giữ nền lava-grad cam của .btn-primary) */
+        .profile-save-btn { width: 100%; justify-content: center; padding-top: 15px; padding-bottom: 15px; margin-top: 4px; }
+
+        /* ── NÚT SỬA ✏️ TRONG Ô (thay link "Thay đổi") — SĐT + Gmail ── */
+        .input-edit-wrap { position: relative; display: block; }
+        /* chừa chỗ bên phải để chữ không đè lên icon */
+        .input-edit-wrap .app-input { padding-right: 42px; }
+        .email-input-wrap.is-locked .app-input { padding-right: 42px; }
+        .input-edit-icon {
+            position: absolute; top: 0; right: 0;
+            width: 42px; height: 100%; min-height: 42px;
+            display: flex; align-items: center; justify-content: center;
+            background: none; border: none; padding: 0; cursor: pointer;
+            color: var(--accent); opacity: 0.75; transition: opacity 0.15s;
+            text-decoration: none; z-index: 3;
+        }
+        .input-edit-icon:hover { opacity: 1; }
+        .input-edit-icon:disabled { color: var(--text-muted); opacity: 0.5; cursor: not-allowed; }
+        .input-edit-icon svg { width: 18px; height: 18px; display: block; }
+        /* Badge "✓ Đã xác thực" dưới ô Gmail — căn trái, không kéo dãn */
+        #profileEmailBadge.email-badge { align-self: flex-start; margin-top: 2px; }
 
         /* ── KẾ TOÁN NỘI BỘ ── */
         .ke-toan-wrap { max-width: 960px; margin-left: auto; margin-right: auto; }
@@ -2388,75 +2675,102 @@
                     </div>
                 </div>
 
-                <div class="app-card-title"><i class="fa-solid fa-pen-to-square"></i> Chỉnh Sửa Hồ Sơ</div>
+            </div>
 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label" for="profileName">Họ tên</label>
-                        <input type="text" id="profileName" class="app-input" placeholder="Nguyễn Văn A">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="profilePhone" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                            <span>Số điện thoại</span>
-                            <button type="button" class="btn-thaydoi" onclick="window.moDoiThongTin && window.moDoiThongTin('sdt')">Thay đổi</button>
-                        </label>
-                        <input type="tel" id="profilePhone" class="app-input" readonly placeholder="0901234567">
-                        <span class="form-hint">Định danh tài khoản — đổi cần xác thực OTP</span>
-                    </div>
-                </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label" for="profileGender">Giới tính</label>
-                        <select id="profileGender" class="app-select">
-                            <option value="">— Chọn giới tính —</option>
-                            <option value="male">Nam</option>
-                            <option value="female">Nữ</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="profileTrindDo">Trình độ chơi</label>
-                        <!-- Options render động từ window.TRINH_DO_LIST (bo-may-du-lieu.js → _renderTrinhDoUI) -->
-                        <select id="profileTrindDo" class="app-select"></select>
-                    </div>
-                </div>
-                <div class="form-row col-3">
-                    <div class="form-group">
-                        <label class="form-label" for="profileZalo"><i class="fa-solid fa-comment" style="color:#00b5e2;"></i> Zalo</label>
-                        <input type="tel" id="profileZalo" class="app-input" placeholder="SĐT Zalo">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="profileFacebook"><i class="fa-brands fa-facebook" style="color:#1877f2;"></i> Facebook</label>
-                        <input type="url" id="profileFacebook" class="app-input" placeholder="https://facebook.com/...">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="profileGmail" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                            <span><i class="fa-solid fa-envelope" style="color:#ea4335;"></i> Gmail</span>
-                            <button type="button" id="btnThayDoiEmail" class="btn-thaydoi" style="display:none;"
-                                    onclick="window.moDoiThongTin && window.moDoiThongTin('email')">Thay đổi</button>
-                        </label>
-                        <div class="email-input-wrap" id="profileGmailWrap">
-                            <input type="email" id="profileGmail" class="app-input" readonly placeholder="vd: tenban">
-                            <span class="email-suffix" id="profileGmailSuffix">@gmail.com</span>
-                            <span id="profileEmailBadge" class="email-badge email-badge--inside"></span>
+            <!-- ── HỒ SƠ DẠNG CARD — group theo nhóm logic; mobile 1 cột / desktop card stack 2-col inner (.form-row) ── -->
+            <div class="profile-edit-grid">
+
+                <!-- CARD 1 — THÔNG TIN CƠ BẢN -->
+                <div class="app-card profile-edit-card">
+                    <div class="app-card-title"><i class="fa-solid fa-id-card"></i> Thông Tin Cơ Bản</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="profileName">Họ tên</label>
+                            <input type="text" id="profileName" class="app-input" placeholder="Nguyễn Văn A">
                         </div>
-                        <button type="button" id="btnXacThucEmail" class="btn-xacthuc-email" style="display:none;"
-                                onclick="window.xacThucEmailNgay && window.xacThucEmailNgay()">
-                            <span style="color:#fbbf24;">⚠</span> Xác thực ngay
-                        </button>
+                        <div class="form-group">
+                            <label class="form-label" for="profileGender">Giới tính</label>
+                            <select id="profileGender" class="app-select">
+                                <option value="">— Chọn giới tính —</option>
+                                <option value="male">Nam</option>
+                                <option value="female">Nữ</option>
+                            </select>
+                        </div>
                     </div>
-                </div>
-                <div class="form-row col-1">
-                    <div class="form-group">
-                        <label class="form-label" for="profileBio">Giới thiệu bản thân</label>
-                        <textarea id="profileBio" class="app-textarea" placeholder="Thích đánh giao hữu, thích gặp người mới..."></textarea>
+                    <div class="form-row col-1">
+                        <div class="form-group">
+                            <label class="form-label" for="profileTrindDo">Trình độ chơi</label>
+                            <!-- Options render động từ window.TRINH_DO_LIST (bo-may-du-lieu.js → _renderTrinhDoUI) -->
+                            <select id="profileTrindDo" class="app-select"></select>
+                        </div>
                     </div>
                 </div>
 
-                <div style="display:flex;gap:10px;margin-top:4px;">
-                    <button id="btnLuuProfile" class="btn-primary" onclick="window.luuProfile()">
-                        <i class="fa-solid fa-floppy-disk"></i> Lưu Lại
-                    </button>
+                <!-- CARD 2 — LIÊN HỆ -->
+                <div class="app-card profile-edit-card">
+                    <div class="app-card-title"><i class="fa-solid fa-address-book"></i> Liên Hệ</div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="profilePhone">Số điện thoại</label>
+                            <!-- Nút sửa = icon ✏️ trong ô (thay link "Thay đổi"); GIỮ class btn-thaydoi + onclick 'sdt'
+                                 để selector .btn-thaydoi[onclick*='sdt'] + cooldown OTP vẫn nhận đúng nút -->
+                            <div class="input-edit-wrap">
+                                <input type="tel" id="profilePhone" class="app-input" readonly placeholder="0901234567">
+                                <button type="button" class="btn-thaydoi input-edit-icon" title="Đổi số điện thoại" aria-label="Đổi số điện thoại"
+                                        onclick="window.moDoiThongTin && window.moDoiThongTin('sdt')">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                                </button>
+                            </div>
+                            <span class="form-hint">Định danh tài khoản — đổi cần xác thực OTP</span>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="profileGmail"><i class="fa-solid fa-envelope" style="color:#ea4335;"></i> Gmail</label>
+                            <div class="email-input-wrap" id="profileGmailWrap">
+                                <input type="email" id="profileGmail" class="app-input" readonly placeholder="vd: tenban">
+                                <span class="email-suffix" id="profileGmailSuffix">@gmail.com</span>
+                                <!-- Icon ✏️ thay link "Thay đổi" — GIỮ id btnThayDoiEmail + onclick 'email'; chỉ hiện khi đã xác thực (state-driven trong _renderEmailUI) -->
+                                <button type="button" id="btnThayDoiEmail" class="input-edit-icon" style="display:none;" title="Đổi Gmail" aria-label="Đổi Gmail"
+                                        onclick="window.moDoiThongTin && window.moDoiThongTin('email')">
+                                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                                </button>
+                            </div>
+                            <!-- Badge "✓ Đã xác thực" CHUYỂN xuống DƯỚI ô (trước nằm trong ô) để nhường chỗ icon ✏️ -->
+                            <span id="profileEmailBadge" class="email-badge" style="display:none;"></span>
+                            <button type="button" id="btnXacThucEmail" class="btn-xacthuc-email" style="display:none;"
+                                    onclick="window.xacThucEmailNgay && window.xacThucEmailNgay()">
+                                <span style="color:#fbbf24;">⚠</span> Xác thực ngay
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="profileZalo"><i class="fa-solid fa-comment" style="color:#00b5e2;"></i> Zalo</label>
+                            <input type="tel" id="profileZalo" class="app-input" placeholder="SĐT Zalo">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="profileFacebook"><i class="fa-brands fa-facebook" style="color:#1877f2;"></i> Facebook</label>
+                            <input type="url" id="profileFacebook" class="app-input" placeholder="https://facebook.com/...">
+                        </div>
+                    </div>
                 </div>
+
+                <!-- CARD 3 — GIỚI THIỆU BẢN THÂN -->
+                <div class="app-card profile-edit-card">
+                    <div class="app-card-title"><i class="fa-solid fa-user-pen"></i> Giới Thiệu Bản Thân</div>
+                    <div class="form-row col-1">
+                        <div class="form-group">
+                            <label class="form-label" for="profileBio">Đôi lời về bạn</label>
+                            <textarea id="profileBio" class="app-textarea" maxlength="500" placeholder="Thích đánh giao hữu, thích gặp người mới..."
+                                oninput="(document.getElementById('profileBioCount')||{}).textContent=this.value.length"></textarea>
+                            <div class="bio-charcount"><span id="profileBioCount">0</span>/500</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NÚT LƯU — full-width dưới các card -->
+                <button id="btnLuuProfile" class="btn-primary profile-save-btn" onclick="window.luuProfile()">
+                    <i class="fa-solid fa-floppy-disk"></i> Lưu Lại
+                </button>
             </div>
 
             <!-- Admin Access Card — hiện khi vai_tro='admin', ẩn mặc định -->
@@ -3551,10 +3865,10 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="ket-noi-supabase.js?v=20260620h"></script>
 <script src="bo-may-du-lieu.js?v=20260620b"></script>
 <script src="hieu-ung-giao-dien.js?v=20260612a"></script>
-<script src="phan-he-khach-choi.js?v=20260621a"></script>
-<script src="phan-he-host.js?v=20260619b"></script>
+<script src="phan-he-khach-choi.js?v=20260621c"></script>
+<script src="phan-he-host.js?v=20260621h"></script>
 <script src="phan-he-thong-bao.js?v=20260620b"></script>
-<script src="phan-he-ung-dung.js?v=20260620f"></script>
+<script src="phan-he-ung-dung.js?v=20260621a"></script>
 <script src="phan-he-gop-y.js?v=20260620c"></script>
 
 <!-- xoaBoLoc dùng bản đầy đủ trong phan-he-khach-choi.js (reset cả pills + lịch + nhãn giá).
@@ -3778,10 +4092,128 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 /* ── 3 CARD TÀI CHÍNH CHI TIẾT CA ĐẤU: responsive mobile ── */
 @media (max-width: 768px) {
     .cd-finance-grid { grid-template-columns: 1fr !important; }
-    /* Bảng DS Khách: đủ chỗ cho 10 cột, scroll ngang */
-    #modal-guest-list-table { min-width: 1100px !important; }
-    /* Modal Chi Tiết Ca Đấu: cuộn ngang cho bảng bên trong */
-    #modal-ca-detail-body .cd-table-scroll { min-width: 560px; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ISSUE 4 — MODAL "CHI TIẾT CA ĐẤU" (#modal-ca-detail): 2 bảng nội bộ
+   (Cầu tiêu thụ .cd-cau-table min-width:380px + Khách .cd-guest-table
+   min-width:560px) → CARD trên mobile (≤767px) → HẾT cuộn ngang. CÙNG
+   pattern DS Khách. Override inline min-width + overflow-x:auto + _tdStyle.
+   Desktop (≥768px) GIỮ NGUYÊN. Màu: PALETTE host.
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+    #modal-ca-detail-body .cd-tablewrap {
+        overflow-x: visible !important; border: none !important; border-radius: 0 !important;
+    }
+    #modal-ca-detail-body .cd-mtable {
+        display: block !important; min-width: 0 !important; width: 100% !important;
+        border-collapse: collapse;
+    }
+    #modal-ca-detail-body .cd-mtable thead { display: none !important; }
+    #modal-ca-detail-body .cd-mtable tbody { display: block !important; }
+    #modal-ca-detail-body .cd-mtable tbody tr {
+        display: flex !important; flex-direction: column; position: relative;
+        background: #1a2844 !important;        /* palette host: card */
+        border: 1px solid #1e3a5f !important;  /* palette host: border */
+        border-radius: 12px;
+        padding: 12px 12px 10px !important; margin-bottom: 10px;
+    }
+    #modal-ca-detail-body .cd-mtable tbody td {
+        display: flex !important; align-items: baseline; gap: 8px;
+        width: auto !important; min-width: 0 !important; max-width: none !important;
+        border: none !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+        padding: 6px 0 !important; text-align: left !important;
+        white-space: normal !important; overflow: visible !important; text-overflow: clip !important;
+        font-size: 0.82rem !important;
+    }
+    #modal-ca-detail-body .cd-mtable tbody td:last-child { border-bottom: none !important; }
+    #modal-ca-detail-body .cd-mtable tbody td[data-label]::before {
+        content: attr(data-label); flex: 0 0 92px;
+        color: #94a3b8; font-weight: 700; font-size: 0.66rem;
+        text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.6;
+    }
+    /* DÒNG 1 — tiêu đề card (Loại cầu / Tên khách) */
+    #modal-ca-detail-body .cd-mtable tbody td.tdm-title {
+        order: -1; display: block !important;
+        padding: 0 0 8px 0 !important; margin-bottom: 6px;
+        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+        font-size: 0.95rem !important; font-weight: 700 !important; color: #e2e8f0 !important;
+    }
+    #modal-ca-detail-body .cd-mtable tbody td.tdm-title::before { content: none !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════
+   ISSUE 2 — DS KHÁCH: BẢNG (10 cột) → CARD MINI-LIST trên mobile (≤767px).
+   Mỗi <tr> = 1 card; Tên khách = tiêu đề; checkbox góc phải; mỗi field =
+   "NHÃN: giá trị"; dropdown Trạng Thái + nút giữ nguyên (onclick không đổi).
+   Override các rule bảng cũ (min-width:1100px, table-layout:fixed, nowrap,
+   nth-child min-width). Desktop (≥768px) GIỮ NGUYÊN. Màu: PALETTE host.
+   ════════════════════════════════════════════════════════════════ */
+@media (max-width: 767px) {
+    #modal-guest-list-scroll { overflow-x: hidden !important; padding: 10px !important; }
+    #modal-guest-list-table {
+        display: block !important; min-width: 0 !important; width: 100% !important;
+        table-layout: auto !important;
+    }
+    #modal-guest-list-table thead { display: none !important; }
+    #modal-guest-list-table tbody { display: block !important; }
+
+    /* mỗi <tr> = 1 card */
+    #modal-guest-list-table tbody tr {
+        display: flex !important; flex-direction: column;
+        position: relative;
+        background: #1a2844 !important;        /* palette host: card */
+        border: 1px solid #1e3a5f !important;  /* palette host: border */
+        border-radius: 12px;
+        padding: 12px 12px 10px !important;
+        margin-bottom: 12px;
+    }
+
+    /* ô = "NHÃN: giá trị" */
+    #modal-guest-list-table tbody td {
+        display: flex !important; align-items: baseline; gap: 8px;
+        width: auto !important; min-width: 0 !important; max-width: none !important;
+        border: none !important; border-bottom: 1px solid rgba(255,255,255,0.05) !important;
+        padding: 6px 0 !important;
+        text-align: left !important;
+        white-space: normal !important; overflow: visible !important; text-overflow: clip !important;
+    }
+    #modal-guest-list-table tbody td:last-child { border-bottom: none !important; }
+    #modal-guest-list-table tbody td[data-label]::before {
+        content: attr(data-label); flex: 0 0 86px;
+        color: #94a3b8; font-weight: 700; font-size: 0.68rem;
+        text-transform: uppercase; letter-spacing: 0.03em; line-height: 1.5;
+    }
+
+    /* DÒNG 1 — Tên khách (+ mã slot, nút Nhắn) = tiêu đề card */
+    #modal-guest-list-table tbody td.tdm-title {
+        order: -3; display: block !important;
+        padding: 0 38px 8px 0 !important; margin-bottom: 6px;
+        border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    }
+    #modal-guest-list-table tbody td.tdm-title::before { content: none !important; }
+    #modal-guest-list-table tbody td.tdm-title .gl-ten-khach {
+        font-size: 0.95rem !important; max-width: 100% !important;
+        white-space: normal !important; text-align: left !important;
+    }
+
+    /* Checkbox bulk-select → góc trên-phải card */
+    #modal-guest-list-table tbody td.tdm-check {
+        position: absolute !important; top: 10px; right: 10px; z-index: 2;
+        padding: 0 !important; border-bottom: none !important; width: auto !important;
+        display: block !important;
+    }
+    #modal-guest-list-table tbody td.tdm-check::before { content: none !important; }
+
+    /* Cột Trạng Thái (dropdown) + Đánh Giá + Thanh Toán: giữ tương tác, label trái */
+    #modal-guest-list-table tbody td.td-cdd { overflow: visible !important; }
+    #modal-guest-list-table tbody td.td-cdd .gl-tt-wrap { justify-content: flex-start; flex-wrap: wrap; }
+    /* reset khóa cứng cột 9/10 (global) trong card */
+    #modal-guest-list-table tbody td:nth-child(9),
+    #modal-guest-list-table tbody td:nth-child(10) { min-width: 0 !important; display: flex !important; }
+
+    /* Ẩn "Hủy lúc: --" khi khách CHƯA hủy (đỡ rối card) */
+    #modal-guest-list-table tbody td.gl-td-huy-empty { display: none !important; }
 }
 </style>
 <div id="modal-guest-list" style="display:none;position:fixed;inset:0;z-index:1200;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(4px);"

@@ -1547,9 +1547,9 @@
             const giaNam = slot.gia_nam || 0;
             const giaNu  = slot.gia_nu  || 0;
             const giaHtml = `<div class="price-container">${
-                giaNam > 0 ? `<div class="price-row"><span class="price-label">Nam:</span><span class="price-value" style="color:#00ff88;">${_formatVND(giaNam)}</span></div>` : ""
+                giaNam > 0 ? `<div class="price-row price-row--nam"><span class="price-label">Nam:</span><span class="price-value" style="color:#00ff88;">${_formatVND(giaNam)}</span></div>` : ""
             }${
-                giaNu  > 0 ? `<div class="price-row"><span class="price-label">Nữ:</span><span class="price-value" style="color:#f472b6;">${_formatVND(giaNu)}</span></div>`  : ""
+                giaNu  > 0 ? `<div class="price-row price-row--nu"><span class="price-label">Nữ:</span><span class="price-value" style="color:#f472b6;">${_formatVND(giaNu)}</span></div>`  : ""
             }${
                 giaNam === 0 && giaNu === 0 ? `<span style="color:#64748b;font-size:0.75rem;">--</span>` : ""
             }</div>`;
@@ -1593,25 +1593,27 @@
             tr.style.background = rowBg;
             tr.dataset.status = st;
             tr.innerHTML = `
-                <td style="padding:8px 6px;text-align:center;${tdB}font-size:0.78rem;color:#64748b;">${globalIdx}</td>
-                <td style="padding:8px 10px;text-align:center;${tdB}">${ngayGioHtml}</td>
-                <td style="padding:8px 10px;text-align:left;${tdB}">
+                <td class="tdm-hide" style="padding:8px 6px;text-align:center;${tdB}font-size:0.78rem;color:#64748b;">${globalIdx}</td>
+                <td data-label="Thời gian" style="padding:8px 10px;text-align:center;${tdB}">${ngayGioHtml}</td>
+                <td class="tdm-title" style="padding:8px 10px;text-align:left;${tdB}">
                     <div style="font-weight:600;font-size:0.82rem;color:#e2e8f0;">${slot.ten_san || "--"}</div>
                     <div style="font-size:0.75rem;color:#94a3b8;margin-top:1px;">${slot.quan_huyen || ""}${slot.tinh_thanh ? ", " + slot.tinh_thanh : ""}</div>
-                    <div style="font-size:0.75rem;color:#7dd3fc;margin-top:2px;">${_hienThiGioiTinh(slot.gioi_tinh_can)} · ${_hienThiTrinhDo(slot)}</div>
+                    ${_trinhDoCardHTML(slot)}
                 </td>
-                <td style="padding:8px 8px;text-align:center;${tdB}">
-                    <div style="font-size:0.82rem;font-weight:700;color:#60a5fa;">${tongKhach}${slot.tong_slot_can > 0 ? `<span style='color:#64748b;font-weight:400;'>/${slot.tong_slot_can}</span>` : ""}</div>
-                    <div style="font-size:0.72rem;color:#94a3b8;margin-bottom:4px;">${daDen} tham gia</div>
+                <td data-label="Slot" style="padding:8px 8px;text-align:center;${tdB}">
+                    <div class="cdd-slotinfo">
+                        <div class="cdd-slot-count" style="font-size:0.82rem;font-weight:700;color:#60a5fa;">${tongKhach}${slot.tong_slot_can > 0 ? `<span style='color:#64748b;font-weight:400;'>/${slot.tong_slot_can}</span>` : ""}</div>
+                        <div class="cdd-slot-join" style="font-size:0.72rem;color:#94a3b8;margin-bottom:4px;">${daDen} tham gia</div>
+                    </div>
                     <button class="btn-mini btn-mini-cyan"
                         style="width:100%;justify-content:center;font-size:0.72rem;padding:4px 6px;"
                         onclick="window.openGuestListModal('${slot.id}','${tenSanEsc}')">
                         <i class="fa-solid fa-users"></i> DS Khách
                     </button>
                 </td>
-                <td style="padding:8px 10px;text-align:left;${tdB}">${giaHtml}</td>
-                <td style="padding:8px 8px;text-align:center;${tdB}">${statusBadge}</td>
-                <td style="padding:6px 8px;text-align:center;">
+                <td data-label="Giá" style="padding:8px 10px;text-align:left;${tdB}">${giaHtml}</td>
+                <td data-label="Trạng thái" style="padding:8px 8px;text-align:center;${tdB}">${statusBadge}</td>
+                <td class="tdm-actions" style="padding:6px 8px;text-align:center;">
                     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:5px;">
                         ${!daChot ? `
                         <button class="btn-mini btn-mini-gold"
@@ -2923,12 +2925,14 @@
                 const bg = idx % 2 === 0 ? rowBgEven : rowBgOdd;
                 // table-layout:fixed — clip text ở td thường; td dropdown KHÔNG clip (overflow:visible)
                 const _tdBase = "padding:7px 8px;border-bottom:1px solid rgba(30,58,95,0.4);border-right:1px solid rgba(255,255,255,0.04);overflow:hidden;";
-                const td = (content, extra="") => `<td style="${_tdBase}${extra}">${content}</td>`;
-                const tdLast = (content, extra="") =>
-                    `<td style="padding:7px 8px;border-bottom:1px solid rgba(30,58,95,0.4);overflow:hidden;${extra}">${content}</td>`;
+                // label = data-label cho card mobile; cls = class (tdm-check/tdm-title)
+                const _attrs = (label, cls) => `${cls ? `class="${cls}" ` : ""}${label ? `data-label="${label}" ` : ""}`;
+                const td = (content, extra="", label="", cls="") => `<td ${_attrs(label, cls)}style="${_tdBase}${extra}">${content}</td>`;
+                const tdLast = (content, extra="", label="", cls="") =>
+                    `<td ${_attrs(label, cls)}style="padding:7px 8px;border-bottom:1px solid rgba(30,58,95,0.4);overflow:hidden;${extra}">${content}</td>`;
                 // td dành cho cột dropdown — class td-cdd + overflow:visible để menu thoát ra ngoài
                 const tdDd = (content) =>
-                    `<td class="td-cdd" style="padding:7px 8px;border-bottom:1px solid rgba(30,58,95,0.4);border-right:1px solid rgba(255,255,255,0.04);">${content}</td>`;
+                    `<td class="td-cdd" data-label="Trạng thái" style="padding:7px 8px;border-bottom:1px solid rgba(30,58,95,0.4);border-right:1px solid rgba(255,255,255,0.04);">${content}</td>`;
 
                 const trinhDo = userMap.get(g.sdt_khach)?.trinh_do || "--";
                 const trinhDoHtml = trinhDo !== "--"
@@ -2962,7 +2966,7 @@
                 return `<tr data-guest-idx="${idx}" data-uid="cdd-${g.id}" data-ma-slot="${maSlotRow.toLowerCase()}" style="background:${bg};transition:background 0.12s;"
                             onmouseover="this.style.background='rgba(30,58,95,0.5)'"
                             onmouseout="this.style.background='${bg}'">
-                    ${td(cbHTML, "text-align:center;")}
+                    ${td(cbHTML, "text-align:center;", "", "tdm-check")}
                     ${td(`${g.sdt_khach
                             ? `<button class="gl-ten-khach" onclick="window.xemHoSoKhach('${sdtKhachEsc}','${tenKhachEsc}','${matchId}')"
                                   onmouseover="this.style.textDecoration='underline'"
@@ -2971,16 +2975,16 @@
                             ${g.ten_khach || "—"}
                         </button>`
                             : `<span class="gl-ten-khach" style="color:#e2e8f0;font-weight:600;font-size:0.81rem;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;display:inline-block;">${g.ten_khach || "—"}</span>`
-                        }${datRiengBadge}${maSlotHTML}`, "text-align:center;")}
-                    ${td(`<span style="color:#94a3b8;font-family:monospace;font-size:0.76rem;white-space:nowrap;">${g.sdt_khach || "—"}</span>`, "text-align:center;")}
-                    ${td(`<span style="color:${genderClr};font-weight:600;font-size:0.8rem;">${gioiTinh}</span>`, "text-align:center;")}
-                    ${td(trinhDoHtml, "text-align:center;")}
-                    ${td(`<span style="color:#94a3b8;font-size:0.73rem;white-space:nowrap;">${_formatTS(g.thoi_gian_dat || g.created_at)}</span>`, "text-align:center;")}
-                    ${td(`<span style="color:${tgHuyClr};font-size:0.73rem;white-space:nowrap;">${tgHuy}</span>`, "text-align:center;")}
-                    ${td(ttCellHTML, "text-align:center;")}
+                        }${datRiengBadge}${maSlotHTML}`, "text-align:center;", "", "tdm-title")}
+                    ${td(`<span style="color:#94a3b8;font-family:monospace;font-size:0.76rem;white-space:nowrap;">${g.sdt_khach || "—"}</span>`, "text-align:center;", "SĐT")}
+                    ${td(`<span style="color:${genderClr};font-weight:600;font-size:0.8rem;">${gioiTinh}</span>`, "text-align:center;", "Giới tính")}
+                    ${td(trinhDoHtml, "text-align:center;", "Trình độ")}
+                    ${td(`<span style="color:#94a3b8;font-size:0.73rem;white-space:nowrap;">${_formatTS(g.thoi_gian_dat || g.created_at)}</span>`, "text-align:center;", "Đặt lúc")}
+                    ${td(`<span style="color:${tgHuyClr};font-size:0.73rem;white-space:nowrap;">${tgHuy}</span>`, "text-align:center;", "Hủy lúc", isHuy ? "" : "gl-td-huy-empty")}
+                    ${td(ttCellHTML, "text-align:center;", "Thanh toán")}
                     ${tdDd(selectHTML)}
-                    ${yeuCauCoc ? td(ratingCellHTML, "text-align:center;") : tdLast(ratingCellHTML, "text-align:center;")}
-                    ${yeuCauCoc ? tdLast(_cocBadgeHTML(g.id, !isHuy), "text-align:center;") : ""}
+                    ${yeuCauCoc ? td(ratingCellHTML, "text-align:center;", "Đánh giá") : tdLast(ratingCellHTML, "text-align:center;", "Đánh giá")}
+                    ${yeuCauCoc ? tdLast(_cocBadgeHTML(g.id, !isHuy), "text-align:center;", "Cọc") : ""}
                 </tr>`;
             }).join("");
 
@@ -4148,13 +4152,22 @@ Bạn xác nhận giúp mình sẽ tham gia đúng giờ nhé để mình giữ 
         return '<span style="color:#00ff88"><i class="fa-solid fa-venus-mars"></i> Cả hai</span>';
     }
 
-    function _hienThiTrinhDo(slot) {
+    /* Trình độ + giới tính cho CARD Ca Đã Đăng — markup có cấu trúc:
+     * Desktop = 1 dòng gọn (giống cũ); Mobile = 2 section Nam(xanh)/Nữ(hồng) tách màu.
+     * Màu: #38bdf8 (nam) / #f472b6 (nữ) — đúng màu giới tính sẵn dùng (_hienThiGioiTinh). */
+    function _trinhDoCardHTML(slot) {
         const td = slot.yeu_cau_trinh_do || {};
-        const ml = (td.nam || []).join(", ");
-        const fl = (td.nu  || []).join(", ");
-        if (slot.gioi_tinh_can === "Cả hai") return `Nam: ${ml || "--"} | Nữ: ${fl || "--"}`;
-        if (slot.gioi_tinh_can === "Nữ") return fl || "--";
-        return ml || "--";
+        const ml = (td.nam || []).join(", ") || "--";
+        const fl = (td.nu  || []).join(", ") || "--";
+        const g  = slot.gioi_tinh_can;
+        const showNam = g !== "Nữ";
+        const showNu  = g !== "Nam";
+        const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        return `<div class="cdd-lvlwrap">`
+            + `<span class="cdd-gt">${_hienThiGioiTinh(g)}</span>`
+            + (showNam ? `<span class="cdd-lvlsec cdd-lvlsec-nam"><b>Nam:</b> ${esc(ml)}</span>` : "")
+            + (showNu  ? `<span class="cdd-lvlsec cdd-lvlsec-nu"><b>Nữ:</b> ${esc(fl)}</span>`  : "")
+            + `</div>`;
     }
 
     /* ═══════════════════════════════════════════════════
@@ -4396,31 +4409,31 @@ Bạn xác nhận giúp mình sẽ tham gia đúng giờ nhé để mình giữ 
                     const chiCau      = _formatVND(c.tong_chi_phi_cau    || 0);
                     const chiNuoc     = _formatVND(c.chi_phi_nuoc_khac   || 0);
                     return `<tr>
-                    <td class="ta-c" style="white-space:nowrap;">
+                    <td class="ta-c" data-label="Ngày" style="white-space:nowrap;">
                         <div style="font-weight:600;font-size:0.85rem;">${_formatDate(c.ngay_danh)}</div>
                         <div style="font-size:0.72rem;color:#94a3b8;">${c.gio_bat_dau||""} – ${c.gio_ket_thuc||""}</div>
                     </td>
-                    <td class="ta-l">
+                    <td class="ta-l tdm-title">
                         <div style="font-weight:600;font-size:0.82rem;">${c.ten_san || "--"}</div>
                         <div style="font-size:0.7rem;color:#64748b;">${c.quan_huyen||""}, ${c.tinh_thanh||""}</div>
                     </td>
-                    <td class="ta-c">
+                    <td class="ta-c" data-label="Khách">
                         <span style="font-size:1.1rem;font-weight:700;color:#60a5fa;">${c.soKhach}</span>
                         <span style="font-size:0.72rem;color:#64748b;"> người</span>
                     </td>
-                    <td class="ta-r dt-hide-sm" style="white-space:nowrap;">
+                    <td class="ta-r dt-hide-sm" data-label="Tổng chi" style="white-space:nowrap;">
                         <div style="font-size:0.85rem;font-weight:700;color:#e2e8f0;">${_formatVND(c.tongChi || 0)}</div>
                         <div style="font-size:0.68rem;color:#64748b;margin-top:3px;line-height:1.65;">
                             🏟 Sân: ${chiSan}<br>🏸 Cầu: ${chiCau}<br>💧 Khác: ${chiNuoc}
                         </div>
                     </td>
-                    <td class="ta-r">
+                    <td class="ta-r" data-label="Tổng thu">
                         <span style="font-size:0.9rem;font-weight:700;color:#f59e0b;">${_formatVND(c.tongThu || 0)}</span>
                     </td>
-                    <td class="ta-r">
+                    <td class="ta-r" data-label="Lời / Lỗ">
                         <span style="font-size:1rem;font-weight:700;color:${loiLoColor};">${loiLoPrefix}${loiLoAbs}</span>
                     </td>
-                    <td class="ta-c">
+                    <td class="ta-c tdm-actions">
                         <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
                             <button class="btn-mini btn-mini-cyan" onclick="window.xemChiTietCaDau('${c.id}')" title="Xem chi tiết ca đấu">
                                 <i class="fa-solid fa-eye"></i> Chi tiết
@@ -4513,7 +4526,7 @@ Bạn xác nhận giúp mình sẽ tham gia đúng giờ nhé để mình giữ 
             const _tdStyle = "padding:9px 10px;font-size:0.8rem;color:#e2e8f0;border-bottom:1px solid rgba(30,58,95,0.5);white-space:nowrap;";
             const cauHTML  = cauList.length === 0
                 ? `<div style="color:#64748b;text-align:center;padding:14px;border:1px dashed rgba(30,58,95,0.8);border-radius:8px;font-size:0.82rem;">Không có dữ liệu cầu.</div>`
-                : `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid #1e3a5f;"><table style="width:100%;min-width:380px;font-size:0.8rem;border-collapse:collapse;">
+                : `<div class="cd-tablewrap cd-cau-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid #1e3a5f;"><table class="cd-mtable cd-cau-table" style="width:100%;min-width:380px;font-size:0.8rem;border-collapse:collapse;">
                     <thead><tr>
                         <th style="${_thStyle}">Loại cầu</th>
                         <th style="${_thStyle}">Quy cách</th>
@@ -4522,18 +4535,18 @@ Bạn xác nhận giúp mình sẽ tham gia đúng giờ nhé để mình giữ 
                         <th style="${_thStyle}text-align:right;">Thành tiền</th>
                     </tr></thead>
                     <tbody>${cauList.map(cb => `<tr style="transition:background .15s;" onmouseover="this.style.background='rgba(30,58,95,0.4)'" onmouseout="this.style.background=''">
-                        <td style="${_tdStyle}font-weight:600;">${cb.ten || "--"}</td>
-                        <td style="${_tdStyle}color:#94a3b8;">${cb.don_vi || cb.quy_cach || "--"}</td>
-                        <td style="${_tdStyle}text-align:right;color:#94a3b8;">${_formatVND(cb.gia_qua || 0)}</td>
-                        <td style="${_tdStyle}text-align:right;">${cb.so_luong || 0} quả</td>
-                        <td style="${_tdStyle}text-align:right;color:#f59e0b;font-weight:600;">${_formatVND(cb.thanh_tien || 0)}</td>
+                        <td class="tdm-title" style="${_tdStyle}font-weight:600;" data-label="Loại cầu">${cb.ten || "--"}</td>
+                        <td style="${_tdStyle}color:#94a3b8;" data-label="Quy cách">${cb.don_vi || cb.quy_cach || "--"}</td>
+                        <td style="${_tdStyle}text-align:right;color:#94a3b8;" data-label="Giá/quả">${_formatVND(cb.gia_qua || 0)}</td>
+                        <td style="${_tdStyle}text-align:right;" data-label="Số lượng">${cb.so_luong || 0} quả</td>
+                        <td style="${_tdStyle}text-align:right;color:#f59e0b;font-weight:600;" data-label="Thành tiền">${_formatVND(cb.thanh_tien || 0)}</td>
                     </tr>`).join("")}</tbody>
                 </table></div>`;
 
             // Bảng khách — thêm cột Thanh Toán, logic Tiền theo da_thanh_toan
             const guestHTML = slots.length === 0
                 ? `<div style="color:#64748b;text-align:center;padding:14px;border:1px dashed rgba(30,58,95,0.8);border-radius:8px;font-size:0.82rem;">Không có khách đăng ký.</div>`
-                : `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid #1e3a5f;"><table style="width:100%;min-width:560px;font-size:0.8rem;border-collapse:collapse;">
+                : `<div class="cd-tablewrap cd-guest-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px;border:1px solid #1e3a5f;"><table class="cd-mtable cd-guest-table" style="width:100%;min-width:560px;font-size:0.8rem;border-collapse:collapse;">
                     <thead><tr>
                         <th style="${_thStyle}">Tên khách</th>
                         <th style="${_thStyle}">SĐT</th>
@@ -4578,12 +4591,12 @@ Bạn xác nhận giúp mình sẽ tham gia đúng giờ nhé để mình giữ 
                             tienText = `<span style="color:#fb923c;font-weight:600;">${_formatVND(s.tien_thu_bung)}</span>`;
                         }
                         return `<tr style="transition:background .15s;" onmouseover="this.style.background='rgba(30,58,95,0.35)'" onmouseout="this.style.background=''">
-                            <td style="${_tdStyle}font-weight:600;">${s.ten_khach || "—"}</td>
-                            <td style="${_tdStyle}font-family:monospace;font-size:0.75rem;color:#64748b;">${s.sdt_khach || "—"}</td>
-                            <td style="${_tdStyle}text-align:center;"><span style="background:${gtBg};color:${gtClr};padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:600;">${gt}</span></td>
-                            <td style="${_tdStyle}text-align:center;"><span style="background:${ttBg};color:${ttClr};border:1px solid ${ttBd};padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:600;">${tt}</span></td>
-                            <td style="${_tdStyle}text-align:center;">${ttBadge}</td>
-                            <td style="${_tdStyle}text-align:right;">${tienText}</td>
+                            <td class="tdm-title" style="${_tdStyle}font-weight:600;" data-label="Tên khách">${s.ten_khach || "—"}</td>
+                            <td style="${_tdStyle}font-family:monospace;font-size:0.75rem;color:#64748b;" data-label="SĐT">${s.sdt_khach || "—"}</td>
+                            <td style="${_tdStyle}text-align:center;" data-label="Giới tính"><span style="background:${gtBg};color:${gtClr};padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:600;">${gt}</span></td>
+                            <td style="${_tdStyle}text-align:center;" data-label="Trạng thái"><span style="background:${ttBg};color:${ttClr};border:1px solid ${ttBd};padding:2px 8px;border-radius:12px;font-size:0.72rem;font-weight:600;">${tt}</span></td>
+                            <td style="${_tdStyle}text-align:center;" data-label="Thanh toán">${ttBadge}</td>
+                            <td style="${_tdStyle}text-align:right;" data-label="Tiền">${tienText}</td>
                         </tr>`;
                     }).join("")}</tbody>
                 </table></div>`;
