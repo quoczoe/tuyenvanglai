@@ -38,7 +38,6 @@
     // Cặp ID đồng bộ PC sidebar ↔ Mobile drawer (giới tính + trình độ dùng pills riêng)
     const _FILTER_PAIRS = [
         ["filterProvince",  "filterProvinceMobile"],
-        ["filterDistrict",  "filterDistrictMobile"],
         ["filterDate",      "filterDateMobile"],
         ["filterMaxPrice",  "filterMaxPriceMobile"],
         ["filterTimeFrom",  "filterTimeFromMobile"],
@@ -140,6 +139,7 @@
         }
         _napDropdownBoLoc();
         _napDropdownDrawer();
+        _khoiTaoMultiSelectQuan();
         window.timKiemCaDau();
         _initStarGuest();
     };
@@ -2241,13 +2241,161 @@
         });
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // CUSTOM MULTI-SELECT QUẬN/HUYỆN (premium) — thay <select> đơn-giá-trị.
+    // SSOT lọc = _quanDaChon (mảng tên quận). 2 instance PC + mobile dùng chung.
+    // ════════════════════════════════════════════════════════════════════
+    let _quanDaChon = [];
+    let _msQuanPC = null, _msQuanMobile = null;
+
+    function _escQuan(s){ const d = document.createElement("div"); d.textContent = (s == null) ? "" : String(s); return d.innerHTML; }
+    function _boDauQuan(s){ return (s || "").toString().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/gi, "d").toLowerCase().trim(); }
+    function _districtsCuaTinh(provName){
+        const p = _TK_TINH_THANH.find(x => x.name === provName);
+        return p ? p.districts.slice() : [];
+    }
+
+    // Factory: dựng 1 multi-select vào rootEl. opts.onChange(arr) gọi mỗi lần đổi.
+    function _taoMultiSelectQuan(rootEl, opts){
+        if (!rootEl) return null;
+        const onChange = (opts && opts.onChange) || function(){};
+        const selected = new Set();
+        let data = [];
+        rootEl.classList.add("msq");
+        rootEl.innerHTML =
+            '<button type="button" class="msq-trigger" aria-haspopup="listbox" aria-expanded="false">' +
+                '<span class="msq-trigger-content"></span>' +
+                '<i class="fa-solid fa-chevron-down msq-caret"></i>' +
+            '</button>' +
+            '<div class="msq-panel" hidden>' +
+                '<div class="msq-search-wrap"><i class="fa-solid fa-magnifying-glass"></i>' +
+                    '<input type="text" class="msq-search" placeholder="Tìm quận/huyện..." autocomplete="off"></div>' +
+                '<button type="button" class="msq-all"></button>' +
+                '<div class="msq-list" role="listbox"></div>' +
+                '<div class="msq-empty" hidden>Không tìm thấy quận/huyện</div>' +
+            '</div>';
+        const elContent = rootEl.querySelector(".msq-trigger-content");
+        const elTrigger = rootEl.querySelector(".msq-trigger");
+        const elPanel   = rootEl.querySelector(".msq-panel");
+        const elSearch  = rootEl.querySelector(".msq-search");
+        const elAll     = rootEl.querySelector(".msq-all");
+        const elList    = rootEl.querySelector(".msq-list");
+        const elEmpty   = rootEl.querySelector(".msq-empty");
+
+        function _renderTrigger(){
+            const arr = Array.from(selected);
+            if (arr.length === 0){
+                elContent.innerHTML = '<span class="msq-placeholder">-- Tất cả Quận/Huyện --</span>';
+            } else if (arr.length <= 3){
+                elContent.innerHTML = arr.map(q =>
+                    '<span class="msq-tag">' + _escQuan(q) +
+                    '<i class="fa-solid fa-xmark msq-tag-x" data-q="' + _escQuan(q) + '"></i></span>'
+                ).join("");
+            } else {
+                elContent.innerHTML = '<span class="msq-count">Đã chọn (' + arr.length + ') quận</span>';
+            }
+        }
+        function _renderAllBtn(){
+            const allOn = data.length > 0 && selected.size === data.length;
+            elAll.textContent = allOn ? "Bỏ chọn tất cả" : "Chọn tất cả";
+            elAll.classList.toggle("is-all", allOn);
+        }
+        function _renderList(){
+            const q = _boDauQuan(elSearch.value);
+            let shown = 0;
+            elList.innerHTML = data.map(d => {
+                const match = !q || _boDauQuan(d).startsWith(q);
+                if (match) shown++;
+                return '<label class="msq-opt"' + (match ? "" : ' style="display:none"') + '>' +
+                    '<input type="checkbox" value="' + _escQuan(d) + '"' + (selected.has(d) ? " checked" : "") + '>' +
+                    '<span>' + _escQuan(d) + '</span></label>';
+            }).join("");
+            elEmpty.hidden = shown !== 0;
+            _renderAllBtn();
+        }
+        function _fire(){ _renderTrigger(); onChange(Array.from(selected)); }
+
+        elTrigger.addEventListener("click", (e) => { e.stopPropagation(); elPanel.hidden ? _open() : _close(); });
+        elSearch.addEventListener("input", _renderList);
+        elList.addEventListener("change", (e) => {
+            const cb = e.target.closest("input[type=checkbox]"); if (!cb) return;
+            if (cb.checked) selected.add(cb.value); else selected.delete(cb.value);
+            _renderAllBtn(); _fire();
+        });
+        elAll.addEventListener("click", () => {
+            const allOn = data.length > 0 && selected.size === data.length;
+            if (allOn) selected.clear(); else data.forEach(d => selected.add(d));
+            _renderList(); _fire();
+        });
+        elContent.addEventListener("click", (e) => {
+            const x = e.target.closest(".msq-tag-x"); if (!x) return;
+            e.stopPropagation();
+            selected.delete(x.dataset.q);
+            if (!elPanel.hidden) _renderList();
+            _fire();
+        });
+
+        function _open(){
+            elPanel.hidden = false; elTrigger.setAttribute("aria-expanded", "true");
+            rootEl.classList.add("is-open");
+            _renderList(); setTimeout(() => elSearch.focus(), 30);
+            document.addEventListener("click", _outside, true);
+        }
+        function _close(){
+            elPanel.hidden = true; elTrigger.setAttribute("aria-expanded", "false");
+            rootEl.classList.remove("is-open");
+            document.removeEventListener("click", _outside, true);
+        }
+        function _outside(e){ if (!rootEl.contains(e.target)) _close(); }
+
+        _renderTrigger();
+        return {
+            updateDataSource(districts){
+                data = (districts || []).slice();
+                selected.clear(); elSearch.value = "";
+                _renderList(); _renderTrigger();
+            },
+            setSelected(arr){   // KHÔNG fire onChange (tránh vòng lặp)
+                selected.clear();
+                (arr || []).forEach(v => { if (data.includes(v)) selected.add(v); });
+                _renderList(); _renderTrigger();
+            },
+            getSelected(){ return Array.from(selected); },
+            close: _close
+        };
+    }
+
+    // Đổi nguồn quận theo tỉnh cho CẢ 2 instance + reset lựa chọn.
+    function _doiNguonQuan(provName){
+        const ds = _districtsCuaTinh(provName);
+        _quanDaChon = [];
+        _msQuanPC && _msQuanPC.updateDataSource(ds);
+        _msQuanMobile && _msQuanMobile.updateDataSource(ds);
+    }
+
+    // onChange chung: chỉ cập nhật SSOT + lọc lại ngay. KHÔNG đồng bộ chéo ở đây
+    // (PC/mobile không bao giờ hiện cùng lúc; đồng bộ tại moBoLocDrawer/xacNhanBoLocDrawer).
+    // Tránh gọi setSelected → re-render list giữa chuỗi tick làm rớt node checkbox.
+    function _quanOnChange(arr){
+        _quanDaChon = (arr || []).slice();
+        window.timKiemCaDau && window.timKiemCaDau();
+    }
+
+    function _khoiTaoMultiSelectQuan(){
+        const pc = document.getElementById("msQuanPC");
+        const mo = document.getElementById("msQuanMobile");
+        if (pc && !_msQuanPC) _msQuanPC = _taoMultiSelectQuan(pc, { onChange: _quanOnChange });
+        if (mo && !_msQuanMobile) _msQuanMobile = _taoMultiSelectQuan(mo, { onChange: _quanOnChange });
+    }
+    window._khoiTaoMultiSelectQuan = _khoiTaoMultiSelectQuan;
+
     window.capNhatQuanHuyenLoc = function () {
         _capNhatHuyenBoLoc(document.getElementById("filterProvince")?.value, "filterDistrict");
     };
 
     // Dùng cho onchange của Province select trong mobile drawer
     window._capNhatHuyenDrawer = function (provName) {
-        _capNhatHuyenBoLoc(provName, "filterDistrictMobile");
+        _doiNguonQuan(provName || "");
     };
 
     // Populate tỉnh thành vào drawer mobile (gọi sau khi DOM ready)
@@ -2293,13 +2441,11 @@
         // Sync label giá mobile
         window._capNhatNhanGiaMobile && window._capNhatNhanGiaMobile();
 
-        // Cập nhật dropdown huyện trong drawer
-        const provM = document.getElementById("filterProvinceMobile")?.value;
-        _capNhatHuyenBoLoc(provM || "", "filterDistrictMobile");
-        if (provM) {
-            const curDist = document.getElementById("filterDistrict")?.value;
-            const distM = document.getElementById("filterDistrictMobile");
-            if (distM && curDist) distM.value = curDist;
+        // Đồng bộ multi-select Quận/Huyện cho drawer: nguồn theo tỉnh hiện tại + lựa chọn SSOT.
+        const provM = document.getElementById("filterProvinceMobile")?.value || "";
+        if (_msQuanMobile) {
+            _msQuanMobile.updateDataSource(_districtsCuaTinh(provM)); // updateDataSource đã reset
+            _msQuanMobile.setSelected(_quanDaChon);                  // khôi phục lựa chọn đang áp
         }
         // Áp ràng buộc Đến>Từ cho select giờ mobile theo giá trị vừa pre-fill
         window._capNhatDisableKhungGio();
@@ -2328,15 +2474,17 @@
         // → "lọc sai/không hoạt động" trên mobile. Phải: set tỉnh → POPULATE options quận
         // theo tỉnh → MỚI gán value quận. Đồng bộ luôn pills tỉnh PC (single-select) cho khớp.
         const _provVal = document.getElementById("filterProvinceMobile")?.value || "";
-        const _distVal = document.getElementById("filterDistrictMobile")?.value || "";
         const _provInp = document.getElementById("filterProvince");
         if (_provInp) _provInp.value = _provVal;
         document.querySelectorAll("#filterProvincePills .tk-province-btn").forEach(b => {
             b.classList.toggle("active", b.dataset.value === _provVal);
         });
-        _capNhatHuyenBoLoc(_provVal, "filterDistrict"); // populate options quận PC theo tỉnh
-        const _distPC = document.getElementById("filterDistrict");
-        if (_distPC) _distPC.value = _distVal;          // giờ option đã có → value mới "stick"
+        // Đồng bộ multi-select Quận PC theo tỉnh mới + lựa chọn SSOT (_quanDaChon đã được
+        // cập nhật trực tiếp bởi onChange của instance mobile khi user tick trong drawer).
+        if (_msQuanPC) {
+            _msQuanPC.updateDataSource(_districtsCuaTinh(_provVal));
+            _msQuanPC.setSelected(_quanDaChon);
+        }
         // ──────────────────────────────────────────────────────────────────────
         // Áp ràng buộc Đến>Từ cho select giờ PC theo giá trị vừa sync
         window._capNhatDisableKhungGio();
@@ -2373,6 +2521,7 @@
      * 4. TÌM KIẾM & HIỂN THỊ CA ĐẤU (từ bảng ca_dau)
      * ═══════════════════════════════════════════════════ */
     window.timKiemCaDau = function () {
+        _khoiTaoMultiSelectQuan();   // lazy-init (an toàn khi SPA coordinator điều phối khởi tạo)
         clearTimeout(_filterTimeout);
         _filterTimeout = setTimeout(_thucHienTimKiem, 300);
     };
@@ -2598,12 +2747,12 @@
         if (isActive) {
             // Bấm lại → bỏ chọn → toàn quốc
             if (inp) inp.value = "";
-            _capNhatHuyenBoLoc("", "filterDistrict");
+            _doiNguonQuan("");
         } else {
             btn.classList.add("active");
             const val = btn.dataset.value || "";
             if (inp) inp.value = val;
-            _capNhatHuyenBoLoc(val, "filterDistrict");
+            _doiNguonQuan(val);
         }
         window.timKiemCaDau && window.timKiemCaDau();
     };
@@ -2654,7 +2803,7 @@
     // Reset toàn bộ bộ lọc về mặc định
     window.xoaBoLoc = function () {
         // Reset tất cả input/select
-        ["filterProvince","filterDistrict","filterGender","filterLevel",
+        ["filterProvince","filterGender","filterLevel",
          "filterDate","filterCourtName","filterTimeFrom","filterTimeTo",
          "filterHost","filterHostDrawer"].forEach(id => {
             const el = document.getElementById(id);
@@ -2665,8 +2814,8 @@
             const c = document.getElementById(id);
             if (c) c.checked = false;
         });
-        // Cập nhật dropdown quận/huyện theo tỉnh đã xóa
-        _capNhatHuyenBoLoc("", "filterDistrict");
+        // Reset multi-select Quận/Huyện (cả 2 instance) + SSOT
+        _doiNguonQuan("");
         // Reset province buttons
         document.querySelectorAll("#filterProvincePills .tk-province-btn").forEach(b => b.classList.remove("active"));
         // Reset tất cả pills (giới tính + trình độ) — bỏ active hết
@@ -2700,7 +2849,7 @@
         const _mySeq = ++_tkSeq;  // B2: token tuần tự chống response cũ đè mới
 
         const province   = document.getElementById("filterProvince")?.value || "";
-        const district   = document.getElementById("filterDistrict")?.value || "";
+        // Quận/Huyện đọc từ SSOT mảng _quanDaChon (custom multi-select), KHÔNG từ DOM đơn-giá-trị.
         const gender     = document.getElementById("filterGender")?.value || "";
         // Multi-select: đọc tất cả pills đang active thay vì hidden select đơn giá trị
         // Khớp CHÍNH XÁC theo mức — normalize trim+UPPER cả 2 vế (chống lệch hoa-thường)
@@ -2838,8 +2987,9 @@
 
                 // Lọc tỉnh thành
                 if (province && s.tinh_thanh !== province) return false;
+                // Quận/Huyện = MULTI-SELECT (mảng). Trống = tất cả; có = OR trong nhóm quận.
+                if (_quanDaChon.length > 0 && !_quanDaChon.includes(s.quan_huyen)) return false;
                 // Lọc quận huyện
-                if (district && s.quan_huyen !== district) return false;
 
                 // ── 1. Lọc giới tính — chọn Nam/Nữ VẪN hiện ca tuyển "Cả hai" (KHÔNG ẩn) ──
                 //   KHÔNG gate theo giá > 0 — ca 0K/miễn phí vẫn hợp lệ (fix ẩn ca free).
@@ -4937,6 +5087,15 @@
                 window.khoiTaoHologramGlow();
                 window.khoiTaoTrangKhach();
             }
+        }, 100);
+    });
+
+    // Khởi tạo multi-select Quận/Huyện độc lập với coordinator — chờ phần tử có mặt.
+    document.addEventListener("DOMContentLoaded", () => {
+        let n = 0;
+        const t = setInterval(() => {
+            _khoiTaoMultiSelectQuan();
+            if ((_msQuanPC && _msQuanMobile) || ++n > 50) clearInterval(t);
         }, 100);
     });
 
