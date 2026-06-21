@@ -2848,6 +2848,10 @@
     }
 
     async function _taiThongBao() {
+        // 🔴 ÉP ANON đọc: cau_hinh_he_thong CHỈ có SELECT policy cho anon. Đọc bằng JWT admin
+        // (role authenticated) sẽ trả 0 dòng (RLS default-deny) → tab Cấu Hình trống. Gỡ JWT về anon.
+        const _savedJWT = window._adminJWT;
+        window._adminJWT = null;
         try {
             const configs   = await window.dbEngine.doc("cau_hinh_he_thong");
             const cfgMap    = {};
@@ -2878,10 +2882,14 @@
             if (qrUrl && qrWrap && qrImg) { qrWrap.style.display = "block"; qrImg.src = qrUrl; }
         } catch (e) {
             console.error("[Admin] Lỗi tải cấu hình:", e);
+        } finally {
+            window._adminJWT = _savedJWT;     // khôi phục JWT admin cho các thao tác khác
         }
     }
 
     window.luuThongBaoAdmin = async function () {
+        if (window._luuCauHinhBusy) return;          // chống double-submit (bấm Lưu nhanh nhiều lần)
+        window._luuCauHinhBusy = true;
         const content      = document.getElementById("adminAnnouncementContent")?.value?.trim() || "";
         const popupEnabled = document.getElementById("adminPopupEnabled")?.checked ? "true" : "false";
         const qrDonate     = document.getElementById("adminQrDonate")?.value?.trim()      || "";
@@ -2899,8 +2907,15 @@
         if (!window.khoDuLieuVinhVien) {
             window.hienToast("Lỗi", "Chưa kết nối Supabase.", "danger");
             if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình'; }
+            window._luuCauHinhBusy = false;
             return;
         }
+        // 🔴 ÉP ANON: bảng cau_hinh_he_thong CHỈ có RLS policy cho role anon (SELECT/INSERT/UPDATE).
+        // Admin đăng nhập set window._adminJWT → request chạy role authenticated (KHÔNG có policy)
+        // → upsert bị chặn 42501 "new row violates row-level security policy". Tạm gỡ JWT về anon
+        // (đúng pattern đã dùng cho khóa/xóa cascade) rồi khôi phục sau khi ghi xong.
+        const _savedJWT = window._adminJWT;
+        window._adminJWT = null;
         try {
             const up = (id, val) => window.khoDuLieuVinhVien.upsertData(
                 "cau_hinh_he_thong", { id, noi_dung_thong_bao: val }
@@ -2925,6 +2940,8 @@
         } catch (e) {
             window.hienToast("Lỗi lưu cấu hình", "Kiểm tra kết nối Supabase hoặc RLS permissions.", "danger");
         } finally {
+            window._adminJWT = _savedJWT;        // khôi phục JWT admin cho các thao tác khác
+            window._luuCauHinhBusy = false;
             if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Lưu Cấu Hình'; }
         }
     };

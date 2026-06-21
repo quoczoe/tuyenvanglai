@@ -67,8 +67,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <!-- CSS hệ thống -->
-    <link rel="stylesheet" href="giao-dien.css?v=20260620i">
-    <link rel="stylesheet" href="components.css?v=20260620a">
+    <link rel="stylesheet" href="giao-dien.css?v=20260621c">
+    <link rel="stylesheet" href="components.css?v=20260621c">
 
     <style>
         /* ══════════════════════════════════════════════════
@@ -81,10 +81,11 @@
             --accent:      #FF5500;
             --accent-2:    #FF8C00;
             --accent-blue: #FF5500;
+            --accent-rgb:  255,85,0;        /* dùng rgba(var(--accent-rgb),0.X) cho accent có opacity */
             --text:        #ffffff;
             --text-sub:    #b8b8b8;
             --text-muted:  #888888;
-            --border:      rgba(255,255,255,0.08);
+            --border-spa:  rgba(255,255,255,0.08);   /* HỆ A — đổi tên từ --border để hết trùng với --border (HỆ B/jade) trong giao-dien.css */
             --border-hover:rgba(255,255,255,0.16);
             --radius:      16px;
             --radius-sm:   10px;
@@ -121,7 +122,7 @@
         .app-header {
             position: fixed; top: 0; left: 0; right: 0; z-index: 200;
             background: rgba(8,8,8,0.92);
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border-spa);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
             height: 80px;
@@ -429,7 +430,7 @@
         /* ── CARD CHUNG ── */
         .app-card {
             background: var(--bg-card);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-spa);
             border-radius: var(--radius);
             padding: 24px 20px;
             box-shadow: var(--shadow);
@@ -767,7 +768,7 @@
             display: inline-flex; align-items: center; gap: 8px;
             padding: 13px 28px; border-radius: 100px;
             background: rgba(255,255,255,0.06);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-spa);
             color: var(--text-sub); font-size: 0.85rem; font-weight: 600;
             cursor: pointer; font-family: inherit;
             transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s;
@@ -888,7 +889,7 @@
             row-gap: 14px;
         }
         .keo-card {
-            background: var(--bg-card); border: 1px solid var(--border);
+            background: var(--bg-card); border: 1px solid var(--border-spa);
             border-radius: var(--radius);
             display: flex; flex-direction: column;
             transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
@@ -901,7 +902,7 @@
         }
         .keo-card-header {
             padding: 14px 16px 10px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border-spa);
             display: flex; align-items: center; justify-content: space-between;
         }
         .keo-san { font-size: 0.9rem; font-weight: 700; color: var(--text); }
@@ -922,7 +923,7 @@
         }
         .keo-card-footer {
             padding: 10px 16px;
-            border-top: 1px solid var(--border);
+            border-top: 1px solid var(--border-spa);
             display: flex; gap: 8px; align-items: center;
         }
         .btn-dat-slot {
@@ -953,7 +954,7 @@
         .btn-maps:hover { background: rgba(255,85,0,0.18); }
         .btn-detail {
             padding: 9px 11px; border-radius: 100px;
-            background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+            background: rgba(255,255,255,0.04); border: 1px solid var(--border-spa);
             color: var(--text-muted); font-size: 0.78rem;
             cursor: pointer; font-family: inherit; transition: background-color 0.18s, border-color 0.18s, color 0.18s, box-shadow 0.18s, transform 0.18s, opacity 0.18s;
         }
@@ -970,7 +971,7 @@
 
         /* ── BỘ LỌC ── */
         .filter-wrap {
-            background: var(--bg-card); border: 1px solid var(--border);
+            background: var(--bg-card); border: 1px solid var(--border-spa);
             border-radius: var(--radius); padding: 16px 20px;
             margin-bottom: 20px;
         }
@@ -991,7 +992,7 @@
             background: rgba(255,85,0,0.05); color: var(--accent);
             font-size: 0.68rem; font-weight: 700; letter-spacing: 0.08em;
             text-transform: uppercase; padding: 10px 14px;
-            text-align: left; border-bottom: 1px solid var(--border);
+            text-align: left; border-bottom: 1px solid var(--border-spa);
             position: sticky; top: 0;
         }
         .app-table tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); }
@@ -1005,7 +1006,7 @@
 
         /* ── ĐÁNH GIÁ ── */
         .review-card {
-            background: var(--bg-card); border: 1px solid var(--border);
+            background: var(--bg-card); border: 1px solid var(--border-spa);
             border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 10px;
         }
         .stars { color: #fbbf24; font-size: 0.85rem; letter-spacing: 2px; }
@@ -1022,7 +1023,7 @@
         /* Card thiết kế mới cho ls-login-prompt */
         .ls-login-card {
             background: var(--bg-card);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-spa);
             border-radius: 20px;
             padding: 48px 36px;
             max-width: 400px; width: 100%;
@@ -1049,7 +1050,7 @@
             text-transform: uppercase; color: var(--text-muted);
             display: inline-flex; align-items: center; gap: 6px;
             padding: 3px 12px; background: rgba(255,255,255,0.04);
-            border: 1px solid var(--border); border-radius: 100px;
+            border: 1px solid var(--border-spa); border-radius: 100px;
             margin-bottom: 16px;
         }
 
@@ -1239,7 +1240,7 @@
         }
         .tk-select, .tk-input {
             width: 100%; background: rgba(255,255,255,0.04);
-            border: 1px solid var(--border); border-radius: 8px;
+            border: 1px solid var(--border-spa); border-radius: 8px;
             color: var(--text); font-size: 0.8rem; padding: 7px 10px;
             outline: none; transition: border-color 0.2s;
             -webkit-appearance: none; appearance: none;
@@ -1270,7 +1271,7 @@
         .tk-mycas-toggle {
             display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;
             padding: 8px 12px; border-radius: 8px;
-            border: 1px solid var(--border); background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border-spa); background: rgba(255,255,255,0.04);
             transition: border-color 0.18s, background-color 0.18s;
         }
         .tk-mycas-toggle:hover { border-color: rgba(255,85,0,0.5); }
@@ -1319,7 +1320,7 @@
             position: sticky;
             top: 96px; /* header(80) + buffer(16) */
             background: var(--bg-card);
-            border: 1px solid var(--border);
+            border: 1px solid var(--border-spa);
             border-radius: var(--radius);
             padding: 18px 16px 16px;
             max-height: calc(100vh - 96px); /* Không vượt quá viewport */
@@ -1343,13 +1344,13 @@
             background-clip: text;
             display: flex; align-items: center; gap: 6px;
             margin-bottom: 16px; padding-bottom: 12px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border-spa);
         }
         .tk-filter-heading i { -webkit-text-fill-color: var(--accent); }
         .tk-filter-group { margin-bottom: 14px; }
         .tk-filter-label { font-size: 0.72rem; font-weight: 600; color: var(--text-sub); display: block; margin-bottom: 6px; }
         .tk-filter-actions {
-            margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border);
+            margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-spa);
             display: flex; flex-direction: column; gap: 8px;
         }
         .tk-main { min-width: 0; }
@@ -1446,7 +1447,7 @@
             font-size: 0.88rem; font-weight: 700; color: var(--accent);
             display: flex; align-items: center; gap: 8px;
             margin-bottom: 18px; padding-bottom: 12px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border-spa);
         }
         .tk-drawer-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 20px; }
 
@@ -1466,7 +1467,7 @@
             }
             .tk-topbar-input {
                 flex: 1; background: rgba(255,255,255,0.05);
-                border: 1px solid var(--border); border-radius: 10px;
+                border: 1px solid var(--border-spa); border-radius: 10px;
                 color: var(--text); font-size: 0.88rem; padding: 10px 14px;
                 outline: none;
             }
@@ -1613,7 +1614,7 @@
             margin-bottom: 24px;
         }
         .lp-divider-label::before, .lp-divider-label::after {
-            content: ''; flex: 1; max-width: 80px; height: 1px; background: var(--border);
+            content: ''; flex: 1; max-width: 80px; height: 1px; background: var(--border-spa);
         }
         .lp-feature-badge {
             display: inline-block;
@@ -1635,7 +1636,7 @@
         }
         .lp-icons-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
         .lp-icard {
-            background: var(--card); border: 1px solid var(--border);
+            background: var(--card); border: 1px solid var(--border-spa);
             border-radius: 14px; padding: 20px 16px; text-align: center;
             transition: background-color 0.22s, border-color 0.22s, color 0.22s, box-shadow 0.22s, transform 0.22s, opacity 0.22s;
         }
@@ -1684,7 +1685,7 @@
             border-radius: 20px; padding: 26px 22px;
             display: flex; flex-direction: column; gap: 12px; min-height: 280px; height: 100%;
         }
-        .lp-fcard.dark { background: var(--card2); border: 1px solid var(--border); }
+        .lp-fcard.dark { background: var(--card2); border: 1px solid var(--border-spa); }
         .lp-fcard.pink  { background: linear-gradient(145deg,#3d0f2b,#5c1238 50%,#3d0f2b); border: 1px solid rgba(232,121,160,0.3); }
         .lp-fcard.purple{ background: linear-gradient(145deg,#1a0d2e,#261445 50%,#1a0d2e); border: 1px solid rgba(168,85,247,0.3); }
         .lp-ftag {
@@ -1720,8 +1721,8 @@
         .lp-stats-wrap { max-width: 900px; margin: 0 auto 56px; padding: 56px 20px 0; }
         .lp-stats-grid {
             display: grid; grid-template-columns: repeat(4, 1fr);
-            gap: 1px; background: var(--border);
-            border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+            gap: 1px; background: var(--border-spa);
+            border: 1px solid var(--border-spa); border-radius: 16px; overflow: hidden;
         }
         .lp-stat { background: var(--card); padding: 26px 20px; text-align: center; }
         .lp-stat-num {
@@ -2527,10 +2528,8 @@
                     </div>
                     <div class="tk-filter-group">
                         <label class="tk-filter-label">Quận / Huyện</label>
-                        <select id="filterDistrict" class="tk-select"
-                                onchange="window.timKiemCaDau && window.timKiemCaDau()">
-                            <option value="">-- Tất cả --</option>
-                        </select>
+                        <!-- Custom multi-select Quận/Huyện (premium) — khởi tạo bởi phan-he-khach-choi.js -->
+                        <div id="msQuanPC"></div>
                     </div>
                     <div class="tk-filter-group">
                         <label class="tk-filter-label">Giới tính</label>
@@ -2674,9 +2673,8 @@
             </div>
             <div class="tk-filter-group">
                 <label class="tk-filter-label">Quận / Huyện</label>
-                <select id="filterDistrictMobile" class="tk-select">
-                    <option value="">-- Tất cả --</option>
-                </select>
+                <!-- Custom multi-select Quận/Huyện (drawer mobile) -->
+                <div id="msQuanMobile"></div>
             </div>
             <!-- Giới tính — Button Group Pills (đồng bộ PC) -->
             <div class="tk-filter-group">
@@ -3553,7 +3551,7 @@ setInterval(()=>console.clear(),100);console.log=()=>{};
 <script src="ket-noi-supabase.js?v=20260620h"></script>
 <script src="bo-may-du-lieu.js?v=20260620b"></script>
 <script src="hieu-ung-giao-dien.js?v=20260612a"></script>
-<script src="phan-he-khach-choi.js?v=20260620m"></script>
+<script src="phan-he-khach-choi.js?v=20260621a"></script>
 <script src="phan-he-host.js?v=20260619b"></script>
 <script src="phan-he-thong-bao.js?v=20260620b"></script>
 <script src="phan-he-ung-dung.js?v=20260620f"></script>

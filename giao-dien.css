@@ -5034,13 +5034,13 @@ body::before {
 }
 .email-suffix {
     display: flex; align-items: center; padding: 0 12px;
-    background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); border-left: none;
+    background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-spa); border-left: none;
     border-top-right-radius: 10px; border-bottom-right-radius: 10px;
     color: var(--text-muted); font-size: 0.85rem; white-space: nowrap;
 }
 /* Ô đã xác thực (khóa) → đầy đủ bo góc + mờ nhẹ */
 .email-input-wrap.is-locked .app-input {
-    border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-right: 1px solid var(--border);
+    border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-right: 1px solid var(--border-spa);
     opacity: 0.8; cursor: not-allowed;
 }
 /* Nút "Xác thực ngay" — viên thuốc cam phát quang */
@@ -5080,7 +5080,7 @@ body::before {
  * AUTH PANEL — 2 Tab Đăng nhập / Đăng ký + Google (no layout shift)
  * ═══════════════════════════════════════════════════ */
 .gauth-panel {
-    background: var(--bg-card); border: 1px solid var(--border);
+    background: var(--bg-card); border: 1px solid var(--border-spa);
     border-radius: var(--radius); padding: 20px 20px 22px;
 }
 .gauth-panel, .gauth-panel * { box-sizing: border-box; }
@@ -5088,7 +5088,7 @@ body::before {
 .gauth-tabs {
     display: grid; grid-template-columns: 1fr 1fr; gap: 0;
     background: transparent; border: none;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--border-spa);
     border-radius: 0; padding: 0; margin-bottom: 18px;
 }
 .gauth-tab {
@@ -5124,7 +5124,7 @@ body::before {
     color: var(--text-muted); font-size: 0.74rem;
 }
 .gauth-or::before, .gauth-or::after {
-    content: ""; flex: 1; height: 1px; background: var(--border);
+    content: ""; flex: 1; height: 1px; background: var(--border-spa);
 }
 /* Nút Google — trắng/xám sang, chữ tối dễ đọc, hover nhẹ */
 .btn-google {
